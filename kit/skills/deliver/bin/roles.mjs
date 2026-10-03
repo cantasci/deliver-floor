@@ -137,7 +137,7 @@ function componentsSection(sel, r, job, cat) {
   if (!mine.length) return "";
   const skills = (c) => [...new Set((c.stack ?? []).flatMap((s) => cat.stack_skills?.[s] ?? []))];
   return ["## Components (frozen architecture: " + (arch.style ?? "?") + ")", "",
-    ...mine.map((c) => `- **${c.id}** (${c.kind}) — stack ${(c.stack ?? []).join(", ")} — path \`${c.path}\` — dev: ${c.owner}, review: ${c.reviewer}` +
+    ...mine.map((c) => `- **${c.id}** (${c.kind}) — stack ${(c.stack ?? []).join(", ")} — path ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} — dev: ${c.owner}, review: ${c.reviewer}` +
       (skills(c).length ? `\n  skills to load for it: ${skills(c).map((x) => "`" + x + "`").join(", ")}` : "")),
     "", "The architecture is frozen: build inside it. If it cannot work, say so in your answer — do not change it.", ""].join("\n");
 }

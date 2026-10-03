@@ -88,7 +88,8 @@ READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.m
 ```
 
 2. **Verify the BA's work yourself, item by item** — you are the PM: is each source real, does each `n_a` truly not apply, does the
-   architecture cover every part of the request (each service/app/db, its stack, its owner)? Send the BA back with what is
+   architecture cover every part of the request (each service/app/db, its stack, its owner, and paths that hold both its
+   code and its tests — cards' `scope` and `qa_scope` must fit inside them once frozen)? Send the BA back with what is
    missing. Then write the JSON to `.work/<job>/readiness.json` and run `"$DL" readiness` (writes `readiness.md` and
    `QUESTIONS.md`); fix every ERROR it lists (a missing item, a decision without a source, an architecture gap).
    The architecture decides the roles: every component's owner (`backend`, `frontend`, `mobile`, `database`) and reviewer

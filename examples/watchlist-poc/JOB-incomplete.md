@@ -25,6 +25,8 @@ Related rule (REQ-03-13, Indicator 13 — external rating change): 2 notch downg
 - C6. A 1-notch downgrade gives calculator WL 0 (Indicator 13 starts at 2 notches); Indicator 12 is unaffected (1 notch → WL 1).
 - C7. "Auto-filled value editable" (REQ-03-12) is met by the contract: the caller passes whichever previous/current rating the
   analyst confirmed or edited. No override parameter, no persistence and no audit trail in this slice.
+- C8. "Displayed" (REQ-06-02) is met by the returned `{ notches, direction, wl }`: the screens of the POC are built later
+  by other parts and render this value. No UI, CLI or printed output in this slice.
 
 ## Contract (other parts of the POC will import exactly these)
 

@@ -85,9 +85,11 @@ if (arch?.components?.length) {
     const id = c.id ?? "(no id)", comp = comps.get(c.component);
     if (!comp) { errors.push(`${id}: 'component' must name an architecture component (${[...comps.keys()].join(", ")})`); continue; }
     if (c.role !== comp.owner && c.role !== "qa") errors.push(`${id}: component ${comp.id} is owned by role '${comp.owner}', not '${c.role}'`);
-    const base = comp.path === "." || comp.path === "./" ? "" : comp.path.replace(/\/?$/, "/");
-    for (const g of [...(c.scope ?? []), ...(c.qa_scope ?? [])])
-      if (base && !String(g).startsWith(base)) errors.push(`${id}: '${g}' is outside component ${comp.id} (${base})`);
+    // a component may span several directories (e.g. src/orders/ and test/orders/); "." is the whole repo
+    const bases = [].concat(comp.path ?? ".").map((p) => (p === "." || p === "./" ? "" : String(p).replace(/\/?$/, "/")));
+    if (!bases.includes(""))
+      for (const g of [...(c.scope ?? []), ...(c.qa_scope ?? [])])
+        if (!bases.some((b) => String(g).startsWith(b))) errors.push(`${id}: '${g}' is outside component ${comp.id} (${bases.join(", ")})`);
   }
 }
 

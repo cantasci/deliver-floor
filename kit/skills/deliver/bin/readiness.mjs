@@ -58,7 +58,9 @@ export function checkArchitecture(job, arch) {
     if (ids.has(id)) errors.push(`component '${id}': duplicate id`); ids.add(id);
     if (!KINDS.includes(c.kind)) errors.push(`component '${id}': kind must be one of ${KINDS.join(", ")}`);
     if (!Array.isArray(c.stack) || !c.stack.length) errors.push(`component '${id}': stack must list its languages/frameworks (e.g. ["java","spring-boot"])`);
-    if (typeof c.path !== "string" || !c.path || c.path.startsWith("/") || c.path.split("/").includes("..")) errors.push(`component '${id}': path must be a repo-relative directory ("." for the root)`);
+    const ps = Array.isArray(c.path) ? c.path : [c.path];
+    if (!ps.length || ps.some((x) => typeof x !== "string" || !x || x.startsWith("/") || x.split("/").includes("..")))
+      errors.push(`component '${id}': path must be a repo-relative directory or a list of them, e.g. ["src/orders/", "test/orders/"] ("." for the root)`);
     const owner = roles.get(c.owner);
     if (!owner) errors.push(`component '${id}': owner '${c.owner}' is not a role on this job`);
     else if (cat.roles?.[c.owner]?.kind !== "dev") errors.push(`component '${id}': owner '${c.owner}' must be a dev role`);
@@ -110,7 +112,7 @@ export function check(jobDir) {
     ...items.map((i) => `| **${i.id}** ${q(i)} | ${i.status} | ${(i.status === "open" ? "❓ " + i.question : i.answer ?? "").replace(/\n/g, " ")} | ${(i.source ?? "").replace(/\n/g, " ")} |`), "",
     "## Architecture (frozen once the job is planned)", "", `Style: ${architecture?.style ?? "—"}`, "",
     "| Component | Kind | Stack | Path | Owner (dev role) | Reviewer |", "| --- | --- | --- | --- | --- | --- |",
-    ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | \`${c.path}\` | ${c.owner} | ${c.reviewer} |`), ""].join("\n");
+    ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} | ${c.owner} | ${c.reviewer} |`), ""].join("\n");
   writeFileSync(join(jobDir, "readiness.md"), md);
   const qs = openBusiness.length ? [`# Questions before the work can start — ${job.id}`, "",
     "Answer each one in a terminal (or tell Michael):  dl clarify <id> \"<answer>\"", "",

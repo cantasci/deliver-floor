@@ -47,14 +47,15 @@ request itself already resolves it explicitly).
 Add items the catalog lacks but this request needs, with ids starting `X-`.
 
 Also describe the **architecture** the request implies, component by component — every service, BFF, app, library, worker
-and database, each with its stack (e.g. `["java","spring-boot"]`, `["go"]`, `["postgres"]`), its repo path, the dev role that
+and database, each with its stack (e.g. `["java","spring-boot"]`, `["go"]`, `["postgres"]`), its repo path(s) — every directory its code AND its
+tests live in, e.g. `["src/ratings/", "test/unit/ratings/", "test/integration/ratings/"]`, or `"."` for a single-component repo — the dev role that
 owns it (`backend`, `frontend`, `mobile`, `database`) and its reviewer role (`reviewer-<stack>`). Mixed stacks are normal
 (four Spring Boot services and one Go service). If the request does not settle a component's stack, layer (BFF vs core) or
 whether the database is owned separately, that is an `open` item — do not pick.
 
 Return **only** this JSON:
 `{"items":[{"id":"…","status":"decided|n_a|open","answer":"…","source":"…","question":"…","options":["…"],"impact":"…","owner":"business|pm"}],
-  "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":"services/orders/","owner":"backend","reviewer":"reviewer-java","notes":"…"}]}}`
+  "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":["services/orders/src/","services/orders/test/"],"owner":"backend","reviewer":"reviewer-java","notes":"…"}]}}`
 
 ### PLAN — from the request to plan.md
 You also get readiness.md: every decision in it is binding (cite its id where it shapes a criterion).

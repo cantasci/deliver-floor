@@ -65,14 +65,22 @@ if [[ $SC == incomplete ]]; then
   [[ "$(jq '.cards | length' "$B")" == 0 ]] && ok "no card was cut before the answer" || bad "cards exist before the answer"
   [[ -z "$(git -C "$SB" ls-files src | grep -v gitkeep)" && ! -d $J/wt/T-01 ]] && ok "no code was written before the answer" || bad "code was written before the answer"
   log ""; log "Open questions (QUESTIONS.md):"; sed 's/^/    /' "$J/QUESTIONS.md" >> "$REP"
-  step "4 · the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
+fi
+# The human: whenever Michael stops with questions (in any scenario), each one is answered from HUMAN_ANSWERS.json —
+# matched by topic, recorded with dl clarify as a person in a terminal would — and the run resumes. A question no
+# prepared answer matches fails the scenario: a real person would have to answer it.
+for round in 1 2 3; do
+  [[ "$(jq -r .phase "$JJ")" == awaiting_clarification ]] || break
+  step "4.$round · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
+  [[ $SC != incomplete ]] && log "note: the $SC request still raised question(s) — recorded below; answering them is the human's job"
+  log "Open questions (QUESTIONS.md):"; sed 's/^/    /' "$J/QUESTIONS.md" >> "$REP"
   while IFS=$'\t' read -r id q; do
     ans="$(jq -r --arg q "$q" 'map(select(.match as $m | $q | test($m; "i"))) | first | .answer // empty' "$EX/HUMAN_ANSWERS.json")"
     if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id — $(cut -c1-90 <<<"$q")"
     else bad "no prepared answer for $id — a real person must answer: $q"; fi
   done < <(jq -r '(.items // .)[] | select(.status=="open" and .owner != "pm") | [.id, .question] | @tsv' "$J/readiness.json")
   run_rounds | sed 's/^/    /'
-fi
+done
 log "wall time: $(( ($(date +%s) - start) / 60 )) min"
 
 step "5 · verify the whole flow on disk"

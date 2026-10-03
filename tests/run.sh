@@ -389,6 +389,14 @@ jq -n --argjson a "$(acard T-01 orders backend services/orders/)" --argjson b "$
 expect_ok "cards on three components validate" "$DL" validate
 bedit "$AJ/board.json" '.cards[0].scope=["services/payments/src/**"]'
 out="$("$DL" validate 2>&1)"; contains "a card reaching outside its component is rejected" "$out" "outside component orders"
+# a component may span several directories (code + unit tests + integration tests); copy the job to try it without
+# touching the frozen readiness of this job
+VC="$TMP/vcomp"; rm -rf "$VC"; cp -r "$AJ" "$VC"
+jq '.architecture.components[0].path = ["services/orders/", "test/unit/orders/", "test/it/orders/"]' "$AJ/readiness.json" > "$VC/readiness.json"
+jq '.cards[0].scope = ["services/orders/src/**", "test/unit/orders/**"] | .cards[0].qa_scope = ["test/it/orders/**"]' "$AJ/board.json" > "$VC/board.json"
+expect_ok "a component spanning code and test directories accepts cards in all of them" node "$HERE/kit/skills/deliver/bin/validate.mjs" "$VC/board.json"
+jq '.cards[0].qa_scope = ["test/e2e/orders/**"]' "$VC/board.json" > "$VC/b2.json" && mv "$VC/b2.json" "$VC/board.json"
+out="$(node "$HERE/kit/skills/deliver/bin/validate.mjs" "$VC/board.json" 2>&1)"; contains "…and still rejects a directory it does not list" "$out" "outside component orders"
 bedit "$AJ/board.json" '.cards[0].scope=["services/orders/src/**"] | .cards[2].role="backend"'
 out="$("$DL" validate 2>&1)"; contains "a backend dev on the database component is rejected" "$out" "owned by role 'database'"
 bedit "$AJ/board.json" '.cards[2].role="database"'
