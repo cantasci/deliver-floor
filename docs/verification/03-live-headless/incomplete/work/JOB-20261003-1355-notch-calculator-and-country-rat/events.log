@@ -1,0 +1,41 @@
+2026-10-03T13:55:54Z	new	Notch calculator and country rating
+2026-10-03T13:56:06Z	jobset	stack: .stack=["javascript"]
+2026-10-03T13:56:06Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: pure domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02 notchCalculator, REQ-03-12 countryRatingChangeWl implementation"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"JavaScript ESM stack review"}]
+2026-10-03T13:56:06Z	jobset	assumptions: .assumptions += ["Pure JS slice, no UI/persistence (C4, C7, C8); no security/perf/a11y/docs roles needed"]
+2026-10-03T13:56:06Z	roles	ba qa backend-lead backend reviewer
+2026-10-03T13:56:06Z	phase	readiness
+2026-10-03T13:58:40Z	agent	business-analyst af522c57: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two things. First, a notch calculator helper: the analyst gives a previous and a current rating
+2026-10-03T13:59:22Z	readiness	29 items: 17 decided, 9 n/a, 3 open
+2026-10-03T13:59:30Z	decide	X-scale-immutability: A: export Object.freeze([...19 ratings]) — Protects the scale notchChange relies on; contents/order stay as C1; no contract change.
+2026-10-03T13:59:30Z	decide	X-error-message: A: message names the argument and offending value and lists the valid ratings; tests assert RangeError type only — Easier typo diagnosis for analysts; message wording is not part of the contract.
+2026-10-03T13:59:30Z	phase	awaiting_clarification
+2026-10-03T13:59:38Z	clarify	CON-interface: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-03T13:59:52Z	freeze	readiness + architecture frozen (c09e638ff1f7)
+2026-10-03T13:59:52Z	roles	ba qa backend-lead backend reviewer
+2026-10-03T13:59:52Z	phase	planning
+2026-10-03T14:01:15Z	agent	business-analyst aa27c710: ## Goal Ship the two contract modules that later parts of the Watchlist POC will import: - **REQ-06-02, notch calculator helper.** The analyst gives a previous 
+2026-10-03T14:02:44Z	agent	ecc:architect ac7a15ce: [ {"tmp_id":"B1","title":"Notch calculator helper: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs) with unit tests","role":"backend","compone
+2026-10-03T14:04:54Z	agent	business-analyst a9a40c14: === T-01 === # T-01: Notch calculator helper: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs) with unit tests ## User story As a credit analy
+2026-10-03T14:05:40Z	phase	executing
+2026-10-03T14:05:44Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T14:06:46Z	agent	backend-dev a7226317: status: done commit: 64f1c15 verify: passed (`node --test test/ratings/notch.test.mjs`: 73 pass, 0 fail) open issues: the push of `job/JOB-20261003-1355-notch-c
+2026-10-03T14:06:50Z	gate	T-01 PASS
+2026-10-03T14:08:02Z	agent	qa-tester a6daf627: Every acceptance criterion passes, but I could not push the branch. `git remote -v` shows no remote configured in this repo, and the bash-guard hook also reject
+2026-10-03T14:08:05Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-13 pass (87 integration tests)
+2026-10-03T14:08:23Z	agent	ecc:typescript-reviewer a63f7aa4: ```json {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: normalizeRating returns an index but is named like it returns a rating. Something lik
+2026-10-03T14:08:27Z	review	T-01 reviewer approve — approve, no blocking items; 4 nits (naming, comment, regex word boundaries, stdout stub)
+2026-10-03T14:08:28Z	integrate	T-01 merged
+2026-10-03T14:08:31Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-03T14:09:12Z	agent	backend-dev a548b925: status: done commit: f8a406d verify: passed (`node --test test/indicators/countryRating.test.mjs`: 12 tests pass, 0 fail; full `node --test`: 172 pass, 0 fail) 
+2026-10-03T14:09:15Z	gate	T-02 PASS
+2026-10-03T14:10:45Z	agent	qa-tester a1e39969: The tests are written and committed locally, but I couldn't push the branch. The `bash-guard.sh` hook rejected every push attempt, with `git -C` and with `cd` i
+2026-10-03T14:10:49Z	qa	T-02 pass (qa_verify PASS) — AC-3 pass; AC-4 pass; AC-10 pass; AC-11 pass; AC-12 pass; AC-13 pass; AC-14 pass (53 integration tests)
+2026-10-03T14:11:07Z	agent	ecc:typescript-reviewer a1b70fc3: {"verdict":"approve","blocking":[],"nits":["QA nested AC-14 test (test/integration/indicators/countryRating.integration.test.mjs, ~line 213-234): the recursion 
+2026-10-03T14:11:10Z	review	T-02 reviewer approve — approve, no blocking; nits on nested node --test (TAP parsing, env inheritance) and comment-matching regexes
+2026-10-03T14:11:11Z	integrate	T-02 merged
+2026-10-03T14:11:14Z	phase	integrating
+2026-10-03T14:11:15Z	verify-all	PASS
+2026-10-03T14:11:18Z	phase	closing
+2026-10-03T14:12:59Z	agent	business-analyst ae55de32: # Closing check: JOB-20261003-1355, notch calculator and country rating All 14 acceptance criteria are met. The delivered code is at job branch head `05e9b05`, 
+2026-10-03T14:13:13Z	learn	all: Purity checks that grep source text must strip comments or use word boundaries; both reviewers flagged bare /fetch/ /process/ regexes.
+2026-10-03T14:13:13Z	ship	local merge into main

@@ -1,0 +1,65 @@
+
+━━ 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+√ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+  ✔ ECC plugin installed (Version: 2.2.3)
+  ✔ kit installed (scripts/install.sh --user)
+  ✔ doctor: result: 25 ok, 5 warning(s), 0 problem(s)
+
+━━ 2 · run: the only input is examples/watchlist-poc/JOB-incomplete.md
+    ▶ claude -p "/deliver /home/user/skills-shop/examples/watchlist-poc/JOB-incomplete.md"   (log: .work/runs/20261003-135539.jsonl)
+      result: success  turns=14  cost=$0.8812806
+    ⏸  the requirements have open questions: .work/JOB-20261003-1355-notch-calculator-and-country-rat/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+  ✔ Michael opened the job JOB-20261003-1355-notch-calculator-and-country-rat
+
+━━ 3 · the gap: Michael must stop and ask — not assume
+  ✔ phase awaiting_clarification (stopped before planning)
+  ✔ QUESTIONS.md asks about the unspecified sign of notches
+  ✔ no card was cut before the answer
+  ✔ no code was written before the answer
+
+Open questions (QUESTIONS.md):
+
+━━ 4.1 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+Open questions (QUESTIONS.md):
+  ✔ answered CON-interface — What sign does notchCalculator(previous, current).notches carry for an upgrade? The two re
+    round 1 — JOB-20261003-1355-notch-calculator-and-country-rat (awaiting_clarification)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261003-135938.jsonl)
+      result: success  turns=37  cost=$3.7851374999999994
+    ✔ job JOB-20261003-1355-notch-calculator-and-country-rat: done
+wall time: 17 min
+
+━━ 5 · verify the whole flow on disk
+  ✔ job reached done
+  ✔ job shipped (local)
+roles: ba, qa, backend-lead, backend, reviewer
+  ✔ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+  ✔ role cards generated for every role
+PM decisions: 2 (implementation details, recorded with rationale)
+  ✔ readiness review complete (no open item) with an architecture
+readiness: 29 items — 20 decided, 9 n/a · architecture: library: watchlist-domain-lib [javascript+node]
+  ✔ readiness frozen at planning and unchanged since
+  ✔ the Leads cut 2 card(s)
+  ✔ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T-01 Notch calculator helper: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs) with unit tests | watchlist-domain-lib | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+| T-02 Indicator 12 country rating change WL: countryRatingChangeWl (src/indicators/countryRating.mjs) with unit tests | watchlist-domain-lib | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+  ✔ every card (2): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged
+  ✔ QA's integration tests are on main (2 file(s) in the cards' qa_scope)
+  ✔ role really ran: business-analyst
+  ✔ role really ran: ecc:architect
+  ✔ role really ran: qa-tester
+  ✔ role really ran: a dev agent
+  ✔ role really ran: a stack reviewer
+  ✔ no tracker errors
+  ✔ kanban view rendered
+  ✔ report.md written by the closing check
+  ✔ no AI attribution in the delivered history (7 commits)
+  ✔ the whole test suite passes on main
+  ✔ hidden oracle passes (5 checks, watchlist.oracle.test.mjs)
+
+━━ result
+cost: $4.67  ·  artifacts: /tmp/claude-0/e2e/incomplete
+**30 passed, 0 failed**
