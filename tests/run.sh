@@ -40,7 +40,7 @@ echo 'export const add = (a, b) => a + b;' > src/math.mjs
 echo 'top secret' > secret/keep.txt
 git add -A && git commit -qm init
 cat > .deliver.json <<'EOF'
-{ "verify_full": "node --test", "worktree_setup": "mkdir -p \"$ROOT/node_modules\" && ln -s \"$ROOT/node_modules\" node_modules", "merge_strategy": "local", "max_parallel": 2 }
+{ "verify_full": "node --test", "worktree_setup": "mkdir -p \"$ROOT/node_modules\" && ln -s \"$ROOT/node_modules\" node_modules", "merge_mode": "local", "max_parallel": 2, "gates": { "plan": true } }
 EOF
 git add .deliver.json && git commit -qm cfg
 
@@ -53,7 +53,16 @@ expect_fail 1 "second dl new refused while a job is active" "$DL" new "other" "x
 expect_ok "dl -C works from outside the repo" bash -c "cd '$TMP' && '$DL' -C '$R' status"
 
 echo "planning guards"
+expect_fail 1 "planning refused while roles are incomplete" "$DL" phase planning
 "$DL" jobset '.roles=[{"role":"pm","agent":"ecc:planner"},{"role":"backend","agent":"backend-dev"}]'
+out="$("$DL" phase planning 2>&1)"; contains "roles check names the missing qa + reviewer" "$out" "role 'qa' is always selected"
+"$DL" jobset '.roles=[{"role":"pm","agent":"ecc:planner","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"api"},
+  {"role":"backend","agent":"backend-dev","why":"lead"},{"role":"qa","agent":"qa-tester","why":"always"},
+  {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack"}]'
+expect_ok "phase planning with valid roles" "$DL" phase planning
+[[ -f $R/.work/$JOB/roles/backend.md && -f $R/.work/$JOB/roles/qa.md && -f $R/.work/$JOB/ROLES.md ]] && ok "role cards generated on planning" || bad "role cards"
+grep -q "Test first" "$R/.work/$JOB/roles/backend.md" && grep -q "Every acceptance criterion\|every AC gets a verdict" "$R/.work/$JOB/roles/qa.md" \
+  && grep -q "node --test" "$R/.work/$JOB/roles/backend.md" && ok "role cards carry kind rules + project facts" || bad "role card content"
 cat > "$R/.work/$JOB/plan.md" <<'EOF'
 # Plan
 ## Goal
@@ -122,7 +131,14 @@ expect_fail 1 "integrate refused before gate" "$DL" integrate T-01
 expect_ok "gate T-01 passes" "$DL" gate T-01
 [[ "$(jq -r '.cards[0].state' "$B")" == review ]] && ok "gate moves running → review" || bad "state after gate"
 expect_fail 1 "integrate refused before review" "$DL" integrate T-01
-contains "next asks for the review" "$("$DL" next)" "REVIEW  T-01"
+contains "next asks for QA after the gate" "$("$DL" next)" "QA      T-01"
+expect_fail 1 "review refused before QA" "$DL" review T-01 approve "lgtm"
+expect_fail 1 "qa needs a summary" "$DL" qa T-01 pass
+"$DL" qa T-01 fail "AC-1: add(0,0) threw" >/dev/null
+contains "QA failure re-dispatches with its feedback" "$("$DL" next)" "REDISPATCH T-01  (QA failed — feedback: AC-1: add(0,0) threw)"
+"$DL" qa T-01 pass "AC-1 pass: node --test test/add → 1 pass" >/dev/null
+echo scratch > "$W1/qa-scratch.txt"; expect_fail 1 "QA that leaves files in the worktree is refused" "$DL" qa T-01 pass "x"; rm "$W1/qa-scratch.txt"
+contains "next asks for the review after QA" "$("$DL" next)" "REVIEW  T-01"
 "$DL" review T-01 approve "lgtm" >/dev/null
 expect_ok "integrate T-01" "$DL" integrate T-01
 
@@ -140,6 +156,7 @@ echo junk > "$W2/untracked.txt"
 out="$("$DL" gate T-02 2>&1)"; contains "untracked file fails the gate" "$out" "uncommitted or untracked"
 rm "$W2/untracked.txt"; git -C "$W2" add -A && git -C "$W2" commit -qm "T-02: fix"
 expect_ok "gate T-02 passes on attempt 2" "$DL" gate T-02
+"$DL" qa T-02 pass "AC-2 pass" >/dev/null
 "$DL" review T-02 changes "needs a negative test" >/dev/null
 contains "last attempt with changes → BLOCK" "$("$DL" next)" "BLOCK   T-02"
 expect_fail 4 "max_attempts enforced" "$DL" wt add T-02
@@ -149,7 +166,7 @@ contains "blocked card asks the human" "$("$DL" next)" "ASK     human about bloc
 "$DL" wt add T-02 >/dev/null
 printf 'import {test} from "node:test"; test("sub", () => {}); test("neg", () => {});\n' > "$W2/test/sub/sub.test.mjs"
 git -C "$W2" commit -qam "T-02: negative test"
-"$DL" gate T-02 >/dev/null && "$DL" review T-02 approve "ok" >/dev/null
+"$DL" gate T-02 >/dev/null && "$DL" qa T-02 pass "AC-2 pass" >/dev/null && "$DL" review T-02 approve "ok" >/dev/null
 expect_ok "integrate T-02 after human retry" "$DL" integrate T-02
 
 # --- T-03 conflicts with a file changed on the job branch after it was branched
@@ -159,28 +176,29 @@ printf 'import {test} from "node:test"; test("index", () => {});\n' > "$W3/test/
 git -C "$W3" add -A && git -C "$W3" commit -qm "T-03: index"
 IWT="$R/.work/$JOB/wt/_integration"
 echo 'export const v = 1;' > "$IWT/src/index.mjs"; git -C "$IWT" add -A; git -C "$IWT" commit -qm "hotfix on job branch"
-"$DL" gate T-03 >/dev/null && "$DL" review T-03 approve "ok" >/dev/null
+"$DL" gate T-03 >/dev/null && "$DL" qa T-03 pass "ok" >/dev/null && "$DL" review T-03 approve "ok" >/dev/null
 expect_fail 3 "merge conflict → exit 3" "$DL" integrate T-03
 [[ -z "$(git -C "$IWT" status --porcelain)" ]] && ok "conflicted merge aborted cleanly" || bad "IWT dirty after conflict"
 "$DL" wt add T-03 >/dev/null
 git -C "$W3" merge -q "job/$JOB" 2>/dev/null; echo 'export * from "./add/add.mjs"; export const v = 1;' > "$W3/src/index.mjs"
 git -C "$W3" add -A && git -C "$W3" commit -qm "T-03: resolve"
-expect_fail 1 "integrate refused: review was for the old commit" "$DL" integrate T-03
-"$DL" gate T-03 >/dev/null && "$DL" review T-03 approve "ok" >/dev/null
+expect_fail 1 "integrate refused: QA/review were for the old commit" "$DL" integrate T-03
+"$DL" gate T-03 >/dev/null && "$DL" qa T-03 pass "ok" >/dev/null && "$DL" review T-03 approve "ok" >/dev/null
 expect_ok "integrate T-03 after resolving" "$DL" integrate T-03
 
-echo "integration + merge gate"
+echo "integration + delivery (merge_mode=local)"
 contains "next moves to integrating" "$("$DL" next)" "PHASE   dl phase integrating"
 expect_ok "phase integrating" "$DL" phase integrating
-expect_fail 1 "merge gate refused before verify-all" "$DL" phase awaiting_merge_approval
+expect_fail 1 "closing refused before verify-all" "$DL" phase closing
 expect_ok "verify-all passes" "$DL" verify-all
-expect_ok "awaiting_merge_approval" "$DL" phase awaiting_merge_approval
-expect_fail 1 "closing refused without merge approval" "$DL" phase closing
-"$DL" approve merge "ship it" >/dev/null
-git -C "$R" merge -q --no-ff "job/$JOB" -m "merge job"
-[[ -f $R/src/add/add.mjs && -f $R/src/sub/sub.mjs ]] && ok "local merge delivered the cards" || bad "local merge"
 expect_ok "closing" "$DL" phase closing
-expect_ok "done" "$DL" phase done
+expect_fail 1 "approve merge no longer exists" "$DL" approve merge
+expect_fail 1 "ship refused while report.md is the template" "$DL" ship
+contains "next asks for the report" "$("$DL" next)" "REPORT"
+echo "# Delivery report — all ACs met" > "$R/.work/$JOB/report.md"
+expect_fail 1 "done refused before shipping" "$DL" phase done
+expect_ok "ship (local) merges into the base" "$DL" ship
+[[ -f $R/src/add/add.mjs && -f $R/src/sub/sub.mjs && "$(jq -r .phase "$R/.work/$JOB/job.json")" == done ]] && ok "local merge delivered the cards, phase done" || bad "local ship"
 
 echo "hooks"
 H="$HERE/kit/hooks/deliver"
@@ -210,6 +228,7 @@ contains "subagent dl status allowed" "$(bg 'dl status' "$R" abc123)" "rc=0"
 contains "Michael dl gate allowed" "$(bg '/x/bin/dl gate T-01')" "rc=0"
 contains "dl phase --force denied" "$(bg 'dl phase executing --force')" "rc=2"
 contains "headless self-approval denied" "$(DELIVER_HEADLESS=1 bg 'dl approve plan ok')" "rc=2"
+contains "subagent dl qa denied" "$(bg 'dl qa T-01 pass x' "$R" abc123)" "rc=2"
 contains "interactive approval allowed" "$(bg 'dl approve plan "user said yes"')" "rc=0"
 contains "unrelated commands allowed" "$(bg 'npm test -- --watch=false')" "rc=0"
 
@@ -236,11 +255,120 @@ reqf="$(ls "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
 contains "spawn request: card worktree cwd, no extra isolation, dev agent" "$(jq -c '{cwd,isolate,command}' "$reqf")" "\"isolate\":false,\"command\":\"claude --agent backend-dev\""
 unset HIVE_ROOT
 
+echo "knowledge: standards, memory, Munder Difflin knowledge graph"
+K="$HOME/.deliver/knowledge"; mkdir -p "$K" "$TMP/kn/.deliver/knowledge"
+cat > "$K/api-errors.md" <<'MD'
+---
+title: API error handling
+applies_to: [dev, review]
+stack: [javascript]
+---
+# API error handling
+## Must
+- Map domain errors to HTTP codes in one place.
+- Never leak stack traces.
+## Background
+Long text that is referenced, not copied.
+MD
+cat > "$K/testing.md" <<'MD'
+---
+applies_to: [qa]
+---
+# Testing standard
+## Must
+- Every AC has a test named after it.
+MD
+cat > "$TMP/kn/.deliver/knowledge/testing.md" <<'MD'
+---
+applies_to: [qa, dev]
+---
+# Testing standard (project override)
+## Must
+- Tests live in test/<area>/.
+MD
+cd "$TMP/kn" && git init -q -b main && echo x > a && git add -A && git commit -qm i
+"$DL" new "know" "x" >/dev/null; KJ="$(cat .work/ACTIVE)"
+"$DL" jobset '.stack=["javascript"] | .roles=[{"role":"pm","agent":"ecc:planner"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" learn qa "Check rounding at .5 boundaries — QA missed it in JOB-1" >/dev/null
+"$DL" phase planning >/dev/null
+grep -q "MUST: Map domain errors" ".work/$KJ/roles/backend.md" && ok "company standard's Must reaches the dev role" || bad "dev standard"
+grep -q "MUST: Map domain errors" ".work/$KJ/roles/qa.md" && bad "standard leaked to a role it does not apply to" || ok "applies_to filters roles"
+grep -q "Tests live in test/<area>/" ".work/$KJ/roles/qa.md" && ! grep -q "Every AC has a test named" ".work/$KJ/roles/qa.md" && ok "project standard overrides the company one" || bad "override"
+grep -q "Never leak stack traces" ".work/$KJ/roles/reviewer.md" && ok "reviewer gets the review standards" || bad "reviewer standard"
+grep -q "Background" ".work/$KJ/roles/backend.md" && bad "whole document pasted" || ok "only Must bullets are copied (rest by reference)"
+grep -q "rounding at .5" ".work/$KJ/roles/qa.md" && ok "memory: a learned lesson reaches the next role cards" || bad "lesson"
+mkdir -p "$TMP/res"; cat > "$TMP/res/kg-core.cjs" <<'JS'
+const fs=require('fs'),p=require('path');
+const f=r=>p.join(r,'idx.json'), rd=r=>{try{return JSON.parse(fs.readFileSync(f(r)))}catch{return[]}};
+module.exports={list:r=>rd(r), removeDoc:(r,id)=>{fs.writeFileSync(f(r),JSON.stringify(rd(r).filter(m=>m.id!==id)));return true},
+ ingest:(r,i)=>{const a=rd(r);a.push({id:String(a.length+Math.random()),source:i.source,title:i.title});fs.mkdirSync(r,{recursive:true});fs.writeFileSync(f(r),JSON.stringify(a));return{docId:'x'}}};
+JS
+touch "$TMP/res/kg.cjs"
+KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md >/dev/null
+out="$(KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md)"
+contains "sync-md re-ingests without duplicates" "$out" "3 document(s) ingested (3 older version(s) replaced)"
+[[ "$(jq length "$TMP/kgroot/idx.json")" == 3 ]] && ok "knowledge graph holds 3 docs (2 standards + lessons)" || bad "kg docs: $(cat "$TMP/kgroot/idx.json")"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+echo "merge modes: human / semi / auto (fake gh, bare origin)"
+FAKEGH="$TMP/gh"; GHLOG="$TMP/gh.log"
+cat > "$FAKEGH" <<'GH'
+#!/usr/bin/env bash
+echo "$*" >> "$GHLOG"
+case "$1 $2" in
+  "pr create") echo "https://github.com/acme/demo/pull/7" ;;
+  "pr merge") exit 0 ;;
+  "pr checks") [[ -f $GHSTATE.fail ]] && { echo "ci  fail"; exit 1; }; echo "ci  pass" ;;
+  "pr view") cat "$GHSTATE" 2>/dev/null || echo "OPEN REVIEW_REQUIRED BLOCKED" ;;
+esac
+GH
+chmod +x "$FAKEGH"; export DELIVER_GH="$FAKEGH" GHLOG GHSTATE="$TMP/ghstate"
+shipjob() { # shipjob <mode> → a repo with one merged card, in phase closing with a report
+  local mode=$1 r="$TMP/ship-$1"
+  git init -q --bare "$TMP/origin-$mode.git"
+  mkdir -p "$r" && cd "$r" && git init -q -b main && git remote add origin "$TMP/origin-$mode.git"
+  echo '{}' > package.json; mkdir -p test; printf 'import {test} from "node:test"; test("x",()=>{});\n' > test/x.test.mjs
+  printf '{"verify_full":"node --test","merge_mode":"%s"}\n' "$mode" > .deliver.json
+  git add -A && git commit -qm init
+  "$DL" new "ship $mode" "x" >/dev/null
+  "$DL" jobset '.roles=[{"role":"pm","agent":"ecc:planner"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+  "$DL" phase planning >/dev/null
+  local j; j="$(cat .work/ACTIVE)"
+  jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",state:"ready",depends_on:[],scope:["src/**"],acceptance:["AC-1: x"],verify:"node --test",context:"c",attempts:0,notes:[]}]}' > ".work/$j/board.json"
+  "$DL" phase executing >/dev/null; local w; w="$("$DL" wt add T-01)"
+  mkdir -p "$w/src" && echo 1 > "$w/src/a.txt" && git -C "$w" add -A && git -C "$w" commit -qm "T-01"
+  "$DL" gate T-01 >/dev/null && "$DL" qa T-01 pass "ok" >/dev/null && "$DL" review T-01 approve ok >/dev/null && "$DL" integrate T-01 >/dev/null
+  "$DL" phase integrating >/dev/null && "$DL" verify-all >/dev/null && "$DL" phase closing >/dev/null
+  echo "# report" > ".work/$j/report.md"
+}
+shipjob human; : > "$GHLOG"
+out="$("$DL" ship 2>&1)"; contains "human: PR opened, waits for the human" "$out" "waiting for the human"
+git --git-dir="$TMP/origin-human.git" rev-parse -q --verify "refs/heads/$(jq -r .branch .work/*/job.json)" >/dev/null && ok "human: job branch pushed" || bad "push"
+grep -q "pr create --base main" "$GHLOG" && ! grep -q "pr merge" "$GHLOG" && ok "human: PR created, never merged by Michael" || bad "human gh calls: $(cat "$GHLOG")"
+contains "human: phase awaiting_pr_merge" "$(jq -r .phase .work/*/job.json)" "awaiting_pr_merge"
+contains "human: stop-guard lets Michael hand over" "$(hook stop-guard.sh "{\"cwd\":\"$PWD\",\"transcript_path\":\"/dev/null\"}")" "rc=0"
+contains "human: dl pr shows an open PR" "$("$DL" pr)" "OPEN:"
+echo "MERGED APPROVED CLEAN" > "$GHSTATE"; contains "human: dl pr sees the merge → done" "$("$DL" pr)" "MERGED"; rm -f "$GHSTATE"
+contains "phase done" "$(jq -r .phase .work/*/job.json)" "done"
+shipjob semi; : > "$GHLOG"
+out="$("$DL" ship 2>&1)"; contains "semi: auto-merge armed" "$out" "auto-merge armed"
+grep -q "pr merge https://github.com/acme/demo/pull/7 --auto --merge" "$GHLOG" && ok "semi: gh pr merge --auto" || bad "semi gh: $(cat "$GHLOG")"
+contains "semi: still waits for the human approval" "$(jq -r .phase .work/*/job.json)" "awaiting_pr_merge"
+shipjob auto; : > "$GHLOG"; touch "$GHSTATE.fail"
+expect_fail 1 "auto: red CI → not merged" "$DL" ship
+! grep -q "pr merge" "$GHLOG" && ok "auto: no merge on red CI" || bad "auto merged on red"
+rm -f "$GHSTATE.fail"; : > "$GHLOG"
+out="$("$DL" ship 2>&1)"; contains "auto: merged on green" "$out" "merged automatically"
+! grep -q "pr create" "$GHLOG" && ok "auto: re-ship reuses the existing PR" || bad "auto created a second PR"
+contains "auto: phase done" "$(jq -r .phase .work/*/job.json)" "done"
+unset DELIVER_GH; cd "$R"
+
 echo "install / uninstall"
 INST="$HERE/scripts/install.sh"
 expect_ok "install --user" "$INST" --user
 expect_ok "install is idempotent" "$INST" --user
 [[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 4 ]] && ok "4 hooks, no duplicates" || bad "hook count"
+[[ -f $HOME/.claude/agents/qa-tester.md ]] && ok "qa-tester agent installed" || bad "qa-tester missing"
 [[ "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$HOME/.claude/settings.json")" == .work/* ]] && ok "GateGuard exemption set" || bad "env"
 echo "# local edit" >> "$HOME/.claude/skills/deliver/SKILL.md"
 "$INST" --user >/dev/null

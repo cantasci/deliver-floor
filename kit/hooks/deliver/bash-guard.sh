@@ -29,7 +29,7 @@ grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*j
 
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 dl_re='(^|[;&|[:space:](/"'"'"'])dl[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
-if grep -Eq "${dl_re}(new|phase|jobset|wt|card|gate|review|integrate|verify-all|approve|reject|md-dispatch|cleanup)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(new|phase|jobset|roles|learn|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|cleanup)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
 if grep -Eq "${dl_re}(approve|reject)([[:space:]]|$)" <<<"$cmd"; then

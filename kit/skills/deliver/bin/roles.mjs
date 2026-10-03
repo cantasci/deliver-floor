@@ -1,0 +1,201 @@
+#!/usr/bin/env node
+// roles.mjs — reads roles.yaml and turns the job's selected roles into project-specific role cards.
+//   node roles.mjs catalog                 → the catalog as JSON
+//   node roles.mjs check <job.json>        → every selected role/agent exists in the catalog (exit 1 if not)
+//   node roles.mjs render <job dir>        → .work/<job>/roles/<role>.md + ROLES.md (+ munder/hires/*.hire.json)
+// A role card = rules.all + rules.<kind> + the role's own rules + facts about this project and job.
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { dirname, join, basename } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { section as knowledgeSection } from "./knowledge.mjs";
+
+const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+// --- a small YAML subset: maps by indentation, "- scalar" lists, quoted/bare scalars, # comments ------------------
+export function parseYaml(text) {
+  const lines = [];
+  text.split("\n").forEach((raw, n) => {
+    const noComment = stripComment(raw);
+    if (!noComment.trim()) return;
+    const indent = noComment.match(/^ */)[0].length;
+    if (/\t/.test(noComment.slice(0, indent + 1))) throw new Error(`roles.yaml:${n + 1}: tabs are not allowed`);
+    lines.push({ indent, text: noComment.trim(), n: n + 1 });
+  });
+  let i = 0;
+  const block = (indent) => {
+    if (i >= lines.length) return null;
+    if (lines[i].text.startsWith("- ")) {
+      const arr = [];
+      while (i < lines.length && lines[i].indent === indent && lines[i].text.startsWith("- ")) arr.push(scalar(lines[i++].text.slice(2)));
+      return arr;
+    }
+    const obj = {};
+    while (i < lines.length && lines[i].indent === indent) {
+      const { text: t, n } = lines[i];
+      const m = t.match(/^("[^"]*"|[^:]+?):(?:\s+(.*))?$/);
+      if (!m) throw new Error(`roles.yaml:${n}: cannot parse '${t}'`);
+      const key = scalar(m[1]); i++;
+      if (m[2] !== undefined && m[2] !== "") obj[key] = scalar(m[2]);
+      else obj[key] = i < lines.length && lines[i].indent > indent ? block(lines[i].indent) : null;
+    }
+    if (i < lines.length && lines[i].indent > indent) throw new Error(`roles.yaml:${lines[i].n}: unexpected indentation`);
+    return obj;
+  };
+  const out = block(0) ?? {};
+  if (i < lines.length) throw new Error(`roles.yaml:${lines[i].n}: unexpected indentation`);
+  return out;
+}
+function stripComment(line) {
+  let q = false;
+  for (let k = 0; k < line.length; k++) {
+    if (line[k] === '"' && line[k - 1] !== "\\") q = !q;
+    if (line[k] === "#" && !q && (k === 0 || /\s/.test(line[k - 1]))) return line.slice(0, k).replace(/\s+$/, "");
+  }
+  return line.replace(/\s+$/, "");
+}
+function scalar(s) {
+  s = s.trim();
+  if (s.startsWith('"')) return JSON.parse(s);
+  if (s === "true") return true;
+  if (s === "false") return false;
+  if (s === "null" || s === "~") return null;
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  return s;
+}
+
+export const loadCatalog = (file = join(SKILL_DIR, "roles.yaml")) => parseYaml(readFileSync(file, "utf8"));
+
+// --- checks ---------------------------------------------------------------------------------------------------------
+export function checkJobRoles(job, cat) {
+  const errors = [];
+  const known = new Set(Object.keys(cat.roles ?? {}));
+  const reviewers = new Set(Object.values(cat.stack_reviewers ?? {}));
+  for (const r of job.roles ?? []) {
+    if (r.role === "reviewer" || r.role?.startsWith("reviewer")) {
+      if (!reviewers.has(r.agent)) errors.push(`reviewer agent '${r.agent}' is not in stack_reviewers`);
+      continue;
+    }
+    if (!known.has(r.role)) { errors.push(`role '${r.role}' is not in roles.yaml`); continue; }
+    if (cat.roles[r.role].agent !== r.agent) errors.push(`role '${r.role}' must use agent '${cat.roles[r.role].agent}', not '${r.agent}'`);
+  }
+  for (const [name, r] of Object.entries(cat.roles ?? {}))
+    if (r.always && !(job.roles ?? []).some((s) => s.role === name)) errors.push(`role '${name}' is always selected`);
+  const devs = (job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev");
+  if (!devs.length) errors.push("no dev role selected — nobody could build the cards");
+  if (!(job.roles ?? []).some((r) => r.role?.startsWith("reviewer"))) errors.push("no stack reviewer selected (role 'reviewer')");
+  return errors;
+}
+
+// --- rendering ------------------------------------------------------------------------------------------------------
+const KIND_TITLE = { pm: "Product manager", lead: "Lead", dev: "Developer", review: "Reviewer", qa: "QA" };
+
+function projectFacts(job) {
+  const root = job.repo;
+  const facts = [
+    `Repository: ${root} (base branch ${job.base_branch}; job branch ${job.branch})`,
+    `Stack: ${(job.stack ?? []).join(", ") || "not detected"}`,
+    `Full verification of the job: \`${job.settings?.verify_full ?? "-"}\``,
+  ];
+  if (job.settings?.worktree_setup) facts.push(`Each worktree is prepared with: \`${job.settings.worktree_setup}\``);
+  for (const f of ["CLAUDE.md", "AGENTS.md", "CONTRIBUTING.md"])
+    if (root && existsSync(join(root, f))) facts.push(`Project conventions: read \`${f}\` at the repository root before you start.`);
+  return facts;
+}
+
+function roleEntry(sel, cat) {
+  if (sel.role?.startsWith("reviewer")) return { kind: "review", agent: sel.agent, does: "Lead review of each card's change for the job's stack.", floor: { character: "toby", accent: "slate" } };
+  return cat.roles[sel.role];
+}
+
+export function renderRole(sel, job, cat) {
+  const r = roleEntry(sel, cat);
+  const rules = [...(cat.rules?.all ?? []), ...(cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
+  const md = [
+    `# Role: ${sel.role} — ${KIND_TITLE[r.kind] ?? r.kind}${r.focus ? ` (${r.focus})` : ""}`,
+    "",
+    `Job: **${job.id}** — ${job.title}`,
+    `Agent: \`${sel.agent}\` · writes files: ${r.writes ? "yes (only where the rules allow)" : "no"}`,
+    `Why this role is on the job: ${sel.why ?? r.when ?? "-"}`,
+    "",
+    "## Mission",
+    "",
+    r.does ?? (r.kind === "dev" ? `Implement the cards assigned to the '${sel.role}' role, one card per session, inside the card worktree.` : "-"),
+    "",
+    "## Rules",
+    "",
+    ...rules.map((x, k) => `${k + 1}. ${x}`),
+    "",
+    "## This project",
+    "",
+    ...projectFacts(job).map((x) => `- ${x}`),
+    "",
+    job.repo ? knowledgeSection(job.repo, { kind: r.kind, role: sel.role, stack: job.stack ?? [] }) : "",
+  ].join("\n");
+  return { md, rules, entry: r };
+}
+
+export function hireManifest(sel, job, cat, rendered) {
+  const r = rendered.entry;
+  const repoName = basename(job.repo ?? "repo");
+  const goal = [
+    `${KIND_TITLE[r.kind] ?? r.kind} for ${repoName} in the /deliver flow. Michael dispatches one card at a time; work only on what he sends.`,
+    ...rendered.rules.map((x, k) => `${k + 1}. ${x}`),
+  ].join(" ").slice(0, 3800);
+  return {
+    spec: "munder-difflin/hire@1",
+    name: `${repoName} ${sel.role}`.slice(0, 60),
+    description: `${sel.role} (${r.kind}) for ${repoName} — /deliver role`.slice(0, 120),
+    goal,
+    character: r.floor?.character,
+    accent: r.floor?.accent,
+    provider: "claude",
+    ...(job.settings?.munder?.model ? { model: job.settings.munder.model } : {}),
+    capabilities: ["deliver", r.kind, ...(job.stack ?? [])].slice(0, 8),
+    isolate: false,
+    ...(job.settings?.munder?.token_cap > 0 ? { tokenCap: job.settings.munder.token_cap } : {}),
+    author: "/deliver kit",
+  };
+}
+
+export function render(jobDir, { hiveRoot } = {}) {
+  const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
+  const cat = loadCatalog();
+  const errors = checkJobRoles(job, cat);
+  if (errors.length) { for (const e of errors) console.error(`ERROR ${e}`); process.exit(1); }
+  mkdirSync(join(jobDir, "roles"), { recursive: true });
+  const munder = job.settings?.dispatch === "munder" || !!hiveRoot;
+  if (munder) mkdirSync(join(jobDir, "munder", "hires"), { recursive: true });
+  const rows = [];
+  for (const sel of job.roles) {
+    if (sel.agent === "artemis") { rows.push(`| ${sel.role} | artemis (Michael) | qa | ${sel.why ?? ""} | — |`); continue; }
+    const out = renderRole(sel, job, cat);
+    const file = join(jobDir, "roles", `${sel.role}.md`);
+    writeFileSync(file, out.md);
+    rows.push(`| ${sel.role} | \`${sel.agent}\` | ${out.entry.kind} | ${sel.why ?? ""} | roles/${sel.role}.md |`);
+    if (munder) {
+      const m = hireManifest(sel, job, cat, out);
+      for (const k of Object.keys(m)) if (m[k] === undefined) delete m[k];
+      writeFileSync(join(jobDir, "munder", "hires", `${sel.role}.hire.json`), JSON.stringify(m, null, 2) + "\n");
+      if (hiveRoot) {
+        mkdirSync(join(hiveRoot, "research", "hires"), { recursive: true });
+        writeFileSync(join(hiveRoot, "research", "hires", `${job.id}-${sel.role}.hire.json`), JSON.stringify(m, null, 2) + "\n");
+      }
+    }
+  }
+  writeFileSync(join(jobDir, "ROLES.md"), [
+    `# Roles for ${job.id}`, "", "| Role | Agent | Kind | Why | Rules |", "| --- | --- | --- | --- | --- |", ...rows, "",
+    munder ? `Munder Difflin hire manifests: munder/hires/*.hire.json${hiveRoot ? ` (also offered in ${hiveRoot}/research/hires/ — confirm in the app to seat a role permanently)` : ""}.` : "",
+  ].join("\n"));
+  console.log(`roles: ${job.roles.length} role card(s) → ${join(jobDir, "roles")}${munder ? " + hire manifests" : ""}`);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const [cmd, arg] = process.argv.slice(2);
+  if (cmd === "catalog") console.log(JSON.stringify(loadCatalog(), null, 2));
+  else if (cmd === "check") {
+    const errs = checkJobRoles(JSON.parse(readFileSync(arg, "utf8")), loadCatalog());
+    for (const e of errs) console.log(`ERROR ${e}`);
+    process.exit(errs.length ? 1 : 0);
+  } else if (cmd === "render") render(arg, { hiveRoot: process.env.HIVE_ROOT || undefined });
+  else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir>"); process.exit(2); }
+}

@@ -11,8 +11,13 @@
 #   dl next                        the next actions the flow requires, one per line (ACTION args)
 #   dl board                       board table only
 #   dl phase <phase>               set phase (intake planning awaiting_plan_approval executing
-#                                  integrating awaiting_merge_approval closing done aborted) — guarded
+#                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
+#   dl roles                       check job.roles against roles.yaml and generate the project's role cards
+#                                  (.work/<job>/roles/*.md, ROLES.md; Munder Difflin hire manifests) — runs on dl phase planning
+#   dl learn <role|all> "<lesson>" remember a lesson for this repo (memory: ~/.deliver/knowledge/lessons/<repo>.md);
+#                                  the next jobs' role cards include it
+#   dl knowledge [list|sync-md]    standards + lessons that feed the role cards; sync-md → Munder Difflin knowledge graph
 #   dl validate                    board.json schema + dependency + scope-overlap check
 #   dl ready                       ids of cards that may be dispatched now (deps merged, attempts left)
 #   dl wt add <card> [--resume]    card worktree + state=running + attempts+1 (--resume: no bump, after a restart)
@@ -21,12 +26,17 @@
 #   dl card <card> note "<text>"   attach a note to a card (blocked reason, guidance, …)
 #   dl card <card> retry           human-granted: attempts=0 and state=ready (after guidance)
 #   dl gate <card>                 mechanical gate: right branch, clean tree, commits, in scope, verify passes
-#   dl review <card> approve|changes "<summary>"   record the Lead review verdict (needs a passed gate)
-#   dl integrate <card>            --no-ff merge into the job branch → merged (needs gate PASS + review approve
-#                                  on the current commit; exit 3 on conflict)
+#   dl qa <card> pass|fail "<summary>"   record the QA/Test verdict on the card's acceptance criteria
+#                                  (needs a passed gate on the current commit)
+#   dl review <card> approve|changes "<summary>"   record the Lead review verdict (needs gate PASS + QA pass)
+#   dl integrate <card>            --no-ff merge into the job branch → merged (needs gate PASS + QA pass +
+#                                  review approve, all on the current commit; exit 3 on conflict)
 #   dl verify-all                  run verify_full in the integration worktree
-#   dl approve <plan|merge> [note] record human approval (by the human, or on their explicit answer)
-#   dl reject  <plan|merge> "<note>" record human rejection
+#   dl ship                        deliver per merge_mode: human|semi|auto → push + PR (+ auto-merge / merge on green),
+#                                  local → merge into the base branch. Needs verify-all PASS + report.md (phase closing)
+#   dl pr                          PR state (awaiting_pr_merge): merged → done; closed → aborted; open → checks/review
+#   dl approve plan [note]         record the human's plan approval (only when gates.plan is on; off by default)
+#   dl reject  plan "<note>"       record the human's rejection of the plan
 #   dl md-dispatch <card> <prompt-file>   Munder Difflin: run the card's dev as a worker on the floor
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
 #   dl jobs                        jobs known on this machine (registry)
@@ -57,7 +67,9 @@ resolve_root() {
 }
 
 STATES="ready running review merged blocked archived"
-PHASES="intake planning awaiting_plan_approval executing integrating awaiting_merge_approval closing done aborted"
+PHASES="intake planning awaiting_plan_approval executing integrating closing awaiting_pr_merge done aborted"
+MERGE_MODES="human semi auto local"
+GH="${DELIVER_GH:-gh}"
 now() { date -u +%FT%TZ; }
 
 jq_inplace() { # jq_inplace <file> <jq args...>
@@ -127,6 +139,10 @@ cmd_new() {
   else
     settings="$(cat "$CONFIG")"
   fi
+  # Older .deliver.json files said merge_strategy: pr|local.
+  settings="$(jq 'if .merge_strategy then .merge_mode = (if .merge_strategy == "local" then "local" else (.merge_mode // "human") end) | del(.merge_strategy) else . end' <<<"$settings")"
+  local mm; mm="$(jq -r .merge_mode <<<"$settings")"
+  [[ " $MERGE_MODES " == *" $mm "* ]] || die "merge_mode must be one of: $MERGE_MODES (got '$mm')"
   base="$(jq -r .base_branch <<<"$settings")"
   if [[ $base == auto || $base == null ]]; then
     base="$(git -C "$ROOT" symbolic-ref --short HEAD 2>/dev/null)" || die "could not resolve base branch (detached HEAD?) — set base_branch in .deliver.json"
@@ -173,7 +189,7 @@ cmd_board() {
 
 cmd_status() {
   load_job
-  jq -r '"job:      \(.id)\ntitle:    \(.title)\nrepo:     \(.repo // "-")\nphase:    \(.phase)\nbranch:   \(.branch)  (base: \(.base_branch))\napproval: plan=\(.gates.plan.status // "-")  merge=\(.gates.merge.status // "-")\ndispatch: \(.settings.dispatch // "subagent")"' "$JOBJ"
+  jq -r '"job:      \(.id)\ntitle:    \(.title)\nrepo:     \(.repo // "-")\nphase:    \(.phase)\nbranch:   \(.branch)  (base: \(.base_branch))\nplan gate: \(if .settings.gates.plan then (.gates.plan.status // "pending") else "off" end)\nmerge:    \(.settings.merge_mode)\(if .pr.url then "  PR: \(.pr.url) (\(.pr.state // "?"))" else "" end)\ndispatch: \(.settings.dispatch // "subagent")"' "$JOBJ"
   echo
   cmd_board
   echo
@@ -193,11 +209,13 @@ cmd_ready() { load_job; ready_ids; }
 # The deterministic "what now" for Michael, one action per line.
 cmd_next() {
   load_job
-  local phase gates_plan gates_merge; phase="$(phase_now)"
-  gates_plan="$(jq -r '.settings.gates.plan' "$JOBJ")"; gates_merge="$(jq -r '.settings.gates.merge' "$JOBJ")"
+  local phase gates_plan; phase="$(phase_now)"
+  gates_plan="$(jq -r '.settings.gates.plan' "$JOBJ")"
   case $phase in
-    intake)   echo "INTAKE  detect stack, pick roles (dl jobset), then: dl phase planning" ;;
-    planning) echo "PLAN    PM plan → plan.md, Lead cards → board.json, dl validate, then: dl phase awaiting_plan_approval" ;;
+    intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase planning (generates the role cards)" ;;
+    planning)
+      if [[ $gates_plan == true ]]; then echo "PLAN    PM plan → plan.md, Lead cards → board.json, dl validate, then: dl phase awaiting_plan_approval"
+      else echo "PLAN    PM plan → plan.md, Lead cards → board.json, dl validate, then: dl phase executing  (no plan gate: the human is next at the PR)"; fi ;;
     awaiting_plan_approval)
       case "$(jq -r '.gates.plan.status // "pending"' "$JOBJ")" in
         approved) echo "PHASE   dl phase executing" ;;
@@ -209,17 +227,20 @@ cmd_next() {
       max_par="$(setting max_parallel)"
       running="$(jq '[.cards[] | select(.state=="running")] | length' "$BOARD")"
       local maxa; maxa="$(setting max_attempts)"
-      jq -r '.cards[] | select(.state=="review") | [.id, (.branch//""), (.gate.result//""), (.gate.head//""), (.review.verdict//""), (.review.head//""), (.attempts|tostring)] | @tsv' "$BOARD" |
-        while IFS=$'\t' read -r id br gres ghead rv rhead att; do
+      jq -r '.cards[] | select(.state=="review") | [.id, (.branch//""), (.gate.result//""), (.gate.head//""), (.qa.verdict//""), (.qa.head//""), (.review.verdict//""), (.review.head//""), (.attempts|tostring)] | @tsv' "$BOARD" |
+        while IFS=$'\t' read -r id br gres ghead qv qhead rv rhead att; do
           local head; head="$(branch_head "$br")"
-          if [[ ( $gres == FAIL && $ghead == "$head" ) || ( $rv == changes && $rhead == "$head" ) ]] && (( att >= maxa )); then
-            echo "BLOCK   $id (failed on its last attempt $att/$maxa: dl card $id state blocked + note)"
-          elif [[ $gres != PASS || $ghead != "$head" ]]; then
-            if [[ $gres == FAIL && $ghead == "$head" ]]; then echo "REDISPATCH $id  (gate failed — feedback: $(card_get "$id" .gate.log))"
-            else echo "GATE    dl gate $id"; fi
-          elif [[ $rhead != "$head" ]]; then echo "REVIEW  $id  (Lead review → dl review $id approve|changes)"
-          elif [[ $rv == approve ]]; then echo "INTEGRATE dl integrate $id"
-          else echo "REDISPATCH $id  (review asked for changes)"; fi
+          local failed=""
+          [[ $gres == FAIL && $ghead == "$head" ]] && failed="gate failed — feedback: $(card_get "$id" .gate.log)"
+          [[ -z $failed && $gres == PASS && $ghead == "$head" && $qv == fail && $qhead == "$head" ]] && failed="QA failed — feedback: $(card_get "$id" .qa.summary)"
+          [[ -z $failed && $gres == PASS && $ghead == "$head" && $qv == pass && $qhead == "$head" && $rv == changes && $rhead == "$head" ]] && failed="review asked for changes — feedback: $(card_get "$id" .review.summary)"
+          if [[ -n $failed ]]; then
+            if (( att >= maxa )); then echo "BLOCK   $id (failed on its last attempt $att/$maxa: dl card $id state blocked + note)"
+            else echo "REDISPATCH $id  ($failed)"; fi
+          elif [[ $gres != PASS || $ghead != "$head" ]]; then echo "GATE    dl gate $id"
+          elif [[ $qv != pass || $qhead != "$head" ]]; then echo "QA      $id  (QA/Test role checks every acceptance criterion → dl qa $id pass|fail)"
+          elif [[ $rv != approve || $rhead != "$head" ]]; then echo "REVIEW  $id  (Lead review → dl review $id approve|changes)"
+          else echo "INTEGRATE dl integrate $id"; fi
         done
       cap=$(( max_par - running ))
       local r; r="$(ready_ids | head -n $(( cap > 0 ? cap : 0 )) | tr '\n' ' ')"
@@ -242,15 +263,14 @@ cmd_next() {
       if [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" != PASS || "$(jq -r '.verify_all.head // ""' "$JOBJ")" != "$h" ]]; then
         echo "VERIFY  dl verify-all"
       else
-        echo "QA      run the selected QA roles (fix card → dl phase executing), then: dl phase awaiting_merge_approval"
+        echo "QA      job-level QA roles if selected (failure → fix card + dl phase executing), then: dl phase closing"
       fi ;;
-    awaiting_merge_approval)
-      case "$(jq -r '.gates.merge.status // "pending"' "$JOBJ")" in
-        approved) echo "SHIP    PR / local merge per merge_strategy, then: dl phase closing" ;;
-        rejected) echo "REVISE  per the human's note: $(jq -r .gates.merge.note "$JOBJ")" ;;
-        *) [[ $gates_merge == false ]] && echo "SHIP    PR / local merge (merge gate disabled), then: dl phase closing" || echo "ASK     human: merge approval (dl approve merge | dl reject merge \"<note>\")" ;;
-      esac ;;
-    closing) echo "CLOSE   PM closing check → report.md, then: dl phase done && dl cleanup" ;;
+    closing)
+      if cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md"; then echo "REPORT  PM closing check (every AC with evidence) → report.md"
+      else echo "SHIP    dl ship  (merge_mode=$(setting merge_mode))"; fi ;;
+    awaiting_pr_merge)
+      echo "WAIT    PR $(jq -r '.pr.url // "?"' "$JOBJ") is with the human (merge_mode=$(setting merge_mode)). Check: dl pr — then dl cleanup when done"
+      echo "STOP    hand over: tell the human the PR link; resume later with /deliver resume" ;;
     done|aborted) echo "NONE    job is $phase" ;;
   esac
 }
@@ -263,7 +283,10 @@ cmd_phase() {
   if [[ $force -eq 0 ]]; then
     [[ $cur == done || $cur == aborted ]] && refuse 1 "job is $cur"
     case $p in
+      planning)
+        node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml" ;;
       awaiting_plan_approval)
+        node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       executing)
         if [[ "$(jq -r .settings.gates.plan "$JOBJ")" != false && "$(jq -r '.gates.plan.status // ""' "$JOBJ")" != approved ]]; then
@@ -273,28 +296,41 @@ cmd_phase() {
       integrating)
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
           || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — blocked cards need the human (retry or archive)" ;;
-      awaiting_merge_approval)
+      closing)
         [[ $cur == integrating ]] || refuse 1 "only from integrating (now: $cur)"
         [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS && "$(jq -r '.verify_all.head // ""' "$JOBJ")" == "$(branch_head "$JOB_BRANCH")" ]] \
           || refuse 1 "verify-all has not passed on the current job branch — run: dl verify-all" ;;
-      closing)
-        if [[ "$(jq -r .settings.gates.merge "$JOBJ")" != false && "$(jq -r '.gates.merge.status // ""' "$JOBJ")" != approved ]]; then
-          refuse 1 "the merge is not approved by the human (gates.merge)"
-        fi ;;
-      done) [[ $cur == closing ]] || refuse 1 "only from closing (now: $cur)" ;;
+      awaiting_pr_merge) refuse 1 "awaiting_pr_merge is set by: dl ship" ;;
+      done) [[ "$(jq -r '.shipped // false' "$JOBJ")" == true ]] || refuse 1 "the job is not delivered yet — dl ship (and, for a PR, its merge: dl pr)" ;;
     esac
   fi
   case $p in # entering a waiting phase asks the question afresh
     awaiting_plan_approval) jq_inplace "$JOBJ" '.gates.plan = null' ;;
-    awaiting_merge_approval) jq_inplace "$JOBJ" '.gates.merge = null' ;;
   esac
   jq_inplace "$JOBJ" --arg p "$p" '.phase=$p'
+  [[ $p == planning ]] && { node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
   reset_stop_guard; log_event phase "$p$([[ $force -eq 1 ]] && echo ' (forced)')"; echo "phase: $p"
 }
 
 cmd_jobset() { load_job; [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"; jq_inplace "$JOBJ" "$1"; }
 
 cmd_validate() { load_job; node "$BIN_DIR/validate.mjs" "$BOARD"; }
+
+cmd_learn() {
+  load_job
+  local role=${1:-} text=${2:-}; [[ -n $role && -n $text ]] || die 'usage: dl learn <role|all> "<lesson>"'
+  node "$BIN_DIR/knowledge.mjs" learn "$ROOT" "$JOB" "$role" "$text" && log_event learn "$role: $text"
+}
+cmd_knowledge() {
+  resolve_root
+  case ${1:-list} in
+    list) node "$BIN_DIR/knowledge.mjs" list "$ROOT" "${2:-}" "${3:-}" "${4:-}" ;;
+    sync-md) node "$BIN_DIR/knowledge.mjs" sync-md "$ROOT" ;;
+    *) die "usage: dl knowledge [list [kind] [role] [stack,…] | sync-md]" ;;
+  esac
+}
+
+cmd_roles() { load_job; node "$BIN_DIR/roles.mjs" render "$JOB_DIR" && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
 
 cmd_wt() {
   load_job
@@ -328,10 +364,12 @@ cmd_wt() {
       if [[ $flag == --resume ]]; then
         card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b)' --arg p "$path" --arg b "$branch"
       else
-        card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b | .state="running" | .attempts+=1)' --arg p "$path" --arg b "$branch"
+        card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b | .state="running" | .attempts+=1
+            | .assignments = ((.assignments // []) + [{"attempt":(.attempts),"agent":.agent,"by":"michael","at":$t}]))' \
+          --arg p "$path" --arg b "$branch" --arg t "$(now)"
       fi
       reset_stop_guard
-      log_event "wt-add" "$card attempt=$(card_get "$card" .attempts)${flag:+ $flag}"
+      log_event "assign" "$card → $(card_get "$card" .agent) attempt=$(card_get "$card" .attempts)${flag:+ $flag}"
       echo "$path"
       ;;
     rm)
@@ -418,9 +456,28 @@ cmd_gate() {
     log_event gate "$card PASS"; echo "GATE PASSED: $card  (log: $log)"
   else
     log_event gate "$card FAIL"
-    echo "GATE FAILED: $card  (log: $log)"; grep '^FAIL' "$log"; echo "--- tail of gate log:"; tail -n 30 "$log"
+    echo "GATE FAILED: $card  (log: $log)"; grep '^FAIL' "$log"
+    grep -q '^FAIL  verify' "$log" && { echo "--- tail of the verify output:"; grep -v '^\(ok\|FAIL\)  ' "$log" | tail -n 30; }
     exit 1
   fi
+}
+
+cmd_qa() {
+  load_job
+  local card=${1:-} verdict=${2:-} summary=${3:-}
+  [[ -n $card && ( $verdict == pass || $verdict == fail ) && -n $summary ]] || die 'usage: dl qa <card> pass|fail "<summary: AC-n results>"'
+  card_exists "$card"
+  local br head wt; br="$(card_get "$card" .branch)"; head="$(branch_head "$br")"; wt="$(card_get "$card" .worktree)"
+  [[ "$(card_get "$card" .state)" == review ]] || refuse 1 "$card is $(card_get "$card" .state); QA runs on cards in review"
+  [[ "$(card_get "$card" .gate.result)" == PASS && "$(card_get "$card" .gate.head)" == "$head" ]] \
+    || refuse 1 "$card has no passed gate on its current commit — run: dl gate $card"
+  if [[ -d $wt && -n "$(git -C "$wt" status --porcelain)" ]]; then
+    refuse 1 "QA left changes in the worktree ($wt). QA must not modify the card — clean it (git -C $wt stash -u) and re-run QA"
+  fi
+  card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"summary":$s,"at":$t}
+      | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"summary":$s,"at":$t}]))' \
+    --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)"
+  reset_stop_guard; log_event qa "$card $verdict — $summary"; echo "qa: $card $verdict"
 }
 
 cmd_review() {
@@ -431,6 +488,8 @@ cmd_review() {
   local head; head="$(branch_head "$(card_get "$card" .branch)")"
   [[ "$(card_get "$card" .gate.result)" == PASS && "$(card_get "$card" .gate.head)" == "$head" ]] \
     || refuse 1 "$card has no passed gate on its current commit — run: dl gate $card"
+  [[ "$(card_get "$card" .qa.verdict)" == pass && "$(card_get "$card" .qa.head)" == "$head" ]] \
+    || refuse 1 "$card has no QA pass on its current commit — the QA/Test role checks the acceptance criteria first (dl qa $card pass|fail)"
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.review = {"verdict":$v,"head":$h,"summary":$s,"at":$t}
       | .reviews = ((.reviews // []) + [{"verdict":$v,"head":$h,"summary":$s,"at":$t}]))' \
     --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)"
@@ -448,6 +507,8 @@ cmd_integrate() {
   [[ "$(card_get "$card" .state)" == review ]] || refuse 1 "$card is $(card_get "$card" .state), not review"
   [[ "$(card_get "$card" .gate.result)" == PASS && "$(card_get "$card" .gate.head)" == "$head" ]] \
     || refuse 1 "$card: the gate has not passed on commit ${head:0:9} — run: dl gate $card"
+  [[ "$(card_get "$card" .qa.verdict)" == pass && "$(card_get "$card" .qa.head)" == "$head" ]] \
+    || refuse 1 "$card: no QA pass on commit ${head:0:9} — dl qa $card pass|fail"
   [[ "$(card_get "$card" .review.verdict)" == approve && "$(card_get "$card" .review.head)" == "$head" ]] \
     || refuse 1 "$card: no Lead review approval on commit ${head:0:9} — review, then: dl review $card approve"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
@@ -479,38 +540,113 @@ cmd_verify_all() {
 }
 
 cmd_approve() { _gate_record "${1:-}" approved "${2:-}"; }
-cmd_reject()  { [[ -n ${2:-} ]] || die 'usage: dl reject <plan|merge> "<what to change>"'; _gate_record "${1:-}" rejected "$2"; }
+cmd_reject()  { [[ -n ${2:-} ]] || die 'usage: dl reject plan "<what to change>"'; _gate_record "${1:-}" rejected "$2"; }
 _gate_record() {
   load_job
   local gate=$1 status=$2 note=$3
-  [[ $gate == plan || $gate == merge ]] || die "gate must be: plan | merge"
+  [[ $gate == plan ]] || die "the only human gate before the PR is: plan (merges are decided at the PR — see merge_mode)"
+  [[ "$(jq -r .settings.gates.plan "$JOBJ")" == true ]] || refuse 1 "the plan gate is off for this job (settings.gates.plan=false)"
   [[ "$(phase_now)" == "awaiting_${gate}_approval" ]] || refuse 1 "the $gate gate is only answered in phase awaiting_${gate}_approval (now: $(phase_now))"
   jq_inplace "$JOBJ" --arg g "$gate" --arg s "$status" --arg n "$note" --arg by "${DELIVER_APPROVER:-${USER:-human}}" --arg t "$(now)" \
     '.gates[$g] = {"status":$s, "by":$by, "at":$t, "note":$n}'
   reset_stop_guard; log_event "gate-$gate" "$status $note"; echo "$gate: $status"
 }
 
-# Munder Difflin: start the card's agent as an ephemeral worker on the office floor (spawn-request).
+cmd_ship() {
+  load_job
+  local mode head base; mode="$(setting merge_mode)"; base="$(jq -r .base_branch "$JOBJ")"; head="$(branch_head "$JOB_BRANCH")"
+  [[ " $MERGE_MODES " == *" $mode "* ]] || die "merge_mode must be one of: $MERGE_MODES (now: '$mode')"
+  local cur; cur="$(phase_now)"
+  [[ $cur == closing || $cur == awaiting_pr_merge ]] || refuse 1 "ship from phase closing (now: $cur)"
+  [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS && "$(jq -r '.verify_all.head // ""' "$JOBJ")" == "$head" ]] \
+    || refuse 1 "verify-all has not passed on the current job branch — dl verify-all"
+  ! cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md" || refuse 1 "report.md is still the template — the PM closing check writes it first (it is also the PR body)"
+  if [[ $mode == local ]]; then
+    local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
+    [[ $on == "$base" ]] || refuse 1 "merge_mode=local merges into '$base' in the main checkout, which is on '${on:-detached}'. Switch it to $base (or merge yourself: git merge --no-ff $JOB_BRANCH)"
+    [[ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ]] || refuse 1 "the main checkout has uncommitted changes — commit or stash them first"
+    git -C "$ROOT" merge --no-ff -q -m "Merge $JOB_BRANCH: $(jq -r .title "$JOBJ")" "$JOB_BRANCH" || { git -C "$ROOT" merge --abort 2>/dev/null; refuse 3 "merge into $base conflicted (base moved on) — merged nothing"; }
+    jq_inplace "$JOBJ" --arg t "$(now)" --arg c "$(git -C "$ROOT" rev-parse HEAD)" '.shipped=true | .delivery={"mode":"local","commit":$c,"at":$t} | .phase="done"'
+    reset_stop_guard; log_event ship "local merge into $base"; echo "SHIPPED: $JOB_BRANCH merged into $base (local). Phase: done — dl cleanup"
+    return 0
+  fi
+  git -C "$ROOT" remote get-url origin >/dev/null 2>&1 || refuse 1 "merge_mode=$mode needs a remote 'origin' (or use merge_mode=local)"
+  command -v "$GH" >/dev/null || refuse 1 "merge_mode=$mode needs the GitHub CLI (gh auth login)"
+  git -C "$IWT" push -q -u origin "$JOB_BRANCH" || die "push of $JOB_BRANCH failed"
+  local url; url="$(jq -r '.pr.url // empty' "$JOBJ")"
+  if [[ -z $url ]]; then
+    url="$("$GH" pr create --base "$base" --head "$JOB_BRANCH" --title "$(jq -r .title "$JOBJ")" --body-file "$JOB_DIR/report.md" | tail -1)" || die "gh pr create failed"
+    log_event pr "opened $url"
+  else log_event pr "updated $url"; fi
+  jq_inplace "$JOBJ" --arg u "$url" --arg t "$(now)" '.pr = ((.pr // {}) + {"url":$u,"state":"OPEN","at":$t}) | .phase="awaiting_pr_merge"'
+  case $mode in
+    human) echo "PR: $url — waiting for the human to review and merge (merge_mode=human)." ;;
+    semi)
+      "$GH" pr merge "$url" --auto --merge >/dev/null 2>&1 && log_event pr "auto-merge armed" \
+        || echo "dl: warning — could not arm auto-merge (repo setting 'Allow auto-merge' off?); the human merges after approving" >&2
+      echo "PR: $url — auto-merge armed: GitHub merges once a human approves and required checks pass (merge_mode=semi)." ;;
+    auto)
+      local checks rc=0; checks="$("$GH" pr checks "$url" --watch 2>&1)" || rc=$?
+      if [[ $rc -ne 0 && $checks != *"no checks"* ]]; then
+        log_event pr "checks failed"; echo "PR: $url — CI FAILED, not merged. Add a fix card (dl phase executing), then dl ship again."; echo "$checks" | tail -15; exit 1
+      fi
+      "$GH" pr merge "$url" --merge >/dev/null || die "gh pr merge failed — see the PR"
+      jq_inplace "$JOBJ" '.pr.state="MERGED" | .shipped=true | .phase="done"'
+      log_event pr "merged (auto)"; echo "SHIPPED: $url merged automatically after green checks (merge_mode=auto). Phase: done — dl cleanup" ;;
+  esac
+  reset_stop_guard
+}
+
+cmd_pr() {
+  load_job
+  local url; url="$(jq -r '.pr.url // empty' "$JOBJ")"; [[ -n $url ]] || die "no PR yet — dl ship"
+  local st; st="$("$GH" pr view "$url" --json state,reviewDecision,mergeStateStatus -q '"\(.state) \(.reviewDecision) \(.mergeStateStatus)"')" || die "gh pr view failed"
+  read -r state review mstate <<<"$st"
+  jq_inplace "$JOBJ" --arg s "$state" '.pr.state=$s'
+  case $state in
+    MERGED) jq_inplace "$JOBJ" '.shipped=true | .phase="done"'; log_event pr "merged"; echo "MERGED: $url — phase done (dl cleanup)" ;;
+    CLOSED) jq_inplace "$JOBJ" '.phase="aborted"'; log_event pr "closed without merge"; echo "CLOSED: $url was closed without merging — job aborted" ;;
+    *) echo "OPEN: $url  review=${review:-none}  merge-state=${mstate:-?}" ;;
+  esac
+}
+
+# Munder Difflin: start a role for a card as an ephemeral worker on the office floor (spawn-request).
+# The objective = the role card generated by dl roles (rules + project facts) + the prompt file.
 cmd_md_dispatch() {
   load_job
-  local card=${1:-} pfile=${2:-}
-  [[ -n $card && -f $pfile ]] || die "usage: dl md-dispatch <card> <prompt-file>"
+  local card=${1:-} pfile=${2:-} role=${3:-}
+  [[ -n $card && -f $pfile ]] || die "usage: dl md-dispatch <card> <prompt-file> [role]   (role default: the card's role)"
   card_exists "$card"
   local hive="${HIVE_ROOT:-$(setting munder.hive_root)}"
   [[ -n $hive && -d $hive ]] || die "HIVE_ROOT is not set — md-dispatch only works inside Munder Difflin (or set settings.munder.hive_root)"
-  [[ "$(card_get "$card" .state)" == running ]] || refuse 1 "dispatch with dl wt add $card first"
-  local wt agent attempt req model cmd cap
-  wt="$(card_get "$card" .worktree)"; agent="$(card_get "$card" .agent)"; attempt="$(card_get "$card" .attempts)"
-  req="$(printf 'dl-%s-%s-a%s' "${JOB:4:13}" "$card" "$attempt" | tr -c 'A-Za-z0-9._-' '-')"
+  role=${role:-$(card_get "$card" .role)}
+  local state agent; state="$(card_get "$card" .state)"
+  agent="$(jq -r --arg r "$role" '.roles[] | select(.role==$r) | .agent' "$JOBJ" | head -1)"
+  [[ -n $agent ]] || refuse 1 "role '$role' is not selected for this job"
+  if [[ $role == "$(card_get "$card" .role)" ]]; then
+    [[ $state == running ]] || refuse 1 "dispatch the dev with dl wt add $card first (state now: $state)"
+  else
+    [[ $state == review ]] || refuse 1 "$role works on cards in review (state now: $state)"
+  fi
+  local rolecard="$JOB_DIR/roles/$role.md"
+  [[ -f $rolecard ]] || cmd_roles >/dev/null
+  local wt attempt req model cmd cap
+  wt="$(card_get "$card" .worktree)"; attempt="$(card_get "$card" .attempts)"
+  req="$(printf 'dl-%s-%s-%s-a%s' "${JOB:4:13}" "$card" "$role" "$attempt" | tr -c 'A-Za-z0-9._-' '-')"
   model="$(setting munder.model)"; cap="$(setting munder.token_cap)"; cmd="claude --agent $agent"
   mkdir -p "$hive/spawn-requests"
-  jq -n --arg id "$req" --arg obj "$(cat "$pfile")" --arg cwd "$wt" --arg name "$card $(card_get "$card" .role)" \
-        --arg cmd "$cmd" --arg model "$model" --argjson cap "${cap:-0}" \
+  local objective; objective="$(cat "$rolecard"; printf '\n---\n\n'; cat "$pfile")"
+  local character accent
+  character="$(node "$BIN_DIR/roles.mjs" catalog | jq -r --arg r "$role" '.roles[$r].floor.character // empty')"
+  accent="$(node "$BIN_DIR/roles.mjs" catalog | jq -r --arg r "$role" '.roles[$r].floor.accent // empty')"
+  jq -n --arg id "$req" --arg obj "$objective" --arg cwd "$wt" --arg name "$card $role" \
+        --arg cmd "$cmd" --arg model "$model" --argjson cap "${cap:-0}" --arg ch "$character" --arg ac "$accent" \
     '{id:$id, objective:$obj, cwd:$cwd, name:$name, command:$cmd, isolate:false}
-     + (if $model != "" then {model:$model} else {} end) + (if ($cap|type)=="number" and $cap>0 then {tokenCap:$cap} else {} end)' \
+     + (if $model != "" then {model:$model} else {} end) + (if $cap > 0 then {tokenCap:$cap} else {} end)
+     + (if $ch != "" then {character:$ch} else {} end) + (if $ac != "" then {accent:$ac} else {} end)' \
     > "$hive/spawn-requests/.$req.tmp" && mv "$hive/spawn-requests/.$req.tmp" "$hive/spawn-requests/$req.json"
-  card_set "$card" '(.cards[] | select(.id==$id)).md_worker = $w' --arg w "worker-$req"
-  log_event md-dispatch "$card → worker-$req"
+  card_set "$card" '(.cards[] | select(.id==$id)).md_workers += [{"role":$r,"worker":$w,"at":$t}]' --arg r "$role" --arg w "worker-$req" --arg t "$(now)"
+  log_event md-dispatch "$card $role → worker-$req"
   echo "worker-$req  (request: $hive/spawn-requests/$req.json)"
 }
 
@@ -547,19 +683,25 @@ main() {
     phase) cmd_phase "$@" ;;
     jobset) cmd_jobset "$@" ;;
     validate) cmd_validate ;;
+    roles) cmd_roles ;;
+    learn) cmd_learn "$@" ;;
+    knowledge) cmd_knowledge "$@" ;;
     ready) cmd_ready ;;
     wt) cmd_wt "$@" ;;
     card) cmd_card "$@" ;;
     gate) cmd_gate "$@" ;;
+    qa) cmd_qa "$@" ;;
     review) cmd_review "$@" ;;
     integrate) cmd_integrate "$@" ;;
     verify-all) cmd_verify_all ;;
+    ship) cmd_ship ;;
+    pr) cmd_pr ;;
     approve) cmd_approve "$@" ;;
     reject) cmd_reject "$@" ;;
     md-dispatch) cmd_md_dispatch "$@" ;;
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
-    help|-h|--help) sed -n '2,33p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,44p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

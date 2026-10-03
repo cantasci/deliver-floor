@@ -1,11 +1,54 @@
-# Role catalog — Michael selects roles ONLY from this list (not from all 68 ECC agents).
-# Adding a role = one entry here (+ a file under agents/ if it needs a new agent).
+# Role catalog — Michael selects roles ONLY from this list (not from all of ECC's agents).
+# `dl roles` turns the selected roles into project-specific role cards (.work/<job>/roles/<role>.md) and,
+# for Munder Difflin, hire manifests. A role card = rules.all + rules.<kind> + the role's own rules + project facts.
+#
+# Format (kept to a small YAML subset so bin/roles.mjs can read it without dependencies):
+#   2-space indentation · `key: value` · `- item` lists · "double-quoted" or bare scalars · `#` comments
 #
 # kind:     pm | lead | dev | review | qa
 # agent:    subagent type to call. "ecc:"-prefixed ones come from the ECC plugin.
 # writes:   can it write files? (ECC planner/architect/reviewers are read-only — on purpose)
 # when:     selection rule (Michael decides at intake from the request + the repo)
 # always:   selected for every job
+# floor:    Munder Difflin look (character + accent) when the role runs on the office floor
+
+rules:
+  all:
+    - "You work on exactly one job. Your input is the prompt you were given plus the files it names; nothing else is assumed."
+    - "Never run state-changing dl commands (new, phase, roles, wt, card, gate, qa, review, integrate, ship, learn, cleanup). Michael owns the flow."
+    - "Never push, never merge into main/master, never delete .work/ or job/* branches, never write in the main checkout."
+    - "Answer in exactly the output format the prompt asks for. Put details in files (handoff, plan), not in your reply."
+    - "If something is unclear and it changes scope, say so under open questions / open issues. Do not guess scope."
+  pm:
+    - "Do not write code or modify files. Produce the plan text only."
+    - "Every acceptance criterion is numbered AC-1, AC-2, … and testable by a command or an observable check."
+    - "Write Out of scope explicitly. Ask only open questions whose answer changes the scope."
+    - "When the request contradicts itself, name the contradiction and the resolution you assume."
+  lead:
+    - "Do not write code or modify files. Produce cards only."
+    - "One card = one agent can finish it in one session. Split anything bigger."
+    - "scope = narrow repo-relative globs that include the card's tests. Never '**', never paths outside the repo."
+    - "verify = a command, run from the worktree root, that proves THIS card (its tests), not the whole suite."
+    - "context must let a developer who never saw the plan do the card: why, files, decisions, contracts."
+    - "Cards that touch the same files must be ordered with depends_on; parallel cards never share scope."
+  dev:
+    - "Work only inside the card worktree you were given. Every path is relative to it."
+    - "Change only files matching the card's scope. Out-of-scope needs go under 'Open issues' in the handoff."
+    - "Test first: write the test that proves the acceptance criterion, see it fail, then implement."
+    - "Done means: the card's verify command passes in the worktree, everything is committed ('<CARD-ID>: <title>'), the handoff is filled."
+    - "No push, no merge (except 'git merge <job branch>' when told to resolve a conflict), no branch switching, no amending others' commits."
+    - "On a retry, resolve every feedback item first and mention each one in the handoff."
+  review:
+    - "Review only; do not modify files."
+    - "Judge the change against the card: acceptance criteria met, correctness, security, test quality, scope."
+    - "'changes' only for blocking defects (an AC not met, a bug, a security hole, missing tests, out-of-scope edits). Style goes to nits."
+    - "Every blocking item names file, line, issue and the fix."
+  qa:
+    - "Test against the acceptance criteria of the card (or job) you were given — every AC gets a verdict: pass or fail, with evidence."
+    - "Evidence is something you ran and saw: a command and its relevant output, a test name, a screenshot. Reading the code is not evidence."
+    - "Do not modify the card's worktree or commit. Throw-away checks go in a temp dir outside the repo."
+    - "Also try what the AC implies but the dev's tests may skip: boundaries, invalid input, the error path."
+    - "'fail' if any AC fails or cannot be shown; each failure is reproducible steps + expected vs actual."
 
 roles:
   pm:
@@ -14,6 +57,9 @@ roles:
     writes: false
     always: true
     does: "Goal, scope, out of scope, testable acceptance criteria (AC-n). Checks the ACs at closing."
+    floor:
+      character: pam
+      accent: mint
 
   tech-lead:
     kind: lead
@@ -21,13 +67,23 @@ roles:
     writes: false
     when: "New module, API/schema/data-model change, work touching 2+ areas, or 4+ cards expected"
     does: "Technical approach + cross-area contracts (API schema, types). Produces cards."
+    rules:
+      - "Write cross-area contracts (API shapes, shared types) into the context of every card that uses them."
+    floor:
+      character: jim
+      accent: sky
 
   backend-lead:
     kind: lead
     agent: ecc:architect
     focus: backend
-    when: "Any API, service, DB, queue or integration work"
+    when: "Any API, service, DB, queue, domain logic or integration work"
     does: "Produces backend cards; later reviews backend cards (together with the stack reviewer)."
+    rules:
+      - "Put schema changes and their migrations in the same card; data-changing migrations must be reversible."
+    floor:
+      character: oscar
+      accent: amber
 
   frontend-lead:
     kind: lead
@@ -35,6 +91,11 @@ roles:
     focus: frontend
     when: "Any web UI, component, state or routing work"
     does: "Produces frontend cards; later reviews them."
+    rules:
+      - "Reuse existing components and design tokens; name them in the card context."
+    floor:
+      character: kelly
+      accent: rose
 
   mobile-lead:
     kind: lead
@@ -42,24 +103,46 @@ roles:
     focus: mobile
     when: "Any Android/iOS app work"
     does: "Produces mobile cards; later reviews them."
+    rules:
+      - "Cards that need a device say so in their context; they run one at a time per device."
+    floor:
+      character: ryan
+      accent: violet
 
   backend:
     kind: dev
     agent: backend-dev
     writes: true
     when: "backend-lead was selected"
+    rules:
+      - "Keep public contracts (exports, endpoints, response shapes) exactly as the card states them."
+      - "Validate external input at the boundary; no secrets in code or tests."
+    floor:
+      character: dwight
+      accent: amber
 
   frontend:
     kind: dev
     agent: frontend-dev
     writes: true
     when: "frontend-lead was selected"
+    rules:
+      - "Use the existing components, tokens and data-fetching pattern; no new UI library."
+      - "Interactive elements are keyboard reachable and labelled."
+    floor:
+      character: erin
+      accent: rose
 
   mobile:
     kind: dev
     agent: mobile-dev
     writes: true
     when: "mobile-lead was selected"
+    rules:
+      - "Verify UI flows on a device (ARTEMIS) before writing the UI test; record the device serial in the handoff."
+    floor:
+      character: kevin
+      accent: violet
 
   security:
     kind: review
@@ -67,19 +150,37 @@ roles:
     writes: false
     when: "auth, permissions, payments, personal data, secrets, file upload, handling external input"
     does: "Reviews the relevant cards IN ADDITION to the stack reviewer."
+    rules:
+      - "Check OWASP Top 10 classes relevant to the change, secrets, authz on every new entry point."
+    floor:
+      character: creed
+      accent: slate
+
+  qa:
+    kind: qa
+    agent: qa-tester
+    writes: false
+    always: true
+    does: "Tests every card against its acceptance criteria after the gate passes and before the Lead review."
+    floor:
+      character: angela
+      accent: mint
 
   qa-web:
     kind: qa
     agent: ecc:e2e-runner
     writes: true
     when: "A web user flow changes"
-    does: "Writes/runs end-to-end tests in the integration worktree."
+    does: "Runs end-to-end checks on the integrated job branch; durable e2e tests go through a card."
+    floor:
+      character: holly
+      accent: sky
 
   qa-mobile:
     kind: qa
-    agent: artemis          # not a subagent: Michael drives it himself via the ARTEMIS MCP (mobile_run_task)
+    agent: artemis
     when: "A mobile user flow changes and a device/emulator is connected"
-    does: "Verifies the flow on a device; a separate mobile-dev card is opened for durable test code."
+    does: "Michael drives ARTEMIS himself (mobile_run_task); a separate mobile-dev card is opened for durable test code."
 
 # Stack reviewer used in the Lead review — picked from job.stack.
 # If several match, use the most specific one (e.g. react over typescript).
