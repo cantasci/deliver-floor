@@ -14,7 +14,8 @@
 #                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
-#   dl clarify <id> "<answer>"     record the human's answer to an open readiness question
+#   dl clarify <id> "<answer>"     record the human's answer to an open business question (human only)
+#   dl decide <id> "<decision>" "<rationale>"   the PM closes an open implementation-detail item (owner pm)
 #   dl unfreeze "<reason>"         (human, terminal only) reopen the decisions frozen at planning
 #   dl reseal "<reason>"           (human, terminal only) accept an edit made to job.json/board.json outside dl
 #   dl roles                       check job.roles against roles.yaml and generate the project's role cards
@@ -293,11 +294,13 @@ cmd_next() {
     intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)" ;;
     readiness|awaiting_clarification)
       local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
+      jq -r '(.items // .)[] | select(.status=="open" and .owner=="pm") | "DECIDE  (PM) \(.id) — \(.question)  (record: dl decide \(.id) \"<decision>\" \"<rationale>\")"' "$JOB_DIR/readiness.json" 2>/dev/null
       if [[ ! -f $JOB_DIR/readiness.json ]]; then echo "READINESS BA reviews every requirement against readiness.yaml → .work/$JOB/readiness.json, then: dl readiness"
       elif [[ $rc -eq 1 ]]; then echo "FIX     readiness.json is incomplete — dl readiness lists what is missing"
       elif [[ $rc -eq 3 ]]; then
         [[ $phase == readiness ]] && echo "PHASE   dl phase awaiting_clarification"
-        jq -r '(.items // .)[] | select(.status=="open") | "ASK     human: \(.id) — \(.question)  (record: dl clarify \(.id) \"<answer>\")"' "$JOB_DIR/readiness.json"
+        jq -r '(.items // .)[] | select(.status=="open" and .owner!="pm") | "ASK     human: \(.id) — \(.question)  (record: dl clarify \(.id) \"<answer>\")"' "$JOB_DIR/readiness.json"
+      elif [[ $rc -eq 4 ]]; then :   # only PM decisions left (listed above)
       else echo "PHASE   dl phase planning  (readiness complete: $(jq '(.items // .) | length' "$JOB_DIR/readiness.json") items decided or n/a; planning freezes them)"; fi ;;
     planning)
       local nxt="dl phase executing  (no plan gate: the human is next at the PR)"; [[ $gates_plan == true ]] && nxt="dl phase awaiting_plan_approval"
@@ -376,11 +379,11 @@ cmd_phase() {
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml" ;;
       awaiting_clarification)
         local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
-        [[ $rc -eq 3 ]] || refuse 1 "there are no open readiness questions (dl readiness)" ;;
+        [[ $rc -eq 3 ]] || refuse 1 "there are no open questions for the human (dl readiness)" ;;
       planning)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml"
         local rr=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >&2 || rr=$?
-        [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $([[ $rr -eq 3 ]] && echo "open questions remain (QUESTIONS.md) — ask the human, record with dl clarify" || echo "readiness.json is incomplete (dl readiness)")" ;;
+        [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $(case $rr in 3) echo "open questions for the human remain (QUESTIONS.md) — ask, record with dl clarify" ;; 4) echo "implementation details are open — decide them as PM: dl decide <id> \"<decision>\" \"<rationale>\"" ;; *) echo "readiness.json is incomplete (dl readiness)" ;; esac)" ;;
       awaiting_plan_approval)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
@@ -457,6 +460,14 @@ cmd_readiness() {
   [[ $rc -eq 1 ]] && exit 1
   log_event readiness "$(jq -r '(.items // .) | "\(length) items: \(map(select(.status=="decided"))|length) decided, \(map(select(.status=="n_a"))|length) n/a, \(map(select(.status=="open"))|length) open"' "$JOB_DIR/readiness.json")"
   return 0
+}
+cmd_decide() {
+  load_job
+  local id=${1:-} decision=${2:-} why=${3:-}; [[ -n $id && -n $decision && -n $why ]] || die 'usage: dl decide <id> "<decision>" "<rationale>"'
+  [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "decisions are recorded in readiness / awaiting_clarification (now: $(phase_now))"
+  node "$BIN_DIR/readiness.mjs" decide "$JOB_DIR" "$id" "$decision" "$why" || exit 1
+  node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || true
+  reset_stop_guard; log_event decide "$id: $decision — $why"
 }
 cmd_clarify() {
   load_job
@@ -961,6 +972,7 @@ main() {
     roles) cmd_roles ;;
     readiness) cmd_readiness ;;
     clarify) cmd_clarify "$@" ;;
+    decide) cmd_decide "$@" ;;
     unfreeze) cmd_unfreeze "$@" ;;
     reseal) cmd_reseal "$@" ;;
     learn) cmd_learn "$@" ;;
@@ -982,7 +994,7 @@ main() {
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,52p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,53p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

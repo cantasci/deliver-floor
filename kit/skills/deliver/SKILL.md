@@ -68,7 +68,7 @@ Before anything is planned, every requirement and every decision a delivery need
 (monolith/microservice, BFF/core), stacks, contracts, errors, accessibility, i18n, security, privacy, performance,
 observability, tests, delivery… (`readiness.yaml`, plus whatever the request needs beyond it).
 
-1. Call **Agent(subagent_type: "business-analyst")**:
+1. Call **Agent(subagent_type: "business-analyst")** (every Agent call in a headless run passes `run_in_background: false`):
 
 ```text
 MODE: READINESS
@@ -86,9 +86,14 @@ READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.m
    The architecture decides the roles: every component's owner (`backend`, `frontend`, `mobile`, `database`) and reviewer
    (`reviewer-java`, `reviewer-go`, …) must be on the job — add them with `dl jobset`, then `"$DL" phase readiness` again to
    regenerate the role cards. Several devs of one role in parallel: `"count": N` on the role (seats role#1…#N).
-3. Open questions → `"$DL" phase awaiting_clarification` and ask the human — all open items in one go (AskUserQuestion, one
+3. Open items owned by **pm** (implementation details) are yours: decide each with a rationale —
+   `"$DL" decide <id> "<decision>" "<rationale>"`. `dl` refuses this for business-owned items.
+   Open items owned by **business** → `"$DL" phase awaiting_clarification` and ask the human — all in one go (AskUserQuestion, one
    question per item, the BA's options as choices). Record each answer **in their words**: `"$DL" clarify <id> "<answer>"`.
-   Never answer an open item yourself, never pick a default. Headless: `QUESTIONS.md` is the question; stop.
+   Never answer a business item yourself, never pick a default. Headless: `QUESTIONS.md` is the question; stop.
+   On resume, answers already recorded with `dl clarify` (source `human: …`) **are the human's**: hooks stop every agent and every
+   headless session from running `dl clarify`, so only a person at a terminal can have recorded them. Read each answer; if one
+   does not actually answer its question, ask again (re-open is `dl unfreeze` only after planning) — otherwise continue.
 4. `"$DL" phase planning` — refused until nothing is open. It **freezes** `readiness.json` (decisions + architecture): from now
    on they do not change, and `dl` refuses every step if the file is edited. Only the human can reopen them (`dl unfreeze`).
    `readiness.md` goes to every later BA, Lead and dev prompt as binding context.
@@ -173,7 +178,9 @@ With the gate off (default): go straight on. The user sees the plan and the boar
 
 1. **DISPATCH T-a T-b** → for each card: `WT=$("$DL" wt add T-xx)` (this is the assignment: it records you as assigner and the
    card's agent as assignee, enforces deps/max_parallel/max_attempts). Copy `templates/handoff.md` to
-   `.work/<job>/handoffs/T-xx.md` if it does not exist. Dispatch them all **in one message** (foreground), `subagent_type` = the card's `agent`:
+   `.work/<job>/handoffs/T-xx.md` if it does not exist. Dispatch them all **in one message**, `subagent_type` = the card's `agent`
+   (interactive: `run_in_background: true`; headless: `run_in_background: false` — subagents default to the background and
+   would die with the `-p` process; the agent-guard hook enforces it):
 
 ```text
 CARD:

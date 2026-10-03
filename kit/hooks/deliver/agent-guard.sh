@@ -7,6 +7,7 @@ set -uo pipefail
 input="$(cat)"
 command -v jq >/dev/null || exit 0
 [[ ${DELIVER_HEADLESS:-} == 1 ]] || exit 0
-[[ "$(jq -r '.tool_input.run_in_background // false' <<<"$input")" == true ]] || exit 0
-echo "deliver agent-guard: headless run — background agents die when this process exits. Dispatch with run_in_background: false (several Agent calls in one message run in parallel)." >&2
+# Current Claude Code runs subagents in the background BY DEFAULT, so headless dispatch must say false explicitly.
+[[ "$(jq -r 'if .tool_input.run_in_background == false then "fg" else "bg" end' <<<"$input")" == fg ]] && exit 0
+echo "deliver agent-guard: headless run — background agents die when this process exits, and subagents default to the background. Dispatch with run_in_background: false explicitly (several Agent calls in one message still run in parallel)." >&2
 exit 2

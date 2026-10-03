@@ -26,7 +26,7 @@ ready_all() { # ready_all [<id> open] — the BA's readiness review: every appli
   local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"
   [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
   node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$jd" | jq --arg o "${1:-}" --argjson arch "${ARCH:-null}" '{items: [.[] | if .id == $o
-     then {id, status:"open", question:("Which option for " + .id + "?"), options:["a","b"]}
+     then {id, status:"open", owner:"business", question:("Which option for " + .id + "?"), options:["a","b"]}
      else {id, status:"decided", answer:"test decision", source:"test fixture"} end],
      architecture: ($arch // {style:"library", components:[{id:"app", kind:"library", stack:["generic"], path:".", owner:"backend", reviewer:"reviewer"}]})}' > "$jd/readiness.json"
 }
@@ -89,10 +89,18 @@ contains "next asks the human the open question" "$("$DL" next)" "ASK     human:
 expect_ok "awaiting_clarification" "$DL" phase awaiting_clarification
 contains "agents cannot answer readiness questions" "$(printf '%s' '{"tool_input":{"command":"dl clarify CON-interface x"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 contains "headless sessions cannot answer them either" "$(printf '%s' '{"tool_input":{"command":"dl clarify CON-interface x"},"cwd":"/"}' | DELIVER_HEADLESS=1 "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+expect_fail 1 "the PM cannot decide a business question" "$DL" decide CON-interface "signed" "seems natural"
 expect_ok "the human's answer is recorded" "$DL" clarify CON-interface "signed integers; negative = upgrade"
 jq -e '.items[] | select(.id=="CON-interface") | .status=="decided" and (.source|startswith("human:")) and (.history|length==1)' "$RJ/readiness.json" >/dev/null \
   && ok "answer stored with source human + history of the question" || bad "clarify record"
 grep -q "signed integers" "$RJ/readiness.md" && ok "readiness.md carries the decision" || bad "readiness.md"
+jq '.items += [{id:"X-immutable",status:"open",owner:"pm",question:"Freeze the options array?",options:["freeze","plain"]}]' "$RJ/readiness.json" > "$RJ/r.t" && mv "$RJ/r.t" "$RJ/readiness.json"
+contains "next asks the PM to decide an implementation detail" "$("$DL" next)" "DECIDE  (PM) X-immutable"
+expect_fail 1 "planning refused while a PM decision is open" "$DL" phase planning
+! grep -q "X-immutable" "$RJ/QUESTIONS.md" && ok "PM-owned items are not put to the human" || bad "pm item in QUESTIONS.md"
+expect_ok "the PM decides it with a rationale" "$DL" decide X-immutable "freeze with Object.freeze" "no scope or contract impact; protects consumers"
+jq -e '.items[] | select(.id=="X-immutable") | .status=="decided" and (.source|startswith("pm: michael"))' "$RJ/readiness.json" >/dev/null && ok "recorded with source pm: michael + rationale" || bad "pm decision record"
+contains "agents cannot record PM decisions" "$(printf '%s' '{"tool_input":{"command":"dl decide X a b"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 expect_ok "phase planning once nothing is open" "$DL" phase planning
 jq -e '.frozen.readiness_sha256 | length == 64' "$R/.work/$JOB/job.json" >/dev/null && ok "planning froze readiness.json (sha256 in job.json)" || bad "freeze"
 [[ -f $R/.work/$JOB/roles/backend.md && -f $R/.work/$JOB/roles/qa.md && -f $R/.work/$JOB/ROLES.md ]] && ok "role cards generated on planning" || bad "role cards"
@@ -286,6 +294,7 @@ contains "interactive: waiting for background agents is allowed" "$(hook stop-gu
 contains "headless: Michael may not stop while agents run in the foreground flow" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"
 contains "agent-guard: headless background dispatch is denied" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":true,"subagent_type":"backend-dev"}}')" "rc=2"
 contains "agent-guard: headless foreground dispatch is fine" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":false}}')" "rc=0"
+contains "agent-guard: headless dispatch without an explicit false is denied (subagents default to background)" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"subagent_type":"business-analyst"}}')" "rc=2"
 contains "agent-guard: interactive background dispatch is fine" "$(hook agent-guard.sh '{"tool_input":{"run_in_background":true}}')" "rc=0"
 "$DL" jobset '.settings.dispatch="subagent"'
 

@@ -11,7 +11,9 @@
 // skills and the reviewer. Once the job is planned, readiness.json is frozen (dl checks its hash on every step).
 //   decided → answer + source (a quote/section of the request, a repo file, or "human: <name> <date>")
 //   n_a     → answer says why it does not apply + source
-//   open    → question for the human (+ options, impact)
+//   open    → a question (+ options, impact) and its owner:
+//             "business" — the answer changes scope, observable behaviour, a contract or a business rule → the human answers
+//             "pm"       — an implementation detail with none of those effects → Michael (the PM) decides, with a rationale
 // Every catalog item that applies to the job must be present; the BA may add items with ids starting "X-".
 //
 //   node readiness.mjs applicable <job dir>              the catalog items that apply (JSON) — given to the BA
@@ -85,25 +87,42 @@ export function check(jobDir) {
     if (!["decided", "n_a", "open"].includes(i.status)) errors.push(`${i.id}: status must be decided | n_a | open`);
     if (i.status === "decided" && (!i.answer || !i.source)) errors.push(`${i.id}: decided needs an answer and its source`);
     if (i.status === "n_a" && (!i.answer || !i.source)) errors.push(`${i.id}: n_a needs the reason (answer) and its source`);
-    if (i.status === "open" && !i.question) errors.push(`${i.id}: open needs a question for the human`);
+    if (i.status === "open" && !i.question) errors.push(`${i.id}: open needs a question`);
+    if (i.status === "open" && !["business", "pm"].includes(i.owner)) errors.push(`${i.id}: open needs owner "business" (scope/behaviour/contract/business rule) or "pm" (implementation detail)`);
   }
   errors.push(...checkArchitecture(job, architecture).map((e) => `architecture: ${e}`));
   const open = items.filter((i) => i.status === "open");
+  const openBusiness = open.filter((i) => i.owner !== "pm"), openPm = open.filter((i) => i.owner === "pm");
   const q = (c) => catalog().find((x) => x.id === c.id)?.q ?? c.question ?? "";
   const md = [`# Readiness — ${job.id}`, "", `${items.length} item(s): ${items.filter((i) => i.status === "decided").length} decided · ` +
     `${items.filter((i) => i.status === "n_a").length} not applicable · ${open.length} open`, "",
+    "Sources: a requirement / file = from the request or the repo · `human:` = answered by the business · `pm:` = an implementation detail decided by Michael (the PM)", "",
     "| Item | Status | Decision / reason | Source |", "| --- | --- | --- | --- |",
     ...items.map((i) => `| **${i.id}** ${q(i)} | ${i.status} | ${(i.status === "open" ? "❓ " + i.question : i.answer ?? "").replace(/\n/g, " ")} | ${(i.source ?? "").replace(/\n/g, " ")} |`), "",
     "## Architecture (frozen once the job is planned)", "", `Style: ${architecture?.style ?? "—"}`, "",
     "| Component | Kind | Stack | Path | Owner (dev role) | Reviewer |", "| --- | --- | --- | --- | --- | --- |",
     ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | \`${c.path}\` | ${c.owner} | ${c.reviewer} |`), ""].join("\n");
   writeFileSync(join(jobDir, "readiness.md"), md);
-  const qs = open.length ? [`# Questions before the work can start — ${job.id}`, "",
+  const qs = openBusiness.length ? [`# Questions before the work can start — ${job.id}`, "",
     "Answer each one in a terminal (or tell Michael):  dl clarify <id> \"<answer>\"", "",
-    ...open.flatMap((i) => [`## ${i.id}`, "", i.question, ...(i.options?.length ? ["", ...i.options.map((o) => `- ${o}`)] : []),
+    ...openBusiness.flatMap((i) => [`## ${i.id}`, "", i.question, ...(i.options?.length ? ["", ...i.options.map((o) => `- ${o}`)] : []),
       ...(i.impact ? ["", `_Why it matters:_ ${i.impact}`] : []), ""])].join("\n") : "";
   writeFileSync(join(jobDir, "QUESTIONS.md"), qs);
-  return { errors, open, items };
+  return { errors, open, openBusiness, openPm, items };
+}
+
+export function decide(jobDir, id, decision, rationale) { // the PM closes an implementation-detail item
+  const file = join(jobDir, "readiness.json");
+  const raw = JSON.parse(readFileSync(file, "utf8"));
+  const items = Array.isArray(raw) ? raw : raw.items;
+  const i = items.find((x) => x.id === id);
+  if (!i) throw new Error(`no readiness item ${id}`);
+  if (i.status !== "open") throw new Error(`${id} is not open`);
+  if (i.owner !== "pm") throw new Error(`${id} belongs to the business — only the human answers it (dl clarify)`);
+  i.history = [...(i.history ?? []), { status: i.status, question: i.question, at: new Date().toISOString() }];
+  Object.assign(i, { status: "decided", answer: decision, source: `pm: michael ${new Date().toISOString().slice(0, 10)} — ${rationale}` });
+  writeFileSync(file, JSON.stringify(raw, null, 2) + "\n");
+  return i;
 }
 
 export function clarify(jobDir, id, by, answer) {
@@ -127,10 +146,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     } else if (cmd === "check") {
       const r = check(jobDir);
       for (const e of r.errors) console.log(`ERROR ${e}`);
-      for (const o of r.open) console.log(`OPEN  ${o.id}: ${o.question}`);
+      for (const o of r.openPm) console.log(`PM    ${o.id}: ${o.question}`);
+      for (const o of r.openBusiness) console.log(`OPEN  ${o.id}: ${o.question}`);
       if (r.errors.length) process.exit(1);
-      console.log(`readiness: ${r.items.length} item(s), ${r.open.length} open → ${join(jobDir, "readiness.md")}`);
-      process.exit(r.open.length ? 3 : 0);
+      console.log(`readiness: ${r.items.length} item(s), ${r.openBusiness.length} open for the human, ${r.openPm.length} for the PM → ${join(jobDir, "readiness.md")}`);
+      process.exit(r.openBusiness.length ? 3 : r.openPm.length ? 4 : 0);
+    } else if (cmd === "decide") {
+      const [id, decision, ...why] = rest;
+      if (!id || !decision || !why.length) throw new Error('usage: readiness.mjs decide <job dir> <id> "<decision>" "<rationale>"');
+      const i = decide(jobDir, id, decision, why.join(" "));
+      console.log(`${i.id}: decided by the PM — ${i.answer}`);
     } else if (cmd === "clarify") {
       const [id, by, ...answer] = rest;
       if (!id || !by || !answer.length) throw new Error('usage: readiness.mjs clarify <job dir> <id> <by> "<answer>"');

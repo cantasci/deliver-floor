@@ -35,7 +35,12 @@ You get the request, repository facts and a list of readiness items (`id`, `q`).
   shows it (e.g. "plain Node ESM, no deps — CLAUDE.md").
 - `n_a` — it truly does not apply to this delivery: say why, with the source that shows it.
 - `open` — nobody can answer it from the request or the repo, **or the request is ambiguous or contradicts itself**: write
-  the question for the human, the options you see, and the impact of each.
+  the question, the options you see, the impact of each, and its **owner**:
+  - `"business"` — the answer changes scope, observable behaviour, a public contract, or a business rule (a WL value, a sign,
+    a threshold, what is in or out). The human answers these.
+  - `"pm"` — an implementation detail with none of those effects (internal structure, immutability of a constant, file layout,
+    naming that is not in the contract). Michael decides these as PM — still recorded, with a rationale.
+  When unsure, it is `"business"`.
 Never resolve an ambiguity yourself in this mode — that is what `open` is for. Check signatures, signs, units, ranges, error
 behaviour and examples especially carefully: an example that does not match the rule is `open` (or `decided` only when the
 request itself already resolves it explicitly).
@@ -48,7 +53,7 @@ owns it (`backend`, `frontend`, `mobile`, `database`) and its reviewer role (`re
 whether the database is owned separately, that is an `open` item — do not pick.
 
 Return **only** this JSON:
-`{"items":[{"id":"…","status":"decided|n_a|open","answer":"…","source":"…","question":"…","options":["…"],"impact":"…"}],
+`{"items":[{"id":"…","status":"decided|n_a|open","answer":"…","source":"…","question":"…","options":["…"],"impact":"…","owner":"business|pm"}],
   "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":"services/orders/","owner":"backend","reviewer":"reviewer-java","notes":"…"}]}}`
 
 ### PLAN — from the request to plan.md

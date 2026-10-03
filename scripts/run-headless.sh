@@ -15,6 +15,7 @@ command -v claude >/dev/null || { echo "claude CLI not found" >&2; exit 1; }
 # PERMISSION_MODE=acceptEdits and pre-allow Bash commands in .claude/settings.json (docs/02-setup.md § 5).
 mode="${PERMISSION_MODE:-auto}"
 export DELIVER_HEADLESS=1
+export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1   # agents must finish inside the -p process (they default to background)
 mkdir -p .work/runs
 
 run() {
