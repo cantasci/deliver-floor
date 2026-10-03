@@ -1,0 +1,122 @@
+# Readiness catalog — what must be decided before a single card is cut.
+# The Business Analyst answers every applicable item from the request and the repository, with a source; an item
+# nobody can answer becomes a question for the human. `dl phase planning` refuses while any item is open.
+# The BA also adds items this catalog does not have (ids starting with "X-") when the request needs them.
+#
+# area: always | backend | frontend | mobile | data | integration     (derived from the selected roles + request)
+# Format: the same small YAML subset as roles.yaml.
+
+items:
+  # ---- product & scope ------------------------------------------------------------------------------------------
+  - id: PRD-goal
+    area: always
+    q: "What business outcome does this deliver, and how is success measured?"
+  - id: PRD-users
+    area: always
+    q: "Who uses it (roles/personas), and what may each role see or do?"
+  - id: PRD-scope
+    area: always
+    q: "What is explicitly in scope and out of scope for this delivery?"
+  - id: PRD-acceptance
+    area: always
+    q: "Does every requirement have testable acceptance criteria with concrete examples?"
+  - id: PRD-conflicts
+    area: always
+    q: "Do any requirements, examples or clarifications contradict each other? How is each resolved?"
+  - id: PRD-priority
+    area: always
+    q: "What is the priority order (MoSCoW) if not everything can ship together?"
+
+  # ---- contracts ----------------------------------------------------------------------------------------------------
+  - id: CON-interface
+    area: always
+    q: "Are all public interfaces fully specified — names, inputs, outputs, types, units, signs, ranges, null/empty handling?"
+  - id: CON-errors
+    area: always
+    q: "What happens on invalid input and on failure (error types, codes, messages, fallbacks)?"
+  - id: CON-compat
+    area: always
+    q: "Must existing behaviour, APIs or data stay backward compatible? Is there versioning?"
+
+  # ---- architecture -------------------------------------------------------------------------------------------------
+  - id: ARC-style
+    area: always
+    q: "Architecture style: monolith, modular monolith, microservices, library? Where does this change live?"
+  - id: ARC-components
+    area: always
+    q: "Every component (service, BFF, app, library, worker, database) with its stack, repo path and owning role — written to readiness.json → architecture."
+  - id: ARC-layer
+    area: backend
+    q: "Which layer owns the logic: BFF/API gateway, core/domain service, shared library, client?"
+  - id: ARC-stack
+    area: always
+    q: "Languages, frameworks and runtime versions — and are new dependencies allowed (licences)?"
+  - id: ARC-data
+    area: data
+    q: "What data is stored, in which store, with which schema and migrations; who owns it?"
+  - id: ARC-integration
+    area: integration
+    q: "Which external systems are called — protocol, auth, rate limits, timeouts, retries, failure behaviour?"
+  - id: ARC-async
+    area: backend
+    q: "Synchronous or asynchronous (queues, events, jobs)? Ordering and idempotency requirements?"
+
+  # ---- frontend / mobile ------------------------------------------------------------------------------------------
+  - id: FE-stack
+    area: frontend
+    q: "Web framework, design system/components, state management, supported browsers and screen sizes?"
+  - id: MOB-stack
+    area: mobile
+    q: "Native (Kotlin/Swift) or cross-platform (Flutter/React Native)? Minimum OS versions, devices, tablets?"
+  - id: MOB-offline
+    area: mobile
+    q: "Offline/poor-connectivity behaviour, background work, push notifications?"
+  - id: MOB-release
+    area: mobile
+    q: "How is it released (stores, internal distribution, feature flags, forced update)?"
+  - id: UX-a11y
+    area: ui
+    q: "Accessibility target (e.g. WCAG 2.1 AA): screen readers, contrast, keyboard/focus, dynamic type?"
+  - id: UX-i18n
+    area: ui
+    q: "Languages, locale formats (dates, numbers, currency), RTL?"
+  - id: UX-design
+    area: ui
+    q: "Are there designs (screens, states: loading, empty, error) the UI must match?"
+
+  # ---- non-functional -----------------------------------------------------------------------------------------------
+  - id: NFR-performance
+    area: always
+    q: "Latency, throughput, data volume or load targets — or none for this delivery?"
+  - id: NFR-availability
+    area: backend
+    q: "Availability/resilience expectations, degradation when a dependency is down?"
+  - id: NFR-security
+    area: always
+    q: "Authentication, authorisation, input validation, secrets handling — what applies here?"
+  - id: NFR-privacy
+    area: always
+    q: "Personal or sensitive data involved (KVKK/GDPR)? Retention, masking, logging rules?"
+  - id: NFR-audit
+    area: always
+    q: "Must actions or changes be audited (who, what, when), and for how long?"
+  - id: NFR-observability
+    area: backend
+    q: "Logging, metrics, tracing and alerting required for this change?"
+  - id: NFR-compliance
+    area: always
+    q: "Domain regulations or internal policies that constrain the solution (e.g. banking regulation, model risk)?"
+
+  # ---- quality & delivery -------------------------------------------------------------------------------------------
+  - id: TST-strategy
+    area: always
+    q: "Test expectations: unit (dev, TDD), integration/e2e (QA), coverage, test data, test environments?"
+  - id: DEL-ci
+    area: always
+    q: "Which checks must pass to merge (lint, typecheck, tests, security scans)?"
+  - id: DEL-deploy
+    area: always
+    q: "How and where is it deployed or consumed; feature flags; rollback; migration order?"
+  - id: DEL-docs
+    area: always
+    q: "Documentation, changelog or runbook updates required?"

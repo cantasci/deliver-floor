@@ -29,12 +29,14 @@ grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*j
 
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 dl_re='(^|[;&|[:space:](/"'"'"'])dl[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
-if grep -Eq "${dl_re}(new|phase|jobset|roles|learn|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|cleanup)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|learn|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|cleanup)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
-if grep -Eq "${dl_re}(approve|reject)([[:space:]]|$)" <<<"$cmd"; then
-  [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write APPROVAL.md and stop; the human runs 'dl approve|reject' in a terminal."
+if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then
+  [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write the question down (APPROVAL.md / QUESTIONS.md) and stop; the human answers in a terminal (dl approve | reject | clarify)."
 fi
+grep -Eq "${dl_re}unfreeze([[:space:]]|$)" <<<"$cmd" \
+  && deny "frozen decisions are reopened only by a human, from their own terminal (dl unfreeze \"<reason>\")."
 grep -Eq "${dl_re}phase[[:space:]][^;&|]*--force" <<<"$cmd" \
   && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it, from their own terminal."
 grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [[ ${DELIVER_HEADLESS:-} == 1 ]] \

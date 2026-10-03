@@ -1,0 +1,183 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Analysts get notch changes and the Ind. 12 WL computed instead of counting by hand (POC goal: consistency, less manual work).",
+      "source": "POC_Requirements_v0.2_EN.md §1; JOB.md intro"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "Credit analysts (single user, no auth in the POC); other POC modules import the functions.",
+      "source": "POC_Requirements_v0.2_EN.md §7 A1; JOB.md Contract"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In: REQ-06-02 notch calculator, REQ-03-12 Ind. 12 WL. Out: fetching ratings (C4), UI, other indicators.",
+      "source": "JOB.md C4, 'Build only these two requirements'"
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Each requirement has AC with concrete examples (REQ table + C1–C3).",
+      "source": "JOB.md Requirements, C1–C3"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "REQ-06-02's example (BBB+→BB+ = 2 notches) contradicts the scale; resolved by C2: 3 notches → WL 2.",
+      "source": "JOB.md C2"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Both are Must (EPIC-03 / EPIC-06); one delivery.",
+      "source": "POC_Requirements_v0.2_EN.md §5"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "Exports and signatures fixed; notchChange signed (+down/−up); notchCalculator returns {notches (signed, same as notchChange), direction, wl}.",
+      "source": "JOB.md Contract + C5"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Unknown/empty rating → RangeError; propagates from countryRatingChangeWl.",
+      "source": "JOB.md C1, Contract"
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "New modules, nothing existing depends on them yet.",
+      "source": "seed repo: src/ is empty"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Library code inside the single POC repository (no services in this slice).",
+      "source": "JOB.md Contract; CLAUDE.md"
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "One component: watchlist-core (Node ESM library code in this repo: src/ratings, src/indicators, tests).",
+      "source": "JOB.md Contract; CLAUDE.md; package.json"
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Core/domain logic; no BFF/API in this slice.",
+      "source": "JOB.md C4; CLAUDE.md 'pure functions, no I/O'"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Node 18+ ESM (.mjs), no npm dependencies.",
+      "source": "CLAUDE.md; package.json"
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No persistence in this slice.",
+      "source": "JOB.md C4; CLAUDE.md 'no I/O'"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "Public-source fetch is out of scope.",
+      "source": "JOB.md C4"
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous pure functions.",
+      "source": "CLAUDE.md"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "Constant-time lookups on a 19-item scale; no targets.",
+      "source": "JOB.md C1"
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "Library code, no service.",
+      "source": "JOB.md Contract"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Input is validated (unknown → RangeError); no auth, no secrets.",
+      "source": "POC_Requirements_v0.2_EN.md §7 A1; JOB.md C1"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "Ratings are public data; no personal data.",
+      "source": "POC_Requirements_v0.2_EN.md §3"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "Audit trail belongs to EPIC-05/07, not this slice.",
+      "source": "POC_Requirements_v0.2_EN.md REQ-05-03, EPIC-07"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "Pure functions, nothing to log.",
+      "source": "CLAUDE.md"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "Scoring mirrors the Excel logic exactly (A4); no other constraint here.",
+      "source": "POC_Requirements_v0.2_EN.md §7 A4"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Dev: unit tests (node:test, TDD). QA: integration tests through the public exports. Full suite: node --test.",
+      "source": "CLAUDE.md; .deliver.json"
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "node --test must pass (verify_full).",
+      "source": ".deliver.json"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "answer": "Merged into main of the POC repo (merge_mode local); no deployment.",
+      "source": ".deliver.json"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No doc change requested.",
+      "source": "JOB.md"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "watchlist-core",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node"
+        ],
+        "path": ".",
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "pure functions, no I/O (CLAUDE.md)"
+      }
+    ]
+  }
+}

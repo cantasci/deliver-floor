@@ -10,9 +10,12 @@
 #   dl status                      active job's phase + board table + next actions
 #   dl next                        the next actions the flow requires, one per line (ACTION args)
 #   dl board                       board table only
-#   dl phase <phase>               set phase (intake planning awaiting_plan_approval executing
+#   dl phase <phase>               set phase (intake readiness awaiting_clarification planning awaiting_plan_approval executing
 #                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
+#   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
+#   dl clarify <id> "<answer>"     record the human's answer to an open readiness question
+#   dl unfreeze "<reason>"         (human, terminal only) reopen the decisions frozen at planning
 #   dl roles                       check job.roles against roles.yaml and generate the project's role cards
 #                                  (.work/<job>/roles/*.md, ROLES.md; Munder Difflin hire manifests) — runs on dl phase planning
 #   dl learn <role|all> "<lesson>" remember a lesson for this repo (memory: ~/.deliver/knowledge/lessons/<repo>.md);
@@ -69,7 +72,7 @@ resolve_root() {
 }
 
 STATES="ready running review merged blocked archived"
-PHASES="intake planning awaiting_plan_approval executing integrating closing awaiting_pr_merge done aborted"
+PHASES="intake readiness awaiting_clarification planning awaiting_plan_approval executing integrating closing awaiting_pr_merge done aborted"
 MERGE_MODES="human semi auto local"
 GH="${DELIVER_GH:-gh}"
 now() { date -u +%FT%TZ; }
@@ -251,7 +254,15 @@ cmd_next() {
   local phase gates_plan; phase="$(phase_now)"
   gates_plan="$(jq -r '.settings.gates.plan' "$JOBJ")"
   case $phase in
-    intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase planning (generates the role cards)" ;;
+    intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)" ;;
+    readiness|awaiting_clarification)
+      local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
+      if [[ ! -f $JOB_DIR/readiness.json ]]; then echo "READINESS BA reviews every requirement against readiness.yaml → .work/$JOB/readiness.json, then: dl readiness"
+      elif [[ $rc -eq 1 ]]; then echo "FIX     readiness.json is incomplete — dl readiness lists what is missing"
+      elif [[ $rc -eq 3 ]]; then
+        [[ $phase == readiness ]] && echo "PHASE   dl phase awaiting_clarification"
+        jq -r '(.items // .)[] | select(.status=="open") | "ASK     human: \(.id) — \(.question)  (record: dl clarify \(.id) \"<answer>\")"' "$JOB_DIR/readiness.json"
+      else echo "PHASE   dl phase planning  (readiness complete: $(jq '(.items // .) | length' "$JOB_DIR/readiness.json") items decided or n/a; planning freezes them)"; fi ;;
     planning)
       local nxt="dl phase executing  (no plan gate: the human is next at the PR)"; [[ $gates_plan == true ]] && nxt="dl phase awaiting_plan_approval"
       echo "PLAN    BA plan → plan.md · Lead cards → board.json · BA card specs → specs/T-xx.md · dl validate, then: $nxt" ;;
@@ -317,14 +328,23 @@ cmd_next() {
 
 cmd_phase() {
   load_job
+  [[ ${1:-} == aborted || ${1:-} == readiness ]] || assert_frozen
   local p=${1:-} force=0; [[ ${2:-} == --force ]] && force=1
   [[ " $PHASES " == *" $p "* ]] || die "invalid phase: '$p' — valid: $PHASES"
   local cur; cur="$(phase_now)"
   if [[ $force -eq 0 ]]; then
     [[ $cur == done || $cur == aborted ]] && refuse 1 "job is $cur"
     case $p in
-      planning)
+      readiness)
+        [[ $cur == intake || $cur == awaiting_clarification || $cur == readiness ]] || refuse 1 "readiness comes after intake (now: $cur)"
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml" ;;
+      awaiting_clarification)
+        local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
+        [[ $rc -eq 3 ]] || refuse 1 "there are no open readiness questions (dl readiness)" ;;
+      planning)
+        node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml"
+        local rr=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >&2 || rr=$?
+        [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $([[ $rr -eq 3 ]] && echo "open questions remain (QUESTIONS.md) — ask the human, record with dl clarify" || echo "readiness.json is incomplete (dl readiness)")" ;;
       awaiting_plan_approval)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
@@ -349,13 +369,50 @@ cmd_phase() {
   esac
   jq_inplace "$JOBJ" --arg p "$p" '.phase=$p'
   [[ $p == executing ]] && tracker open
-  [[ $p == planning ]] && { node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
+  if [[ $p == planning ]]; then
+    jq_inplace "$JOBJ" --arg h "$(sha256_of "$JOB_DIR/readiness.json")" --arg t "$(now)" '.frozen = {"readiness_sha256":$h,"at":$t}'
+    log_event freeze "readiness + architecture frozen ($(sha256_of "$JOB_DIR/readiness.json" | cut -c1-12))"
+  fi
+  [[ $p == readiness || $p == planning ]] && { node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
   reset_stop_guard; log_event phase "$p$([[ $force -eq 1 ]] && echo ' (forced)')"; echo "phase: $p"
 }
 
 cmd_jobset() { load_job; [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"; jq_inplace "$JOBJ" "$1"; }
 
-cmd_validate() { load_job; node "$BIN_DIR/validate.mjs" "$BOARD"; }
+cmd_validate() { load_job; assert_frozen; node "$BIN_DIR/validate.mjs" "$BOARD"; }
+
+sha256_of() { node -e 'process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(process.argv[1])).digest("hex"))' "$1"; }
+# Once planned, the readiness decisions and the architecture are frozen: every later step checks they are unchanged.
+assert_frozen() {
+  local want; want="$(jq -r '.frozen.readiness_sha256 // empty' "$JOBJ")"
+  [[ -z $want ]] && return 0
+  [[ -f $JOB_DIR/readiness.json && "$(sha256_of "$JOB_DIR/readiness.json")" == "$want" ]] \
+    || refuse 6 "readiness.json (requirements decisions + architecture) changed after it was frozen at planning. Frozen decisions do not change; only the human can reopen them from a terminal: dl unfreeze \"<reason>\""
+}
+cmd_unfreeze() {
+  load_job
+  local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl unfreeze "<why the frozen decisions must change>"'
+  [[ -n "$(jq -r '.frozen.readiness_sha256 // empty' "$JOBJ")" ]] || refuse 1 "nothing is frozen"
+  jq_inplace "$JOBJ" --arg r "$reason" --arg t "$(now)" --arg by "${DELIVER_APPROVER:-${USER:-human}}" \
+    '.unfreezes = ((.unfreezes // []) + [(.frozen + {"reason":$r,"by":$by,"at":$t})]) | .frozen = null | .phase = "readiness"'
+  reset_stop_guard; log_event unfreeze "$reason"; echo "unfrozen — phase readiness. Re-run the readiness review, then dl phase planning (freezes again)."
+}
+
+cmd_readiness() {
+  load_job
+  local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" || rc=$?
+  [[ $rc -eq 1 ]] && exit 1
+  log_event readiness "$(jq -r '(.items // .) | "\(length) items: \(map(select(.status=="decided"))|length) decided, \(map(select(.status=="n_a"))|length) n/a, \(map(select(.status=="open"))|length) open"' "$JOB_DIR/readiness.json")"
+  return 0
+}
+cmd_clarify() {
+  load_job
+  local id=${1:-} answer=${2:-}; [[ -n $id && -n $answer ]] || die 'usage: dl clarify <id> "<answer>"'
+  [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "clarifications are recorded in readiness / awaiting_clarification (now: $(phase_now))"
+  node "$BIN_DIR/readiness.mjs" clarify "$JOB_DIR" "$id" "${DELIVER_APPROVER:-${USER:-human}}" "$answer" || exit 1
+  node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || true
+  reset_stop_guard; log_event clarify "$id: $answer"
+}
 
 cmd_learn() {
   load_job
@@ -418,6 +475,7 @@ cmd_wt() {
     add)
       # 1. checks + reservation, atomically (two parallel assignments can't take the same seat or exceed a limit);
       # 2. worktree + setup outside the lock, so a slow setup never holds up other assignments.
+      assert_frozen
       local prev; prev="$(card_get "$card" '{state, attempts, seat}')"
       _wt_reserve "$card" "$flag" || exit $?
       if [[ ! -d $path ]]; then
@@ -597,7 +655,7 @@ cmd_review() {
 }
 
 cmd_integrate() {
-  load_job
+  load_job; assert_frozen
   local card=${1:-}; [[ -n $card ]] || die "usage: dl integrate <card>"
   card_exists "$card"
   local branch title head
@@ -653,7 +711,7 @@ _gate_record() {
 }
 
 cmd_ship() {
-  load_job
+  load_job; assert_frozen
   local mode head base; mode="$(setting merge_mode)"; base="$(jq -r .base_branch "$JOBJ")"; head="$(branch_head "$JOB_BRANCH")"
   [[ " $MERGE_MODES " == *" $mode "* ]] || die "merge_mode must be one of: $MERGE_MODES (now: '$mode')"
   local cur; cur="$(phase_now)"
@@ -791,6 +849,9 @@ main() {
     jobset) cmd_jobset "$@" ;;
     validate) cmd_validate ;;
     roles) cmd_roles ;;
+    readiness) cmd_readiness ;;
+    clarify) cmd_clarify "$@" ;;
+    unfreeze) cmd_unfreeze "$@" ;;
     learn) cmd_learn "$@" ;;
     knowledge) cmd_knowledge "$@" ;;
     ready) cmd_ready ;;
@@ -810,7 +871,7 @@ main() {
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,46p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,49p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

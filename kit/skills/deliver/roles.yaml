@@ -149,6 +149,18 @@ roles:
       character: kevin
       accent: violet
 
+  database:
+    kind: dev
+    agent: database-dev
+    writes: true
+    when: "The database is owned separately: schema, migrations and data changes go through their own cards (readiness ARC-data / architecture has a db component)"
+    rules:
+      - "Every schema change ships with a forward migration and, where data allows, a tested rollback."
+      - "Migrations are backward compatible with the code currently deployed (expand → migrate → contract)."
+    floor:
+      character: stanley
+      accent: slate
+
   security:
     kind: review
     agent: ecc:security-reviewer
@@ -187,9 +199,19 @@ roles:
     when: "A mobile user flow changes and a device/emulator is connected"
     does: "Michael drives ARTEMIS himself (mobile_run_task); a separate mobile-dev card is opened for durable test code."
 
-# Stack reviewer used in the Lead review — picked from job.stack.
-# If several match, use the most specific one (e.g. react over typescript).
+# Stack reviewer used in the Lead review — one per component stack (architecture.components[].stack).
+# If several match, use the most specific one (e.g. spring-boot over java, react over typescript).
 stack_reviewers:
+  spring-boot: ecc:java-reviewer
+  go: ecc:go-reviewer
+  golang: ecc:go-reviewer
+  nestjs: ecc:typescript-reviewer
+  node: ecc:typescript-reviewer
+  postgres: ecc:database-reviewer
+  mysql: ecc:database-reviewer
+  android: ecc:kotlin-reviewer
+  ios: ecc:swift-reviewer
+  react-native: ecc:typescript-reviewer
   react: ecc:react-reviewer
   vue: ecc:vue-reviewer
   typescript: ecc:typescript-reviewer
@@ -209,6 +231,31 @@ stack_reviewers:
   database: ecc:database-reviewer
   default: ecc:code-reviewer
 
+# ECC skills each component's developers load (named in the role cards; agents load them with the Skill tool).
+stack_skills:
+  spring-boot: ["ecc:springboot-patterns", "ecc:springboot-tdd", "ecc:springboot-security", "ecc:java-coding-standards"]
+  java: ["ecc:java-coding-standards"]
+  go: ["ecc:golang-patterns", "ecc:golang-testing"]
+  golang: ["ecc:golang-patterns", "ecc:golang-testing"]
+  typescript: ["ecc:backend-patterns", "ecc:tdd-workflow"]
+  javascript: ["ecc:backend-patterns", "ecc:tdd-workflow"]
+  node: ["ecc:backend-patterns", "ecc:tdd-workflow"]
+  nestjs: ["ecc:nestjs-patterns", "ecc:tdd-workflow"]
+  python: ["ecc:python-patterns", "ecc:python-testing"]
+  django: ["ecc:django-patterns", "ecc:django-tdd", "ecc:django-security"]
+  fastapi: ["ecc:fastapi-patterns", "ecc:python-testing"]
+  kotlin: ["ecc:kotlin-patterns", "ecc:kotlin-testing"]
+  android: ["ecc:android-clean-architecture", "ecc:kotlin-coroutines-flows", "ecc:kotlin-testing"]
+  swift: ["ecc:swiftui-patterns", "ecc:swift-protocol-di-testing"]
+  ios: ["ecc:swiftui-patterns", "ecc:swift-concurrency-6-2"]
+  flutter: ["ecc:dart-flutter-patterns"]
+  react: ["ecc:react-patterns", "ecc:react-testing"]
+  react-native: ["ecc:react-native-patterns"]
+  rust: ["ecc:rust-patterns", "ecc:rust-testing"]
+  postgres: ["ecc:postgres-patterns", "ecc:database-migrations"]
+  mysql: ["ecc:database-migrations"]
+  docker: ["ecc:docker-patterns"]
+
 # Stack detection hints (Michael checks these at intake)
 stack_hints:
   package.json: "typescript/javascript — check dependencies for react/vue/next"
@@ -218,4 +265,5 @@ stack_hints:
   pubspec.yaml: flutter (mobile)
   pyproject.toml / requirements.txt: "python — check for django/fastapi"
   go.mod: go
+  pom.xml / build.gradle with spring-boot: "java + spring-boot"
   Cargo.toml: rust

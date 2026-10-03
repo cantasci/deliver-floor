@@ -12,37 +12,47 @@ import { section as knowledgeSection } from "./knowledge.mjs";
 const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // --- a small YAML subset: maps by indentation, "- scalar" lists, quoted/bare scalars, # comments ------------------
-export function parseYaml(text) {
+export function parseYaml(text, label = "yaml") {
   const lines = [];
   text.split("\n").forEach((raw, n) => {
     const noComment = stripComment(raw);
     if (!noComment.trim()) return;
     const indent = noComment.match(/^ */)[0].length;
-    if (/\t/.test(noComment.slice(0, indent + 1))) throw new Error(`roles.yaml:${n + 1}: tabs are not allowed`);
+    if (/\t/.test(noComment.slice(0, indent + 1))) throw new Error(`${label}:${n + 1}: tabs are not allowed`);
     lines.push({ indent, text: noComment.trim(), n: n + 1 });
   });
   let i = 0;
-  const block = (indent) => {
-    if (i >= lines.length) return null;
-    if (lines[i].text.startsWith("- ")) {
-      const arr = [];
-      while (i < lines.length && lines[i].indent === indent && lines[i].text.startsWith("- ")) arr.push(scalar(lines[i++].text.slice(2)));
-      return arr;
-    }
-    const obj = {};
-    while (i < lines.length && lines[i].indent === indent) {
+  const KEY = /^("[^"]*"|[^:"]+?):(?:\s+(.*))?$/;
+  const mapEntries = (obj, indent) => { // consume "key: value" lines at exactly this indent
+    while (i < lines.length && lines[i].indent === indent && !lines[i].text.startsWith("- ")) {
       const { text: t, n } = lines[i];
-      const m = t.match(/^("[^"]*"|[^:]+?):(?:\s+(.*))?$/);
-      if (!m) throw new Error(`roles.yaml:${n}: cannot parse '${t}'`);
+      const m = t.match(KEY);
+      if (!m) throw new Error(`${label}:${n}: cannot parse '${t}'`);
       const key = scalar(m[1]); i++;
       if (m[2] !== undefined && m[2] !== "") obj[key] = scalar(m[2]);
       else obj[key] = i < lines.length && lines[i].indent > indent ? block(lines[i].indent) : null;
     }
-    if (i < lines.length && lines[i].indent > indent) throw new Error(`roles.yaml:${lines[i].n}: unexpected indentation`);
+    return obj;
+  };
+  const block = (indent) => {
+    if (i >= lines.length) return null;
+    if (lines[i].text.startsWith("- ")) {
+      const arr = [];
+      while (i < lines.length && lines[i].indent === indent && lines[i].text.startsWith("- ")) {
+        const rest = lines[i].text.slice(2), m = rest.match(KEY);
+        if (m && !rest.startsWith('"')) { // a list item that is a map: "- key: value" + keys indented by 2
+          lines[i] = { ...lines[i], indent: indent + 2, text: rest };
+          arr.push(mapEntries({}, indent + 2));
+        } else { arr.push(scalar(rest)); i++; }
+      }
+      return arr;
+    }
+    const obj = mapEntries({}, indent);
+    if (i < lines.length && lines[i].indent > indent) throw new Error(`${label}:${lines[i].n}: unexpected indentation`);
     return obj;
   };
   const out = block(0) ?? {};
-  if (i < lines.length) throw new Error(`roles.yaml:${lines[i].n}: unexpected indentation`);
+  if (i < lines.length) throw new Error(`${label}:${lines[i].n}: unexpected indentation`);
   return out;
 }
 function stripComment(line) {
@@ -55,6 +65,15 @@ function stripComment(line) {
 }
 function scalar(s) {
   s = s.trim();
+  if (s.startsWith("[") && s.endsWith("]")) { // flow list: ["a", b, "c, d"]
+    const out = []; let cur = "", q = false;
+    for (const ch of s.slice(1, -1)) {
+      if (ch === '"') q = !q;
+      if (ch === "," && !q) { if (cur.trim()) out.push(scalar(cur)); cur = ""; } else cur += ch;
+    }
+    if (cur.trim()) out.push(scalar(cur));
+    return out;
+  }
   if (s.startsWith('"')) return JSON.parse(s);
   if (s === "true") return true;
   if (s === "false") return false;
@@ -63,7 +82,7 @@ function scalar(s) {
   return s;
 }
 
-export const loadCatalog = (file = join(SKILL_DIR, "roles.yaml")) => parseYaml(readFileSync(file, "utf8"));
+export const loadCatalog = (file = join(SKILL_DIR, "roles.yaml")) => parseYaml(readFileSync(file, "utf8"), "roles.yaml");
 
 // --- checks ---------------------------------------------------------------------------------------------------------
 export function checkJobRoles(job, cat) {
@@ -102,6 +121,20 @@ function projectFacts(job) {
   return facts;
 }
 
+// The components this role builds (dev), reviews (reviewer) or tests (qa), with the stack skills to load.
+function componentsSection(sel, r, job, cat) {
+  let arch = null;
+  try { const raw = JSON.parse(readFileSync(join(job.repo, ".work", job.id, "readiness.json"), "utf8")); arch = raw.architecture ?? null; } catch { return ""; }
+  if (!arch?.components?.length) return "";
+  const mine = arch.components.filter((c) => r.kind === "qa" || r.kind === "ba" || r.kind === "lead" || c.owner === sel.role || c.reviewer === sel.role);
+  if (!mine.length) return "";
+  const skills = (c) => [...new Set((c.stack ?? []).flatMap((s) => cat.stack_skills?.[s] ?? []))];
+  return ["## Components (frozen architecture: " + (arch.style ?? "?") + ")", "",
+    ...mine.map((c) => `- **${c.id}** (${c.kind}) — stack ${(c.stack ?? []).join(", ")} — path \`${c.path}\` — dev: ${c.owner}, review: ${c.reviewer}` +
+      (skills(c).length ? `\n  skills to load for it: ${skills(c).map((x) => "`" + x + "`").join(", ")}` : "")),
+    "", "The architecture is frozen: build inside it. If it cannot work, say so in your answer — do not change it.", ""].join("\n");
+}
+
 function roleEntry(sel, cat) {
   if (sel.role?.startsWith("reviewer")) return { kind: "review", agent: sel.agent, does: "Lead review of each card's change for the job's stack.", floor: { character: "toby", accent: "slate" } };
   return cat.roles[sel.role];
@@ -129,6 +162,7 @@ export function renderRole(sel, job, cat) {
     "",
     ...projectFacts(job).map((x) => `- ${x}`),
     "",
+    componentsSection(sel, r, job, cat),
     job.repo ? knowledgeSection(job.repo, { kind: r.kind, role: sel.role, stack: job.stack ?? [] }) : "",
   ].join("\n");
   return { md, rules, entry: r };
@@ -189,7 +223,7 @@ export function render(jobDir, { hiveRoot } = {}) {
   console.log(`roles: ${job.roles.length} role card(s) → ${join(jobDir, "roles")}${munder ? " + hire manifests" : ""}`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, arg] = process.argv.slice(2);
   if (cmd === "catalog") console.log(JSON.stringify(loadCatalog(), null, 2));
   else if (cmd === "check") {

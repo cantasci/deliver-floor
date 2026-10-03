@@ -1,3 +1,5 @@
+[TEST INPUT — deliberately incomplete: C5 removed, so the sign of notchCalculator().notches is unspecified]
+
 Rating notch calculator + country rating change indicator (Watchlist POC slice)
 
 Source: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).
@@ -20,7 +22,6 @@ Related rule (REQ-03-13, Indicator 13 — external rating change): 2 notch downg
   Indicator 13 thresholds (2 notches → WL=1, 3+ → WL=2), so BBB+ → BB+ = 3-notch downgrade → WL=2, and BBB+ → BBB- = 2 notches → WL=1.
 - C3. Upgrades and unchanged ratings → WL=0 for both indicators.
 - C4. Fetching the rating from a public source is OUT of scope for this slice; the indicator takes the previous and current rating as input.
-- C5. `notchCalculator(...).notches` is signed exactly like `notchChange` (downgrade positive, upgrade negative).
 
 ## Contract (other parts of the POC will import exactly these)
 

@@ -74,6 +74,23 @@ for (const c of cards) {
   }
 }
 
+// Every card belongs to one component of the frozen architecture: its scope lives in the component's path and its
+// role is the component's owner (QA-only cards: role "qa").
+let arch = null;
+try { const r = JSON.parse(readFileSync(join(dir, "readiness.json"), "utf8")); arch = Array.isArray(r) ? null : r.architecture ?? null; } catch { /* no readiness yet */ }
+if (arch?.components?.length) {
+  const comps = new Map(arch.components.map((c) => [c.id, c]));
+  for (const c of cards) {
+    if (c.state === "archived") continue;
+    const id = c.id ?? "(no id)", comp = comps.get(c.component);
+    if (!comp) { errors.push(`${id}: 'component' must name an architecture component (${[...comps.keys()].join(", ")})`); continue; }
+    if (c.role !== comp.owner && c.role !== "qa") errors.push(`${id}: component ${comp.id} is owned by role '${comp.owner}', not '${c.role}'`);
+    const base = comp.path === "." || comp.path === "./" ? "" : comp.path.replace(/\/?$/, "/");
+    for (const g of [...(c.scope ?? []), ...(c.qa_scope ?? [])])
+      if (base && !String(g).startsWith(base)) errors.push(`${id}: '${g}' is outside component ${comp.id} (${base})`);
+  }
+}
+
 // The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.
 if (job && (job.roles ?? []).some((r) => r.role === "ba"))
   for (const c of cards) {

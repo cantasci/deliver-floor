@@ -129,7 +129,7 @@ export function syncMunder(repo) {
   return { ingested: items.length, replaced };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, repo = ".", ...rest] = process.argv.slice(2);
   if (cmd === "list") {
     const [kind, role, stack] = rest;

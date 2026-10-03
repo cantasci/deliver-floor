@@ -28,7 +28,7 @@ export function globToRegExp(glob) {
 
 export const inScope = (file, scope) => scope.some((g) => globToRegExp(g).test(file));
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const scope = JSON.parse(process.argv[2] ?? "[]");
   const files = readFileSync(0, "utf8").split("\n").filter(Boolean);
   for (const f of files) if (!inScope(f, scope)) console.log(f);

@@ -37,6 +37,12 @@ for ((i = 1; i <= rounds; i++)); do
         echo "⏸  waiting for a human: $phase. Read .work/$job/APPROVAL.md, then: dl approve $gate | dl reject $gate \"<note>\""
         exit 0
       fi ;;
+    awaiting_clarification)
+      if [[ -s .work/$job/QUESTIONS.md ]] && grep -q '^## ' ".work/$job/QUESTIONS.md"; then
+        echo "⏸  the requirements have open questions: .work/$job/QUESTIONS.md — answer each with: dl clarify <id> \"<answer>\""
+        exit 0
+      fi ;;
+    awaiting_pr_merge) echo "⏸  the PR is with the human: $(jq -r '.pr.url // "?"' "$jf") — then: dl pr"; exit 0 ;;
     done|aborted) echo "✔ job $job: $phase"; exit 0 ;;
   esac
   state="$phase $(wc -l < ".work/$job/events.log" 2>/dev/null)"   # events.log grows on every dl step

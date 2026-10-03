@@ -177,7 +177,7 @@ export function kanbanText(job, board, columns = columnsOf(job)) {
   const rows = Math.max(...shown.map((s) => by[s].length), 0);
   const out = [`${job.id} — ${job.title}`, head, shown.map(() => "─".repeat(w)).join("┼─")];
   for (let i = 0; i < rows; i++) {
-    out.push(shown.map((s) => pad(by[s][i] ? `${by[s][i].id} ${by[s][i].role}·${by[s][i].attempts}` : "")).join("│ "));
+    out.push(shown.map((s) => pad(by[s][i] ? `${by[s][i].id} ${by[s][i].seat ?? by[s][i].role}·a${by[s][i].attempts}` : "")).join("│ "));
     out.push(shown.map((s) => pad(by[s][i] ? `  ${by[s][i].title}` : "")).join("│ "));
   }
   return out.join("\n");
@@ -189,7 +189,8 @@ export function kanbanHtml(job, board, columns = columnsOf(job)) {
   for (const c of board.cards) by[stageOf(c)].push(c);
   const shown = STAGE_ORDER.filter((s) => by[s].length || ["todo", "in_progress", "qa", "review", "done"].includes(s));
   const card = (c) => `<article><h3>${esc(c.id)} · ${esc(c.title)}</h3>
-    <p class="meta">${esc(c.role)} → ${esc(c.agent)} · attempt ${c.attempts}${c.tracker?.key ? ` · <a href="${esc(c.tracker.url)}">${esc(c.tracker.key)}</a>` : ""}</p>
+    <p class="meta">${esc(c.component ?? "")}${c.component ? " · " : ""}${esc(c.seat ?? c.role)} → ${esc(c.agent)} · attempt ${c.attempts}${c.tracker?.key ? ` · <a href="${esc(c.tracker.url)}">${esc(c.tracker.key)}</a>` : ""}</p>
+    ${c.branch ? `<p class="meta">branch <code>${esc(c.branch)}</code></p>` : ""}
     <p class="checks">gate ${c.gate ? esc(c.gate.result) : "–"} · QA ${c.qa ? esc(c.qa.verdict) : "–"} · review ${c.review ? esc(c.review.verdict) : "–"}</p>
     ${(c.comments ?? []).slice(-2).map((n) => `<p class="note"><b>${esc(n.author)}</b> ${esc(n.text)}</p>`).join("")}</article>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -210,7 +211,7 @@ a{color:inherit}</style></head><body>
 }
 
 // ---- CLI -----------------------------------------------------------------------------------------------------------------
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, jobDir, ...rest] = process.argv.slice(2);
   const flag = (n) => { const i = rest.indexOf(n); return i >= 0 ? rest.splice(i, 2)[1] : undefined; };
   try {

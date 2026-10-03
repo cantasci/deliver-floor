@@ -54,10 +54,26 @@ J="$SB/.work/$JOB"; B="$J/board.json"
   {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack: javascript"}]'
 jq -r '.roles[] | "    \(.role) → \(.agent)  (\(.why))"' "$J/job.json"
 
-step "1 · ROLES — the project's role cards are generated (rules + project facts)"
-dl phase planning
+step "1 · ROLES — the project's role cards are generated (rules + company standards + project facts)"
+dl phase readiness
 cat "$J/ROLES.md" | sed 's/^/    /'
 echo "    --- excerpt of roles/qa.md:"; sed -n '/## Rules/,/## This project/p' "$J/roles/qa.md" | sed 's/^/    /'
+
+step "1 · READINESS — the BA checks every requirement and decision before anything is planned"
+jq '(.items[] | select(.id=="CON-interface")) |= {id, status:"open",
+     question:"Is notchCalculator().notches signed like notchChange (upgrade negative) or an absolute count?",
+     options:["signed, like notchChange","absolute count + direction"], impact:"changes the contract other POC modules import"}' \
+   "$EX/reference/readiness.json" > "$J/readiness.json"
+say "  business-analyst:" "27 items + the architecture — 1 open (the request does not say whether notches is signed)"
+dl readiness || true
+dl next
+dl phase planning || true
+dl phase awaiting_clarification
+say "you:" "signed, like notchChange (downgrade positive, upgrade negative)"
+dl clarify CON-interface "signed, like notchChange (downgrade positive, upgrade negative)"
+dl readiness
+grep -E "CON-interface|PRD-conflicts|ARC-layer|NFR-privacy" "$J/readiness.md" | cut -c1-200 | sed 's/^/    /'
+dl phase planning
 
 step "1 · BUSINESS ANALYST (business-analyst) turns the requirements into a traceable plan"
 cp "$EX/reference/plan.md" "$J/plan.md"; grep '^- AC-' "$J/plan.md" | sed 's/^/    /'

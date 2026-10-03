@@ -19,6 +19,14 @@ expect_fail() { local code=$1 d=$2; shift 2; out="$("$@" 2>&1)"; local rc=$?
 contains() { [[ $2 == *"$3"* ]] && ok "$1" || bad "$1 — got: $2"; }
 
 DL="$HERE/kit/skills/deliver/bin/dl"
+ready_all() { # ready_all [<id> open] — the BA's readiness review: every applicable item decided (one left open if asked)
+  local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"
+  [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
+  node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$jd" | jq --arg o "${1:-}" --argjson arch "${ARCH:-null}" '{items: [.[] | if .id == $o
+     then {id, status:"open", question:("Which option for " + .id + "?"), options:["a","b"]}
+     else {id, status:"decided", answer:"test decision", source:"test fixture"} end],
+     architecture: ($arch // {style:"library", components:[{id:"app", kind:"library", stack:["generic"], path:".", owner:"backend", reviewer:"reviewer"}]})}' > "$jd/readiness.json"
+}
 SDIR="$HERE/kit/skills/deliver"
 
 echo "scope matcher"
@@ -59,7 +67,31 @@ out="$("$DL" phase planning 2>&1)"; contains "roles check names the missing alwa
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"api"},
   {"role":"backend","agent":"backend-dev","why":"lead"},{"role":"qa","agent":"qa-tester","why":"always"},
   {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack"}]'
-expect_ok "phase planning with valid roles" "$DL" phase planning
+expect_fail 1 "planning refused before the readiness review" "$DL" phase planning
+expect_ok "phase readiness with valid roles" "$DL" phase readiness
+RJ="$R/.work/$JOB"
+expect_fail 1 "readiness check fails without readiness.json" "$DL" readiness
+node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$RJ" > "$TMP/appl.json"
+jq -e 'map(.id) | (index("ARC-style") and index("ARC-layer") and index("NFR-privacy") and index("CON-interface") and (index("MOB-stack")|not))' "$TMP/appl.json" >/dev/null \
+  && ok "applicable items follow the roles (backend: ARC-layer; no mobile items)" || bad "applicable: $(jq -c 'map(.id)' "$TMP/appl.json")"
+jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"y"}] | .[0].source = null | del(.[1]))}' "$TMP/appl.json" > "$RJ/readiness.json"
+out="$("$DL" readiness 2>&1)"; contains "a missing item and a decision without source are errors" "$out" "is not answered"
+contains "…both reported" "$out" "decided needs an answer and its source"
+contains "a missing architecture is an error" "$out" "architecture: architecture is missing"
+ready_all CON-interface
+out="$("$DL" readiness 2>&1)"; contains "an open item is reported as a question" "$out" "OPEN  CON-interface"
+grep -q "## CON-interface" "$RJ/QUESTIONS.md" && ok "QUESTIONS.md lists the open question" || bad "QUESTIONS.md"
+expect_fail 1 "planning refused while a question is open" "$DL" phase planning
+contains "next asks the human the open question" "$("$DL" next)" "ASK     human: CON-interface"
+expect_ok "awaiting_clarification" "$DL" phase awaiting_clarification
+contains "agents cannot answer readiness questions" "$(printf '%s' '{"tool_input":{"command":"dl clarify CON-interface x"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+contains "headless sessions cannot answer them either" "$(printf '%s' '{"tool_input":{"command":"dl clarify CON-interface x"},"cwd":"/"}' | DELIVER_HEADLESS=1 "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+expect_ok "the human's answer is recorded" "$DL" clarify CON-interface "signed integers; negative = upgrade"
+jq -e '.items[] | select(.id=="CON-interface") | .status=="decided" and (.source|startswith("human:")) and (.history|length==1)' "$RJ/readiness.json" >/dev/null \
+  && ok "answer stored with source human + history of the question" || bad "clarify record"
+grep -q "signed integers" "$RJ/readiness.md" && ok "readiness.md carries the decision" || bad "readiness.md"
+expect_ok "phase planning once nothing is open" "$DL" phase planning
+jq -e '.frozen.readiness_sha256 | length == 64' "$R/.work/$JOB/job.json" >/dev/null && ok "planning froze readiness.json (sha256 in job.json)" || bad "freeze"
 [[ -f $R/.work/$JOB/roles/backend.md && -f $R/.work/$JOB/roles/qa.md && -f $R/.work/$JOB/ROLES.md ]] && ok "role cards generated on planning" || bad "role cards"
 grep -q "TDD" "$R/.work/$JOB/roles/backend.md" && grep -q "integration and/or end-to-end tests" "$R/.work/$JOB/roles/qa.md" \
   && grep -q "node --test" "$R/.work/$JOB/roles/backend.md" && ok "role cards carry kind rules + project facts" || bad "role card content"
@@ -76,7 +108,7 @@ expect_fail 1 "executing refused without approval" "$DL" phase executing
 card() { # card <id> <deps json> <scope json> <verify> <ac> — QA tests go to test/integration/<id>/
   jq -n --arg id "$1" --argjson d "$2" --argjson s "$3" --arg v "$4" --arg ac "$5" \
     '{id:$id,title:("card "+$id),role:"backend",agent:"backend-dev",state:"ready",depends_on:$d,scope:$s,
-      acceptance:[$ac],verify:$v,context:"ctx",attempts:0,notes:[],
+      acceptance:[$ac],verify:$v,context:"ctx",attempts:0,notes:[],component:"app",
       qa_scope:["test/integration/\($id)/**"],qa_verify:"node --test test/integration/\($id)/*.test.mjs"}'
 }
 qa_tests() { # qa_tests <worktree> <card> [fail] — the "QA role": commit an integration test in qa_scope
@@ -287,6 +319,60 @@ reqf="$(ls "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
 contains "spawn request: card worktree cwd, no extra isolation, dev agent" "$(jq -c '{cwd,isolate,command}' "$reqf")" "\"isolate\":false,\"command\":\"claude --agent backend-dev\""
 unset HIVE_ROOT
 
+echo "architecture: mixed stacks, frozen decisions, seats, parallel assignment"
+AR="$TMP/arch"; mkdir -p "$AR" && cd "$AR" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","max_parallel":4}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "micro" "x" >/dev/null; AJ="$AR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},
+  {"role":"backend","agent":"backend-dev","count":2},{"role":"database","agent":"database-dev"},{"role":"qa","agent":"qa-tester"},
+  {"role":"reviewer-java","agent":"ecc:java-reviewer"},{"role":"reviewer-go","agent":"ecc:go-reviewer"},{"role":"reviewer-db","agent":"ecc:database-reviewer"}]'
+"$DL" phase readiness >/dev/null
+svc() { jq -n --arg id "$1" --arg st "$2" --arg rv "$3" '{id:$id,kind:"service",stack:($st|split(",")),path:("services/"+$id+"/"),owner:"backend",reviewer:$rv}'; }
+ARCH="$(jq -n --argjson a "$(svc orders java,spring-boot reviewer-java)" --argjson b "$(svc payments java,spring-boot reviewer-java)" \
+  --argjson c "$(svc catalog java,spring-boot reviewer-java)" --argjson d "$(svc users java,spring-boot reviewer-java)" --argjson e "$(svc pricing go reviewer-go)" \
+  '{style:"microservices",components:[$a,$b,$c,$d,$e,{id:"db",kind:"db",stack:["postgres"],path:"db/",owner:"database",reviewer:"reviewer-db"}]}')"
+ARCH="$(jq '.components[4].reviewer="reviewer-java"' <<<"$ARCH")" ready_all
+out="$("$DL" readiness 2>&1)"; contains "a Go service reviewed by the Java reviewer is rejected" "$out" "component 'pricing': reviewer reviewer-java (ecc:java-reviewer) does not match its stack"
+ARCH="$(jq '.components[5].owner="qa"' <<<"$ARCH")" ready_all
+out="$("$DL" readiness 2>&1)"; contains "a component owned by a non-dev role is rejected" "$out" "owner 'qa' must be a dev role"
+ARCH="$ARCH" ready_all; expect_ok "4 Spring Boot + 1 Go service + a separately owned DB: valid" "$DL" readiness
+grep -q "| pricing | service | go |" "$AJ/readiness.md" && ok "readiness.md shows the architecture table" || bad "arch table"
+"$DL" phase readiness >/dev/null   # regenerate role cards with the architecture
+grep -q "ecc:golang-patterns" "$AJ/roles/backend.md" && grep -q "ecc:springboot-patterns" "$AJ/roles/backend.md" && ok "backend role card names Spring Boot and Go skills per component" || bad "stack skills"
+grep -q "postgres-patterns" "$AJ/roles/database.md" && ! grep -q "springboot" "$AJ/roles/database.md" && ok "database role card lists only the db component" || bad "db card"
+grep -q "pricing" "$AJ/roles/reviewer-go.md" && ! grep -q "orders" "$AJ/roles/reviewer-go.md" && ok "the Go reviewer's card lists only the Go service" || bad "reviewer-go card"
+"$DL" phase planning >/dev/null
+acard() { jq -n --arg id "$1" --arg comp "$2" --arg role "$3" --arg p "$4" '{id:$id,title:$id,role:$role,agent:(if $role=="database" then "database-dev" else "backend-dev" end),component:$comp,state:"ready",depends_on:[],
+  scope:[$p+"src/**"],qa_scope:[$p+"it/**"],verify:"true",qa_verify:"true",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}' | sed 's/"verify": "true"/"verify": "test -d ."/;s/"qa_verify": "true"/"qa_verify": "test -d ."/'; }
+for c in T-01 T-02 T-03; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$AJ/specs/$c.md"; done
+jq -n --argjson a "$(acard T-01 orders backend services/orders/)" --argjson b "$(acard T-02 pricing backend services/pricing/)" --argjson c "$(acard T-03 db database db/)" '{cards:[$a,$b,$c]}' > "$AJ/board.json"
+expect_ok "cards on three components validate" "$DL" validate
+jq '.cards[0].scope=["services/payments/src/**"]' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"
+out="$("$DL" validate 2>&1)"; contains "a card reaching outside its component is rejected" "$out" "outside component orders"
+jq '.cards[0].scope=["services/orders/src/**"] | .cards[2].role="backend"' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"
+out="$("$DL" validate 2>&1)"; contains "a backend dev on the database component is rejected" "$out" "owned by role 'database'"
+jq '.cards[2].role="database"' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"
+cp "$AJ/readiness.json" "$TMP/rd.bak"; jq '.architecture.components[4].stack=["rust"]' "$TMP/rd.bak" > "$AJ/readiness.json"
+expect_fail 6 "editing the frozen readiness/architecture is refused" "$DL" validate
+contains "agents cannot unfreeze" "$(printf '%s' '{"tool_input":{"command":"dl unfreeze \"x\""},"cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+cp "$TMP/rd.bak" "$AJ/readiness.json"
+"$DL" phase executing >/dev/null
+# two parallel assignments race for the single database seat… and two backend seats work side by side
+"$DL" jobset '(.roles[] | select(.role=="database")).count = 1'
+jq '.cards += [(.cards[2] | .id="T-04" | .title="T-04")]' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"; cp "$AJ/specs/T-03.md" "$AJ/specs/T-04.md"
+( "$DL" wt add T-03 >"$TMP/r3" 2>&1; echo $? >> "$TMP/r3" ) & ( "$DL" wt add T-04 >"$TMP/r4" 2>&1; echo $? >> "$TMP/r4" ) & wait
+[[ "$(jq '[.cards[] | select(.role=="database" and .state=="running")] | length' "$AJ/board.json")" == 1 ]] && grep -q "seats are busy" "$TMP/r3" "$TMP/r4" \
+  && ok "concurrent assignment: exactly one of two cards gets the single database seat" || bad "race: $(cat "$TMP/r3" "$TMP/r4")"
+"$DL" wt add T-01 >/dev/null && "$DL" wt add T-02 >/dev/null
+[[ "$(jq -r '[.cards[] | select(.role=="backend") | .seat] | sort | join(",")' "$AJ/board.json")" == "backend#1,backend#2" ]] \
+  && ok "two backend devs work in parallel on seats backend#1 and backend#2, each on its own branch" || bad "seats: $(jq -c '[.cards[]|{id,seat,branch}]' "$AJ/board.json")"
+[[ "$(git -C "$AR" branch --list '*--T-01' '*--T-02' | wc -l)" == 2 ]] && ok "…each on its own card branch" || bad "branches"
+jq '.cards += [(.cards[0] | .id="T-05" | .title="T-05" | .state="ready" | del(.seat))]' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"; cp "$AJ/specs/T-01.md" "$AJ/specs/T-05.md"
+out="$("$DL" wt add T-05 2>&1)"; contains "a third backend card waits: both backend seats are busy" "$out" "all 2 'backend' seats are busy"
+jq -e '[.cards[] | select(.id=="T-01") | .assignments[0] | .by=="michael" and .seat=="backend#1"] | all' "$AJ/board.json" >/dev/null && ok "assignment records michael + seat" || bad "assignment record"
+"$DL" kanban > "$TMP/kanban.txt"; grep -q "In Progress (3)" "$TMP/kanban.txt" && ok "kanban shows 3 cards in progress" || bad "kanban: $(cat "$TMP/kanban.txt")"
+[[ -f $AJ/kanban.html ]] && grep -q "backend#2" "$AJ/kanban.html" && ok "local tracker renders kanban.html with seats" || bad "kanban.html"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"; unset ARCH
+
 echo "knowledge: standards, memory, Munder Difflin knowledge graph"
 K="$HOME/.deliver/knowledge"; mkdir -p "$K" "$TMP/kn/.deliver/knowledge"
 cat > "$K/api-errors.md" <<'MD'
@@ -322,7 +408,7 @@ cd "$TMP/kn" && git init -q -b main && echo x > a && git add -A && git commit -q
 "$DL" new "know" "x" >/dev/null; KJ="$(cat .work/ACTIVE)"
 "$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" learn qa "Check rounding at .5 boundaries — QA missed it in JOB-1" >/dev/null
-"$DL" phase planning >/dev/null
+"$DL" phase readiness >/dev/null
 grep -q "MUST: Map domain errors" ".work/$KJ/roles/backend.md" && ok "company standard's Must reaches the dev role" || bad "dev standard"
 grep -q "MUST: Map domain errors" ".work/$KJ/roles/qa.md" && bad "standard leaked to a role it does not apply to" || ok "applies_to filters roles"
 grep -q "Tests live in test/<area>/" ".work/$KJ/roles/qa.md" && ! grep -q "Every AC has a test named" ".work/$KJ/roles/qa.md" && ok "project standard overrides the company one" || bad "override"
@@ -364,9 +450,9 @@ shipjob() { # shipjob <mode> → a repo with one merged card, in phase closing w
   git add -A && git commit -qm init
   "$DL" new "ship $mode" "x" >/dev/null
   "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
-  "$DL" phase planning >/dev/null
+  "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
   local j; j="$(cat .work/ACTIVE)"
-  jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",state:"ready",depends_on:[],scope:["src/**"],acceptance:["AC-1: x"],verify:"node --test",context:"c",attempts:0,notes:[],qa_scope:["test/integration/T-01/**"],qa_verify:"node --test test/integration/T-01/*.test.mjs"}]}' > ".work/$j/board.json"
+  jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",state:"ready",depends_on:[],scope:["src/**"],acceptance:["AC-1: x"],verify:"node --test",context:"c",attempts:0,notes:[],component:"app",qa_scope:["test/integration/T-01/**"],qa_verify:"node --test test/integration/T-01/*.test.mjs"}]}' > ".work/$j/board.json"
   printf '## Acceptance criteria\nGiven a, when b, then c\n' > ".work/$j/specs/T-01.md"
   "$DL" phase executing >/dev/null; local w; w="$("$DL" wt add T-01)"
   mkdir -p "$w/src" && echo 1 > "$w/src/a.txt" && git -C "$w" add -A && git -C "$w" commit -qm "T-01"

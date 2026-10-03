@@ -39,7 +39,8 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 4. Every subagent gets a **self-contained** prompt and its **role card** (`.work/<job>/roles/<role>.md`). They don't see this conversation.
 5. Subagents return **short** answers; details live in files (`handoffs/`, `gates/`). Never paste whole diffs or logs into your context — read only the failing lines.
 6. Dispatch agents in the **foreground** (`run_in_background: false`), several in one message when they can run in parallel. Wait for them; the flow is driven by their results.
-7. The human is not asked anything before the PR unless `settings.gates.plan` is true, a card is blocked, or scope is genuinely unclear. Never answer a question on the human's behalf.
+7. Nothing starts on assumptions: every open readiness item is answered by the human before planning. After that, the human is
+   asked again only at the PR, for a blocked card, or when `settings.gates.plan` is true. Never answer a question on the human's behalf.
 8. No push to main/master, no force push (a hook enforces this too).
 
 ## Phase 0 — Intake (`intake`)
@@ -54,8 +55,39 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    `"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule"},…]'`
    Keep it small: no role "just in case". A dev role needs its lead role.
 4. Record assumptions you made: `"$DL" jobset '.assumptions += ["…"]'`.
-5. `"$DL" phase planning` — this checks the roles and **generates the project's role cards** (`roles/*.md`: rules + company
+5. `"$DL" phase readiness` — this checks the roles and **generates the project's role cards** (`roles/*.md`: rules + company
    standards + project facts) and `ROLES.md`. If it REFUSES, fix the roles it names.
+
+## Phase 0.5 — Requirements readiness (`readiness` → `awaiting_clarification`)
+
+Before anything is planned, every requirement and every decision a delivery needs is checked, one by one — architecture
+(monolith/microservice, BFF/core), stacks, contracts, errors, accessibility, i18n, security, privacy, performance,
+observability, tests, delivery… (`readiness.yaml`, plus whatever the request needs beyond it).
+
+1. Call **Agent(subagent_type: "business-analyst")**:
+
+```text
+MODE: READINESS
+ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/ba.md>
+JOB REQUEST:
+<the full request>
+REPO: <absolute repo root>   STACK: <stack>   ROLES: <job.roles>
+READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.mjs applicable <job dir>>
+```
+
+2. **Verify the BA's work yourself, item by item** — you are the PM: is each source real, does each `n_a` truly not apply, does the
+   architecture cover every part of the request (each service/app/db, its stack, its owner)? Send the BA back with what is
+   missing. Then write the JSON to `.work/<job>/readiness.json` and run `"$DL" readiness` (writes `readiness.md` and
+   `QUESTIONS.md`); fix every ERROR it lists (a missing item, a decision without a source, an architecture gap).
+   The architecture decides the roles: every component's owner (`backend`, `frontend`, `mobile`, `database`) and reviewer
+   (`reviewer-java`, `reviewer-go`, …) must be on the job — add them with `dl jobset`, then `"$DL" phase readiness` again to
+   regenerate the role cards. Several devs of one role in parallel: `"count": N` on the role (seats role#1…#N).
+3. Open questions → `"$DL" phase awaiting_clarification` and ask the human — all open items in one go (AskUserQuestion, one
+   question per item, the BA's options as choices). Record each answer **in their words**: `"$DL" clarify <id> "<answer>"`.
+   Never answer an open item yourself, never pick a default. Headless: `QUESTIONS.md` is the question; stop.
+4. `"$DL" phase planning` — refused until nothing is open. It **freezes** `readiness.json` (decisions + architecture): from now
+   on they do not change, and `dl` refuses every step if the file is edited. Only the human can reopen them (`dl unfreeze`).
+   `readiness.md` goes to every later BA, Lead and dev prompt as binding context.
 
 ## Phase 1 — Business Analyst plan (`planning`)
 
@@ -66,6 +98,7 @@ MODE: PLAN
 ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/ba.md>
 JOB REQUEST:
 <the full request — if it came from a file, its whole content and the file path>
+READINESS (binding decisions): <abs path to .work/<job>/readiness.md>
 REPO: <absolute repo root>   STACK: <stack>
 Read the code as needed to make the plan realistic. Keep the request's requirement IDs on every AC.
 ```
@@ -84,6 +117,7 @@ Role: <focus> Lead for this job. Turn the plan into implementation cards for you
 ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/<lead role>.md>
 PLAN:
 <full plan.md>
+READINESS (binding decisions): <abs path to .work/<job>/readiness.md>
 YOUR AREA: <backend|frontend|mobile|cross-cutting>   DEV ROLES ON THIS JOB: <dev roles from job.roles>
 REPO: <absolute repo root>   STACK: <stack>
 Rules:
@@ -94,9 +128,10 @@ Rules:
 - qa_verify = the command that runs them, e.g. "node --test test/integration/orders/*.test.mjs".
 - acceptance = which AC-n this card satisfies, phrased as checks ("AC-2: … → …"). Every AC of the plan is covered by a card.
 - context = everything a developer who has not seen the plan needs: why, files, decisions, contracts (exact names/signatures).
+- component = the architecture component the card belongs to; scope and qa_scope stay inside its path; role = its owner.
 - Order with depends_on using temporary ids (B1, B2… / F1…). Cards that touch the same files are never parallel.
 OUTPUT — only a JSON array:
-[{"tmp_id":"B1","title":"…","role":"backend","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"]}]
+[{"tmp_id":"B1","title":"…","role":"backend","component":"orders-svc","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"]}]
 ```
 
 Then **you** merge the arrays into `.work/<job>/board.json` (`{"cards":[…]}`):
@@ -140,6 +175,7 @@ With the gate off (default): go straight on. The user sees the plan and the boar
 CARD:
 <the card JSON from board.json>
 SPEC (what to build, the acceptance criteria and test data — follow it): <abs path to .work/<job>/specs/T-xx.md>
+COMPONENT: <card.component> — stack <stack>, path <path>; load these skills: <stack skills from your role card>
 ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/<card.role>.md>
 WORKTREE: <WT>   (branch <card.branch>; base is the job branch <job.branch>)
 Work ONLY inside this directory. All paths are relative to it.
