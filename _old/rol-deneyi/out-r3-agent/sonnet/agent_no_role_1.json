@@ -1,0 +1,116 @@
+{
+ "score": {
+  "score": 19,
+  "total": 19,
+  "passed": [
+   "extends AbstractWireDecoder",
+   "constructor (Protocol protocol) { super(protocol); }",
+   "decode(Channel, SocketAddress, Object) signature",
+   "uses GrammarComposer",
+   "FieldCursor + return null when no match",
+   "@LINK branch calls resolveUnitSession(imei) and returns null (behaviour-level; separate pattern allowed)",
+   "resolveUnitSession(channel, remoteAddress, imei)",
+   "new Position(wireName()) + setDeviceId",
+   "Position.KEY_* constants used",
+   "coordinate parsed with nextCoordinate(WHOLE_DEG_HEMI)",
+   "speed converted with UnitsConverter.nauticalFromMetricSpeed",
+   "no Optional / streams / generic catch / System.out",
+   "extends WireProtocolRoot with @Inject constructor(Config)",
+   "addServer(new EndpointListener(config, getName(), true))",
+   "pipeline: GlyphBoundaryFrameSplitter('$') + StringEncoder/StringDecoder + decoder",
+   "extends WireDecoderHarness",
+   "wireUp(new R16hProtocolDecoder(null))",
+   "assertNoOutput / assertFixDecoded with asciiFrame(...)",
+   "no raw assert*"
+  ],
+  "failed": [],
+  "buckets_present": {
+   "decoder": true,
+   "protocol": true,
+   "test": true
+  },
+  "files_found": [
+   "R16hProtocol.java",
+   "R16hProtocolDecoder.java",
+   "R16hProtocolDecoderTest.java"
+  ]
+ },
+ "metrics": {
+  "tool_calls": 51,
+  "by_tool": {
+   "Bash": 25,
+   "Glob": 1,
+   "Grep": 7,
+   "Read": 15,
+   "Write": 3
+  },
+  "read_paths": [
+   "",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/helper/FieldCursor.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/helper/GrammarComposer.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/EnnfuProtocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/EnnfuProtocolDecoder.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/RstProtocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/S168Protocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/Tlt2hProtocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/Tlt2hProtocolDecoder.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/WondexProtocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol/WondexProtocolDecoder.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/test/java/org/traccar/WireDecoderHarness.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/test/java/org/traccar/protocol/EnnfuProtocolDecoderTest.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/test/java/org/traccar/protocol/WondexProtocolDecoderTest.java"
+  ],
+  "grep_glob_calls": 8,
+  "bash_cmds": [
+   "ls /private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.dRT48l6jVR/src/main/java/org/traccar/protocol | grep -i ",
+   "grep -rl \"addServer.*true\" src/main/java/org/traccar/protocol | head -5; echo ---; grep -rln \"'\\$'\" src/main/java/org/tr",
+   "grep -n \"class EndpointListener\" -A 30 src/main/java/org/traccar/EndpointListener.java | head -50",
+   "grep -rl \"EndpointListener(config, getName(), true)\" src/main/java/org/traccar/protocol | xargs grep -l \"GlyphBoundaryFr",
+   "grep -n \"public \\|class FieldCursor\" src/main/java/org/traccar/helper/FieldCursor.java | head -60",
+   "grep -n \"public \" src/main/java/org/traccar/helper/GrammarComposer.java",
+   "find src/test/java/org/traccar/protocol -iname \"*Wondex*\" -o -iname \"*Tlt2h*\"",
+   "grep -n \"public \\|protected \" src/test/java/org/traccar/WireDecoderHarness.java | head -60",
+   "grep -n \"KEY_BATTERY\\|KEY_LOCK\\|KEY_DOOR\\|KEY_ALARM\\|KEY_ARCHIVE\\|ALARM_GENERAL\\|ALARM_SOS\" src/main/java/org/traccar/mo",
+   "grep -n \"KEY_ARCHIVE\\|OUTDATED\\|HISTORY\" src/main/java/org/traccar/model/Position.java",
+   "sed -n '1,60p' src/main/java/org/traccar/model/Position.java | grep -n \"KEY_\"",
+   "grep -rni \"archive\" src/main/java/org/traccar/model/Position.java src/main/java/org/traccar/*.java | head -20",
+   "grep -n \"resolveUnitSession\" src/main/java/org/traccar/AbstractWireDecoder.java",
+   "sed -n '1,40p' src/main/java/org/traccar/GlyphBoundaryFrameSplitter.java 2>/dev/null || find src/main/java/org/traccar -",
+   "grep -n \"public static double\" src/main/java/org/traccar/helper/UnitsConverter.java",
+   "grep -n \"wireUp\\|resolveUnitSession\\|connectionManager\" src/test/java/org/traccar/BaseTest.java | head -40",
+   "./gradlew test --tests \"org.traccar.protocol.R16hProtocolDecoderTest\" -q 2>&1 | tail -100",
+   "./gradlew test --tests \"org.traccar.protocol.R16hProtocolDecoderTest\"",
+   "ls build/classes/java/main 2>/dev/null | head -3; ls build/classes/java/test 2>/dev/null | head -3; find . -maxdepth 2 -",
+   "ls build/classes/java/main",
+   "grep -n \"public void set(String key, Boolean\" src/main/java/org/traccar/model/Position.java src/main/java/org/traccar/mo",
+   "find / -maxdepth 6 -iname \"*.gradle\" -type d 2>/dev/null",
+   "sed -n '1,60p' src/main/java/org/traccar/model/ExtendedModel.java",
+   "javac -version",
+   "grep -rl \"wondex\" --include=*.xml -i . 2>/dev/null | head -5"
+  ],
+  "assistant_msgs": 90,
+  "usage": {
+   "input_tokens": 86,
+   "cache_creation_input_tokens": 63347,
+   "cache_read_input_tokens": 2046241,
+   "output_tokens": 20807
+  },
+  "num_turns": 52,
+  "duration_ms": 276790,
+  "cost_usd": 0.8722312000000001,
+  "result_subtype": "success",
+  "is_error": false,
+  "model": "claude-sonnet-5",
+  "tokens_in_total": 2109674,
+  "tokens_out": 20807,
+  "tokens_total": 2130481,
+  "bash_opened_files": [
+   "src/main/java/org/traccar/GlyphBoundaryFrameSplitter.java",
+   "src/main/java/org/traccar/model/ExtendedModel.java",
+   "src/main/java/org/traccar/model/Position.java"
+  ],
+  "files_opened_distinct": 17,
+  "files_read_distinct": 14,
+  "wall_seconds": 278.0
+ }
+}

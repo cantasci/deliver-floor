@@ -1,0 +1,9 @@
+allprojects {
+    afterEvaluate {
+        plugins.withId('java') {
+            tasks.register('printCp') {
+                doLast { println "CP=" + sourceSets.main.compileClasspath.asPath }
+            }
+        }
+    }
+}

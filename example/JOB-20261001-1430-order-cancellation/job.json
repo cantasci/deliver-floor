@@ -1,0 +1,40 @@
+{
+  "id": "JOB-20261001-1430-order-cancellation",
+  "title": "Order cancellation",
+  "request": "Users should be able to cancel an order from the order detail page while it is still pending. Shipped orders cannot be cancelled. The user gets a confirmation email.",
+  "created": "2026-10-01T11:30:12Z",
+  "phase": "executing",
+  "stack": ["typescript", "react", "node", "postgres"],
+  "roles": [
+    { "role": "pm", "agent": "ecc:planner", "why": "always" },
+    { "role": "tech-lead", "agent": "ecc:architect", "why": "API + UI + email: touches 3 areas, needs a shared contract" },
+    { "role": "backend-lead", "agent": "ecc:architect", "why": "new endpoint, status transition, email trigger" },
+    { "role": "frontend-lead", "agent": "ecc:architect", "why": "button + confirm dialog on the order page" },
+    { "role": "backend", "agent": "backend-dev", "why": "backend-lead selected" },
+    { "role": "frontend", "agent": "frontend-dev", "why": "frontend-lead selected" },
+    { "role": "reviewer", "agent": "ecc:typescript-reviewer", "why": "stack: typescript (backend cards)" },
+    { "role": "reviewer-ui", "agent": "ecc:react-reviewer", "why": "stack: react (frontend cards)" },
+    { "role": "qa-web", "agent": "ecc:e2e-runner", "why": "user flow changes on the order page" }
+  ],
+  "assumptions": [
+    "Only the order owner can cancel (existing auth middleware covers ownership).",
+    "Email uses the existing mailer queue; no new provider."
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261001-1430-order-cancellation",
+  "integration_worktree": "/Users/you/code/shop/.work/JOB-20261001-1430-order-cancellation/wt/_integration",
+  "gates": {
+    "plan": { "status": "approved", "by": "you", "at": "2026-10-01T11:41:03Z", "note": "ok, add the 409 case to AC-2" },
+    "merge": null
+  },
+  "settings": {
+    "base_branch": "auto",
+    "max_parallel": 3,
+    "max_attempts": 2,
+    "gates": { "plan": true, "merge": true },
+    "merge_strategy": "pr",
+    "verify_full": "npm run typecheck && npm test",
+    "worktree_setup": "ln -s \"$ROOT/node_modules\" node_modules",
+    "stop_guard_max": 5
+  }
+}

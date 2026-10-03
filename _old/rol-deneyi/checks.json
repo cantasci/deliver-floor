@@ -1,0 +1,100 @@
+[
+ [
+  "decoder",
+  "extends AbstractWireDecoder",
+  "class R16hProtocolDecoder extends AbstractWireDecoder"
+ ],
+ [
+  "decoder",
+  "constructor (Protocol protocol) { super(protocol); }",
+  "R16hProtocolDecoder\\(Protocol protocol\\)\\s*\\{\\s*super\\(protocol\\);"
+ ],
+ [
+  "decoder",
+  "decode(Channel, SocketAddress, Object) signature",
+  "protected Object decode\\(\\s*Channel channel, SocketAddress remoteAddress, Object msg\\)"
+ ],
+ [
+  "decoder",
+  "uses GrammarComposer",
+  "new GrammarComposer\\(\\)"
+ ],
+ [
+  "decoder",
+  "FieldCursor + return null when no match",
+  "if \\(!parser\\.matches\\(\\)\\)\\s*\\{\\s*return null;"
+ ],
+ [
+  "decoder",
+  "@LINK branch calls resolveUnitSession(imei) and returns null (behaviour-level; separate pattern allowed)",
+  {
+   "fn": "link_behaviour",
+   "helper": "resolveUnitSession"
+  }
+ ],
+ [
+  "decoder",
+  "resolveUnitSession(channel, remoteAddress, imei)",
+  "resolveUnitSession\\(channel, remoteAddress, parser\\.next\\(\\)\\)"
+ ],
+ [
+  "decoder",
+  "new Position(wireName()) + setDeviceId",
+  "new Position\\(wireName\\(\\)\\)[\\s\\S]{0,80}setDeviceId\\(deviceSession\\.getDeviceId\\(\\)\\)"
+ ],
+ [
+  "decoder",
+  "Position.KEY_* constants used",
+  "Position\\.KEY_\\w+"
+ ],
+ [
+  "decoder",
+  "coordinate parsed with nextCoordinate(WHOLE_DEG_HEMI)",
+  "nextCoordinate\\(FieldCursor\\.CoordinateFormat\\.WHOLE_DEG_HEMI\\)"
+ ],
+ [
+  "decoder",
+  "speed converted with UnitsConverter.nauticalFromMetricSpeed",
+  "UnitsConverter\\.nauticalFromMetricSpeed"
+ ],
+ [
+  "decoder",
+  "no Optional / streams / generic catch / System.out",
+  "^(?![\\s\\S]*(Optional<|\\.stream\\(\\)|catch \\(Exception|System\\.out|printStackTrace))"
+ ],
+ [
+  "protocol",
+  "extends WireProtocolRoot with @Inject constructor(Config)",
+  "class R16hProtocol extends WireProtocolRoot[\\s\\S]*@Inject[\\s\\S]*R16hProtocol\\(Config config\\)"
+ ],
+ [
+  "protocol",
+  "addServer(new EndpointListener(config, getName(), true))",
+  "addServer\\(new EndpointListener\\(config, getName\\(\\), true\\)"
+ ],
+ [
+  "protocol",
+  "pipeline: GlyphBoundaryFrameSplitter('$') + StringEncoder/StringDecoder + decoder",
+  "GlyphBoundaryFrameSplitter\\([\\s\\S]*StringEncoder\\(\\)[\\s\\S]*StringDecoder\\(\\)[\\s\\S]*new R16hProtocolDecoder\\(R16hProtocol\\.this\\)"
+ ],
+ [
+  "test",
+  "extends WireDecoderHarness",
+  "class R16hProtocolDecoderTest extends WireDecoderHarness"
+ ],
+ [
+  "test",
+  "wireUp(new R16hProtocolDecoder(null))",
+  "wireUp\\(new R16hProtocolDecoder\\(null\\)\\)"
+ ],
+ [
+  "test",
+  "assertNoOutput / assertFixDecoded with asciiFrame(...)",
+  "assertNoOutput\\(decoder, asciiFrame\\([\\s\\S]*assertFixDecoded\\(decoder, asciiFrame\\("
+ ],
+ [
+  "test",
+  "no raw assert*",
+  "^(?![\\s\\S]*assert(Equals|True|That|NotNull)\\()"
+ ]
+]

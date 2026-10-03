@@ -1,0 +1,97 @@
+[
+ [
+  "decoder",
+  "extends BaseProtocolDecoder",
+  "class R16hProtocolDecoder extends BaseProtocolDecoder"
+ ],
+ [
+  "decoder",
+  "constructor (Protocol protocol) { super(protocol); }",
+  "R16hProtocolDecoder\\(Protocol protocol\\)\\s*\\{\\s*super\\(protocol\\);"
+ ],
+ [
+  "decoder",
+  "decode(Channel, SocketAddress, Object) signature",
+  "protected Object decode\\(\\s*Channel channel, SocketAddress remoteAddress, Object msg\\)"
+ ],
+ [
+  "decoder",
+  "uses PatternBuilder",
+  "new PatternBuilder\\(\\)"
+ ],
+ [
+  "decoder",
+  "Parser + return null when no match",
+  "if \\(!parser\\.matches\\(\\)\\)\\s*\\{\\s*return null;"
+ ],
+ [
+  "decoder",
+  "@LINK handled via getDeviceSession then return null",
+  "@LINK[\\s\\S]{0,200}getDeviceSession\\([\\s\\S]{0,120}return null;"
+ ],
+ [
+  "decoder",
+  "getDeviceSession(channel, remoteAddress, imei)",
+  "getDeviceSession\\(channel, remoteAddress, parser\\.next\\(\\)\\)"
+ ],
+ [
+  "decoder",
+  "new Position(getProtocolName()) + setDeviceId",
+  "new Position\\(getProtocolName\\(\\)\\)[\\s\\S]{0,80}setDeviceId\\(deviceSession\\.getDeviceId\\(\\)\\)"
+ ],
+ [
+  "decoder",
+  "Position.KEY_* constants used",
+  "Position\\.KEY_\\w+"
+ ],
+ [
+  "decoder",
+  "coordinate parsed with nextCoordinate(DEG_HEM)",
+  "nextCoordinate\\(Parser\\.CoordinateFormat\\.DEG_HEM\\)"
+ ],
+ [
+  "decoder",
+  "speed converted with UnitsConverter.knotsFromKph",
+  "UnitsConverter\\.knotsFromKph"
+ ],
+ [
+  "decoder",
+  "no Optional / streams / generic catch / System.out",
+  "^(?![\\s\\S]*(Optional<|\\.stream\\(\\)|catch \\(Exception|System\\.out|printStackTrace))"
+ ],
+ [
+  "protocol",
+  "extends BaseProtocol with @Inject constructor(Config)",
+  "class R16hProtocol extends BaseProtocol[\\s\\S]*@Inject[\\s\\S]*R16hProtocol\\(Config config\\)"
+ ],
+ [
+  "protocol",
+  "addServer(new TrackerServer(config, getName(), true))",
+  "addServer\\(new TrackerServer\\(config, getName\\(\\), true\\)"
+ ],
+ [
+  "protocol",
+  "pipeline: CharacterDelimiterFrameDecoder('$') + StringEncoder/StringDecoder + decoder",
+  "CharacterDelimiterFrameDecoder\\([\\s\\S]*StringEncoder\\(\\)[\\s\\S]*StringDecoder\\(\\)[\\s\\S]*new R16hProtocolDecoder\\(R16hProtocol\\.this\\)"
+ ],
+ [
+  "test",
+  "extends ProtocolTest",
+  "class R16hProtocolDecoderTest extends ProtocolTest"
+ ],
+ [
+  "test",
+  "inject(new R16hProtocolDecoder(null))",
+  "inject\\(new R16hProtocolDecoder\\(null\\)\\)"
+ ],
+ [
+  "test",
+  "verifyNull / verifyPosition with text(...)",
+  "verifyNull\\(decoder, text\\([\\s\\S]*verifyPosition\\(decoder, text\\("
+ ],
+ [
+  "test",
+  "no raw assert*",
+  "^(?![\\s\\S]*assert(Equals|True|That|NotNull)\\()"
+ ]
+]

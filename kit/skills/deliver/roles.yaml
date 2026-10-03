@@ -1,0 +1,115 @@
+# Role catalog — Michael selects roles ONLY from this list (not from all 68 ECC agents).
+# Adding a role = one entry here (+ a file under agents/ if it needs a new agent).
+#
+# kind:     pm | lead | dev | review | qa
+# agent:    subagent type to call. "ecc:"-prefixed ones come from the ECC plugin.
+# writes:   can it write files? (ECC planner/architect/reviewers are read-only — on purpose)
+# when:     selection rule (Michael decides at intake from the request + the repo)
+# always:   selected for every job
+
+roles:
+  pm:
+    kind: pm
+    agent: ecc:planner
+    writes: false
+    always: true
+    does: "Goal, scope, out of scope, testable acceptance criteria (AC-n). Checks the ACs at closing."
+
+  tech-lead:
+    kind: lead
+    agent: ecc:architect
+    writes: false
+    when: "New module, API/schema/data-model change, work touching 2+ areas, or 4+ cards expected"
+    does: "Technical approach + cross-area contracts (API schema, types). Produces cards."
+
+  backend-lead:
+    kind: lead
+    agent: ecc:architect
+    focus: backend
+    when: "Any API, service, DB, queue or integration work"
+    does: "Produces backend cards; later reviews backend cards (together with the stack reviewer)."
+
+  frontend-lead:
+    kind: lead
+    agent: ecc:architect
+    focus: frontend
+    when: "Any web UI, component, state or routing work"
+    does: "Produces frontend cards; later reviews them."
+
+  mobile-lead:
+    kind: lead
+    agent: ecc:architect
+    focus: mobile
+    when: "Any Android/iOS app work"
+    does: "Produces mobile cards; later reviews them."
+
+  backend:
+    kind: dev
+    agent: backend-dev
+    writes: true
+    when: "backend-lead was selected"
+
+  frontend:
+    kind: dev
+    agent: frontend-dev
+    writes: true
+    when: "frontend-lead was selected"
+
+  mobile:
+    kind: dev
+    agent: mobile-dev
+    writes: true
+    when: "mobile-lead was selected"
+
+  security:
+    kind: review
+    agent: ecc:security-reviewer
+    writes: false
+    when: "auth, permissions, payments, personal data, secrets, file upload, handling external input"
+    does: "Reviews the relevant cards IN ADDITION to the stack reviewer."
+
+  qa-web:
+    kind: qa
+    agent: ecc:e2e-runner
+    writes: true
+    when: "A web user flow changes"
+    does: "Writes/runs end-to-end tests in the integration worktree."
+
+  qa-mobile:
+    kind: qa
+    agent: artemis          # not a subagent: Michael drives it himself via the ARTEMIS MCP (mobile_run_task)
+    when: "A mobile user flow changes and a device/emulator is connected"
+    does: "Verifies the flow on a device; a separate mobile-dev card is opened for durable test code."
+
+# Stack reviewer used in the Lead review — picked from job.stack.
+# If several match, use the most specific one (e.g. react over typescript).
+stack_reviewers:
+  react: ecc:react-reviewer
+  vue: ecc:vue-reviewer
+  typescript: ecc:typescript-reviewer
+  javascript: ecc:typescript-reviewer
+  python: ecc:python-reviewer
+  django: ecc:django-reviewer
+  fastapi: ecc:fastapi-reviewer
+  go: ecc:go-reviewer
+  rust: ecc:rust-reviewer
+  java: ecc:java-reviewer
+  kotlin: ecc:kotlin-reviewer
+  swift: ecc:swift-reviewer
+  flutter: ecc:flutter-reviewer
+  php: ecc:php-reviewer
+  cpp: ecc:cpp-reviewer
+  csharp: ecc:csharp-reviewer
+  database: ecc:database-reviewer
+  default: ecc:code-reviewer
+
+# Stack detection hints (Michael checks these at intake)
+stack_hints:
+  package.json: "typescript/javascript — check dependencies for react/vue/next"
+  tsconfig.json: typescript
+  build.gradle / build.gradle.kts: "kotlin/java — mobile if the android plugin is applied"
+  Package.swift / *.xcodeproj: swift (mobile)
+  pubspec.yaml: flutter (mobile)
+  pyproject.toml / requirements.txt: "python — check for django/fastapi"
+  go.mod: go
+  Cargo.toml: rust

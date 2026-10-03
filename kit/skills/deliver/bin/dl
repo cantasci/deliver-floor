@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+# dl — the deterministic half of the /deliver flow.
+# The board, phase transitions, worktrees, gates and merges are run by this script, not by the LLM.
+# Michael (the orchestrator) calls these commands through Bash; you can call them from a terminal too.
+#
+#   dl new "<title>" "<request>"   new job: .work/<JOB>/, job/<JOB> branch, integration worktree
+#   dl status                      active job's phase + board table + ready cards
+#   dl board                       board table only
+#   dl phase <phase>               set phase (intake planning awaiting_plan_approval executing
+#                                  integrating awaiting_merge_approval closing done aborted)
+#   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
+#   dl validate                    board.json schema + dependency + scope-overlap check
+#   dl ready                       ids of cards with state=ready whose dependencies are all merged
+#   dl wt add <card>               card worktree (from the job branch) + state=running + attempts+1
+#   dl wt rm <card>                remove the card worktree (branch is kept)
+#   dl card <card> state <state>   ready running review merged blocked archived
+#   dl card <card> note "<text>"   attach a note to a card (blocked reason, etc.)
+#   dl gate <card>                 mechanical gate: clean tree, has commits, in scope, verify passes
+#   dl integrate <card>            --no-ff merge card branch into job branch → merged (exit 3 on conflict)
+#   dl verify-all                  run verify_full in the integration worktree
+#   dl approve <plan|merge> [note] record human approval (run by the human, or on their explicit approval)
+#   dl reject  <plan|merge> "<note>" record human rejection
+#   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
+#
+# Env: DELIVER_JOB=<id> targets that job instead of .work/ACTIVE.
+set -euo pipefail
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="$(cd "$BIN_DIR/.." && pwd)"
+CONFIG="$SKILL_DIR/config.json"
+
+die() { echo "dl: $*" >&2; exit 1; }
+command -v jq >/dev/null || die "jq is required (brew install jq)"
+command -v git >/dev/null || die "git is required"
+
+# Root of the main checkout — resolves the main repo even when called from inside a worktree.
+common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || die "not inside a git repository"
+ROOT="$(cd "$common_dir/.." && pwd)"
+WORK="$ROOT/.work"
+
+STATES="ready running review merged blocked archived"
+PHASES="intake planning awaiting_plan_approval executing integrating awaiting_merge_approval closing done aborted"
+
+jq_inplace() { # jq_inplace <file> <jq args...>
+  local f=$1; shift
+  local tmp; tmp="$(mktemp)"
+  jq "$@" "$f" > "$tmp" && mv "$tmp" "$f"
+}
+
+load_job() {
+  JOB="${DELIVER_JOB:-}"
+  if [[ -z $JOB ]]; then
+    [[ -f "$WORK/ACTIVE" ]] || die "no active job — start one with: dl new \"<title>\" \"<request>\""
+    JOB="$(cat "$WORK/ACTIVE")"
+  fi
+  JOB_DIR="$WORK/$JOB"
+  JOBJ="$JOB_DIR/job.json"
+  BOARD="$JOB_DIR/board.json"
+  [[ -f $JOBJ ]] || die "job not found: $JOB"
+  JOB_BRANCH="$(jq -r .branch "$JOBJ")"
+  IWT="$(jq -r .integration_worktree "$JOBJ")"
+}
+
+setting() { jq -r ".settings.$1" "$JOBJ"; }
+
+card_exists() { jq -e --arg id "$1" '.cards[] | select(.id==$id)' "$BOARD" >/dev/null || die "no such card: $1"; }
+card_get() { jq -r --arg id "$1" ".cards[] | select(.id==\$id) | $2" "$BOARD"; }
+
+log_event() { printf '%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$1" "$2" >> "$JOB_DIR/events.log"; }
+reset_stop_guard() { rm -f "$JOB_DIR/.stop-blocks"; }
+
+run_setup() { # per-worktree setup command (node_modules, etc.)
+  local dir=$1 cmd; cmd="$(setting worktree_setup)"
+  [[ -n $cmd && $cmd != null ]] || return 0
+  (cd "$dir" && ROOT="$ROOT" bash -c "$cmd") >> "$JOB_DIR/setup.log" 2>&1 \
+    || echo "dl: warning — worktree_setup failed, see $JOB_DIR/setup.log" >&2
+}
+
+cmd_new() {
+  local title=${1:-} request=${2:-${1:-}}
+  [[ -n $title ]] || die 'usage: dl new "<title>" "<request>"'
+  command -v node >/dev/null || die "node is required"
+  local slug id base
+  slug="$(node -e 'const s=process.argv[1].replace(/ı/g,"i").replace(/İ/g,"i").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,32);console.log(s||"job")' "$title")"
+  id="JOB-$(date +%Y%m%d-%H%M)-$slug"
+  [[ ! -e "$WORK/$id" ]] || die "already exists: $id"
+
+  # Settings: skill config.json, overridden by .deliver.json at the repo root if present.
+  local settings
+  if [[ -f "$ROOT/.deliver.json" ]]; then
+    settings="$(jq -s '.[0] * .[1]' "$CONFIG" "$ROOT/.deliver.json")"
+  else
+    settings="$(cat "$CONFIG")"
+  fi
+  base="$(jq -r .base_branch <<<"$settings")"
+  if [[ $base == auto || $base == null ]]; then
+    base="$(git -C "$ROOT" symbolic-ref --short HEAD 2>/dev/null)" || die "could not resolve base branch (detached HEAD?)"
+  fi
+
+  mkdir -p "$WORK/$id/handoffs" "$WORK/$id/gates" "$WORK/$id/wt"
+  # Keep .work/ out of git (local exclude; .gitignore is not touched)
+  local excl="$common_dir/info/exclude"; mkdir -p "$(dirname "$excl")"
+  grep -qxF '.work/' "$excl" 2>/dev/null || echo '.work/' >> "$excl"
+
+  local branch="job/$id" iwt="$WORK/$id/wt/_integration"
+  git -C "$ROOT" branch "$branch" "$base"
+  git -C "$ROOT" worktree add -q "$iwt" "$branch"
+
+  cp "$SKILL_DIR/templates/plan.md" "$SKILL_DIR/templates/report.md" "$WORK/$id/"
+  cp "$SKILL_DIR/templates/board.json" "$WORK/$id/board.json"
+  jq --arg id "$id" --arg title "$title" --arg req "$request" --arg base "$base" \
+     --arg branch "$branch" --arg iwt "$iwt" --arg now "$(date -u +%FT%TZ)" \
+     --argjson settings "$settings" \
+     '.id=$id | .title=$title | .request=$req | .created=$now | .base_branch=$base
+      | .branch=$branch | .integration_worktree=$iwt | .settings=$settings' \
+     "$SKILL_DIR/templates/job.json" > "$WORK/$id/job.json"
+  echo "$id" > "$WORK/ACTIVE"
+  JOB=$id; JOB_DIR="$WORK/$id"; JOBJ="$JOB_DIR/job.json"
+  run_setup "$iwt"
+  log_event new "$title"
+  echo "$id"
+}
+
+cmd_board() {
+  load_job
+  jq -r '(["ID","STATE","ROLE","AGENT","TRIES","DEPENDS","TITLE"] | @tsv),
+         (.cards[] | [.id, .state, .role, .agent, (.attempts|tostring),
+                      ((.depends_on // []) | if length==0 then "-" else join(",") end), .title] | @tsv)' \
+     "$BOARD" | column -t -s $'\t'
+  echo
+  jq -r '[.cards[].state] | group_by(.) | map("\(.[0])=\(length)") | join("  ") | "summary: " + (if .=="" then "no cards" else . end)' "$BOARD"
+}
+
+cmd_status() {
+  load_job
+  jq -r '"job:      \(.id)\ntitle:    \(.title)\nphase:    \(.phase)\nbranch:   \(.branch)  (base: \(.base_branch))\napproval: plan=\(.gates.plan.status // "-")  merge=\(.gates.merge.status // "-")"' "$JOBJ"
+  echo
+  cmd_board
+  local r; r="$(cmd_ready | tr '\n' ' ')"
+  echo "ready: ${r:-none}"
+}
+
+cmd_phase() {
+  load_job
+  local p=${1:-}; [[ " $PHASES " == *" $p "* ]] || die "invalid phase: '$p' — valid: $PHASES"
+  jq_inplace "$JOBJ" --arg p "$p" '.phase=$p'
+  reset_stop_guard; log_event phase "$p"; echo "phase: $p"
+}
+
+cmd_jobset() { load_job; [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"; jq_inplace "$JOBJ" "$1"; }
+
+cmd_validate() { load_job; node "$BIN_DIR/validate.mjs" "$BOARD"; }
+
+cmd_ready() {
+  load_job
+  jq -r '. as $b | .cards[] | select(.state=="ready")
+         | select(all((.depends_on // [])[]; . as $d
+             | ([$b.cards[] | select(.id==$d) | .state] | first // "missing") == "merged"))
+         | .id' "$BOARD"
+}
+
+cmd_wt() {
+  load_job
+  local sub=${1:-} card=${2:-}; [[ -n $card ]] || die "usage: dl wt add|rm <card>"
+  card_exists "$card"
+  local path="$JOB_DIR/wt/$card" branch="$JOB_BRANCH--$card"
+  case $sub in
+    add)
+      if [[ ! -d $path ]]; then
+        if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$branch"; then
+          git -C "$ROOT" worktree add -q "$path" "$branch"
+        else
+          git -C "$ROOT" worktree add -q -b "$branch" "$path" "$JOB_BRANCH"
+        fi
+        run_setup "$path"
+      fi
+      jq_inplace "$BOARD" --arg id "$card" --arg p "$path" --arg b "$branch" \
+        '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b | .state="running" | .attempts+=1)'
+      reset_stop_guard
+      log_event "wt-add" "$card attempt=$(card_get "$card" .attempts)"
+      echo "$path"
+      ;;
+    rm)
+      [[ -d $path ]] && git -C "$ROOT" worktree remove --force "$path"
+      log_event "wt-rm" "$card"; echo "removed: $path (branch kept: $branch)"
+      ;;
+    *) die "usage: dl wt add|rm <card>" ;;
+  esac
+}
+
+cmd_card() {
+  load_job
+  local card=${1:-} what=${2:-} val=${3:-}
+  [[ -n $card && -n $what ]] || die "usage: dl card <card> state <state> | note \"<text>\""
+  card_exists "$card"
+  case $what in
+    state)
+      [[ " $STATES " == *" $val "* ]] || die "invalid state: '$val' — valid: $STATES"
+      jq_inplace "$BOARD" --arg id "$card" --arg s "$val" '(.cards[] | select(.id==$id)).state=$s'
+      reset_stop_guard; log_event state "$card=$val"; echo "$card → $val" ;;
+    note)
+      jq_inplace "$BOARD" --arg id "$card" --arg n "$val" --arg t "$(date -u +%FT%TZ)" \
+        '(.cards[] | select(.id==$id)).notes += [{"at":$t,"note":$n}]'
+      log_event note "$card: $val" ;;
+    *) die "unknown field: $what" ;;
+  esac
+}
+
+cmd_gate() {
+  load_job
+  local card=${1:-}; [[ -n $card ]] || die "usage: dl gate <card>"
+  card_exists "$card"
+  local wt verify attempt log fail=0
+  wt="$(card_get "$card" .worktree)"; verify="$(card_get "$card" .verify)"; attempt="$(card_get "$card" .attempts)"
+  [[ -d $wt ]] || die "$card has no worktree — run: dl wt add $card"
+  log="$JOB_DIR/gates/$card-a$attempt-$(date +%H%M%S).log"
+  {
+    echo "# gate: $card  attempt: $attempt  $(date -u +%FT%TZ)"
+    if [[ -n "$(git -C "$wt" status --porcelain)" ]]; then
+      echo "FAIL  uncommitted changes (git -C $wt status)"; fail=1
+    else echo "ok    working tree clean"; fi
+
+    local n; n="$(git -C "$wt" rev-list --count "$JOB_BRANCH..HEAD")"
+    if [[ $n -eq 0 ]]; then echo "FAIL  no commits on the card branch"; fail=1; else echo "ok    $n commit(s)"; fi
+
+    local f p ok out=0
+    while IFS= read -r f; do
+      [[ -n $f ]] || continue
+      ok=0
+      while IFS= read -r p; do
+        # shellcheck disable=SC2053  # $p is matched as a glob on purpose; ** spans directories
+        [[ $f == $p ]] && { ok=1; break; }
+      done < <(card_get "$card" '.scope[]')
+      [[ $ok -eq 1 ]] || { echo "FAIL  out-of-scope file: $f"; out=1; }
+    done < <(git -C "$wt" diff --name-only "$JOB_BRANCH...HEAD")
+    [[ $out -eq 0 ]] && echo "ok    all changes within scope" || fail=1
+
+    echo "----- verify: $verify"
+    if (cd "$wt" && bash -c "$verify") 2>&1; then echo "ok    verify passed"; else echo "FAIL  verify failed"; fail=1; fi
+  } > "$log" 2>&1 || true
+  grep -q '^FAIL' "$log" && fail=1
+  if [[ $fail -eq 0 ]]; then
+    log_event gate "$card PASS"; echo "GATE PASSED: $card  (log: $log)"
+  else
+    log_event gate "$card FAIL"
+    echo "GATE FAILED: $card  (log: $log)"; grep '^FAIL' "$log"; echo "--- tail of gate log:"; tail -n 30 "$log"
+    exit 1
+  fi
+}
+
+cmd_integrate() {
+  load_job
+  local card=${1:-}; [[ -n $card ]] || die "usage: dl integrate <card>"
+  card_exists "$card"
+  local branch title; branch="$(card_get "$card" .branch)"; title="$(card_get "$card" .title)"
+  [[ $branch != null ]] || die "$card has no branch"
+  if ! git -C "$IWT" merge --no-ff -q -m "$card: $title" "$branch" >/dev/null 2>&1; then
+    git -C "$IWT" merge --abort 2>/dev/null || true
+    log_event integrate "$card CONFLICT"
+    echo "CONFLICT: $card conflicts with $JOB_BRANCH. Tell the dev: run 'git merge $JOB_BRANCH' in the worktree, resolve, commit; then gate + integrate again." >&2
+    exit 3
+  fi
+  jq_inplace "$BOARD" --arg id "$card" '(.cards[] | select(.id==$id)).state="merged"'
+  local path="$JOB_DIR/wt/$card"; [[ -d $path ]] && git -C "$ROOT" worktree remove --force "$path"
+  reset_stop_guard; log_event integrate "$card merged"
+  echo "MERGED: $card → $JOB_BRANCH"
+}
+
+cmd_verify_all() {
+  load_job
+  local cmd log; cmd="$(setting verify_full)"; log="$JOB_DIR/gates/verify-all-$(date +%H%M%S).log"
+  echo "verify_full: $cmd  (log: $log)"
+  if (cd "$IWT" && bash -c "$cmd") > "$log" 2>&1; then
+    log_event verify-all PASS; echo "PASSED"
+  else
+    log_event verify-all FAIL; echo "FAILED"; tail -n 40 "$log"; exit 1
+  fi
+}
+
+cmd_approve() { _gate_record "${1:-}" approved "${2:-}"; }
+cmd_reject()  { _gate_record "${1:-}" rejected "${2:-}"; }
+_gate_record() {
+  load_job
+  local gate=$1 status=$2 note=$3
+  [[ $gate == plan || $gate == merge ]] || die "gate must be: plan | merge"
+  jq_inplace "$JOBJ" --arg g "$gate" --arg s "$status" --arg n "$note" --arg by "${USER:-human}" --arg t "$(date -u +%FT%TZ)" \
+    '.gates[$g] = {"status":$s, "by":$by, "at":$t, "note":$n}'
+  reset_stop_guard; log_event "gate-$gate" "$status $note"; echo "$gate: $status"
+}
+
+cmd_cleanup() {
+  load_job
+  local d
+  for d in "$JOB_DIR"/wt/*; do
+    [[ -d $d && $(basename "$d") != _integration ]] && git -C "$ROOT" worktree remove --force "$d"
+  done
+  if [[ ${1:-} == --all ]]; then git -C "$ROOT" worktree remove --force "$IWT" 2>/dev/null || true; fi
+  [[ "$(cat "$WORK/ACTIVE" 2>/dev/null)" == "$JOB" ]] && rm -f "$WORK/ACTIVE"
+  git -C "$ROOT" worktree prune
+  log_event cleanup "${1:-}"; echo "cleaned up: $JOB (branches kept)"
+}
+
+main() {
+  local c=${1:-help}; shift || true
+  case $c in
+    new) cmd_new "$@" ;;
+    status) cmd_status ;;
+    board) cmd_board ;;
+    phase) cmd_phase "$@" ;;
+    jobset) cmd_jobset "$@" ;;
+    validate) cmd_validate ;;
+    ready) cmd_ready ;;
+    wt) cmd_wt "$@" ;;
+    card) cmd_card "$@" ;;
+    gate) cmd_gate "$@" ;;
+    integrate) cmd_integrate "$@" ;;
+    verify-all) cmd_verify_all ;;
+    approve) cmd_approve "$@" ;;
+    reject) cmd_reject "$@" ;;
+    cleanup) cmd_cleanup "$@" ;;
+    help|-h|--help) sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    *) die "unknown command: $c (dl help)" ;;
+  esac
+}
+main "$@"

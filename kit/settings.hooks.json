@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "__HOOKS_DIR__/stop-guard.sh", "timeout": 15 }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "__HOOKS_DIR__/bash-guard.sh", "timeout": 10 }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "__HOOKS_DIR__/subagent-log.sh", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}

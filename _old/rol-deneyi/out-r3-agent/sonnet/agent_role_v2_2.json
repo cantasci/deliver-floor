@@ -1,0 +1,83 @@
+{
+ "score": {
+  "score": 19,
+  "total": 19,
+  "passed": [
+   "extends AbstractWireDecoder",
+   "constructor (Protocol protocol) { super(protocol); }",
+   "decode(Channel, SocketAddress, Object) signature",
+   "uses GrammarComposer",
+   "FieldCursor + return null when no match",
+   "@LINK branch calls resolveUnitSession(imei) and returns null (behaviour-level; separate pattern allowed)",
+   "resolveUnitSession(channel, remoteAddress, imei)",
+   "new Position(wireName()) + setDeviceId",
+   "Position.KEY_* constants used",
+   "coordinate parsed with nextCoordinate(WHOLE_DEG_HEMI)",
+   "speed converted with UnitsConverter.nauticalFromMetricSpeed",
+   "no Optional / streams / generic catch / System.out",
+   "extends WireProtocolRoot with @Inject constructor(Config)",
+   "addServer(new EndpointListener(config, getName(), true))",
+   "pipeline: GlyphBoundaryFrameSplitter('$') + StringEncoder/StringDecoder + decoder",
+   "extends WireDecoderHarness",
+   "wireUp(new R16hProtocolDecoder(null))",
+   "assertNoOutput / assertFixDecoded with asciiFrame(...)",
+   "no raw assert*"
+  ],
+  "failed": [],
+  "buckets_present": {
+   "decoder": true,
+   "protocol": true,
+   "test": true
+  },
+  "files_found": [
+   "R16hProtocol.java",
+   "R16hProtocolDecoder.java",
+   "R16hProtocolDecoderTest.java"
+  ]
+ },
+ "metrics": {
+  "tool_calls": 34,
+  "by_tool": {
+   "Bash": 3,
+   "Grep": 19,
+   "Read": 9,
+   "Write": 3
+  },
+  "read_paths": [
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/helper/FieldCursor.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/helper/GrammarComposer.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/protocol/R16hProtocolDecoder.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/protocol/S168Protocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/protocol/S168ProtocolDecoder.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/protocol/SanavProtocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/protocol/Tr20Protocol.java",
+   "/private/var/folders/dj/l_ynf7ms0c1851_fx7jbfn6c0000gn/T/tmp.IhSeLgchuy/src/main/java/org/traccar/protocol/Xrb28ProtocolDecoder.java"
+  ],
+  "grep_glob_calls": 19,
+  "bash_cmds": [
+   "grep -rl \"DatagramChannel\\|NioDatagramChannelFactory\\|new EndpointListener(config, getName(), true)\" /Users/cantasci -r ",
+   "true",
+   "./gradlew compileJava compileTestJava -q 2>&1 | tail -100"
+  ],
+  "assistant_msgs": 63,
+  "usage": {
+   "input_tokens": 70,
+   "cache_creation_input_tokens": 65825,
+   "cache_read_input_tokens": 1615300,
+   "output_tokens": 18590
+  },
+  "num_turns": 35,
+  "duration_ms": 208152,
+  "cost_usd": 0.7737530000000001,
+  "result_subtype": "success",
+  "is_error": false,
+  "model": "claude-sonnet-5",
+  "tokens_in_total": 1681195,
+  "tokens_out": 18590,
+  "tokens_total": 1699785,
+  "bash_opened_files": [],
+  "files_opened_distinct": 8,
+  "files_read_distinct": 8,
+  "wall_seconds": 209.0
+ }
+}

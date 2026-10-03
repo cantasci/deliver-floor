@@ -1,0 +1,32 @@
+{
+ "score": 18,
+ "total": 19,
+ "passed": [
+  "extends AbstractWireDecoder",
+  "constructor (Protocol protocol) { super(protocol); }",
+  "decode(Channel, SocketAddress, Object) signature",
+  "uses GrammarComposer",
+  "FieldCursor + return null when no match",
+  "@LINK branch calls resolveUnitSession(imei) and returns null (behaviour-level; separate pattern allowed)",
+  "resolveUnitSession(channel, remoteAddress, imei)",
+  "new Position(wireName()) + setDeviceId",
+  "Position.KEY_* constants used",
+  "coordinate parsed with nextCoordinate(WHOLE_DEG_HEMI)",
+  "speed converted with UnitsConverter.nauticalFromMetricSpeed",
+  "no Optional / streams / generic catch / System.out",
+  "extends WireProtocolRoot with @Inject constructor(Config)",
+  "addServer(new EndpointListener(config, getName(), true))",
+  "extends WireDecoderHarness",
+  "wireUp(new R16hProtocolDecoder(null))",
+  "assertNoOutput / assertFixDecoded with asciiFrame(...)",
+  "no raw assert*"
+ ],
+ "failed": [
+  "pipeline: GlyphBoundaryFrameSplitter('$') + StringEncoder/StringDecoder + decoder"
+ ],
+ "buckets_present": {
+  "decoder": true,
+  "protocol": true,
+  "test": true
+ }
+}

@@ -1,0 +1,68 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Order status transition: cancel() in the order service",
+      "role": "backend",
+      "agent": "backend-dev",
+      "state": "merged",
+      "depends_on": [],
+      "scope": ["src/server/orders/service/**", "test/server/orders/service/**"],
+      "acceptance": ["AC-1: pending → cancelled", "AC-2: shipped/cancelled → OrderNotCancellable", "Idempotent: conditional UPDATE … WHERE status='pending'"],
+      "verify": "npm test -- test/server/orders/service",
+      "context": "Add cancel(orderId, userId) to OrderService. Use a single conditional UPDATE so two concurrent cancels can't both succeed. Throw OrderNotCancellable for non-pending. Emit the OrderCancelled domain event after a successful update (T-04 subscribes to it). Ownership is already enforced by findForUser().",
+      "attempts": 1,
+      "notes": [],
+      "branch": "job/JOB-20261001-1430-order-cancellation--T-01",
+      "worktree": "/Users/you/code/shop/.work/JOB-20261001-1430-order-cancellation/wt/T-01"
+    },
+    {
+      "id": "T-02",
+      "title": "Cancel endpoint: POST /api/orders/:id/cancel",
+      "role": "backend",
+      "agent": "backend-dev",
+      "state": "merged",
+      "depends_on": ["T-01"],
+      "scope": ["src/server/orders/routes/**", "test/server/orders/routes/**"],
+      "acceptance": ["AC-1: 200 + body {status:'cancelled'}", "AC-2: 409 {code:'ORDER_NOT_CANCELLABLE'}", "AC-3: other user's order → 404"],
+      "verify": "npm test -- test/server/orders/routes",
+      "context": "Route calls OrderService.cancel (T-01). Map OrderNotCancellable → 409, NotFound → 404. Response shape is the contract the frontend card (T-03) uses: { id, status }.",
+      "attempts": 2,
+      "notes": [{ "at": "2026-10-01T12:20:41Z", "note": "attempt 1: reviewer asked for 404 test on foreign order" }],
+      "branch": "job/JOB-20261001-1430-order-cancellation--T-02",
+      "worktree": "/Users/you/code/shop/.work/JOB-20261001-1430-order-cancellation/wt/T-02"
+    },
+    {
+      "id": "T-03",
+      "title": "Cancel button + confirm dialog on the order page",
+      "role": "frontend",
+      "agent": "frontend-dev",
+      "state": "running",
+      "depends_on": ["T-02"],
+      "scope": ["src/web/pages/orders/**", "src/web/api/orders.ts", "test/web/orders/**"],
+      "acceptance": ["AC-4: button only for pending", "AC-4: confirm → POST → status badge updates without reload", "409 → toast with the error, no status change"],
+      "verify": "npm test -- test/web/orders",
+      "context": "Use the existing <ConfirmDialog> and useMutation pattern from pages/orders/Return.tsx. API: POST /api/orders/:id/cancel → { id, status } (from T-02). Do not add new design tokens.",
+      "attempts": 1,
+      "notes": [],
+      "branch": "job/JOB-20261001-1430-order-cancellation--T-03",
+      "worktree": "/Users/you/code/shop/.work/JOB-20261001-1430-order-cancellation/wt/T-03"
+    },
+    {
+      "id": "T-04",
+      "title": "Enqueue cancellation email",
+      "role": "backend",
+      "agent": "backend-dev",
+      "state": "review",
+      "depends_on": ["T-01"],
+      "scope": ["src/server/mail/templates/order-cancelled.*", "src/server/orders/events/**", "test/server/orders/events/**"],
+      "acceptance": ["AC-5: exactly one job per successful cancel", "no email when cancel throws"],
+      "verify": "npm test -- test/server/orders/events",
+      "context": "Subscribe to the OrderCancelled domain event emitted by OrderService.cancel (T-01) and enqueue mailer job 'order-cancelled'. Template follows order-shipped.mjml.",
+      "attempts": 1,
+      "notes": [],
+      "branch": "job/JOB-20261001-1430-order-cancellation--T-04",
+      "worktree": "/Users/you/code/shop/.work/JOB-20261001-1430-order-cancellation/wt/T-04"
+    }
+  ]
+}
