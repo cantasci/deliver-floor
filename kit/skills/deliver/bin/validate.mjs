@@ -58,6 +58,17 @@ for (const c of cards) {
     errors.push(`${id}: verify '${c.verify}' proves nothing — it must run the card's tests`);
 }
 
+// The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.
+if (job && (job.roles ?? []).some((r) => r.role === "ba"))
+  for (const c of cards) {
+    if (c.state === "archived" || c.state === "merged") continue;
+    const sp = join(dir, "specs", `${c.id}.md`);
+    if (!existsSync(sp)) { errors.push(`${c.id}: no BA spec (specs/${c.id}.md) — the Business Analyst writes one per card`); continue; }
+    const t = readFileSync(sp, "utf8");
+    if (!/acceptance criteria/i.test(t) || !/given/i.test(t) || !/then/i.test(t))
+      errors.push(`${c.id}: specs/${c.id}.md has no Given/When/Then acceptance criteria`);
+  }
+
 for (const c of cards)
   for (const d of c.depends_on ?? []) {
     if (d === c.id) errors.push(`${c.id}: depends on itself`);

@@ -87,7 +87,7 @@ export function checkJobRoles(job, cat) {
 }
 
 // --- rendering ------------------------------------------------------------------------------------------------------
-const KIND_TITLE = { pm: "Product manager", lead: "Lead", dev: "Developer", review: "Reviewer", qa: "QA" };
+const KIND_TITLE = { ba: "Business analyst", lead: "Lead", dev: "Developer", review: "Reviewer", qa: "QA" };
 
 function projectFacts(job) {
   const root = job.repo;

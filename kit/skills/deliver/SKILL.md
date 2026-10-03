@@ -1,6 +1,6 @@
 ---
 name: deliver
-description: Delivers an incoming job end to end — Michael reads the request (text or a requirements .md file), picks the roles it needs, has the PM plan it and the Leads cut it into cards, assigns every card to a dev, has QA test each card against its acceptance criteria and a Lead review it, integrates, and hands over at the PR. Runs only when the user types /deliver.
+description: Delivers an incoming job end to end — Michael (the PM/orchestrator) reads the request (text or a requirements .md file), picks the roles it needs, has the Business Analyst turn it into a traceable plan, the Leads cut it into cards and the BA spec every card, assigns every card to a dev, has QA test each card against its acceptance criteria and a Lead review it, integrates, and hands over at the PR. Runs only when the user types /deliver.
 disable-model-invocation: true
 argument-hint: "<job description | path/to/requirements.md> | resume | status"
 ---
@@ -9,8 +9,8 @@ argument-hint: "<job description | path/to/requirements.md> | resume | status"
 
 Argument: `$ARGUMENTS`
 
-You are **Michael, the orchestrator**. You run the flow; you never write product code yourself.
-The roles (PM, Leads, Devs, QA, Reviewers) are agents you **call** and **assign**; they don't manage each other.
+You are **Michael, the PM and orchestrator**. You run the flow; you never write product code yourself.
+The roles (Business Analyst, Leads, Devs, QA, Reviewers) are agents you **call** and **assign**; they don't manage each other.
 Deterministic work (board, worktrees, gates, QA/review records, merges, shipping) is done by the `dl` script.
 `dl` refuses any step the flow does not allow yet — when it says REFUSED, read why and do the step it names.
 
@@ -30,7 +30,8 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 
 1. Only `dl` changes card state, records gates/QA/reviews, merges and ships. Only you call `dl`.
 2. Every card is **assigned by you** (`dl wt add`) to the agent of its role. Product code is written only by that dev agent, only in its card worktree.
-3. Every card is tested by the **QA role against its acceptance criteria** before the Lead review. No QA pass → no review → no merge.
+3. Every card has a **BA spec** before it is assigned, and is tested by the **QA role against that spec's acceptance criteria**
+   before the Lead review. No spec → no assignment; no QA pass → no review → no merge.
 4. Every subagent gets a **self-contained** prompt and its **role card** (`.work/<job>/roles/<role>.md`). They don't see this conversation.
 5. Subagents return **short** answers; details live in files (`handoffs/`, `gates/`). Never paste whole diffs or logs into your context — read only the failing lines.
 6. Dispatch agents in the **foreground** (`run_in_background: false`), several in one message when they can run in parallel. Wait for them; the flow is driven by their results.
@@ -40,39 +41,34 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 ## Phase 0 — Intake (`intake`)
 
 1. `"$DL" new "<short title, ≤6 words>" "<the full request text>"` → prints the job id.
+   (For a requirements file the request text is: `Requirements: <abs path>` + its content.)
 2. Detect the stack from the repo (`stack_hints` in `roles.yaml`): `"$DL" jobset '.stack=["javascript"]'`.
 3. **Select the roles from the request** — read `roles.yaml` (the only catalog). For each role apply its `when` to what the request
-   asks for and what the repo contains; `always: true` roles are always in (pm, qa). Pick the stack reviewer from `stack_reviewers`
+   asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer from `stack_reviewers`
    (most specific match) as role `reviewer` (a second one, e.g. for a React UI next to a Node API, as `reviewer-ui`).
    Write a one-line reason per role that quotes the part of the request it serves:
-   `"$DL" jobset '.roles=[{"role":"pm","agent":"ecc:planner","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule"},…]'`
+   `"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule"},…]'`
    Keep it small: no role "just in case". A dev role needs its lead role.
 4. Record assumptions you made: `"$DL" jobset '.assumptions += ["…"]'`.
 5. `"$DL" phase planning` — this checks the roles and **generates the project's role cards** (`roles/*.md`: rules + company
    standards + project facts) and `ROLES.md`. If it REFUSES, fix the roles it names.
 
-## Phase 1 — PM plan (`planning`)
+## Phase 1 — Business Analyst plan (`planning`)
 
-Call **Agent(subagent_type: "ecc:planner")**:
+Call **Agent(subagent_type: "business-analyst")**:
 
 ```text
-Role: PM for this job. Produce a product plan. Do not write code or modify files.
-ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/pm.md>
+MODE: PLAN
+ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/ba.md>
 JOB REQUEST:
-<the full request>
+<the full request — if it came from a file, its whole content and the file path>
 REPO: <absolute repo root>   STACK: <stack>
-Read the code as needed to make the plan realistic.
-OUTPUT — only this markdown, headings exactly as given:
-## Goal
-## Scope
-## Out of scope
-## Acceptance criteria      (numbered AC-1, AC-2…; each testable by a command or an observable check; keep the request's IDs, e.g. "(REQ-03-12)")
-## Risks and assumptions
-## Open questions           (only questions whose answer changes scope)
+Read the code as needed to make the plan realistic. Keep the request's requirement IDs on every AC.
 ```
 
 Write the result into `.work/<job>/plan.md` (keep the template's first heading).
-If an open question changes scope and the request does not settle it, ask the user (interactive) — otherwise record your assumption.
+If an open question changes scope and the request does not settle it, ask the user (interactive) — otherwise record the BA's
+assumption with `dl jobset '.assumptions += […]'`.
 
 ## Phase 2 — Lead cards (`planning`)
 
@@ -101,7 +97,22 @@ Then **you** merge the arrays into `.work/<job>/board.json` (`{"cards":[…]}`):
 
 - Ids `T-01`, `T-02`…; rewrite `depends_on` from tmp ids to T-ids (link cross-area deps yourself).
 - Per card add `"agent"` (the role's agent from `roles.yaml`), `"state":"ready"`, `"attempts":0`, `"notes":[]`.
-- `"$DL" validate` — fix every ERROR; for every WARN add a `depends_on` or narrow the scopes. Repeat until clean.
+
+Then the **Business Analyst specs every card** — one call with all cards:
+
+```text
+MODE: CARD SPECS
+ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/ba.md>
+PLAN: <full plan.md>
+CARDS: <the cards JSON from board.json>
+REPO: <absolute repo root>
+```
+
+Split the answer on the `=== T-xx ===` lines and write each part to `.work/<job>/specs/T-xx.md`. Replace each card's
+`acceptance` with the spec's numbered criteria in one line each (keep the `AC-n` references).
+
+- `"$DL" validate` — fix every ERROR (a missing or criteria-less spec is one); for every WARN add a `depends_on` or narrow the
+  scopes. Repeat until clean.
 
 ## Gate — plan approval (only if `settings.gates.plan` is true)
 
@@ -122,6 +133,7 @@ With the gate off (default): go straight on. The user sees the plan and the boar
 ```text
 CARD:
 <the card JSON from board.json>
+SPEC (what to build, the acceptance criteria and test data — follow it): <abs path to .work/<job>/specs/T-xx.md>
 ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/<card.role>.md>
 WORKTREE: <WT>   (branch <card.branch>; base is the job branch <job.branch>)
 Work ONLY inside this directory. All paths are relative to it.
@@ -145,6 +157,7 @@ When done: run the verify command in the worktree, commit, fill the handoff, and
 Role: QA/Test for card T-xx. Test it against its acceptance criteria. Do not modify the worktree.
 ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/qa.md>
 CARD: <card JSON>
+SPEC (test against THIS — every acceptance criterion and edge case, using its test data): <abs path to .work/<job>/specs/T-xx.md>
 WORKTREE: <abs path>   (the card's verify: <verify>)
 PLAN ACs referenced by the card: <the AC-n lines from plan.md, verbatim>
 OUTPUT — only the JSON your agent definition specifies (verdict + criteria with evidence + failures).
@@ -188,11 +201,11 @@ Headless: write the question into `.work/<job>/APPROVAL.md` and stop.
 
 ## Phase 6 — Close and ship (`closing` → PR)
 
-1. `"$DL" phase closing`. Call Agent(`ecc:planner`) for the AC check:
+1. `"$DL" phase closing`. Call Agent(`business-analyst`) for the AC check:
 
 ```text
-Role: PM closing check. Do not modify files.
-ROLE CARD: <abs path to .work/<job>/roles/pm.md>
+MODE: CLOSING
+ROLE CARD: <abs path to .work/<job>/roles/ba.md>
 PLAN: <plan.md>
 EVIDENCE: board <board.json> (gate/qa/review per card), handoffs in <dir>, gate logs in <dir>, verify-all log <path>.
 For each AC: met / not met / partially, with the evidence (test name, QA result, log file). List follow-ups.

@@ -149,7 +149,7 @@ cmd_new() {
   fi
   git -C "$ROOT" rev-parse --verify -q "$base^{commit}" >/dev/null || die "base branch '$base' has no commits"
 
-  mkdir -p "$WORK/$id/handoffs" "$WORK/$id/gates" "$WORK/$id/wt" "$WORK/$id/prompts"
+  mkdir -p "$WORK/$id/handoffs" "$WORK/$id/gates" "$WORK/$id/wt" "$WORK/$id/prompts" "$WORK/$id/specs"
   # Keep .work/ and per-worktree setup artifacts out of git (local exclude, shared by all worktrees;
   # .gitignore is not touched). A `node_modules/` rule does not match a node_modules SYMLINK, hence no slash.
   local excl="$common_dir/info/exclude" p; mkdir -p "$(dirname "$excl")"
@@ -214,8 +214,8 @@ cmd_next() {
   case $phase in
     intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase planning (generates the role cards)" ;;
     planning)
-      if [[ $gates_plan == true ]]; then echo "PLAN    PM plan → plan.md, Lead cards → board.json, dl validate, then: dl phase awaiting_plan_approval"
-      else echo "PLAN    PM plan → plan.md, Lead cards → board.json, dl validate, then: dl phase executing  (no plan gate: the human is next at the PR)"; fi ;;
+      local nxt="dl phase executing  (no plan gate: the human is next at the PR)"; [[ $gates_plan == true ]] && nxt="dl phase awaiting_plan_approval"
+      echo "PLAN    BA plan → plan.md · Lead cards → board.json · BA card specs → specs/T-xx.md · dl validate, then: $nxt" ;;
     awaiting_plan_approval)
       case "$(jq -r '.gates.plan.status // "pending"' "$JOBJ")" in
         approved) echo "PHASE   dl phase executing" ;;
@@ -266,7 +266,7 @@ cmd_next() {
         echo "QA      job-level QA roles if selected (failure → fix card + dl phase executing), then: dl phase closing"
       fi ;;
     closing)
-      if cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md"; then echo "REPORT  PM closing check (every AC with evidence) → report.md"
+      if cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md"; then echo "REPORT  BA closing check (every AC with evidence) → report.md"
       else echo "SHIP    dl ship  (merge_mode=$(setting merge_mode))"; fi ;;
     awaiting_pr_merge)
       echo "WAIT    PR $(jq -r '.pr.url // "?"' "$JOBJ") is with the human (merge_mode=$(setting merge_mode)). Check: dl pr — then dl cleanup when done"
@@ -349,6 +349,9 @@ cmd_wt() {
         [[ $state == running ]] || refuse 1 "--resume is for cards in state running (now: $state)"
       else
         [[ $state == ready || $state == review ]] || refuse 1 "$card is $state — only ready cards (or review cards being retried) are dispatched"
+        if jq -e '.roles[] | select(.role=="ba")' "$JOBJ" >/dev/null && [[ ! -f $JOB_DIR/specs/$card.md ]]; then
+          refuse 1 "$card has no BA spec (.work/$JOB/specs/$card.md) — the Business Analyst writes it before the card is assigned"
+        fi
         (( attempts < max )) || refuse 4 "$card used $attempts/$max attempts. Mark it: dl card $card state blocked + note; only the human can grant more (dl card $card retry)"
         running="$(jq --arg id "$card" '[.cards[] | select(.state=="running" and .id!=$id)] | length' "$BOARD")"
         (( running < $(setting max_parallel) )) || refuse 5 "max_parallel=$(setting max_parallel) cards are already running"

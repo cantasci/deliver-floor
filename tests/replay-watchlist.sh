@@ -53,7 +53,7 @@ say "you:" "/deliver $(head -1 "$EX/JOB.md")"
 JOB="$("$DL" new "Notch calculator + Ind. 12" "$(cat "$EX/JOB.md")")"; echo "    job: $JOB"
 J="$SB/.work/$JOB"; B="$J/board.json"
 "$DL" jobset '.stack=["javascript"] | .roles=[
-  {"role":"pm","agent":"ecc:planner","why":"always"},
+  {"role":"ba","agent":"business-analyst","why":"always"},
   {"role":"backend-lead","agent":"ecc:architect","why":"pure domain modules (ratings, indicators)"},
   {"role":"backend","agent":"backend-dev","why":"backend-lead selected"},
   {"role":"qa","agent":"qa-tester","why":"always: tests every card against its ACs"},
@@ -65,11 +65,14 @@ dl phase planning
 cat "$J/ROLES.md" | sed 's/^/    /'
 echo "    --- excerpt of roles/qa.md:"; sed -n '/## Rules/,/## This project/p' "$J/roles/qa.md" | sed 's/^/    /'
 
-step "1 · PM (ecc:planner) writes the plan"
+step "1 · BUSINESS ANALYST (business-analyst) turns the requirements into a traceable plan"
 cp "$EX/reference/plan.md" "$J/plan.md"; grep '^- AC-' "$J/plan.md" | sed 's/^/    /'
 
 step "2 · LEAD (ecc:architect) turns the plan into cards"
 cp "$EX/reference/board.json" "$B"
+step "2 · BUSINESS ANALYST writes a spec per card (user story, Given/When/Then, edge cases, test data)"
+cp "$EX/reference/specs/"*.md "$J/specs/"
+sed -n '/## Acceptance criteria/,/## Edge cases/p' "$J/specs/T-01.md" | head -6 | sed 's/^/    /'
 dl validate
 dl board
 
@@ -117,7 +120,7 @@ dl phase integrating
 dl verify-all
 dl phase closing
 
-step "6 · CLOSE — PM checks every AC against the evidence, writes report.md (also the PR body)"
+step "6 · CLOSE — BA checks every AC against the evidence, writes report.md (also the PR body)"
 { echo "# Delivery report"; echo; echo "| AC | Status | Evidence |"; echo "| --- | --- | --- |"
   echo "| AC-1 | ✅ | QA T-01: notchChange checks; gate log |"; echo "| AC-2 | ✅ | QA T-01: notchCalculator BBB+→BB+ = 3/WL2 |"
   echo "| AC-3 | ✅ | QA T-02: Ind. 12 thresholds |"; } > "$J/report.md"

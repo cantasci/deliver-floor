@@ -54,9 +54,9 @@ expect_ok "dl -C works from outside the repo" bash -c "cd '$TMP' && '$DL' -C '$R
 
 echo "planning guards"
 expect_fail 1 "planning refused while roles are incomplete" "$DL" phase planning
-"$DL" jobset '.roles=[{"role":"pm","agent":"ecc:planner"},{"role":"backend","agent":"backend-dev"}]'
-out="$("$DL" phase planning 2>&1)"; contains "roles check names the missing qa + reviewer" "$out" "role 'qa' is always selected"
-"$DL" jobset '.roles=[{"role":"pm","agent":"ecc:planner","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"api"},
+"$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev"}]'
+out="$("$DL" phase planning 2>&1)"; contains "roles check names the missing always-on roles" "$out" "role 'qa' is always selected"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"api"},
   {"role":"backend","agent":"backend-dev","why":"lead"},{"role":"qa","agent":"qa-tester","why":"always"},
   {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack"}]'
 expect_ok "phase planning with valid roles" "$DL" phase planning
@@ -83,6 +83,11 @@ jq -n --argjson a "$(card T-01 '[]' '["src/add/**","test/add/**"]' 'node --test 
       --argjson b "$(card T-02 '[]' '["src/sub/**","test/sub/**"]' 'node --test test/sub/*.test.mjs' 'AC-2: sub')" \
       --argjson c "$(card T-03 '["T-01","T-02"]' '["src/index.mjs","test/index.test.mjs"]' 'node --test test/index.test.mjs' 'AC-1 AC-2 index')" \
       '{cards:[$a,$b,$c]}' > "$B"
+expect_fail 1 "cards without BA specs are rejected" "$DL" validate
+spec() { printf '# %s\n## Acceptance criteria\n1. Given x, when y, then z\n' "$1" > "$R/.work/$JOB/specs/$1.md"; }
+spec T-01; spec T-02; echo "# T-03 no criteria" > "$R/.work/$JOB/specs/T-03.md"
+expect_fail 1 "a spec without Given/When/Then is rejected" "$DL" validate
+spec T-03
 expect_ok "valid board passes" "$DL" validate
 jq '.cards[0].agent="frontend-dev"' "$B" > "$B.t" && mv "$B.t" "$B"
 expect_fail 1 "agent outside selected roles rejected" "$DL" validate
@@ -288,7 +293,7 @@ applies_to: [qa, dev]
 MD
 cd "$TMP/kn" && git init -q -b main && echo x > a && git add -A && git commit -qm i
 "$DL" new "know" "x" >/dev/null; KJ="$(cat .work/ACTIVE)"
-"$DL" jobset '.stack=["javascript"] | .roles=[{"role":"pm","agent":"ecc:planner"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" learn qa "Check rounding at .5 boundaries — QA missed it in JOB-1" >/dev/null
 "$DL" phase planning >/dev/null
 grep -q "MUST: Map domain errors" ".work/$KJ/roles/backend.md" && ok "company standard's Must reaches the dev role" || bad "dev standard"
@@ -331,10 +336,11 @@ shipjob() { # shipjob <mode> → a repo with one merged card, in phase closing w
   printf '{"verify_full":"node --test","merge_mode":"%s"}\n' "$mode" > .deliver.json
   git add -A && git commit -qm init
   "$DL" new "ship $mode" "x" >/dev/null
-  "$DL" jobset '.roles=[{"role":"pm","agent":"ecc:planner"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+  "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
   "$DL" phase planning >/dev/null
   local j; j="$(cat .work/ACTIVE)"
   jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",state:"ready",depends_on:[],scope:["src/**"],acceptance:["AC-1: x"],verify:"node --test",context:"c",attempts:0,notes:[]}]}' > ".work/$j/board.json"
+  printf '## Acceptance criteria\nGiven a, when b, then c\n' > ".work/$j/specs/T-01.md"
   "$DL" phase executing >/dev/null; local w; w="$("$DL" wt add T-01)"
   mkdir -p "$w/src" && echo 1 > "$w/src/a.txt" && git -C "$w" add -A && git -C "$w" commit -qm "T-01"
   "$DL" gate T-01 >/dev/null && "$DL" qa T-01 pass "ok" >/dev/null && "$DL" review T-01 approve ok >/dev/null && "$DL" integrate T-01 >/dev/null

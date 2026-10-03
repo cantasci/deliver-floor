@@ -9,7 +9,7 @@
 // A standards file may start with front matter:
 //   ---
 //   title: API error handling
-//   applies_to: [dev, review, backend]      kinds (pm lead dev review qa) and/or role names; default: all
+//   applies_to: [dev, review, backend]      kinds (ba lead dev review qa) and/or role names; default: all
 //   stack: [typescript, javascript]         default: any stack
 //   ---
 // Its "## Must" section (bullets) is copied into every matching role card; the rest is referenced by path.
