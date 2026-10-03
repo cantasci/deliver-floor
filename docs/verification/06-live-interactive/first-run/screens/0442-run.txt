@@ -1,0 +1,50 @@
+      49 +- The two WL rules differ on purpose (C6, confirmed by the business). Risk: a dev derives Ind. 12 from `notchCalculator().wl`; AC-12 and AC-14 guard it.
+      50 +- Non-strings must throw RangeError, not TypeError (a naive `.trim()` throws TypeError on null).
+      51 +- Only ASCII `+`/`-` valid; U+2212 and en dash rejected; `String.prototype.trim` semantics for whitespace.
+      52 +- -0 can appear if direction/wl are computed with arithmetic; AC-3/AC-8 catch it.
+      53 +- Local runtime is Node v22; code must use no API newer than Node 18.
+      54 +- Ratings module comes before the indicators module (dependency).
+      55
+      56  ## Open questions
+      18 -<!-- Questions whose answers would change the scope. Asked to the human at plan approval. -->
+      57 +None. Readiness has 0 open items.
+
+● ecc:architect(Backend lead cards)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The plan is saved to plan.md. The backend lead is now breaking it into cards, and I'll continue when it reports back.
+
+● Agent "Backend lead cards" finished · 45s
+
+  Made 1 scratchpad edit +5 (ctrl+o to expand)
+
+● I've confirmed cards.json is only consumed by the upcoming node merge script to build board.json, with no existing file serving its purpose and no dates in its card data. Next I'll record the user's
+  clarification on NFR-compliance (C2/C6 standing with the Indicator 13/12 threshold distinction) via dl clarify, then continue the /deliver run on JOB.md. · summary
+
+  Made 1 scratchpad edit +5 (ctrl+o to expand)
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; J=$(ls -d $PWD/.work/JOB-*); cat $J/board.json…)
+  ⎿  {
+       "cards": []
+     }
+     … +5 lines (ctrl+o to expand)
+
+● Two cards are on the board. Next the BA writes a spec for each.
+
+● business-analyst(BA card specs)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● board.json now has T-01 (ratings module) and T-02 (Indicator 12, depends on T-01). The BA is writing the card specs. When they come back I'll put the criteria on the cards, validate the board and
+  start execution.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents · ↓ to manage                                                                                  ✘ Auto-update failed · Run claude doctor
+
+  ● main
+  ◯ business-analyst  BA card specs                                                                                                                                                 2s · ↓ 5.6k tokens
+
+
+
+

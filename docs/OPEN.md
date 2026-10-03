@@ -13,7 +13,7 @@ Last updated: 2026-10-03.
 | L1 | Headless `complete` (`tests/e2e-live.sh complete`) | last passed in run 7; shared code changed since (`stop-guard`, validate path rule, `roles.mjs`, plugin detection) | **done** — run 21 passed 25/25 ([report](verification/03-live-headless/complete-run21/report.md)) |
 | L2 | Headless `incomplete` (`tests/e2e-live.sh incomplete`) | run 19 failed in the test's prepared human (first-match answer, fixed: `tests/pick-answer.mjs`); run 20 stopped correctly on two new business questions, which the user answered | re-running with the user's answers |
 | L3 | Munder Difflin floor with the kit **copied** (not a plugin) and seats | last live with a copy was run 15, before the `md-inbox` and `stop-guard` fixes; run 18 verified the plugin install | waits for L1/L2 |
-| L4 | **Interactive mode** — a person at the terminal with Michael (`tests/e2e-interactive.sh`, new) | never run live before; the first run's prepared human answered a compliance question wrongly (R2), so it is repeated after the picker fix | first run finishing; repeat planned |
+| L4 | **Interactive mode** — a person at the terminal with Michael (`tests/e2e-interactive.sh`) | first run (run 22) passed every check, but its one human answer was the wrong answer to a compliance question (R2) — the answer path is not verified | mechanics verified ([report](verification/06-live-interactive/first-run/report.md)); repeat after R2 — the picker change is on hold by the user |
 
 ## Multiple projects on one floor
 

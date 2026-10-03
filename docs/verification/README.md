@@ -10,6 +10,7 @@ Everything in this folder is raw output of real runs. Nothing is edited except s
 | [04-live-munder/](04-live-munder/) | `tests/e2e-munder.sh` report, drive log, floor screenshots, the delivered job's `.work/` |
 | [04-live-munder/plugin-seats/](04-live-munder/plugin-seats/) | the floor with the kit as a plugin and a person per role seat: every check passed; each seat's own terminal photographed at work (`shots/p*`) |
 | [04-live-munder/seats/](04-live-munder/seats/) | the floor with a person per role seat, no subagents: report, who did which task, frames of people at work (`at-work/`) |
+| [06-live-interactive/](06-live-interactive/) | `tests/e2e-interactive.sh`: a person at the terminal with Michael — report, screen snapshots, the delivered job |
 | [05-evidence/](05-evidence/) | measurements that decisions rest on (e.g. background agents under `claude -p`) |
 | [HISTORY.md](HISTORY.md) | every live run, including the failed ones, what each one found and what was changed |
 

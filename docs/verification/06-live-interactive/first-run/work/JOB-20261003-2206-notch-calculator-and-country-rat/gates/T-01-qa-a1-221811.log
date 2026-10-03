@@ -1,0 +1,707 @@
+# qa_verify: node --test test/ratings/integration/*.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE
+    # Subtest: AC-1: RATING_SCALE is the 19-step scale, best first, and frozen
+    ok 1 - AC-1: RATING_SCALE is the 19-step scale, best first, and frozen
+      ---
+      duration_ms: 1.592882
+      type: 'test'
+      ...
+    # Subtest: AC-1: push and index assignment throw TypeError in strict mode and leave the scale unchanged
+    ok 2 - AC-1: push and index assignment throw TypeError in strict mode and leave the scale unchanged
+      ---
+      duration_ms: 0.62808
+      type: 'test'
+      ...
+    1..2
+ok 1 - AC-1: RATING_SCALE
+  ---
+  duration_ms: 3.232783
+  type: 'suite'
+  ...
+# Subtest: AC-2: notchChange signed notch count
+    # Subtest: AC-2: notchChange("BBB+","BB+") = 3
+    ok 1 - AC-2: notchChange("BBB+","BB+") = 3
+      ---
+      duration_ms: 0.287876
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("BBB+","BBB-") = 2
+    ok 2 - AC-2: notchChange("BBB+","BBB-") = 2
+      ---
+      duration_ms: 0.095825
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("A","A-") = 1
+    ok 3 - AC-2: notchChange("A","A-") = 1
+      ---
+      duration_ms: 0.075225
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("BB+","BBB+") = -3
+    ok 4 - AC-2: notchChange("BB+","BBB+") = -3
+      ---
+      duration_ms: 0.073376
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("A-","A") = -1
+    ok 5 - AC-2: notchChange("A-","A") = -1
+      ---
+      duration_ms: 0.161219
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("AAA","CCC-") = 18
+    ok 6 - AC-2: notchChange("AAA","CCC-") = 18
+      ---
+      duration_ms: 0.221099
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("CCC-","AAA") = -18
+    ok 7 - AC-2: notchChange("CCC-","AAA") = -18
+      ---
+      duration_ms: 0.283513
+      type: 'test'
+      ...
+    1..7
+ok 2 - AC-2: notchChange signed notch count
+  ---
+  duration_ms: 1.727209
+  type: 'suite'
+  ...
+# Subtest: AC-3: unchanged is +0, never -0
+    # Subtest: AC-3: notchChange("A","A") is +0
+    ok 1 - AC-3: notchChange("A","A") is +0
+      ---
+      duration_ms: 0.308192
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("AAA","AAA") is +0
+    ok 2 - AC-3: notchChange("AAA","AAA") is +0
+      ---
+      duration_ms: 0.103982
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("CCC-","CCC-") is +0
+    ok 3 - AC-3: notchChange("CCC-","CCC-") is +0
+      ---
+      duration_ms: 0.056001
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("bbb"," BBB ") is +0
+    ok 4 - AC-3: notchChange("bbb"," BBB ") is +0
+      ---
+      duration_ms: 0.060874
+      type: 'test'
+      ...
+    1..4
+ok 3 - AC-3: unchanged is +0, never -0
+  ---
+  duration_ms: 0.697553
+  type: 'suite'
+  ...
+# Subtest: AC-4: case and whitespace insensitivity
+    # Subtest: AC-4: notchChange("bbb+"," BB+ ") === 3
+    ok 1 - AC-4: notchChange("bbb+"," BB+ ") === 3
+      ---
+      duration_ms: 0.11906
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchChange("\\tBbB+\\n","bb+") === 3
+    ok 2 - AC-4: notchChange("\\tBbB+\\n","bb+") === 3
+      ---
+      duration_ms: 0.149916
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchCalculator("bbb+","bb+") equals the canonical result
+    ok 3 - AC-4: notchCalculator("bbb+","bb+") equals the canonical result
+      ---
+      duration_ms: 0.135589
+      type: 'test'
+      ...
+    # Subtest: AC-4: every scale rating is accepted in lower case with padding and gives the same result
+    ok 4 - AC-4: every scale rating is accepted in lower case with padding and gives the same result
+      ---
+      duration_ms: 1.196449
+      type: 'test'
+      ...
+    1..4
+ok 4 - AC-4: case and whitespace insensitivity
+  ---
+  duration_ms: 1.720977
+  type: 'suite'
+  ...
+# Subtest: AC-5: invalid ratings throw RangeError
+    # Subtest: AC-5: invalid previous (empty string) with current "BBB" -> RangeError from both functions
+    ok 1 - AC-5: invalid previous (empty string) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.593147
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (empty string) with previous "BBB" -> RangeError from both functions
+    ok 2 - AC-5: invalid current (empty string) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.201052
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (empty string) in both positions -> RangeError from both functions
+    ok 3 - AC-5: invalid value (empty string) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.127648
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (whitespace only) with current "BBB" -> RangeError from both functions
+    ok 4 - AC-5: invalid previous (whitespace only) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.240466
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (whitespace only) with previous "BBB" -> RangeError from both functions
+    ok 5 - AC-5: invalid current (whitespace only) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.160934
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (whitespace only) in both positions -> RangeError from both functions
+    ok 6 - AC-5: invalid value (whitespace only) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.113811
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (CC) with current "BBB" -> RangeError from both functions
+    ok 7 - AC-5: invalid previous (CC) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.172997
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (CC) with previous "BBB" -> RangeError from both functions
+    ok 8 - AC-5: invalid current (CC) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.108123
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (CC) in both positions -> RangeError from both functions
+    ok 9 - AC-5: invalid value (CC) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.067398
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (C) with current "BBB" -> RangeError from both functions
+    ok 10 - AC-5: invalid previous (C) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.062191
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (C) with previous "BBB" -> RangeError from both functions
+    ok 11 - AC-5: invalid current (C) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.061497
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (C) in both positions -> RangeError from both functions
+    ok 12 - AC-5: invalid value (C) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.059217
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (D) with current "BBB" -> RangeError from both functions
+    ok 13 - AC-5: invalid previous (D) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.064717
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (D) with previous "BBB" -> RangeError from both functions
+    ok 14 - AC-5: invalid current (D) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.126881
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (D) in both positions -> RangeError from both functions
+    ok 15 - AC-5: invalid value (D) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.184509
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (SD) with current "BBB" -> RangeError from both functions
+    ok 16 - AC-5: invalid previous (SD) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.078526
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (SD) with previous "BBB" -> RangeError from both functions
+    ok 17 - AC-5: invalid current (SD) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.065452
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (SD) in both positions -> RangeError from both functions
+    ok 18 - AC-5: invalid value (SD) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.061757
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (NR) with current "BBB" -> RangeError from both functions
+    ok 19 - AC-5: invalid previous (NR) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.066131
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (NR) with previous "BBB" -> RangeError from both functions
+    ok 20 - AC-5: invalid current (NR) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.06792
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (NR) in both positions -> RangeError from both functions
+    ok 21 - AC-5: invalid value (NR) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.065204
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (Baa1 (Moody's)) with current "BBB" -> RangeError from both functions
+    ok 22 - AC-5: invalid previous (Baa1 (Moody's)) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.060467
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (Baa1 (Moody's)) with previous "BBB" -> RangeError from both functions
+    ok 23 - AC-5: invalid current (Baa1 (Moody's)) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.133622
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (Baa1 (Moody's)) in both positions -> RangeError from both functions
+    ok 24 - AC-5: invalid value (Baa1 (Moody's)) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.074856
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (inner space BBB +) with current "BBB" -> RangeError from both functions
+    ok 25 - AC-5: invalid previous (inner space BBB +) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.114666
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (inner space BBB +) with previous "BBB" -> RangeError from both functions
+    ok 26 - AC-5: invalid current (inner space BBB +) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.070424
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (inner space BBB +) in both positions -> RangeError from both functions
+    ok 27 - AC-5: invalid value (inner space BBB +) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.071677
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (inner space B BB) with current "BBB" -> RangeError from both functions
+    ok 28 - AC-5: invalid previous (inner space B BB) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.071843
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (inner space B BB) with previous "BBB" -> RangeError from both functions
+    ok 29 - AC-5: invalid current (inner space B BB) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.06719
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (inner space B BB) in both positions -> RangeError from both functions
+    ok 30 - AC-5: invalid value (inner space B BB) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.071269
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (U+2212 minus BBB−) with current "BBB" -> RangeError from both functions
+    ok 31 - AC-5: invalid previous (U+2212 minus BBB−) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.171082
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (U+2212 minus BBB−) with previous "BBB" -> RangeError from both functions
+    ok 32 - AC-5: invalid current (U+2212 minus BBB−) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.123383
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (U+2212 minus BBB−) in both positions -> RangeError from both functions
+    ok 33 - AC-5: invalid value (U+2212 minus BBB−) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.103562
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (U+2013 en dash BBB–) with current "BBB" -> RangeError from both functions
+    ok 34 - AC-5: invalid previous (U+2013 en dash BBB–) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.076219
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (U+2013 en dash BBB–) with previous "BBB" -> RangeError from both functions
+    ok 35 - AC-5: invalid current (U+2013 en dash BBB–) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.071223
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (U+2013 en dash BBB–) in both positions -> RangeError from both functions
+    ok 36 - AC-5: invalid value (U+2013 en dash BBB–) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.071371
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (AAA+) with current "BBB" -> RangeError from both functions
+    ok 37 - AC-5: invalid previous (AAA+) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.067071
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (AAA+) with previous "BBB" -> RangeError from both functions
+    ok 38 - AC-5: invalid current (AAA+) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.125522
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (AAA+) in both positions -> RangeError from both functions
+    ok 39 - AC-5: invalid value (AAA+) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.078673
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (CCC--) with current "BBB" -> RangeError from both functions
+    ok 40 - AC-5: invalid previous (CCC--) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.075603
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (CCC--) with previous "BBB" -> RangeError from both functions
+    ok 41 - AC-5: invalid current (CCC--) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.136427
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (CCC--) in both positions -> RangeError from both functions
+    ok 42 - AC-5: invalid value (CCC--) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.087074
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (null) with current "BBB" -> RangeError from both functions
+    ok 43 - AC-5: invalid previous (null) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.085455
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (null) with previous "BBB" -> RangeError from both functions
+    ok 44 - AC-5: invalid current (null) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.070083
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (null) in both positions -> RangeError from both functions
+    ok 45 - AC-5: invalid value (null) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.064448
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (undefined) with current "BBB" -> RangeError from both functions
+    ok 46 - AC-5: invalid previous (undefined) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.068477
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (undefined) with previous "BBB" -> RangeError from both functions
+    ok 47 - AC-5: invalid current (undefined) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.068843
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (undefined) in both positions -> RangeError from both functions
+    ok 48 - AC-5: invalid value (undefined) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.07007
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (number 7) with current "BBB" -> RangeError from both functions
+    ok 49 - AC-5: invalid previous (number 7) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.074754
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (number 7) with previous "BBB" -> RangeError from both functions
+    ok 50 - AC-5: invalid current (number 7) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.06812
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (number 7) in both positions -> RangeError from both functions
+    ok 51 - AC-5: invalid value (number 7) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.248356
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (object {}) with current "BBB" -> RangeError from both functions
+    ok 52 - AC-5: invalid previous (object {}) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.094774
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (object {}) with previous "BBB" -> RangeError from both functions
+    ok 53 - AC-5: invalid current (object {}) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.081539
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (object {}) in both positions -> RangeError from both functions
+    ok 54 - AC-5: invalid value (object {}) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.07006
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (array ['BBB']) with current "BBB" -> RangeError from both functions
+    ok 55 - AC-5: invalid previous (array ['BBB']) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.065194
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (array ['BBB']) with previous "BBB" -> RangeError from both functions
+    ok 56 - AC-5: invalid current (array ['BBB']) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.063751
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (array ['BBB']) in both positions -> RangeError from both functions
+    ok 57 - AC-5: invalid value (array ['BBB']) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.065761
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (new String('BBB')) with current "BBB" -> RangeError from both functions
+    ok 58 - AC-5: invalid previous (new String('BBB')) with current "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.074898
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (new String('BBB')) with previous "BBB" -> RangeError from both functions
+    ok 59 - AC-5: invalid current (new String('BBB')) with previous "BBB" -> RangeError from both functions
+      ---
+      duration_ms: 0.066784
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid value (new String('BBB')) in both positions -> RangeError from both functions
+    ok 60 - AC-5: invalid value (new String('BBB')) in both positions -> RangeError from both functions
+      ---
+      duration_ms: 0.067284
+      type: 'test'
+      ...
+    # Subtest: AC-5: spec's mixed both-invalid pairs ((null,null), (CC,D)) throw RangeError, never TypeError
+    ok 61 - AC-5: spec's mixed both-invalid pairs ((null,null), (CC,D)) throw RangeError, never TypeError
+      ---
+      duration_ms: 0.336749
+      type: 'test'
+      ...
+    # Subtest: AC-5: missing arguments throw RangeError (no fallback value)
+    ok 62 - AC-5: missing arguments throw RangeError (no fallback value)
+      ---
+      duration_ms: 0.162548
+      type: 'test'
+      ...
+    1..62
+ok 5 - AC-5: invalid ratings throw RangeError
+  ---
+  duration_ms: 8.036422
+  type: 'suite'
+  ...
+# Subtest: AC-6: corrected POC example
+    # Subtest: AC-6: notchCalculator("BBB+","BB+") = {3,"downgrade",2}
+    ok 1 - AC-6: notchCalculator("BBB+","BB+") = {3,"downgrade",2}
+      ---
+      duration_ms: 0.142469
+      type: 'test'
+      ...
+    # Subtest: AC-6: notchCalculator("BBB+","BBB-") = {2,"downgrade",1}
+    ok 2 - AC-6: notchCalculator("BBB+","BBB-") = {2,"downgrade",1}
+      ---
+      duration_ms: 0.080509
+      type: 'test'
+      ...
+    1..2
+ok 6 - AC-6: corrected POC example
+  ---
+  duration_ms: 0.313489
+  type: 'suite'
+  ...
+# Subtest: AC-7: downgrades of 1, 2, 3 and 18 notches
+    # Subtest: AC-7: notchCalculator("A","A-") = {"notches":1,"direction":"downgrade","wl":0}
+    ok 1 - AC-7: notchCalculator("A","A-") = {"notches":1,"direction":"downgrade","wl":0}
+      ---
+      duration_ms: 0.206015
+      type: 'test'
+      ...
+    # Subtest: AC-7: notchCalculator("BBB+","BBB-") = {"notches":2,"direction":"downgrade","wl":1}
+    ok 2 - AC-7: notchCalculator("BBB+","BBB-") = {"notches":2,"direction":"downgrade","wl":1}
+      ---
+      duration_ms: 0.066559
+      type: 'test'
+      ...
+    # Subtest: AC-7: notchCalculator("BBB+","BB+") = {"notches":3,"direction":"downgrade","wl":2}
+    ok 3 - AC-7: notchCalculator("BBB+","BB+") = {"notches":3,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 1.292241
+      type: 'test'
+      ...
+    # Subtest: AC-7: notchCalculator("AAA","CCC-") = {"notches":18,"direction":"downgrade","wl":2}
+    ok 4 - AC-7: notchCalculator("AAA","CCC-") = {"notches":18,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.0943
+      type: 'test'
+      ...
+    1..4
+ok 7 - AC-7: downgrades of 1, 2, 3 and 18 notches
+  ---
+  duration_ms: 1.833489
+  type: 'suite'
+  ...
+# Subtest: AC-8: upgrades and unchanged
+    # Subtest: AC-8: notchCalculator("A-","A") = {"notches":-1,"direction":"upgrade","wl":0}
+    ok 1 - AC-8: notchCalculator("A-","A") = {"notches":-1,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.215046
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator("BBB-","BBB+") = {"notches":-2,"direction":"upgrade","wl":0}
+    ok 2 - AC-8: notchCalculator("BBB-","BBB+") = {"notches":-2,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.075119
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator("BB+","BBB+") = {"notches":-3,"direction":"upgrade","wl":0}
+    ok 3 - AC-8: notchCalculator("BB+","BBB+") = {"notches":-3,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.046793
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator("CCC-","AAA") = {"notches":-18,"direction":"upgrade","wl":0}
+    ok 4 - AC-8: notchCalculator("CCC-","AAA") = {"notches":-18,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.041388
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator("A","A") = {0,"unchanged",0} with +0 notches
+    ok 5 - AC-8: notchCalculator("A","A") = {0,"unchanged",0} with +0 notches
+      ---
+      duration_ms: 0.139362
+      type: 'test'
+      ...
+    1..5
+ok 8 - AC-8: upgrades and unchanged
+  ---
+  duration_ms: 0.682888
+  type: 'suite'
+  ...
+# Subtest: AC-9: exhaustive 19x19 and silence
+    # Subtest: AC-9: all 361 pairs satisfy the result contract (keys, notches, direction, wl, no -0)
+    ok 1 - AC-9: all 361 pairs satisfy the result contract (keys, notches, direction, wl, no -0)
+      ---
+      duration_ms: 1.586301
+      type: 'test'
+      ...
+    # Subtest: AC-9: wl boundaries n=1 -> 0, n=2 -> 1, n=3 -> 2, any negative -> 0
+    ok 2 - AC-9: wl boundaries n=1 -> 0, n=2 -> 1, n=3 -> 2, any negative -> 0
+      ---
+      duration_ms: 0.097629
+      type: 'test'
+      ...
+    # Subtest: AC-9: calls write nothing to stdout or stderr (spawned process, all 361 pairs plus error paths)
+    ok 3 - AC-9: calls write nothing to stdout or stderr (spawned process, all 361 pairs plus error paths)
+      ---
+      duration_ms: 30.622563
+      type: 'test'
+      ...
+    # Subtest: AC-9: source has no console, process or node: reference
+    ok 4 - AC-9: source has no console, process or node: reference
+      ---
+      duration_ms: 0.416228
+      type: 'test'
+      ...
+    1..4
+ok 9 - AC-9: exhaustive 19x19 and silence
+  ---
+  duration_ms: 32.919899
+  type: 'suite'
+  ...
+# Subtest: AC-13: arity and statelessness
+    # Subtest: AC-13: notchChange.length === 2 and notchCalculator.length === 2
+    ok 1 - AC-13: notchChange.length === 2 and notchCalculator.length === 2
+      ---
+      duration_ms: 0.139242
+      type: 'test'
+      ...
+    # Subtest: AC-13: notchCalculator("BBB","BBB-") is {1,"downgrade",0} before and after notchCalculator("BBB","BB")
+    ok 2 - AC-13: notchCalculator("BBB","BBB-") is {1,"downgrade",0} before and after notchCalculator("BBB","BB")
+      ---
+      duration_ms: 0.116218
+      type: 'test'
+      ...
+    # Subtest: AC-13: a failed call does not poison later calls and results are fresh objects
+    ok 3 - AC-13: a failed call does not poison later calls and results are fresh objects
+      ---
+      duration_ms: 0.224805
+      type: 'test'
+      ...
+    1..3
+ok 10 - AC-13: arity and statelessness
+  ---
+  duration_ms: 0.619584
+  type: 'suite'
+  ...
+# Subtest: AC-14: export surface
+    # Subtest: AC-14: module exports exactly RATING_SCALE, notchCalculator, notchChange
+    ok 1 - AC-14: module exports exactly RATING_SCALE, notchCalculator, notchChange
+      ---
+      duration_ms: 0.434442
+      type: 'test'
+      ...
+    # Subtest: AC-14: source file has no import statement (static or dynamic)
+    ok 2 - AC-14: source file has no import statement (static or dynamic)
+      ---
+      duration_ms: 0.30997
+      type: 'test'
+      ...
+    1..2
+ok 11 - AC-14: export surface
+  ---
+  duration_ms: 0.85252
+  type: 'suite'
+  ...
+# Subtest: AC-15 (partial): suite and package hygiene
+    # Subtest: AC-15: node --test test/ratings/notch.test.mjs exits 0 with 0 failures
+    ok 1 - AC-15: node --test test/ratings/notch.test.mjs exits 0 with 0 failures
+      ---
+      duration_ms: 272.534227
+      type: 'test'
+      ...
+    # Subtest: AC-15: node --test from the repo root exits 0 with 0 failures
+    ok 2 - AC-15: node --test from the repo root exits 0 with 0 failures
+      ---
+      duration_ms: 303.681702
+      type: 'test'
+      ...
+    # Subtest: AC-15: package.json has no dependencies or devDependencies
+    ok 3 - AC-15: package.json has no dependencies or devDependencies
+      ---
+      duration_ms: 0.392672
+      type: 'test'
+      ...
+    1..3
+ok 12 - AC-15 (partial): suite and package hygiene
+  ---
+  duration_ms: 576.828612
+  type: 'suite'
+  ...
+1..12
+# tests 102
+# suites 12
+# pass 102
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 750.009099

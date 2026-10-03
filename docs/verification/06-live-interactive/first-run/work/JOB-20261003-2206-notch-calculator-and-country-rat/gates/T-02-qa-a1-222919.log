@@ -1,0 +1,638 @@
+# qa_verify: node --test test/indicators/integration/*.test.mjs
+TAP version 13
+# Subtest: AC-10: downgrades map to WL 1 or 2
+    # Subtest: AC-10: A -> A- = 1
+    ok 1 - AC-10: A -> A- = 1
+      ---
+      duration_ms: 1.137195
+      type: 'test'
+      ...
+    # Subtest: AC-10: BBB+ -> BBB- = 2
+    ok 2 - AC-10: BBB+ -> BBB- = 2
+      ---
+      duration_ms: 0.16707
+      type: 'test'
+      ...
+    # Subtest: AC-10: BBB+ -> BB+ = 2
+    ok 3 - AC-10: BBB+ -> BB+ = 2
+      ---
+      duration_ms: 0.142538
+      type: 'test'
+      ...
+    # Subtest: AC-10: AAA -> CCC- = 2
+    ok 4 - AC-10: AAA -> CCC- = 2
+      ---
+      duration_ms: 0.140356
+      type: 'test'
+      ...
+    # Subtest: AC-10: result is a plain number in {0,1,2}
+    ok 5 - AC-10: result is a plain number in {0,1,2}
+      ---
+      duration_ms: 0.374873
+      type: 'test'
+      ...
+    1..5
+ok 1 - AC-10: downgrades map to WL 1 or 2
+  ---
+  duration_ms: 3.53765
+  type: 'suite'
+  ...
+# Subtest: AC-11: upgrades and unchanged return +0
+    # Subtest: AC-11: A- -> A = 0 and Object.is(result, 0)
+    ok 1 - AC-11: A- -> A = 0 and Object.is(result, 0)
+      ---
+      duration_ms: 0.473422
+      type: 'test'
+      ...
+    # Subtest: AC-11: BB+ -> BBB+ = 0 and Object.is(result, 0)
+    ok 2 - AC-11: BB+ -> BBB+ = 0 and Object.is(result, 0)
+      ---
+      duration_ms: 0.306364
+      type: 'test'
+      ...
+    # Subtest: AC-11: CCC- -> AAA = 0 and Object.is(result, 0)
+    ok 3 - AC-11: CCC- -> AAA = 0 and Object.is(result, 0)
+      ---
+      duration_ms: 0.383913
+      type: 'test'
+      ...
+    # Subtest: AC-11: A -> A = 0 and Object.is(result, 0)
+    ok 4 - AC-11: A -> A = 0 and Object.is(result, 0)
+      ---
+      duration_ms: 0.341906
+      type: 'test'
+      ...
+    # Subtest: AC-11: CCC- -> CCC- = 0 and Object.is(result, 0)
+    ok 5 - AC-11: CCC- -> CCC- = 0 and Object.is(result, 0)
+      ---
+      duration_ms: 0.398713
+      type: 'test'
+      ...
+    # Subtest: AC-11: boundaries -1/-2/-3/-18 notches all give 0
+    ok 6 - AC-11: boundaries -1/-2/-3/-18 notches all give 0
+      ---
+      duration_ms: 0.239871
+      type: 'test'
+      ...
+    1..6
+ok 2 - AC-11: upgrades and unchanged return +0
+  ---
+  duration_ms: 2.808024
+  type: 'suite'
+  ...
+# Subtest: AC-4: case and whitespace insensitivity
+    # Subtest: AC-4: (" a ", "a-") === 1
+    ok 1 - AC-4: (" a ", "a-") === 1
+      ---
+      duration_ms: 0.206127
+      type: 'test'
+      ...
+    # Subtest: AC-4: ("bbb+", " BB+ ") === 2
+    ok 2 - AC-4: ("bbb+", " BB+ ") === 2
+      ---
+      duration_ms: 0.132341
+      type: 'test'
+      ...
+    # Subtest: AC-4: ("\\tA\\n", "a") === 0 and is +0
+    ok 3 - AC-4: ("\\tA\\n", "a") === 0 and is +0
+      ---
+      duration_ms: 0.152905
+      type: 'test'
+      ...
+    # Subtest: AC-4: every scale rating gives the same WL in lower/padded form as canonical
+    ok 4 - AC-4: every scale rating gives the same WL in lower/padded form as canonical
+      ---
+      duration_ms: 0.871466
+      type: 'test'
+      ...
+    1..4
+ok 3 - AC-4: case and whitespace insensitivity
+  ---
+  duration_ms: 1.642615
+  type: 'suite'
+  ...
+# Subtest: AC-5: invalid input throws RangeError
+    # Subtest: AC-5: invalid previous (empty string) with current "BBB"
+    ok 1 - AC-5: invalid previous (empty string) with current "BBB"
+      ---
+      duration_ms: 2.50266
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (empty string) with previous "BBB"
+    ok 2 - AC-5: invalid current (empty string) with previous "BBB"
+      ---
+      duration_ms: 0.206615
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (empty string)
+    ok 3 - AC-5: invalid in both (empty string)
+      ---
+      duration_ms: 0.222609
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (whitespace only) with current "BBB"
+    ok 4 - AC-5: invalid previous (whitespace only) with current "BBB"
+      ---
+      duration_ms: 0.116519
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (whitespace only) with previous "BBB"
+    ok 5 - AC-5: invalid current (whitespace only) with previous "BBB"
+      ---
+      duration_ms: 0.110785
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (whitespace only)
+    ok 6 - AC-5: invalid in both (whitespace only)
+      ---
+      duration_ms: 0.10342
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (CC) with current "BBB"
+    ok 7 - AC-5: invalid previous (CC) with current "BBB"
+      ---
+      duration_ms: 0.123438
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (CC) with previous "BBB"
+    ok 8 - AC-5: invalid current (CC) with previous "BBB"
+      ---
+      duration_ms: 0.11681
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (CC)
+    ok 9 - AC-5: invalid in both (CC)
+      ---
+      duration_ms: 0.173191
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (C) with current "BBB"
+    ok 10 - AC-5: invalid previous (C) with current "BBB"
+      ---
+      duration_ms: 0.117884
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (C) with previous "BBB"
+    ok 11 - AC-5: invalid current (C) with previous "BBB"
+      ---
+      duration_ms: 0.1032
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (C)
+    ok 12 - AC-5: invalid in both (C)
+      ---
+      duration_ms: 0.099565
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (D) with current "BBB"
+    ok 13 - AC-5: invalid previous (D) with current "BBB"
+      ---
+      duration_ms: 0.097417
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (D) with previous "BBB"
+    ok 14 - AC-5: invalid current (D) with previous "BBB"
+      ---
+      duration_ms: 0.099082
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (D)
+    ok 15 - AC-5: invalid in both (D)
+      ---
+      duration_ms: 0.30942
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (SD) with current "BBB"
+    ok 16 - AC-5: invalid previous (SD) with current "BBB"
+      ---
+      duration_ms: 0.121813
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (SD) with previous "BBB"
+    ok 17 - AC-5: invalid current (SD) with previous "BBB"
+      ---
+      duration_ms: 0.10402
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (SD)
+    ok 18 - AC-5: invalid in both (SD)
+      ---
+      duration_ms: 0.097531
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (NR) with current "BBB"
+    ok 19 - AC-5: invalid previous (NR) with current "BBB"
+      ---
+      duration_ms: 0.097584
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (NR) with previous "BBB"
+    ok 20 - AC-5: invalid current (NR) with previous "BBB"
+      ---
+      duration_ms: 0.099155
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (NR)
+    ok 21 - AC-5: invalid in both (NR)
+      ---
+      duration_ms: 0.237159
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (Baa1) with current "BBB"
+    ok 22 - AC-5: invalid previous (Baa1) with current "BBB"
+      ---
+      duration_ms: 0.126885
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (Baa1) with previous "BBB"
+    ok 23 - AC-5: invalid current (Baa1) with previous "BBB"
+      ---
+      duration_ms: 0.108396
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (Baa1)
+    ok 24 - AC-5: invalid in both (Baa1)
+      ---
+      duration_ms: 0.095894
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (BBB +) with current "BBB"
+    ok 25 - AC-5: invalid previous (BBB +) with current "BBB"
+      ---
+      duration_ms: 0.221546
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (BBB +) with previous "BBB"
+    ok 26 - AC-5: invalid current (BBB +) with previous "BBB"
+      ---
+      duration_ms: 0.113378
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (BBB +)
+    ok 27 - AC-5: invalid in both (BBB +)
+      ---
+      duration_ms: 0.158987
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (BBB with U+2212 minus) with current "BBB"
+    ok 28 - AC-5: invalid previous (BBB with U+2212 minus) with current "BBB"
+      ---
+      duration_ms: 0.149431
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (BBB with U+2212 minus) with previous "BBB"
+    ok 29 - AC-5: invalid current (BBB with U+2212 minus) with previous "BBB"
+      ---
+      duration_ms: 0.119336
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (BBB with U+2212 minus)
+    ok 30 - AC-5: invalid in both (BBB with U+2212 minus)
+      ---
+      duration_ms: 0.102691
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (BBB with en dash) with current "BBB"
+    ok 31 - AC-5: invalid previous (BBB with en dash) with current "BBB"
+      ---
+      duration_ms: 0.170232
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (BBB with en dash) with previous "BBB"
+    ok 32 - AC-5: invalid current (BBB with en dash) with previous "BBB"
+      ---
+      duration_ms: 0.101531
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (BBB with en dash)
+    ok 33 - AC-5: invalid in both (BBB with en dash)
+      ---
+      duration_ms: 0.153822
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (AAA+) with current "BBB"
+    ok 34 - AC-5: invalid previous (AAA+) with current "BBB"
+      ---
+      duration_ms: 0.128134
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (AAA+) with previous "BBB"
+    ok 35 - AC-5: invalid current (AAA+) with previous "BBB"
+      ---
+      duration_ms: 0.110809
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (AAA+)
+    ok 36 - AC-5: invalid in both (AAA+)
+      ---
+      duration_ms: 0.102922
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (null) with current "BBB"
+    ok 37 - AC-5: invalid previous (null) with current "BBB"
+      ---
+      duration_ms: 0.116905
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (null) with previous "BBB"
+    ok 38 - AC-5: invalid current (null) with previous "BBB"
+      ---
+      duration_ms: 0.111444
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (null)
+    ok 39 - AC-5: invalid in both (null)
+      ---
+      duration_ms: 0.111456
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (undefined) with current "BBB"
+    ok 40 - AC-5: invalid previous (undefined) with current "BBB"
+      ---
+      duration_ms: 0.12506
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (undefined) with previous "BBB"
+    ok 41 - AC-5: invalid current (undefined) with previous "BBB"
+      ---
+      duration_ms: 0.13507
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (undefined)
+    ok 42 - AC-5: invalid in both (undefined)
+      ---
+      duration_ms: 0.103449
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (number 7) with current "BBB"
+    ok 43 - AC-5: invalid previous (number 7) with current "BBB"
+      ---
+      duration_ms: 0.102478
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (number 7) with previous "BBB"
+    ok 44 - AC-5: invalid current (number 7) with previous "BBB"
+      ---
+      duration_ms: 0.122096
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (number 7)
+    ok 45 - AC-5: invalid in both (number 7)
+      ---
+      duration_ms: 0.111265
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous ({}) with current "BBB"
+    ok 46 - AC-5: invalid previous ({}) with current "BBB"
+      ---
+      duration_ms: 0.181772
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current ({}) with previous "BBB"
+    ok 47 - AC-5: invalid current ({}) with previous "BBB"
+      ---
+      duration_ms: 0.11628
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both ({})
+    ok 48 - AC-5: invalid in both ({})
+      ---
+      duration_ms: 0.100577
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (["BBB"]) with current "BBB"
+    ok 49 - AC-5: invalid previous (["BBB"]) with current "BBB"
+      ---
+      duration_ms: 0.102113
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (["BBB"]) with previous "BBB"
+    ok 50 - AC-5: invalid current (["BBB"]) with previous "BBB"
+      ---
+      duration_ms: 0.107341
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (["BBB"])
+    ok 51 - AC-5: invalid in both (["BBB"])
+      ---
+      duration_ms: 0.100636
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid previous (new String('BBB')) with current "BBB"
+    ok 52 - AC-5: invalid previous (new String('BBB')) with current "BBB"
+      ---
+      duration_ms: 0.102716
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid current (new String('BBB')) with previous "BBB"
+    ok 53 - AC-5: invalid current (new String('BBB')) with previous "BBB"
+      ---
+      duration_ms: 0.172128
+      type: 'test'
+      ...
+    # Subtest: AC-5: invalid in both (new String('BBB'))
+    ok 54 - AC-5: invalid in both (new String('BBB'))
+      ---
+      duration_ms: 0.108785
+      type: 'test'
+      ...
+    # Subtest: AC-5: never TypeError and never returns a value, for every invalid value and position
+    ok 55 - AC-5: never TypeError and never returns a value, for every invalid value and position
+      ---
+      duration_ms: 1.638102
+      type: 'test'
+      ...
+    # Subtest: AC-5: no arguments at all throws RangeError
+    ok 56 - AC-5: no arguments at all throws RangeError
+      ---
+      duration_ms: 0.203153
+      type: 'test'
+      ...
+    # Subtest: AC-5: RangeError propagates unchanged from notchChange (same type and message)
+    ok 57 - AC-5: RangeError propagates unchanged from notchChange (same type and message)
+      ---
+      duration_ms: 0.21723
+      type: 'test'
+      ...
+    1..57
+ok 4 - AC-5: invalid input throws RangeError
+  ---
+  duration_ms: 13.506225
+  type: 'suite'
+  ...
+# Subtest: AC-12: differs from notchCalculator().wl by design (C6)
+    # Subtest: AC-12: A -> A-: notchCalculator wl 0, countryRatingChangeWl 1
+    ok 1 - AC-12: A -> A-: notchCalculator wl 0, countryRatingChangeWl 1
+      ---
+      duration_ms: 0.491224
+      type: 'test'
+      ...
+    # Subtest: AC-12: BBB+ -> BBB-: notchCalculator wl 1, countryRatingChangeWl 2
+    ok 2 - AC-12: BBB+ -> BBB-: notchCalculator wl 1, countryRatingChangeWl 2
+      ---
+      duration_ms: 0.276416
+      type: 'test'
+      ...
+    # Subtest: AC-12: BBB+ -> BB+: notchCalculator wl 2, countryRatingChangeWl 2
+    ok 3 - AC-12: BBB+ -> BB+: notchCalculator wl 2, countryRatingChangeWl 2
+      ---
+      duration_ms: 0.115111
+      type: 'test'
+      ...
+    # Subtest: AC-12: AAA -> CCC-: notchCalculator wl 2, countryRatingChangeWl 2
+    ok 4 - AC-12: AAA -> CCC-: notchCalculator wl 2, countryRatingChangeWl 2
+      ---
+      duration_ms: 0.09948
+      type: 'test'
+      ...
+    # Subtest: AC-12: BB+ -> BBB+: notchCalculator wl 0, countryRatingChangeWl 0
+    ok 5 - AC-12: BB+ -> BBB+: notchCalculator wl 0, countryRatingChangeWl 0
+      ---
+      duration_ms: 0.145174
+      type: 'test'
+      ...
+    # Subtest: AC-12: A -> A: notchCalculator wl 0, countryRatingChangeWl 0
+    ok 6 - AC-12: A -> A: notchCalculator wl 0, countryRatingChangeWl 0
+      ---
+      duration_ms: 0.104677
+      type: 'test'
+      ...
+    # Subtest: AC-12/AC-10: all 361 pairs follow n <= 0 ? 0 : n === 1 ? 1 : 2 on notchChange
+    ok 7 - AC-12/AC-10: all 361 pairs follow n <= 0 ? 0 : n === 1 ? 1 : 2 on notchChange
+      ---
+      duration_ms: 2.45593
+      type: 'test'
+      ...
+    # Subtest: AC-12: the two rules disagree on exactly the pairs with 1 or 2 notches downgrade
+    ok 8 - AC-12: the two rules disagree on exactly the pairs with 1 or 2 notches downgrade
+      ---
+      duration_ms: 1.197024
+      type: 'test'
+      ...
+    1..8
+ok 5 - AC-12: differs from notchCalculator().wl by design (C6)
+  ---
+  duration_ms: 5.392263
+  type: 'suite'
+  ...
+# Subtest: AC-13: editable, stateless, no override parameter (C7)
+    # Subtest: AC-13: ("BBB","BBB-") = 1; after edit ("BBB","BB") = 2; original still 1
+    ok 1 - AC-13: ("BBB","BBB-") = 1; after edit ("BBB","BB") = 2; original still 1
+      ---
+      duration_ms: 0.226736
+      type: 'test'
+      ...
+    # Subtest: AC-13: a throwing call does not poison later calls
+    ok 2 - AC-13: a throwing call does not poison later calls
+      ---
+      duration_ms: 0.164007
+      type: 'test'
+      ...
+    # Subtest: AC-13: function lengths are all 2 (no override parameter)
+    ok 3 - AC-13: function lengths are all 2 (no override parameter)
+      ---
+      duration_ms: 0.120069
+      type: 'test'
+      ...
+    # Subtest: AC-13: extra arguments cannot override the computed WL
+    ok 4 - AC-13: extra arguments cannot override the computed WL
+      ---
+      duration_ms: 0.133863
+      type: 'test'
+      ...
+    1..4
+ok 6 - AC-13: editable, stateless, no override parameter (C7)
+  ---
+  duration_ms: 0.987052
+  type: 'suite'
+  ...
+# Subtest: AC-14: module contract
+    # Subtest: AC-14: Object.keys of the dynamic import deep-equals [countryRatingChangeWl]
+    ok 1 - AC-14: Object.keys of the dynamic import deep-equals [countryRatingChangeWl]
+      ---
+      duration_ms: 1.298707
+      type: 'test'
+      ...
+    1..1
+ok 7 - AC-14: module contract
+  ---
+  duration_ms: 1.54551
+  type: 'suite'
+  ...
+# Subtest: AC-14 (C6, C8): source constraints and silence
+    # Subtest: AC-14: only import is from ../ratings/notch.mjs naming only notchChange
+    ok 1 - AC-14: only import is from ../ratings/notch.mjs naming only notchChange
+      ---
+      duration_ms: 0.750207
+      type: 'test'
+      ...
+    # Subtest: AC-14: does not mention notchCalculator
+    ok 2 - AC-14: does not mention notchCalculator
+      ---
+      duration_ms: 0.11101
+      type: 'test'
+      ...
+    # Subtest: AC-14: no node: import, console or process
+    ok 3 - AC-14: no node: import, console or process
+      ---
+      duration_ms: 0.098141
+      type: 'test'
+      ...
+    # Subtest: AC-14: no try/catch around notchChange (RangeError is not caught or wrapped)
+    ok 4 - AC-14: no try/catch around notchChange (RangeError is not caught or wrapped)
+      ---
+      duration_ms: 0.169664
+      type: 'test'
+      ...
+    # Subtest: AC-14: calling the function (valid and invalid) writes nothing to stdout or stderr
+    ok 5 - AC-14: calling the function (valid and invalid) writes nothing to stdout or stderr
+      ---
+      duration_ms: 37.700343
+      type: 'test'
+      ...
+    1..5
+ok 8 - AC-14 (C6, C8): source constraints and silence
+  ---
+  duration_ms: 39.109861
+  type: 'suite'
+  ...
+# Subtest: AC-15: repo-level delivery checks
+    # Subtest: AC-15: package.json has no dependencies or devDependencies
+    ok 1 - AC-15: package.json has no dependencies or devDependencies
+      ---
+      duration_ms: 0.547456
+      type: 'test'
+      ...
+    # Subtest: AC-15: no commit on the branch carries AI attribution
+    ok 2 - AC-15: no commit on the branch carries AI attribution
+      ---
+      duration_ms: 5.556263
+      type: 'test'
+      ...
+    # Subtest: AC-15: each of the two unit-test files runs tests and passes
+    ok 3 - AC-15: each of the two unit-test files runs tests and passes
+      ---
+      duration_ms: 378.457621
+      type: 'test'
+      ...
+    # Subtest: AC-15: `node --test` from the repo root exits 0 with 0 failures
+    ok 4 - AC-15: `node --test` from the repo root exits 0 with 0 failures
+      ---
+      duration_ms: 1208.051183
+      type: 'test'
+      ...
+    1..4
+ok 9 - AC-15: repo-level delivery checks
+  ---
+  duration_ms: 1592.870963
+  type: 'suite'
+  ...
+1..9
+# tests 94
+# suites 9
+# pass 94
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1819.551701
