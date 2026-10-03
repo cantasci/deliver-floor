@@ -58,6 +58,11 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    Write a one-line reason per role that quotes the part of the request it serves:
    `"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule"},…]'`
    Keep it small: no role "just in case". A dev role needs its lead role.
+   **Models and CLIs per role** (when the request or the team asks for it): add `"provider"` (claude, codex, gemini, grok, kimi,
+   qwen, opencode, crush, pi, copilot, cursor, antigravity) and `"model"` to a role, e.g.
+   `{"role":"backend","agent":"backend-dev","provider":"codex","model":"gpt-5-codex"}`. Non-Claude roles run as Munder
+   Difflin floor workers (`settings.dispatch: "munder"`); Claude roles with a `"model"` get it on every Agent call
+   (`model: "opus" | "sonnet" | "haiku"`) and on every floor worker.
 4. Record assumptions you made: `"$DL" jobset '.assumptions += ["…"]'`.
 5. `"$DL" phase readiness` — this checks the roles and **generates the project's role cards** (`roles/*.md`: rules + company
    standards + project facts) and `ROLES.md`. If it REFUSES, fix the roles it names.

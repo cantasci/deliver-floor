@@ -102,6 +102,10 @@ export function checkJobRoles(job, cat) {
   const devs = (job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev");
   if (!devs.length) errors.push("no dev role selected — nobody could build the cards");
   if (!(job.roles ?? []).some((r) => r.role?.startsWith("reviewer"))) errors.push("no stack reviewer selected (role 'reviewer')");
+  const PROVIDERS = ["claude", "codex", "gemini", "grok", "kimi", "qwen", "opencode", "crush", "pi", "copilot", "cursor", "antigravity"];
+  for (const r of job.roles ?? []) if (r.provider && !PROVIDERS.includes(r.provider)) errors.push(`role '${r.role}': provider '${r.provider}' is not one of ${PROVIDERS.join(", ")}`);
+  const sa = (job.roles ?? []).filter((r) => (r.provider ?? "claude") !== "claude" && (job.settings?.dispatch ?? "subagent") !== "munder");
+  for (const r of sa) errors.push(`role '${r.role}' runs on ${r.provider}: non-Claude roles run as Munder Difflin floor workers — set dispatch "munder"`);
   return errors;
 }
 
@@ -150,7 +154,7 @@ export function renderRole(sel, job, cat) {
     `# Role: ${sel.role} — ${KIND_TITLE[r.kind] ?? r.kind}${r.focus ? ` (${r.focus})` : ""}`,
     "",
     `Job: **${job.id}** — ${job.title}`,
-    `Agent: \`${sel.agent}\` · writes files: ${r.writes ? "yes (only where the rules allow)" : "no"}`,
+    `Agent: \`${sel.agent}\` · runs on: ${sel.provider ?? "claude"}${sel.model ? ` (${sel.model})` : ""} · writes files: ${r.writes ? "yes (only where the rules allow)" : "no"}`,
     `Why this role is on the job: ${sel.why ?? r.when ?? "-"}`,
     "",
     "## Mission",
@@ -185,8 +189,8 @@ export function hireManifest(sel, job, cat, rendered) {
     goal,
     character: r.floor?.character,
     accent: r.floor?.accent,
-    provider: "claude",
-    ...(job.settings?.munder?.model ? { model: job.settings.munder.model } : {}),
+    provider: ["claude", "codex", "cursor", "antigravity"].includes(sel.provider ?? "claude") ? (sel.provider ?? "claude") : "claude", // hire@1 allows these
+    ...((sel.model ?? job.settings?.munder?.model) ? { model: sel.model ?? job.settings.munder.model } : {}),
     capabilities: ["deliver", r.kind, ...(job.stack ?? [])].slice(0, 8),
     isolate: false,
     ...(job.settings?.munder?.token_cap > 0 ? { tokenCap: job.settings.munder.token_cap } : {}),

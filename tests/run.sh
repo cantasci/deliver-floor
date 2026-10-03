@@ -335,7 +335,22 @@ export HIVE_ROOT="$TMP/hive"; mkdir -p "$HIVE_ROOT"
 expect_ok "md-dispatch writes a spawn request" "$DL" md-dispatch T-03 "$TMP/p.txt"
 reqf="$(ls "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
 contains "spawn request: card worktree cwd, no extra isolation, dev agent" "$(jq -c '{cwd,isolate,command}' "$reqf")" "\"isolate\":false,\"command\":\"claude --agent backend-dev\""
+"$DL" jobset '(.roles[] | select(.role=="backend")) += {provider:"codex", model:"gpt-5-codex"}'
+out="$("$DL" phase readiness --force 2>&1; node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$R/.work/$JOB/job.json")"
+contains "a non-Claude role needs dispatch munder" "$out" "runs on codex: non-Claude roles run as Munder Difflin floor workers"
+"$DL" jobset '.settings.dispatch="munder"'; "$DL" phase executing --force >/dev/null
+jq '(.cards[] | select(.id=="T-03")).md_workers = []' "$R/.work/$JOB/board.json" > /dev/null
+"$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
+reqc="$(ls -t "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
+contains "codex worker: provider set, no claude --agent" "$(jq -c '{provider,command,model}' "$reqc")" '"provider":"codex","command":null,"model":"gpt-5-codex"'
+jq -r .objective "$reqc" | grep -q "Your role instructions (backend-dev)" && jq -r .objective "$reqc" | grep -q "TDD with unit tests" \
+  && ok "the agent definition's instructions travel inside the objective for non-Claude CLIs" || bad "agent body not embedded"
+jq -r .objective "$reqc" | grep -q "^---$" && ! jq -r .objective "$reqc" | grep -q "^tools: " && ok "…without Claude frontmatter" || bad "frontmatter leaked"
+"$DL" jobset '(.roles[] | select(.role=="backend")) |= del(.provider, .model) | .settings.dispatch="subagent"'
 unset HIVE_ROOT
+HV="$TMP/hive2"; DELIVER_SKILL_DIR=/opt/kit/skills/deliver "$HERE/scripts/md-brief.sh" "$HV" "$R" >/dev/null
+[[ -f $HV/CLAUDE.md && -f $HV/AGENTS.md && -f $HV/GEMINI.md ]] && grep -q "/opt/kit/skills/deliver/SKILL.md" "$HV/AGENTS.md" \
+  && ok "md-brief briefs Michael for Claude, Codex-style (AGENTS.md) and Gemini CLIs" || bad "md-brief files"
 
 echo "architecture: mixed stacks, frozen decisions, seats, parallel assignment"
 AR="$TMP/arch"; mkdir -p "$AR" && cd "$AR" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","max_parallel":4}' > .deliver.json && git add -A && git commit -qm i
