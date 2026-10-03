@@ -1,0 +1,19 @@
+2026-10-03T13:58:30Z	new	Repayment delay indicators 2-3
+2026-10-03T13:58:30Z	jobset	stack: .stack=["javascript"]
+2026-10-03T13:58:30Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/REQ-03-03: indicator → WL domain logic in src/indicators"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack_reviewers.javascript — plain Node ESM"}]
+2026-10-03T13:58:31Z	jobset	assumptions: .assumptions += ["No UI: dropdowns are satisfied by exported *_OPTIONS arrays (C4)","Indicator 1 and its collapsing are out of scope (C3)"]
+2026-10-03T13:58:31Z	roles	ba qa backend-lead backend reviewer
+2026-10-03T13:58:31Z	phase	readiness
+2026-10-03T13:59:15Z	agent	 a70e3af3: Reading README.md and .deliver.json 
+2026-10-03T14:00:16Z	agent	 a74261f4: Checking Node version and branches 
+2026-10-03T14:01:17Z	agent	 a3fb7dff: Printing validated readiness.json output 
+2026-10-03T14:01:41Z	agent	business-analyst afcac939: {"items":[ {"id":"PRD-goal","status":"decided","answer":"Turn the two Watchlist repayment-delay indicators into Watchlist levels (WL). Indicator 2 (days with de
+2026-10-03T14:03:38Z	readiness	33 items: 18 decided, 9 n/a, 6 open
+2026-10-03T14:03:38Z	decide	DEL-docs: JSDoc on the exported constants and functions only; README unchanged; no separate docs card — Request asks only for the two modules; JSDoc keeps the contract discoverable for later screen builders without adding a docs role
+2026-10-03T14:03:39Z	decide	X-options-immutability: Object.freeze both exported option arrays; validate against an internal Map built in the module so mutating/replacing the export cannot change results — Exported lists are rendered by other parts; freezing prevents accidental mutation and tests can assert Object.isFrozen
+2026-10-03T14:03:39Z	decide	X-error-message: RangeError message includes the function name and the received value (e.g. daysWithDelayWl: invalid option ">3 Days"); tests assert instanceof RangeError and at most /daysWithDelayWl|delayCountWl/ — C1/C5 fix only the type; a descriptive message helps callers debug without making text a contract
+2026-10-03T14:03:39Z	decide	X-parallel-independence: Each module fully self-contained: no shared helper, no barrel index.mjs — The request calls the requirements independent and staffs them in parallel; any shared file couples the cards and risks merge conflicts
+2026-10-03T14:03:40Z	decide	X-qa-test-layout: QA tests per card in test/integration/indicators/daysWithDelay.test.mjs and test/integration/indicators/delayCount.test.mjs — Keeps QA apart from dev unit tests and the two parallel cards in separate files; picked up by node --test
+2026-10-03T14:03:50Z	jobset	assumptions: .assumptions += ["Security role not added: only input is a fixed dropdown value validated by allow-list (NFR-security); stack reviewer checks it"]
+2026-10-03T14:03:51Z	readiness	33 items: 22 decided, 10 n/a, 1 open
+2026-10-03T14:04:01Z	phase	awaiting_clarification

@@ -14,6 +14,7 @@ const t0 = Date.now(), log = (m) => console.log(`[${Math.round((Date.now() - t0)
 const job = () => { try { const id = fs.readFileSync(path.join(repo, '.work/ACTIVE'), 'utf8').trim(); return JSON.parse(fs.readFileSync(path.join(repo, '.work', id, 'job.json'), 'utf8')); } catch { return null; } };
 const lastJob = () => { try { const d = fs.readdirSync(path.join(repo, '.work')).filter((x) => x.startsWith('JOB-')).sort().pop(); return d && JSON.parse(fs.readFileSync(path.join(repo, '.work', d, 'job.json'), 'utf8')); } catch { return null; } };
 const events = () => { try { const d = fs.readdirSync(path.join(repo, '.work')).filter((x) => x.startsWith('JOB-')).sort().pop(); return fs.readFileSync(path.join(repo, '.work', d, 'events.log'), 'utf8').split('\n').filter(Boolean); } catch { return []; } };
+const unanswered = new Set();
 async function answer(win) {
   const id = fs.readFileSync(path.join(repo, '.work/ACTIVE'), 'utf8').trim();
   const r = JSON.parse(fs.readFileSync(path.join(repo, '.work', id, 'readiness.json'), 'utf8'));
@@ -21,7 +22,7 @@ async function answer(win) {
   let n = 0;
   for (const it of (r.items ?? r).filter((x) => x.status === 'open' && x.owner !== 'pm')) {
     const a = answers.find((x) => new RegExp(x.match, 'i').test(it.question));
-    if (!a) { log(`no prepared answer for ${it.id} — a real person must answer: ${it.question}`); continue; }
+    if (!a) { if (!unanswered.has(it.id)) log(`no prepared answer for ${it.id} — a real person must answer: ${it.question}`); unanswered.add(it.id); continue; }
     execFileSync(dlBin, ['-C', repo, 'clarify', it.id, a.answer], { env: { ...process.env, DELIVER_APPROVER: 'e2e-human' } });
     log(`human answered ${it.id}: ${it.question.slice(0, 90)}`); n++;
   }
@@ -44,7 +45,7 @@ async function answer(win) {
   await win.fill('textarea[placeholder="Message Michael"]', message);
   await win.keyboard.press('Enter');
   log(`briefed Michael: ${message}`);
-  let shot = 1, lastLen = 0, lastChange = Date.now(), lastPhase = '';
+  let shot = 1, lastLen = 0, lastChange = Date.now(), lastPhase = '', lastAsk = 0;
   let burst = 0, nb = 0;
   const tab = async (name) => { const b = win.locator('button', { hasText: new RegExp(`^\\s*${name}\\s*$`, 'i') }).first(); if (await b.count()) await b.click().catch(() => {}); };
   while (Date.now() - t0 < Number(mins) * 60000) {
@@ -60,9 +61,11 @@ async function answer(win) {
       for (const e of ev.slice(lastLen)) { log(`event ${e.split('\t').slice(1).join(' ').slice(0, 150)}`); if (e.split('\t')[1] === 'md-dispatch' && burst === 0) burst = 8; }
       lastLen = ev.length; lastChange = Date.now();
     }
-    if (j && j.phase !== lastPhase) {
-      log(`phase ${j.phase}`); lastPhase = j.phase;
-      if (j.phase === 'awaiting_clarification' && answersFile && dlBin) await answer(win);
+    if (j && j.phase !== lastPhase) { log(`phase ${j.phase}`); lastPhase = j.phase; lastAsk = 0; }
+    // Waiting for the human: try again every 30 s — the person may answer later (a new entry in answers.json).
+    if (j?.phase === 'awaiting_clarification' && answersFile && dlBin && Date.now() - lastAsk > 30000) {
+      lastAsk = Date.now();
+      try { await answer(win); } catch (e) { log(`answering failed: ${String(e.message ?? e).slice(0, 200)}`); }
     }
     if (shot <= 120 && (Date.now() - t0) / 60000 >= shot) await win.screenshot({ path: `${shots}/${String(shot++).padStart(2, '0')}-floor.png` });
     if (j && ['done', 'awaiting_pr_merge', 'aborted'].includes(j.phase)) { log(`finished: ${j.phase}`); await win.screenshot({ path: `${shots}/99-final.png` }); await closeApp(app); process.exit(j.phase === 'aborted' ? 1 : 0); }
