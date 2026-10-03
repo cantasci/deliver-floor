@@ -61,6 +61,19 @@ SKILL_DIR="$(cd "$BIN_DIR/.." && pwd)"
 CONFIG="$SKILL_DIR/config.json"
 REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
 
+# Installed as a Claude Code plugin, the kit's agents are namespaced (<plugin>:<agent>, e.g. deliver:backend-dev).
+# Job and board files keep the canonical names; agent_call gives the name to invoke. Plugin mode is detected from
+# Claude Code's plugin cache; DELIVER_AGENT_NS overrides it (set it to "deliver" for claude --plugin-dir kit).
+if [[ -z ${DELIVER_AGENT_NS+x} ]]; then
+  DELIVER_AGENT_NS=""
+  [[ $SKILL_DIR == */plugins/cache/* && -f $SKILL_DIR/../../.claude-plugin/plugin.json ]] \
+    && DELIVER_AGENT_NS="$(jq -r '.name // empty' "$SKILL_DIR/../../.claude-plugin/plugin.json")"
+fi
+export DELIVER_AGENT_NS
+agent_call() { # agent_call <canonical agent> → the name to invoke (only the kit's own agents get the namespace)
+  if [[ -n $DELIVER_AGENT_NS && $1 != *:* && -f $SKILL_DIR/../../agents/$1.md ]]; then echo "$DELIVER_AGENT_NS:$1"; else echo "$1"; fi
+}
+
 die() { echo "dl: $*" >&2; exit 1; }
 refuse() { local code=$1; shift; echo "dl: REFUSED — $*" >&2; exit "$code"; }
 # Human decisions are never taken inside an unattended session (run-headless.sh sets DELIVER_HEADLESS=1 for claude -p).
@@ -915,6 +928,7 @@ cmd_pr() {
 # The instructions of an agent definition, without its Claude Code frontmatter (kit agents, or ECC's from the plugin cache).
 agent_body() {
   local a=$1 f=""
+  [[ -n $DELIVER_AGENT_NS ]] && a=${a#"$DELIVER_AGENT_NS:"}
   if [[ $a == ecc:* ]]; then f="$(ls -d "$HOME"/.claude/plugins/cache/ecc/*/*/agents/"${a#ecc:}".md 2>/dev/null | tail -1)"
   else for d in "$SKILL_DIR/../../agents" "$HOME/.claude/agents" "$ROOT/.claude/agents"; do [[ -f $d/$a.md ]] && { f="$d/$a.md"; break; }; done; fi
   if [[ -n $f ]]; then awk 'BEGIN{fm=0} /^---$/ && fm<2 {fm++; next} fm>=2 || fm==0' "$f"
@@ -952,7 +966,7 @@ cmd_md_dispatch() {
   mkdir -p "$hive/spawn-requests"
   local objective
   if [[ $provider == claude ]]; then
-    cmd="$(setting munder.claude_command)"; cmd="${cmd:-claude} --agent $agent"
+    cmd="$(setting munder.claude_command)"; cmd="${cmd:-claude} --agent $(agent_call "$agent")"
     objective="$(cat "$rolecard"; printf '\n---\n\n'; cat "$pfile")"
   else
     # Other CLIs have no --agent: the agent definition's instructions travel inside the objective, after the role card.

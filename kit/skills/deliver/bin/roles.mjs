@@ -10,6 +10,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { section as knowledgeSection } from "./knowledge.mjs";
 
 const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
+// The name to invoke an agent by: under a plugin install the kit's own agents are namespaced (dl sets DELIVER_AGENT_NS).
+export const agentCall = (a) => {
+  const ns = process.env.DELIVER_AGENT_NS ?? "";
+  return ns && !a.includes(":") && existsSync(join(SKILL_DIR, "..", "..", "agents", `${a}.md`)) ? `${ns}:${a}` : a;
+};
 
 // --- a small YAML subset: maps by indentation, "- scalar" lists, quoted/bare scalars, # comments ------------------
 export function parseYaml(text, label = "yaml") {
@@ -154,7 +159,7 @@ export function renderRole(sel, job, cat) {
     `# Role: ${sel.role} — ${KIND_TITLE[r.kind] ?? r.kind}${r.focus ? ` (${r.focus})` : ""}`,
     "",
     `Job: **${job.id}** — ${job.title}`,
-    `Agent: \`${sel.agent}\` · runs on: ${sel.provider ?? "claude"}${sel.model ? ` (${sel.model})` : ""} · writes files: ${r.writes ? "yes (only where the rules allow)" : "no"}`,
+    `Agent: \`${agentCall(sel.agent)}\` · runs on: ${sel.provider ?? "claude"}${sel.model ? ` (${sel.model})` : ""} · writes files: ${r.writes ? "yes (only where the rules allow)" : "no"}`,
     `Why this role is on the job: ${sel.why ?? r.when ?? "-"}`,
     "",
     "## Mission",
@@ -212,7 +217,7 @@ export function render(jobDir, { hiveRoot } = {}) {
     const out = renderRole(sel, job, cat);
     const file = join(jobDir, "roles", `${sel.role}.md`);
     writeFileSync(file, out.md);
-    rows.push(`| ${sel.role} | \`${sel.agent}\` | ${out.entry.kind} | ${sel.why ?? ""} | roles/${sel.role}.md |`);
+    rows.push(`| ${sel.role} | \`${agentCall(sel.agent)}\` | ${out.entry.kind} | ${sel.why ?? ""} | roles/${sel.role}.md |`);
     if (munder) {
       const m = hireManifest(sel, job, cat, out);
       for (const k of Object.keys(m)) if (m[k] === undefined) delete m[k];
@@ -225,6 +230,7 @@ export function render(jobDir, { hiveRoot } = {}) {
   }
   writeFileSync(join(jobDir, "ROLES.md"), [
     `# Roles for ${job.id}`, "", "| Role | Agent | Kind | Why | Rules |", "| --- | --- | --- | --- | --- |", ...rows, "",
+    process.env.DELIVER_AGENT_NS ? `The kit runs as the \`${process.env.DELIVER_AGENT_NS}\` plugin: call its agents by the names above (subagent_type, claude --agent). job.json and board.json keep the plain names.\n` : "",
     munder ? `Munder Difflin hire manifests: munder/hires/*.hire.json${hiveRoot ? ` (also offered in ${hiveRoot}/research/hires/ — confirm in the app to seat a role permanently)` : ""}.` : "",
   ].join("\n"));
   console.log(`roles: ${job.roles.length} role card(s) → ${join(jobDir, "roles")}${munder ? " + hire manifests" : ""}`);

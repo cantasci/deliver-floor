@@ -7,7 +7,6 @@
 # .work/ACTIVE names it.
 
 DELIVER_REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
-DEV_AGENTS_RE='^(backend-dev|frontend-dev|mobile-dev)$'
 
 hk() { jq -r "$1 // empty" <<<"$input" 2>/dev/null; }
 

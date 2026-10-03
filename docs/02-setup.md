@@ -25,7 +25,7 @@ It is idempotent: every step checks first. `bash -x scripts/init.sh …` shows e
 ### What it installs
 
 `scripts/install.sh` (called by init; usable on its own: `--user`, `--project <repo>`, `--dry-run`, `--uninstall`,
-`--keep-attribution`):
+`--keep-attribution`, `--plugin` — see the plugin section below):
 
 - `kit/agents/*.md` → `<target>/agents/` (business-analyst, qa-tester, backend-dev, frontend-dev, mobile-dev, database-dev)
 - `kit/skills/deliver/` → `<target>/skills/deliver/` (SKILL.md, roles.yaml, readiness.yaml, config.json, templates, `bin/dl` …)
@@ -39,6 +39,38 @@ ECC notes:
 - **One install path.** With the plugin installed, don't also run ECC's `./install.sh --profile full`.
 - **Don't copy ECC's hooks into `settings.json`** — the plugin loads them.
 - ECC has hundreds of skills; they load on demand. The role cards name the few each role should load.
+
+### Or: install the kit as a Claude Code plugin
+
+The repo is also a plugin marketplace (`.claude-plugin/marketplace.json` → `kit/`, plugin `deliver`). Inside Claude Code:
+
+```text
+/plugin marketplace add https://github.com/cantasci/skills-shop
+/plugin install deliver@skills-shop
+```
+
+then, once, in a terminal: `scripts/install.sh --user --plugin`. A plugin cannot set `env` or `attribution`, so this merges
+only those two into `~/.claude/settings.json` — it copies no files and adds no hooks (the plugin brings the skill, the six
+agents and `kit/hooks/hooks.json`).
+
+What changes with the plugin:
+
+- The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin (it runs from
+  Claude Code's plugin cache) and writes those names into ROLES.md, the role cards and floor workers' `claude --agent`.
+  `job.json` and `board.json` keep the plain names. Developing with `claude --plugin-dir kit`? Set `DELIVER_AGENT_NS=deliver`.
+- `/deliver` still works; `/deliver:deliver` is the fully qualified name.
+- `dl` lives in the plugin cache: `ls ~/.claude/plugins/cache/skills-shop/deliver/*/skills/deliver/bin/dl`.
+- **One install path.** Don't also copy the kit with `scripts/install.sh --user` — the skill and the hooks would load twice.
+  `scripts/doctor.sh` reports it.
+
+`kit/hooks/hooks.json` is generated from `kit/settings.hooks.json` (the one source of truth); after changing the hooks:
+
+```bash
+jq '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver")))}' \
+  kit/settings.hooks.json > kit/hooks/hooks.json
+```
+
+`tests/run.sh` fails while the two disagree.
 
 ## 2. `dl` on your PATH (for you; Michael uses the absolute path)
 

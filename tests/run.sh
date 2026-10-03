@@ -370,6 +370,22 @@ jq -r .objective "$reqc" | gq "Your role instructions (backend-dev)" && jq -r .o
 jq -r .objective "$reqc" | gq "^---$" && ! jq -r .objective "$reqc" | gq "^tools: " && ok "…without Claude frontmatter" || bad "frontmatter leaked"
 "$DL" jobset '(.roles[] | select(.role=="backend")) |= del(.provider, .model) | .settings.dispatch="subagent"'
 unset HIVE_ROOT
+
+echo "plugin install: the kit's agents are namespaced, job files keep plain names"
+DELIVER_AGENT_NS=deliver "$DL" roles >/dev/null
+out="$(cat "$R/.work/$JOB/ROLES.md")"
+contains "ROLES.md names kit agents with the plugin prefix" "$out" '`deliver:backend-dev`'
+contains "…and says to call them by those names" "$out" 'runs as the `deliver` plugin'
+[[ $out != *deliver:ecc:* ]] && ok "…ECC agents keep their own namespace" || bad "ecc agent re-prefixed"
+contains "the role card names the agent to call" "$(cat "$R/.work/$JOB/roles/backend.md")" 'Agent: `deliver:backend-dev`'
+contains "job.json keeps the plain name" "$(jq -r '.roles[] | select(.role=="backend") | .agent' "$R/.work/$JOB/job.json")" "backend-dev"
+export HIVE_ROOT="$TMP/hive3"; mkdir -p "$HIVE_ROOT"; "$DL" jobset '.settings.dispatch="munder"'
+DELIVER_AGENT_NS=deliver "$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
+contains "floor workers start the namespaced agent" "$(jq -r .command "$(ls "$HIVE_ROOT"/spawn-requests/*.json | head -1)" 2>&1)" "claude --agent deliver:backend-dev"
+"$DL" jobset '.settings.dispatch="subagent"'; unset HIVE_ROOT
+"$DL" roles >/dev/null
+out="$(cat "$R/.work/$JOB/ROLES.md")"
+[[ $out == *'`backend-dev`'* && $out != *deliver:* ]] && ok "a copied install (no plugin) keeps plain names" || bad "plain names: $out"
 HV="$TMP/hive2"; DELIVER_SKILL_DIR=/opt/kit/skills/deliver "$HERE/scripts/md-brief.sh" "$HV" "$R" >/dev/null
 [[ -f $HV/CLAUDE.md && -f $HV/AGENTS.md && -f $HV/GEMINI.md ]] && grep -q "/opt/kit/skills/deliver/SKILL.md" "$HV/AGENTS.md" \
   && ok "md-brief briefs Michael for Claude, Codex-style (AGENTS.md) and Gemini CLIs" || bad "md-brief files"
@@ -723,6 +739,27 @@ out="$("$DL" ship 2>&1)"; contains "auto: merged on green" "$out" "merged automa
 ! grep -q "pr create" "$GHLOG" && ok "auto: re-ship reuses the existing PR" || bad "auto created a second PR"
 contains "auto: phase done" "$(jq -r .phase .work/*/job.json)" "done"
 unset DELIVER_GH; cd "$R"
+
+echo "plugin packaging"
+claude_ok=0; command -v claude >/dev/null && claude_ok=1
+jq -e '.name=="deliver"' "$HERE/kit/.claude-plugin/plugin.json" >/dev/null && ok "plugin manifest names the plugin deliver" || bad "plugin.json"
+jq -e '.plugins[] | select(.name=="deliver" and .source=="./kit")' "$HERE/.claude-plugin/marketplace.json" >/dev/null && ok "the repo is a marketplace offering ./kit" || bad "marketplace.json"
+gen="$(jq -S '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver")))}' "$HERE/kit/settings.hooks.json")"
+[[ "$gen" == "$(jq -S . "$HERE/kit/hooks/hooks.json")" ]] && ok "plugin hooks.json matches settings.hooks.json" \
+  || bad "kit/hooks/hooks.json is stale — regenerate it from kit/settings.hooks.json (docs/02-setup.md)"
+for f in "$HERE"/kit/hooks/deliver/*.sh "$HERE/kit/skills/deliver/bin/dl"; do [[ -x $f ]] || bad "not executable in the plugin: $f"; done
+if [[ $claude_ok -eq 1 ]]; then
+  out="$(claude plugin validate "$HERE/kit" 2>&1; claude plugin validate "$HERE" 2>&1)"
+  [[ $out == *"Validation passed"* && $out != *"Found "*warning* && $out != *rror* ]] && ok "claude plugin validate: plugin and marketplace pass without warnings" || bad "plugin validate: $out"
+fi
+PH="$TMP/phome"; mkdir -p "$PH"; INST_P="$HERE/scripts/install.sh"
+HOME="$PH" expect_ok "install --plugin (settings only)" "$INST_P" --user --plugin
+[[ ! -e $PH/.claude/skills/deliver && ! -e $PH/.claude/agents/qa-tester.md && "$(jq '.hooks // {} | length' "$PH/.claude/settings.json")" == 0 ]] \
+  && ok "…copies no files and adds no hooks (the plugin brings them)" || bad "install --plugin copied files or hooks"
+[[ "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$PH/.claude/settings.json")" == .work/* && "$(jq -c .attribution "$PH/.claude/settings.json")" == '{"commit":"","pr":""}' ]] \
+  && ok "…but sets what a plugin cannot: env and attribution" || bad "install --plugin settings: $(cat "$PH/.claude/settings.json")"
+HOME="$PH" expect_ok "uninstall --plugin" "$INST_P" --user --plugin --uninstall
+[[ "$(jq -c 'del(.x)' "$PH/.claude/settings.json")" == '{}' ]] && ok "…removes them again" || bad "uninstall --plugin left: $(cat "$PH/.claude/settings.json")"
 
 echo "install / uninstall"
 INST="$HERE/scripts/install.sh"

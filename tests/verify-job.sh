@@ -46,8 +46,8 @@ for c in $(jq -r '.cards[] | select(.state=="merged") | .id' "$B"); do
   qa_files=$((qa_files + total - out))
 done
 [[ $qa_files -gt 0 ]] && ok "QA's integration/e2e tests are on main ($qa_files file(s) in the cards' qa_scope)" || bad "no QA test files on main"
-for a in business-analyst ecc:architect qa-tester; do grep -q $'\tagent\t'"$a" "$J/events.log" || gq "md-dispatch.*$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
-grep -qE $'\tagent\t(backend|frontend|mobile|database)-dev|md-dispatch\tT-[0-9]+ (backend|frontend|mobile|database)' "$J/events.log" && ok "role really ran: a dev role" || bad "no dev run"
+for a in business-analyst ecc:architect qa-tester; do grep -qE $'\tagent\t'"(deliver:)?$a" "$J/events.log" || gq "md-dispatch.*$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
+grep -qE $'\tagent\t(deliver:)?(backend|frontend|mobile|database)-dev|md-dispatch\tT-[0-9]+ (backend|frontend|mobile|database)' "$J/events.log" && ok "role really ran: a dev role" || bad "no dev run"
 grep -qE $'\tagent\tecc:[a-z-]*reviewer|\treview\t' "$J/events.log" && ok "role really ran: reviewer(s)" || bad "no reviewer run"
 ! grep -q $'\ttracker-error\t' "$J/events.log" && ok "no tracker errors" || bad "tracker errors in events.log"
 chk "kanban view rendered" test -f "$J/kanban.html"

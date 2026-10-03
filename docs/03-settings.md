@@ -102,6 +102,7 @@ Components (with their path, stack, dev owner and reviewer) are not set on roles
 | `DELIVER_HOME` | Where the job registry and knowledge live (default `~/.deliver`) |
 | `DELIVER_KNOWLEDGE` | Company standards directory (default `~/.deliver/knowledge`) |
 | `DELIVER_HEADLESS=1` | Set by `scripts/run-headless.sh`: foreground agents, questions go to `QUESTIONS.md` / `APPROVAL.md` |
+| `DELIVER_AGENT_NS=<plugin>` | Names the kit's agents `<plugin>:<agent>` in ROLES.md, role cards and floor workers. Detected automatically when the kit runs as an installed plugin; set it for `claude --plugin-dir kit`, or to `""` to switch it off |
 | `DELIVER_APPROVER` | Name recorded on human answers/approvals (default `$USER`) |
 | `DELIVER_GH` | The GitHub CLI to use (default `gh`; tests point it at a stub) |
 | `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN`, or `JIRA_PAT` | Jira credentials — [10](10-trackers.md#2-credentials--environment-only-never-in-deliverjson) |

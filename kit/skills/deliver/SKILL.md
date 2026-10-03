@@ -22,6 +22,9 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
   folder is the hive), the request names the repo (`REPO: /path`) or there is exactly one in `registeredRepos`; then call
   every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.
+- **Agent names.** This playbook, job.json and board.json use plain names (`backend-dev`). When the kit is installed as a
+  plugin, ROLES.md and the role cards list its agents with the plugin prefix (`deliver:backend-dev`): `subagent_type` is
+  always the name ROLES.md shows for that role.
 - By argument:
   - `status` → `"$DL" status`, summarise in 5 lines, stop.
   - `resume` (or empty) → **Resume**.

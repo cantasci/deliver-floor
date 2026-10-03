@@ -34,6 +34,9 @@ git clone https://github.com/cantasci/skills-shop && cd skills-shop
 scripts/init.sh                       # ECC plugin + this kit into ~/.claude + doctor
 ```
 
+Or as a Claude Code plugin: `/plugin marketplace add https://github.com/cantasci/skills-shop`, `/plugin install deliver@skills-shop`,
+then `scripts/install.sh --user --plugin` once (env and attribution, which a plugin cannot set) — [docs/02](docs/02-setup.md).
+
 Try it on a sandbox — nothing of yours is touched (a 2-requirement slice of a real POC document):
 
 ```bash
@@ -112,10 +115,13 @@ where it is implemented and the test that proves it — including what failed al
 ## What's in this repo
 
 ```text
-kit/                       ← what gets installed into ~/.claude (or <repo>/.claude)
+.claude-plugin/            marketplace.json — the repo is a plugin marketplace offering kit/ as plugin "deliver"
+kit/                       ← what gets installed into ~/.claude (or <repo>/.claude), or loaded as the plugin
+├── .claude-plugin/        plugin.json
 ├── skills/deliver/        SKILL.md (Michael's playbook) · roles.yaml · readiness.yaml · config.json · templates/ · bin/dl + helpers
 ├── agents/                business-analyst · qa-tester · backend-dev · frontend-dev · mobile-dev · database-dev
 ├── hooks/deliver/         stop-guard · bash-guard · write-guard · agent-guard · subagent-log
+├── hooks/hooks.json       the plugin's hook wiring (generated from settings.hooks.json)
 └── settings.hooks.json    hooks, env and attribution merged into settings.json
 scripts/                   init · install · doctor · sandbox · run-headless · md-brief · check-oracle
 examples/watchlist-poc/    the test data: requests (complete / incomplete / parallel), human answers, seed, hidden oracles

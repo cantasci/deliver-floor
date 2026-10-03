@@ -39,6 +39,7 @@ planning guards
   ✔ agents cannot record PM decisions
   ✔ phase planning once nothing is open
   ✔ planning froze readiness.json (sha256 in job.json)
+  ✔ in planning Michael may still write board.json with a script (the Leads' cards)
   ✔ role cards generated on planning
   ✔ role cards carry kind rules + project facts
   ✔ empty board is invalid
@@ -81,7 +82,7 @@ execution guards
   ✔ QA failure re-dispatches the dev
   ✔ gate fails when the dev edits a QA test
   ✔ gate fails when the dev deletes a QA test
-On branch job/JOB-20261003-1022-siparis-iptali--T-01
+On branch job/JOB-20261003-1352-siparis-iptali--T-01
 nothing to commit, working tree clean
   ✔ gate runs the QA tests after a QA round
   ✔ gate passes once the dev's fix satisfies the QA tests
@@ -142,6 +143,13 @@ hooks
   ✔ dl phase --force denied
   ✔ headless self-approval denied
   ✔ subagent dl qa denied
+  ✔ the playbook's "$DL" form is recognised: headless self-answer denied
+  ✔ …and ${DL} with -C too
+  ✔ a subagent calling "$DL" gate is denied
+  ✔ a script writing board.json once work has started is denied (phase executing)
+  ✔ …so is a redirect into job.json
+  ✔ …while reading them stays allowed
+  ✔ dl itself refuses a human decision in an unattended session, whatever it is called by
   ✔ interactive approval allowed
   ✔ unrelated commands allowed
   ✔ dev may write in its card worktree
@@ -163,6 +171,14 @@ munder difflin dispatch
   ✔ codex worker: provider set, no claude --agent
   ✔ the agent definition's instructions travel inside the objective for non-Claude CLIs
   ✔ …without Claude frontmatter
+plugin install: the kit's agents are namespaced, job files keep plain names
+  ✔ ROLES.md names kit agents with the plugin prefix
+  ✔ …and says to call them by those names
+  ✔ …ECC agents keep their own namespace
+  ✔ the role card names the agent to call
+  ✔ job.json keeps the plain name
+  ✔ floor workers start the namespaced agent
+  ✔ a copied install (no plugin) keeps plain names
   ✔ md-brief briefs Michael for Claude, Codex-style (AGENTS.md) and Gemini CLIs
 architecture: mixed stacks, frozen decisions, seats, parallel assignment
   ✔ a Go service reviewed by the Java reviewer is rejected
@@ -173,9 +189,11 @@ architecture: mixed stacks, frozen decisions, seats, parallel assignment
   ✔ database role card lists only the db component
   ✔ the Go reviewer's card lists only the Go service
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/arch/.work/JOB-20261003-1023-micro/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/arch/.work/JOB-20261003-1353-micro/readiness.md
   ✔ cards on three components validate
   ✔ a card reaching outside its component is rejected
+  ✔ a component spanning code and test directories accepts cards in all of them
+  ✔ …and still rejects a directory it does not list
   ✔ a backend dev on the database component is rejected
   ✔ editing the frozen readiness/architecture is refused
   ✔ agents cannot unfreeze
@@ -195,7 +213,7 @@ traceability: card changes, jobset limits, seals
   ✔ jobset cannot move the phase
   ✔ jobset cannot approve a gate
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/trace/.work/JOB-20261003-1023-trace/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/trace/.work/JOB-20261003-1353-trace/readiness.md
   ✔ jobset cannot clear the frozen hash
   ✔ Michael's direct board edit is denied by the write-guard
   ✔ an edit through any other tool breaks the seal: dl stops
@@ -210,7 +228,7 @@ readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.
   ✔ a dev card reaching another card's QA tests is rejected
 tracker: jira (contract stub of Jira REST v3) — statuses, comments, branch links
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/jira-repo/.work/JOB-20261003-1023-jira-flow/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/jira-repo/.work/JOB-20261003-1353-jira-flow/readiness.md
   ✔ executing opens an epic (WL-1) and one issue per card under it
   ✔ T-02 depends_on T-01 becomes a 'Blocks' issue link
   ✔ issues carry job, role and component labels
@@ -238,7 +256,7 @@ ECC specialists: decisions bring their reviewers; every reviewer must approve
   ✔ security is suggested, not forced
   ✔ with ecc:a11y-architect, ecc:performance-optimizer and ecc:doc-updater on the job the readiness passes
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 25 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ecc/.work/JOB-20261003-1024-spec/readiness.md
+readiness: 25 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ecc/.work/JOB-20261003-1353-spec/readiness.md
   ✔ an unknown reviewer role is rejected
   ✔ next names both reviewers
   ✔ one approval leaves the card pending
@@ -252,7 +270,7 @@ robustness: dl next at full capacity with many ready cards (was SIGPIPE 141)
   ✔ dl next survives a full board (5 runs)
 commit hygiene: no AI attribution, optional role trailer
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/commits/.work/JOB-20261003-1024-commits/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/commits/.work/JOB-20261003-1353-commits/readiness.md
   ✔ role cards state the commit rule
   ✔ a Claude co-author trailer fails the gate
   ✔ a 'Generated with Claude Code' line fails the gate
@@ -263,7 +281,7 @@ tracker factory: a new tracker is one file in bin/trackers/
   ✔ an unknown tracker kind is refused at dl new
   ✔ …and the message lists the registered ones, including the new file
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/tk/.work/JOB-20261003-1024-tk/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/tk/.work/JOB-20261003-1353-tk/readiness.md
   ✔ the new tracker receives open, sync and branch with no other change
 knowledge: standards, memory, Munder Difflin knowledge graph
   ✔ company standard's Must reaches the dev role
@@ -277,7 +295,7 @@ knowledge: standards, memory, Munder Difflin knowledge graph
   ✔ knowledge graph holds 3 docs (2 standards + lessons)
 merge modes: human / semi / auto (fake gh, bare origin)
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ship-human/.work/JOB-20261003-1024-ship-human/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ship-human/.work/JOB-20261003-1353-ship-human/readiness.md
   ✔ human: PR opened, waits for the human
   ✔ human: job branch pushed
   ✔ human: PR created, never merged by Michael
@@ -287,17 +305,27 @@ readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.
   ✔ human: dl pr sees the merge → done
   ✔ phase done
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ship-semi/.work/JOB-20261003-1024-ship-semi/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ship-semi/.work/JOB-20261003-1353-ship-semi/readiness.md
   ✔ semi: auto-merge armed
   ✔ semi: gh pr merge --auto
   ✔ semi: still waits for the human approval
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ship-auto/.work/JOB-20261003-1024-ship-auto/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ship-auto/.work/JOB-20261003-1354-ship-auto/readiness.md
   ✔ auto: red CI → not merged
   ✔ auto: no merge on red CI
   ✔ auto: merged on green
   ✔ auto: re-ship reuses the existing PR
   ✔ auto: phase done
+plugin packaging
+  ✔ plugin manifest names the plugin deliver
+  ✔ the repo is a marketplace offering ./kit
+  ✔ plugin hooks.json matches settings.hooks.json
+  ✔ claude plugin validate: plugin and marketplace pass without warnings
+  ✔ install --plugin (settings only)
+  ✔ …copies no files and adds no hooks (the plugin brings them)
+  ✔ …but sets what a plugin cannot: env and attribution
+  ✔ uninstall --plugin
+  ✔ …removes them again
 install / uninstall
   ✔ install --user
   ✔ install is idempotent
@@ -310,5 +338,7 @@ install / uninstall
   ✔ uninstall
   ✔ uninstall keeps foreign hooks and env
   ✔ doctor sees the install and the repo
+  ✔ doctor finds Munder Difflin and warns about Claude Code's unfinished first run
+  ✔ …and is satisfied once it is done
 
-result: 272 passed, 0 failed
+result: 300 passed, 0 failed
