@@ -30,8 +30,9 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 
 1. Only `dl` changes card state, records gates/QA/reviews, merges and ships. Only you call `dl`.
 2. Every card is **assigned by you** (`dl wt add`) to the agent of its role. Product code is written only by that dev agent, only in its card worktree.
-3. Every card has a **BA spec** before it is assigned, and is tested by the **QA role against that spec's acceptance criteria**
-   before the Lead review. No spec → no assignment; no QA pass → no review → no merge.
+3. Roles stay in their lane: the **BA** only analyses (plan, specs, closing check); the **dev** builds the card with **unit tests,
+   TDD**; the **QA role writes and runs the card's integration/e2e tests** for the spec's acceptance criteria (in `qa_scope`).
+   No spec → no assignment; no QA pass → no review → no merge.
 4. Every subagent gets a **self-contained** prompt and its **role card** (`.work/<job>/roles/<role>.md`). They don't see this conversation.
 5. Subagents return **short** answers; details live in files (`handoffs/`, `gates/`). Never paste whole diffs or logs into your context — read only the failing lines.
 6. Dispatch agents in the **foreground** (`run_in_background: false`), several in one message when they can run in parallel. Wait for them; the flow is driven by their results.
@@ -84,13 +85,15 @@ YOUR AREA: <backend|frontend|mobile|cross-cutting>   DEV ROLES ON THIS JOB: <dev
 REPO: <absolute repo root>   STACK: <stack>
 Rules:
 - One card = one agent can finish it in one session.
-- scope = narrow repo-relative globs including the card's tests (e.g. "src/api/orders/**", "test/api/orders/**"). Never "**".
-- verify = a command run from the worktree root that proves THIS card (its tests), e.g. "node --test test/orders/*.test.mjs".
+- scope = the dev's area: narrow repo-relative globs for the code and its UNIT tests (e.g. "src/api/orders/**", "test/unit/orders/**"). Never "**".
+- verify = a command run from the worktree root that runs THIS card's unit tests, e.g. "node --test test/unit/orders/*.test.mjs".
+- qa_scope = where the QA role writes this card's integration/e2e tests, apart from scope (e.g. "test/integration/orders/**").
+- qa_verify = the command that runs them, e.g. "node --test test/integration/orders/*.test.mjs".
 - acceptance = which AC-n this card satisfies, phrased as checks ("AC-2: … → …"). Every AC of the plan is covered by a card.
 - context = everything a developer who has not seen the plan needs: why, files, decisions, contracts (exact names/signatures).
 - Order with depends_on using temporary ids (B1, B2… / F1…). Cards that touch the same files are never parallel.
 OUTPUT — only a JSON array:
-[{"tmp_id":"B1","title":"…","role":"backend","context":"…","depends_on":[],"scope":["…"],"acceptance":["AC-1: …"],"verify":"…"}]
+[{"tmp_id":"B1","title":"…","role":"backend","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"]}]
 ```
 
 Then **you** merge the arrays into `.work/<job>/board.json` (`{"cards":[…]}`):
@@ -139,8 +142,9 @@ WORKTREE: <WT>   (branch <card.branch>; base is the job branch <job.branch>)
 Work ONLY inside this directory. All paths are relative to it.
 PLAN CONTEXT: <Goal + the ACs this card references, copied from plan.md>
 HANDOFF FILE: <absolute path to .work/<job>/handoffs/T-xx.md> — fill it in.
-PREVIOUS FEEDBACK: <none | the failing gate lines | the QA failures | the reviewer's blocking items | conflict instruction>
-When done: run the verify command in the worktree, commit, fill the handoff, and return your summary.
+QA TESTS: qa_scope <card.qa_scope> belongs to the QA role — never edit it; after a QA round its tests must pass unchanged (`<qa_verify>`).
+PREVIOUS FEEDBACK: <none | the failing gate lines | the QA failures (failing test names) | the reviewer's blocking items | conflict instruction>
+Work test-first (unit tests). When done: run the verify command in the worktree, commit, fill the handoff, and return your summary.
 ```
 
 2. As each dev returns → **Phase 4** for that card (`dl gate` moves it to `review`).
@@ -154,17 +158,18 @@ When done: run the verify command in the worktree, commit, fill the handoff, and
 2. **QA** (after the gate passes) — call **Agent(subagent_type: "qa-tester")**:
 
 ```text
-Role: QA/Test for card T-xx. Test it against its acceptance criteria. Do not modify the worktree.
+Role: QA/Test for card T-xx. Write and run its integration/e2e tests for the spec's acceptance criteria. No product code.
 ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/qa.md>
 CARD: <card JSON>
-SPEC (test against THIS — every acceptance criterion and edge case, using its test data): <abs path to .work/<job>/specs/T-xx.md>
-WORKTREE: <abs path>   (the card's verify: <verify>)
+SPEC (one test per acceptance criterion at least, with its test data and edge cases): <abs path to .work/<job>/specs/T-xx.md>
+WORKTREE: <abs path>   QA_SCOPE (write only here): <card.qa_scope>   QA_VERIFY: <card.qa_verify>
 PLAN ACs referenced by the card: <the AC-n lines from plan.md, verbatim>
-OUTPUT — only the JSON your agent definition specifies (verdict + criteria with evidence + failures).
+Commit your tests ("T-xx QA: …"), leave the worktree clean, return the JSON your agent definition specifies.
 ```
 
-   Record: `"$DL" qa T-xx pass|fail "<AC-1 pass: …; AC-2 fail: …>"`, and append the JSON under `## QA` in the handoff.
-   `fail` → re-dispatch the dev with the QA failures as PREVIOUS FEEDBACK (same retry rule as a gate failure).
+   Record: `"$DL" qa T-xx pass|fail "<AC-1 pass: …; AC-2 fail: …>"` — `dl` checks that QA only wrote in `qa_scope`, that
+   there are QA tests, and runs `qa_verify` itself (a "pass" with failing QA tests is refused). Append the JSON under `## QA`
+   in the handoff. `fail` → re-dispatch the dev with the failing QA tests as PREVIOUS FEEDBACK; the next gate runs them too.
 3. **Lead review** (after QA passes) — the stack reviewer from `job.roles` (+ `ecc:security-reviewer` in parallel if `security` is on the job and the card is sensitive):
 
 ```text

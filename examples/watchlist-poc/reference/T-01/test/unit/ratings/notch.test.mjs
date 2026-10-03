@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { RATING_SCALE, notchChange, notchCalculator } from "../../src/ratings/notch.mjs";
+import { RATING_SCALE, notchChange, notchCalculator } from "../../../src/ratings/notch.mjs";
 
 test("scale", () => assert.equal(RATING_SCALE.length, 19));
 test("notch change", () => {

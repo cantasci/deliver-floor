@@ -58,6 +58,22 @@ for (const c of cards) {
     errors.push(`${id}: verify '${c.verify}' proves nothing — it must run the card's tests`);
 }
 
+// The QA role writes the card's integration/e2e tests in qa_scope and runs them with qa_verify; the dev never touches them.
+const hasQa = job && (job.roles ?? []).some((r) => r.role === "qa");
+for (const c of cards) {
+  const id = c.id ?? "(no id)";
+  if (c.qa_scope !== undefined || hasQa) {
+    if (!Array.isArray(c.qa_scope) || c.qa_scope.length === 0) errors.push(`${id}: 'qa_scope' must be a non-empty array (where QA writes the integration/e2e tests)`);
+    else for (const p of c.qa_scope) {
+      if (typeof p !== "string" || /^(\*\*?|\*\*\/\*)$/.test(p) || p.startsWith("/") || p.split("/").includes("..")) errors.push(`${id}: qa_scope '${p}' is too broad or escapes the repo`);
+      else if ((c.scope ?? []).some((d) => d === p || globToRegExp(d).test(p.split(/[*?{]/)[0] + "x.test.js") && globToRegExp(p).test(p.split(/[*?{]/)[0] + "x.test.js")))
+        errors.push(`${id}: qa_scope '${p}' overlaps the dev scope — QA tests and dev code/unit tests must live apart`);
+    }
+    if (typeof c.qa_verify !== "string" || !c.qa_verify.trim()) errors.push(`${id}: 'qa_verify' is empty (the command that runs the QA tests)`);
+    else if (/^\s*(true|:|echo\b|exit 0)/.test(c.qa_verify)) errors.push(`${id}: qa_verify '${c.qa_verify}' proves nothing`);
+  }
+}
+
 // The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.
 if (job && (job.roles ?? []).some((r) => r.role === "ba"))
   for (const c of cards) {
@@ -113,7 +129,8 @@ for (let i = 0; i < live.length; i++)
   for (let j = i + 1; j < live.length; j++) {
     const a = live[i], b = live[j];
     if (reach(a.id, b.id) || reach(b.id, a.id)) continue;
-    const hit = (a.scope ?? []).flatMap((x) => (b.scope ?? []).filter((y) => overlaps(x, y)).map((y) => `${x} ~ ${y}`));
+    const all = (c) => [...(c.scope ?? []), ...(c.qa_scope ?? [])];
+    const hit = all(a).flatMap((x) => all(b).filter((y) => overlaps(x, y)).map((y) => `${x} ~ ${y}`));
     if (hit.length) warnings.push(`${a.id} and ${b.id} can run in parallel but their scopes overlap (${hit[0]}) → add depends_on or split the scope`);
   }
 

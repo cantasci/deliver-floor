@@ -30,18 +30,12 @@ dev()  { # dev <card> <worktree> — the "dev agent": copy the reference solutio
   say "  $card dev:" "status: done · commit $(git -C "$wt" rev-parse --short HEAD) · verify: passed"
 }
 
-qa() { # qa <card> <wt> (<AC> <js expr on module m> <module path>)... — the "QA role": run verify, then check each AC itself
-  local card=$1 wt=$2; shift 2
-  say "  qa-tester $card:" "runs verify, then checks every AC with its own probes (outside the worktree)"
-  (cd "$wt" && node --test $(jq -r --arg id "$card" '.cards[] | select(.id==$id) | .verify' "$B" | sed 's/^node --test //') 2>&1 | grep -E '^# (pass|fail)' | sed 's/^/      verify: /')
-  local out='{"verdict":"pass","criteria":['; local sep=""
-  while [[ $# -ge 3 ]]; do
-    local ac=$1 expr=$2 mod=$3; shift 3
-    local res; res="$(node --input-type=module -e "const m = await import('$wt/$mod'); console.log(($expr) ? 'pass' : 'fail')" 2>&1)"
-    out+="$sep{\"ac\":\"$ac\",\"status\":\"$res\",\"evidence\":\"node probe on $mod → $res\"}"; sep=","
-  done
-  echo "      $out]}"
-  [[ -z "$(git -C "$wt" status --porcelain)" ]] && echo "      worktree untouched ✔"
+qa() { # qa <card> <wt> — the "QA role": writes the integration tests for the card's ACs in qa_scope, runs them, commits
+  local card=$1 wt=$2
+  say "  qa-tester $card:" "writes integration tests for the spec's ACs in $(jq -r --arg id "$card" '.cards[] | select(.id==$id) | .qa_scope | join(",")' "$B")"
+  cp -R "$EX/reference/QA-$card"/. "$wt"/
+  (cd "$wt" && node --test --test-reporter=spec $(jq -r --arg id "$card" '.cards[] | select(.id==$id) | .qa_verify' "$B" | sed 's/^node --test //') 2>&1 | grep -E '✔|✖' | head -8 | sed 's/^/      /')
+  git -C "$wt" add -A && git -C "$wt" commit -qm "$card QA: integration tests"
 }
 
 step "0 · sandbox repo from examples/watchlist-poc/seed"
@@ -83,7 +77,7 @@ step "3 · EXECUTE — wave 1"
 dl next
 say "  bash-guard/dl:" "T-02 must wait for T-01:"; dl wt add T-02 || true
 W1="$("$DL" wt add T-01)"; echo "    T-01 worktree: ${W1#$SB/}"
-say "  T-01 dev:" "attempt 1 — also 'tidies' README.md (outside its scope)"
+say "  T-01 dev:" "attempt 1 — TDD: unit tests + code, but also 'tidies' README.md (outside its scope)"
 cp -R "$EX/reference/T-01"/. "$W1"/; echo "tidied" >> "$W1/README.md"
 git -C "$W1" add -A && git -C "$W1" commit -qm "T-01: notch calculator"
 
@@ -96,9 +90,8 @@ git -C "$W1" commit -qm "T-01: revert out-of-scope README change"
 say "  T-01 dev:" "attempt 2 — reverted README.md, verify passed"
 dl gate T-01
 dl next
-qa T-01 "$W1" "AC-1" 'm.notchChange(" bbb+ ","BB+")===3 && m.notchChange("BB+","BBB+")===-3' src/ratings/notch.mjs \
-             "AC-2" 'JSON.stringify(m.notchCalculator("BBB+","BB+"))===JSON.stringify({notches:3,direction:"downgrade",wl:2}) && m.notchCalculator("BBB+","BBB-").wl===1' src/ratings/notch.mjs
-dl qa T-01 pass "AC-1 pass, AC-2 pass (evidence in QA output)"
+qa T-01 "$W1"
+dl qa T-01 pass "AC-1 pass, AC-2 pass (test/integration/ratings)"
 say "  ecc:typescript-reviewer:" '{"verdict":"approve","blocking":[],"nits":[]}'
 dl review T-01 approve "AC-1, AC-2 covered by tests"
 dl integrate T-01
@@ -108,8 +101,8 @@ dl next
 W2="$("$DL" wt add T-02)"; echo "    T-02 worktree: ${W2#$SB/}"
 dev T-02 "$W2"
 dl gate T-02
-qa T-02 "$W2" "AC-3" 'm.countryRatingChangeWl("BB","BB-")===1 && m.countryRatingChangeWl("BB","B+")===2 && m.countryRatingChangeWl("BB-","BB")===0' src/indicators/countryRating.mjs
-dl qa T-02 pass "AC-3 pass"
+qa T-02 "$W2"
+dl qa T-02 pass "AC-3 pass (test/integration/indicators)"
 say "  ecc:typescript-reviewer:" '{"verdict":"approve","blocking":[],"nits":["name the thresholds"]}'
 dl review T-02 approve "AC-3 covered"
 dl integrate T-02

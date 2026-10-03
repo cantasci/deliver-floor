@@ -61,7 +61,7 @@ out="$("$DL" phase planning 2>&1)"; contains "roles check names the missing alwa
   {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack"}]'
 expect_ok "phase planning with valid roles" "$DL" phase planning
 [[ -f $R/.work/$JOB/roles/backend.md && -f $R/.work/$JOB/roles/qa.md && -f $R/.work/$JOB/ROLES.md ]] && ok "role cards generated on planning" || bad "role cards"
-grep -q "Test first" "$R/.work/$JOB/roles/backend.md" && grep -q "Every acceptance criterion\|every AC gets a verdict" "$R/.work/$JOB/roles/qa.md" \
+grep -q "TDD" "$R/.work/$JOB/roles/backend.md" && grep -q "integration and/or end-to-end tests" "$R/.work/$JOB/roles/qa.md" \
   && grep -q "node --test" "$R/.work/$JOB/roles/backend.md" && ok "role cards carry kind rules + project facts" || bad "role card content"
 cat > "$R/.work/$JOB/plan.md" <<'EOF'
 # Plan
@@ -73,10 +73,17 @@ x
 EOF
 expect_fail 1 "empty board is invalid" "$DL" validate
 expect_fail 1 "executing refused without approval" "$DL" phase executing
-card() { # card <id> <deps json> <scope json> <verify> <ac>
+card() { # card <id> <deps json> <scope json> <verify> <ac> — QA tests go to test/integration/<id>/
   jq -n --arg id "$1" --argjson d "$2" --argjson s "$3" --arg v "$4" --arg ac "$5" \
     '{id:$id,title:("card "+$id),role:"backend",agent:"backend-dev",state:"ready",depends_on:$d,scope:$s,
-      acceptance:[$ac],verify:$v,context:"ctx",attempts:0,notes:[]}'
+      acceptance:[$ac],verify:$v,context:"ctx",attempts:0,notes:[],
+      qa_scope:["test/integration/\($id)/**"],qa_verify:"node --test test/integration/\($id)/*.test.mjs"}'
+}
+qa_tests() { # qa_tests <worktree> <card> [fail] — the "QA role": commit an integration test in qa_scope
+  mkdir -p "$1/test/integration/$2"
+  if [[ ${3:-} == fail ]]; then printf 'import {test} from "node:test"; import assert from "node:assert"; test("AC: integration", () => assert.equal(1, 2));\n' > "$1/test/integration/$2/int.test.mjs"
+  else printf 'import {test} from "node:test"; test("AC: integration", () => {});\n' > "$1/test/integration/$2/int.test.mjs"; fi
+  git -C "$1" add -A && git -C "$1" commit -qm "$2 QA: integration tests"
 }
 B="$R/.work/$JOB/board.json"
 jq -n --argjson a "$(card T-01 '[]' '["src/add/**","test/add/**"]' 'node --test test/add/*.test.mjs' 'AC-1: add')" \
@@ -139,10 +146,30 @@ expect_fail 1 "integrate refused before review" "$DL" integrate T-01
 contains "next asks for QA after the gate" "$("$DL" next)" "QA      T-01"
 expect_fail 1 "review refused before QA" "$DL" review T-01 approve "lgtm"
 expect_fail 1 "qa needs a summary" "$DL" qa T-01 pass
-"$DL" qa T-01 fail "AC-1: add(0,0) threw" >/dev/null
-contains "QA failure re-dispatches with its feedback" "$("$DL" next)" "REDISPATCH T-01  (QA failed — feedback: AC-1: add(0,0) threw)"
-"$DL" qa T-01 pass "AC-1 pass: node --test test/add → 1 pass" >/dev/null
-echo scratch > "$W1/qa-scratch.txt"; expect_fail 1 "QA that leaves files in the worktree is refused" "$DL" qa T-01 pass "x"; rm "$W1/qa-scratch.txt"
+expect_fail 1 "QA without integration tests is refused" "$DL" qa T-01 pass "x"
+echo 'export const hacked = 1;' >> "$W1/src/add/add.mjs"; git -C "$W1" commit -qam "QA touches code"
+expect_fail 1 "QA that changes product code is refused" "$DL" qa T-01 pass "x"
+git -C "$W1" reset -q --hard HEAD~1
+# QA writes an integration test for an AC the dev missed (addChecked) → it fails
+mkdir -p "$W1/test/integration/T-01"
+printf 'import {test} from "node:test"; import assert from "node:assert"; import * as m from "../../../src/add/add.mjs";\ntest("AC-1: addChecked rejects non-numbers", () => { assert.equal(typeof m.addChecked, "function"); assert.throws(() => m.addChecked("a", 1), TypeError); });\n' > "$W1/test/integration/T-01/int.test.mjs"
+git -C "$W1" add -A && git -C "$W1" commit -qm "T-01 QA: integration tests"
+expect_fail 1 "QA 'pass' with failing QA tests is refused (dl runs qa_verify)" "$DL" qa T-01 pass "AC-1 pass"
+"$DL" qa T-01 fail "AC-1: addChecked missing" >/dev/null
+contains "QA failure re-dispatches the dev" "$("$DL" next)" "REDISPATCH T-01  (QA failed"
+"$DL" wt add T-01 >/dev/null
+echo '// weakened' >> "$W1/test/integration/T-01/int.test.mjs"; git -C "$W1" commit -qam "dev edits the QA test"
+out="$("$DL" gate T-01 2>&1)"; contains "gate fails when the dev edits a QA test" "$out" "the dev changed a QA test"
+git -C "$W1" reset -q --hard HEAD~1
+git -C "$W1" rm -q test/integration/T-01/int.test.mjs; git -C "$W1" commit -qm "dev deletes the QA test"
+out="$("$DL" gate T-01 2>&1)"; contains "gate fails when the dev deletes a QA test" "$out" "the dev changed a QA test"
+git -C "$W1" reset -q --hard HEAD~1
+printf 'export const add = (a, b) => a + b;\n' > "$W1/src/add/add.mjs"; git -C "$W1" commit -qam "T-01: no real fix"
+out="$("$DL" gate T-01 2>&1)"; contains "gate runs the QA tests after a QA round" "$out" "FAIL  verify failed: QA tests"
+printf 'export const add = (a, b) => a + b;\nexport const addChecked = (a, b) => { if (typeof a !== "number" || typeof b !== "number") throw new TypeError("numbers only"); return a + b; };\n' > "$W1/src/add/add.mjs"
+git -C "$W1" commit -qam "T-01: addChecked"
+expect_ok "gate passes once the dev's fix satisfies the QA tests" "$DL" gate T-01
+expect_ok "QA pass recorded (qa_verify green)" "$DL" qa T-01 pass "AC-1 pass: test/integration/T-01 green"
 contains "next asks for the review after QA" "$("$DL" next)" "REVIEW  T-01"
 "$DL" review T-01 approve "lgtm" >/dev/null
 expect_ok "integrate T-01" "$DL" integrate T-01
@@ -161,7 +188,7 @@ echo junk > "$W2/untracked.txt"
 out="$("$DL" gate T-02 2>&1)"; contains "untracked file fails the gate" "$out" "uncommitted or untracked"
 rm "$W2/untracked.txt"; git -C "$W2" add -A && git -C "$W2" commit -qm "T-02: fix"
 expect_ok "gate T-02 passes on attempt 2" "$DL" gate T-02
-"$DL" qa T-02 pass "AC-2 pass" >/dev/null
+qa_tests "$W2" T-02; "$DL" qa T-02 pass "AC-2 pass" >/dev/null
 "$DL" review T-02 changes "needs a negative test" >/dev/null
 contains "last attempt with changes → BLOCK" "$("$DL" next)" "BLOCK   T-02"
 expect_fail 4 "max_attempts enforced" "$DL" wt add T-02
@@ -171,7 +198,7 @@ contains "blocked card asks the human" "$("$DL" next)" "ASK     human about bloc
 "$DL" wt add T-02 >/dev/null
 printf 'import {test} from "node:test"; test("sub", () => {}); test("neg", () => {});\n' > "$W2/test/sub/sub.test.mjs"
 git -C "$W2" commit -qam "T-02: negative test"
-"$DL" gate T-02 >/dev/null && "$DL" qa T-02 pass "AC-2 pass" >/dev/null && "$DL" review T-02 approve "ok" >/dev/null
+"$DL" gate T-02 >/dev/null && "$DL" qa T-02 pass "AC-2 pass (re-run)" >/dev/null && "$DL" review T-02 approve "ok" >/dev/null
 expect_ok "integrate T-02 after human retry" "$DL" integrate T-02
 
 # --- T-03 conflicts with a file changed on the job branch after it was branched
@@ -181,7 +208,7 @@ printf 'import {test} from "node:test"; test("index", () => {});\n' > "$W3/test/
 git -C "$W3" add -A && git -C "$W3" commit -qm "T-03: index"
 IWT="$R/.work/$JOB/wt/_integration"
 echo 'export const v = 1;' > "$IWT/src/index.mjs"; git -C "$IWT" add -A; git -C "$IWT" commit -qm "hotfix on job branch"
-"$DL" gate T-03 >/dev/null && "$DL" qa T-03 pass "ok" >/dev/null && "$DL" review T-03 approve "ok" >/dev/null
+"$DL" gate T-03 >/dev/null && qa_tests "$W3" T-03 && "$DL" qa T-03 pass "ok" >/dev/null && "$DL" review T-03 approve "ok" >/dev/null
 expect_fail 3 "merge conflict → exit 3" "$DL" integrate T-03
 [[ -z "$(git -C "$IWT" status --porcelain)" ]] && ok "conflicted merge aborted cleanly" || bad "IWT dirty after conflict"
 "$DL" wt add T-03 >/dev/null
@@ -339,11 +366,11 @@ shipjob() { # shipjob <mode> → a repo with one merged card, in phase closing w
   "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
   "$DL" phase planning >/dev/null
   local j; j="$(cat .work/ACTIVE)"
-  jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",state:"ready",depends_on:[],scope:["src/**"],acceptance:["AC-1: x"],verify:"node --test",context:"c",attempts:0,notes:[]}]}' > ".work/$j/board.json"
+  jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",state:"ready",depends_on:[],scope:["src/**"],acceptance:["AC-1: x"],verify:"node --test",context:"c",attempts:0,notes:[],qa_scope:["test/integration/T-01/**"],qa_verify:"node --test test/integration/T-01/*.test.mjs"}]}' > ".work/$j/board.json"
   printf '## Acceptance criteria\nGiven a, when b, then c\n' > ".work/$j/specs/T-01.md"
   "$DL" phase executing >/dev/null; local w; w="$("$DL" wt add T-01)"
   mkdir -p "$w/src" && echo 1 > "$w/src/a.txt" && git -C "$w" add -A && git -C "$w" commit -qm "T-01"
-  "$DL" gate T-01 >/dev/null && "$DL" qa T-01 pass "ok" >/dev/null && "$DL" review T-01 approve ok >/dev/null && "$DL" integrate T-01 >/dev/null
+  "$DL" gate T-01 >/dev/null && qa_tests "$w" T-01 && "$DL" qa T-01 pass "ok" >/dev/null && "$DL" review T-01 approve ok >/dev/null && "$DL" integrate T-01 >/dev/null
   "$DL" phase integrating >/dev/null && "$DL" verify-all >/dev/null && "$DL" phase closing >/dev/null
   echo "# report" > ".work/$j/report.md"
 }

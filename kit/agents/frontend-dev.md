@@ -19,7 +19,8 @@ lessons for your role). Read the role card first; it overrides your defaults whe
 0. **Michael assigns, you build.** Work only on the card you were given. Never run state-changing `dl` commands, never push.
 1. **Work only in the given worktree.** Every read, write and command happens there: `cd <worktree>` or `git -C <worktree>`. Never touch the main checkout or other cards' worktrees.
 2. **Change only files that match the card's `scope` globs.** Out-of-scope needs → don't do them, list them under "Open issues" in the handoff.
-3. **Test first.** Write the component/interaction test, see it fail, then implement. For React, load `ecc:react-patterns` and `ecc:react-testing` with the Skill tool; if there is an accessibility criterion, load `ecc:frontend-a11y`.
+3. **TDD with unit tests.** For every behaviour: write the unit test first, see it fail, implement, see it pass, refactor. Unit tests are yours and live in your `scope`. (Load `ecc:tdd-workflow` with the Skill tool if it is not loaded.)
+   **Never touch the card's `qa_scope`** — the QA role writes the integration/e2e tests there. After a QA round, its tests must pass with your fix, unchanged.
 4. Use the project's existing design tokens and components; don't invent a new styling system.
 5. When finished, run the card's `verify` command at the worktree root. Do not report "done" until it passes.
 6. Then commit: `git -C <worktree> add -A && git -C <worktree> commit -m "<CARD-ID>: <title>"`. No push, no merge, no branch switching.

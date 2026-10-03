@@ -100,6 +100,18 @@ card_exists() { jq -e --arg id "$1" '.cards[] | select(.id==$id)' "$BOARD" >/dev
 card_get() { jq -r --arg id "$1" ".cards[] | select(.id==\$id) | $2" "$BOARD"; }
 card_set() { local id=$1; shift; jq_inplace "$BOARD" --arg id "$id" "$@"; }
 branch_head() { git -C "$ROOT" rev-parse --verify -q "refs/heads/$1" 2>/dev/null || true; }
+# files changed between two commits that fall OUTSIDE the given globs (empty = all inside)
+outside() { git -C "$ROOT" diff --no-renames --name-only "$1" "$2" | node "$BIN_DIR/scope.mjs" "$3"; }
+blob_at() { git -C "$1" rev-parse -q --verify "$2:$3" 2>/dev/null || echo none; }   # blob_at <dir> <rev> <path>
+# qa_files <dir> <rev> <globs> → files of <rev> inside the globs
+qa_files() { comm -23 <(git -C "$1" ls-tree -r --name-only "$2" | sort) <(git -C "$1" ls-tree -r --name-only "$2" | node "$BIN_DIR/scope.mjs" "$3" | sort); }
+# the card's gate still holds on <head>: it passed on <head>, or only QA test files changed since
+gate_holds() { # gate_holds <card> <head>
+  local g; g="$(card_get "$1" .gate.head)"
+  [[ "$(card_get "$1" .gate.result)" == PASS ]] || return 1
+  [[ $g == "$2" ]] && return 0
+  git -C "$ROOT" merge-base --is-ancestor "$g" "$2" 2>/dev/null && [[ -z "$(outside "$g" "$2" "$(card_get "$1" '.qa_scope // []')")" ]]
+}
 
 log_event() { printf '%s\t%s\t%s\n' "$(now)" "$1" "$2" >> "$JOB_DIR/events.log"; }
 reset_stop_guard() { rm -f "$JOB_DIR/.stop-blocks"; }
@@ -231,14 +243,15 @@ cmd_next() {
         while IFS=$'\t' read -r id br gres ghead qv qhead rv rhead att; do
           local head; head="$(branch_head "$br")"
           local failed=""
-          [[ $gres == FAIL && $ghead == "$head" ]] && failed="gate failed — feedback: $(card_get "$id" .gate.log)"
-          [[ -z $failed && $gres == PASS && $ghead == "$head" && $qv == fail && $qhead == "$head" ]] && failed="QA failed — feedback: $(card_get "$id" .qa.summary)"
-          [[ -z $failed && $gres == PASS && $ghead == "$head" && $qv == pass && $qhead == "$head" && $rv == changes && $rhead == "$head" ]] && failed="review asked for changes — feedback: $(card_get "$id" .review.summary)"
+          if [[ $gres == FAIL && $ghead == "$head" ]]; then failed="gate failed — feedback: $(card_get "$id" .gate.log)"
+          elif [[ $qv == fail && $qhead == "$head" ]]; then failed="QA failed — its tests are committed; feedback: $(card_get "$id" .qa.summary)"
+          elif [[ $qv == pass && $qhead == "$head" && $rv == changes && $rhead == "$head" ]]; then failed="review asked for changes — feedback: $(card_get "$id" .review.summary)"
+          fi
           if [[ -n $failed ]]; then
             if (( att >= maxa )); then echo "BLOCK   $id (failed on its last attempt $att/$maxa: dl card $id state blocked + note)"
             else echo "REDISPATCH $id  ($failed)"; fi
-          elif [[ $gres != PASS || $ghead != "$head" ]]; then echo "GATE    dl gate $id"
-          elif [[ $qv != pass || $qhead != "$head" ]]; then echo "QA      $id  (QA/Test role checks every acceptance criterion → dl qa $id pass|fail)"
+          elif ! gate_holds "$id" "$head"; then echo "GATE    dl gate $id"
+          elif [[ $qv != pass || $qhead != "$head" ]]; then echo "QA      $id  (QA/Test role writes + runs the integration/e2e tests for the ACs → dl qa $id pass|fail)"
           elif [[ $rv != approve || $rhead != "$head" ]]; then echo "REVIEW  $id  (Lead review → dl review $id approve|changes)"
           else echo "INTEGRATE dl integrate $id"; fi
         done
@@ -419,6 +432,7 @@ cmd_gate() {
   local wt verify attempt branch scope log head fail=0 tmo
   wt="$(card_get "$card" .worktree)"; verify="$(card_get "$card" .verify)"; attempt="$(card_get "$card" .attempts)"
   branch="$(card_get "$card" .branch)"; scope="$(card_get "$card" '.scope')"
+  local qscope qverify qhead; qscope="$(card_get "$card" '.qa_scope // []')"; qverify="$(card_get "$card" '.qa_verify // ""')"; qhead="$(card_get "$card" '.qa.head // ""')"
   [[ -d $wt ]] || die "$card has no worktree — run: dl wt add $card"
   log="$JOB_DIR/gates/$card-a$attempt-$(date +%H%M%S).log"
   tmo="$(setting gate_timeout)"; tmo=${tmo:-1800}
@@ -437,15 +451,38 @@ cmd_gate() {
 
     # --no-renames: a rename shows both paths, so moving a file out of (or into) the scope is caught.
     local out
-    out="$(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | node "$BIN_DIR/scope.mjs" "$scope")"
+    out="$(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | node "$BIN_DIR/scope.mjs" "$(jq -c --argjson q "$qscope" '. + $q' <<<"$scope")")"
     if [[ -n $out ]]; then
       while IFS= read -r f; do echo "FAIL  out-of-scope file: $f"; done <<<"$out"; fail=1
-    else echo "ok    all changes within scope $(jq -c . <<<"$scope")"; fi
+    else echo "ok    all changes within scope $(jq -c . <<<"$scope") (+ QA tests $(jq -c . <<<"$qscope"))"; fi
+    # The QA tests (qa_scope) belong to the QA role: the dev must not write or change them.
+    local devfrom="$JOB_BRANCH"; [[ -n $qhead ]] && git -C "$wt" merge-base --is-ancestor "$qhead" HEAD 2>/dev/null && devfrom="$qhead"
+    if [[ $(jq length <<<"$qscope") -gt 0 ]]; then
+      # QA files are compared blob by blob: changed or deleted since QA's last commit, or added by the dev,
+      # fail the gate. Files that only came in by merging the job branch equal the job branch and are ignored.
+      local touched="" f
+      if [[ -n $qhead && $devfrom == "$qhead" ]]; then
+        while IFS= read -r f; do [[ -n $f && "$(blob_at "$wt" "$qhead" "$f")" != "$(blob_at "$wt" HEAD "$f")" ]] && touched+="$f"$'\n'; done < <(qa_files "$wt" "$qhead" "$qscope")
+      fi
+      while IFS= read -r f; do
+        [[ -z $f ]] && continue
+        [[ $devfrom == "$qhead" && "$(blob_at "$wt" "$qhead" "$f")" != none ]] && continue
+        [[ "$(blob_at "$wt" HEAD "$f")" != "$(blob_at "$wt" "$JOB_BRANCH" "$f")" ]] && touched+="$f"$'\n'
+      done < <(qa_files "$wt" HEAD "$qscope")
+      touched="${touched%$'\n'}"
+      if [[ -n $touched ]]; then while IFS= read -r f; do echo "FAIL  the dev changed a QA test (qa_scope belongs to the QA role): $f"; done <<<"$touched"; fail=1
+      else echo "ok    QA tests untouched by the dev"; fi
+    fi
 
     echo "----- verify: $verify"
     local runner=(bash -c "$verify")
     command -v timeout >/dev/null && runner=(timeout "$tmo" bash -c "$verify")
     if (cd "$wt" && "${runner[@]}") 2>&1; then echo "ok    verify passed"; else echo "FAIL  verify failed (exit $?)"; fail=1; fi
+    if [[ -n $qhead && -n $qverify ]]; then # after a QA round the dev's fix must also make the QA tests pass
+      echo "----- qa_verify (QA's integration/e2e tests): $qverify"
+      local qr=(bash -c "$qverify"); command -v timeout >/dev/null && qr=(timeout "$tmo" bash -c "$qverify")
+      if (cd "$wt" && "${qr[@]}") 2>&1; then echo "ok    QA tests pass"; else echo "FAIL  verify failed: QA tests (exit $?)"; fail=1; fi
+    fi
   } > "$log" 2>&1 || true
   grep -q '^FAIL' "$log" && fail=1
   head="$(git -C "$wt" rev-parse HEAD)"
@@ -470,17 +507,27 @@ cmd_qa() {
   local card=${1:-} verdict=${2:-} summary=${3:-}
   [[ -n $card && ( $verdict == pass || $verdict == fail ) && -n $summary ]] || die 'usage: dl qa <card> pass|fail "<summary: AC-n results>"'
   card_exists "$card"
-  local br head wt; br="$(card_get "$card" .branch)"; head="$(branch_head "$br")"; wt="$(card_get "$card" .worktree)"
+  local br head wt g qscope qverify
+  br="$(card_get "$card" .branch)"; head="$(branch_head "$br")"; wt="$(card_get "$card" .worktree)"
+  g="$(card_get "$card" .gate.head)"; qscope="$(card_get "$card" '.qa_scope // []')"; qverify="$(card_get "$card" '.qa_verify // ""')"
   [[ "$(card_get "$card" .state)" == review ]] || refuse 1 "$card is $(card_get "$card" .state); QA runs on cards in review"
-  [[ "$(card_get "$card" .gate.result)" == PASS && "$(card_get "$card" .gate.head)" == "$head" ]] \
-    || refuse 1 "$card has no passed gate on its current commit — run: dl gate $card"
-  if [[ -d $wt && -n "$(git -C "$wt" status --porcelain)" ]]; then
-    refuse 1 "QA left changes in the worktree ($wt). QA must not modify the card — clean it (git -C $wt stash -u) and re-run QA"
+  gate_holds "$card" "$head" || refuse 1 "$card has no passed gate for its current commit (the dev changed code after the gate?) — run: dl gate $card"
+  [[ -d $wt && -z "$(git -C "$wt" status --porcelain)" ]] || refuse 1 "the QA role must commit its tests; the worktree has uncommitted changes ($wt)"
+  if [[ $(jq length <<<"$qscope") -gt 0 ]]; then
+    local stray; stray="$(outside "$g" "$head" "$qscope")"
+    [[ -z $stray ]] || refuse 1 "since the gate, files outside qa_scope changed: $(tr '\n' ' ' <<<"$stray")— QA writes only integration/e2e tests"
+    [[ -n "$(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | node "$BIN_DIR/scope.mjs" "$qscope" | sort | comm -13 - <(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | sort))" ]] \
+      || refuse 1 "no QA tests in qa_scope $(jq -c . <<<"$qscope") — the QA role writes integration/e2e tests for the card's acceptance criteria"
   fi
-  card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"summary":$s,"at":$t}
-      | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"summary":$s,"at":$t}]))' \
-    --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)"
-  reset_stop_guard; log_event qa "$card $verdict — $summary"; echo "qa: $card $verdict"
+  local qlog="$JOB_DIR/gates/$card-qa-a$(card_get "$card" .attempts)-$(date +%H%M%S).log" qres=PASS
+  if [[ -n $qverify ]]; then
+    { echo "# qa_verify: $qverify"; (cd "$wt" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
+    [[ $verdict == pass && $qres == FAIL ]] && { tail -n 25 "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; }
+  fi
+  card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"log":$l,"summary":$s,"at":$t}
+      | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"qa_verify":$r,"summary":$s,"at":$t}]))' \
+    --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)"
+  reset_stop_guard; log_event qa "$card $verdict (qa_verify $qres) — $summary"; echo "qa: $card $verdict  (qa_verify: $qres)"
 }
 
 cmd_review() {
@@ -489,8 +536,7 @@ cmd_review() {
   [[ -n $card && ( $verdict == approve || $verdict == changes ) ]] || die 'usage: dl review <card> approve|changes "<summary>"'
   card_exists "$card"
   local head; head="$(branch_head "$(card_get "$card" .branch)")"
-  [[ "$(card_get "$card" .gate.result)" == PASS && "$(card_get "$card" .gate.head)" == "$head" ]] \
-    || refuse 1 "$card has no passed gate on its current commit — run: dl gate $card"
+  gate_holds "$card" "$head" || refuse 1 "$card has no passed gate for its current commit — run: dl gate $card"
   [[ "$(card_get "$card" .qa.verdict)" == pass && "$(card_get "$card" .qa.head)" == "$head" ]] \
     || refuse 1 "$card has no QA pass on its current commit — the QA/Test role checks the acceptance criteria first (dl qa $card pass|fail)"
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.review = {"verdict":$v,"head":$h,"summary":$s,"at":$t}
@@ -508,8 +554,7 @@ cmd_integrate() {
   [[ $branch != null ]] || die "$card has no branch"
   head="$(branch_head "$branch")"
   [[ "$(card_get "$card" .state)" == review ]] || refuse 1 "$card is $(card_get "$card" .state), not review"
-  [[ "$(card_get "$card" .gate.result)" == PASS && "$(card_get "$card" .gate.head)" == "$head" ]] \
-    || refuse 1 "$card: the gate has not passed on commit ${head:0:9} — run: dl gate $card"
+  gate_holds "$card" "$head" || refuse 1 "$card: the gate has not passed for commit ${head:0:9} — run: dl gate $card"
   [[ "$(card_get "$card" .qa.verdict)" == pass && "$(card_get "$card" .qa.head)" == "$head" ]] \
     || refuse 1 "$card: no QA pass on commit ${head:0:9} — dl qa $card pass|fail"
   [[ "$(card_get "$card" .review.verdict)" == approve && "$(card_get "$card" .review.head)" == "$head" ]] \

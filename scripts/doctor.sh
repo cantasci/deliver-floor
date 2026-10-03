@@ -26,7 +26,7 @@ if have node; then
 else fail "node 18+ — brew install node"; fi
 
 echo "Optional tools"
-have gh && pass "gh (PR creation)" || note "gh not found — needed only for merge_strategy=pr (gh auth login)"
+have gh && pass "gh (PR creation)" || note "gh not found — needed for merge_mode human/semi/auto (gh auth login)"
 have timeout && pass "timeout (gate_timeout for verify commands)" || note "timeout not found — verify commands run without a time limit (brew install coreutils)"
 have adb && pass "adb (mobile / ARTEMIS)" || note "adb not found — only for mobile jobs"
 
@@ -99,19 +99,21 @@ if [[ -n $repo ]]; then
     b="$(git -C "$repo" symbolic-ref --short HEAD 2>/dev/null)" && pass "on branch $b" || note "detached HEAD — set base_branch in .deliver.json"
     git -C "$repo" rev-parse -q --verify HEAD >/dev/null && pass "has commits" || fail "no commits yet — make an initial commit first"
     [[ -z "$(git -C "$repo" status --porcelain --untracked-files=no)" ]] && pass "working tree clean" || note "uncommitted changes in the main checkout — jobs branch from the last commit, not from these"
-    git -C "$repo" remote get-url origin >/dev/null 2>&1 && pass "remote origin" || note "no remote 'origin' — use merge_strategy=local"
+    git -C "$repo" remote get-url origin >/dev/null 2>&1 && pass "remote origin" || note "no remote 'origin' — use merge_mode local"
     if [[ -n "$(git -C "$repo" config user.email)" ]]; then pass "git identity set"; else fail "git user.email not set — dev agents cannot commit"; fi
   else
     fail "not a git repository"
   fi
   if [[ -f $repo/.deliver.json ]]; then
     if jq -e . "$repo/.deliver.json" >/dev/null 2>&1; then
-      pass ".deliver.json valid: $(jq -c '{verify_full,worktree_setup,merge_strategy,dispatch}' "$repo/.deliver.json")"
-      [[ "$(jq -r '.merge_strategy // "pr"' "$repo/.deliver.json")" == pr ]] && ! git -C "$repo" remote get-url origin >/dev/null 2>&1 \
-        && fail "merge_strategy=pr but no remote — set \"merge_strategy\": \"local\""
+      pass ".deliver.json valid: $(jq -c '{verify_full,worktree_setup,merge_mode,dispatch}' "$repo/.deliver.json")"
+      mm="$(jq -r '.merge_mode // (if .merge_strategy == "local" then "local" else "human" end)' "$repo/.deliver.json")"
+      case $mm in human|semi|auto|local) ;; *) fail "merge_mode '$mm' — use human | semi | auto | local" ;; esac
+      if [[ $mm != local ]] && ! git -C "$repo" remote get-url origin >/dev/null 2>&1; then fail "merge_mode=$mm opens a PR but there is no remote — set \"merge_mode\": \"local\""; fi
+      if [[ $mm != local ]] && ! have gh; then fail "merge_mode=$mm needs the GitHub CLI (gh auth login)"; fi
     else fail ".deliver.json is not valid JSON"; fi
   else
-    note "no .deliver.json — defaults apply (verify_full: npm test, no worktree_setup). See docs/03-settings.md"
+    note "no .deliver.json — defaults apply (verify_full: npm test, merge_mode: human). See docs/03-settings.md"
   fi
   [[ -f $repo/.work/ACTIVE ]] && note "active job: $(cat "$repo/.work/ACTIVE")"
 fi
