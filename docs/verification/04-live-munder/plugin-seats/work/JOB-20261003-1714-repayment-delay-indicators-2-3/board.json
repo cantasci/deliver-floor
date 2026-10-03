@@ -1,0 +1,251 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Indicator 2 \"Days with delay\": daysWithDelayWl + DAYS_WITH_DELAY_OPTIONS (REQ-03-02)",
+      "role": "backend",
+      "component": "indicators",
+      "context": "Why: Watchlist-level (WL, 0-4, higher is worse) mapping for POC indicator 2 \"Days with delay\"; pure function plus exported dropdown option list that later POC screens render. Plain Node 18+ ESM (.mjs), no npm deps, no imports, no I/O, no logging (CLAUDE.md). Tests: node:test + node:assert/strict. TDD: write the unit test first.\nFiles: create src/indicators/daysWithDelay.mjs and test/indicators/daysWithDelay.test.mjs. Touch nothing else; do NOT create src/indicators/index.mjs or any shared helper (the other indicator is built in parallel by another dev; tiny duplicated trim/validate logic is accepted).\nExports (named): DAYS_WITH_DELAY_OPTIONS = Object.freeze([\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"]) in exactly this order; function daysWithDelayWl(option) -> number in {0, 2, 3, 4}.\nMapping: \"no delay\"->0, \"<=3 days\"->0, \">3 days\"->2, \">60 days\"->3, \">90 days\"->4. Mapping is by option STRING, never by number (labels overlap numerically). WL 1 is intentionally never produced..\nThe requirement table writes unicode \"≤3 days\" but the business-confirmed contract is ASCII \"<=3 days\"; \"≤3 days\" must throw RangeError.\nAlgorithm: (1) if typeof option !== 'string' throw RangeError (BEFORE trimming: String objects, arrays, numbers like 1 must be rejected); (2) t = option.trim() (String.prototype.trim; internal whitespace untouched); (3) exact, case-sensitive match against the option list using an own-property-safe lookup (Map, switch, or Object.hasOwn) - never plain map[option], which would accept 'constructor'/'__proto__'/'toString' (NFR-security); (4) otherwise throw RangeError, never return a default WL. Return plain numbers.\nError message (X-errors-msg): must contain the function name and quote the rejected value for strings, e.g. daysWithDelayWl: invalid option \">3 Days\"; for non-strings describe the type/value safely (e.g. `daysWithDelayWl: invalid option (${typeof option})` or String()-free formatting; must not throw itself for Symbol/object input). Tests assert only instanceof RangeError and message includes 'daysWithDelayWl'.\nInvalid inputs to cover in tests: \">3 Days\", \"NO DELAY\", \"≤3 days\", \"<= 3 days\", \">30 days\", \"\", \"   \", \"constructor\", \"__proto__\", \"toString\", \">3  days\" (internal double space). Non-strings: undefined, null, 3, 0, true, {}, [], [\">3 days\"], new String(\">3 days\"), and call with no argument.\nAlso test: option list equals expected array and Object.isFrozen is true; every entry of the list maps without throwing to [0,0,2,3,4] (map over the list); push on the frozen list throws TypeError (ESM is strict) or leaves it unchanged, and mapping unchanged; whitespace trimming cases \"  >3 days \" -> 2, \"\\t>90 days\\n\" -> 4, \" no delay\" -> 0.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/daysWithDelay.mjs",
+        "test/indicators/daysWithDelay.test.mjs"
+      ],
+      "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/daysWithDelay.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/daysWithDelay.test.mjs",
+      "acceptance": [
+        "AC-1: Given the module, when `DAYS_WITH_DELAY_OPTIONS` is read, then `deepEqual` to `[\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"]` (this order) and `Object.isFrozen(DAYS_WITH_DELAY_OPTIONS) === true`.",
+        "AC-2: Given `\"no delay\"` or `\"<=3 days\"`, when `daysWithDelayWl(option)` is called, then it returns `0` (`strictEqual`, a number).",
+        "AC-3: `daysWithDelayWl(\">3 days\")` returns `2`.",
+        "AC-4: `daysWithDelayWl(\">60 days\")` returns `3`.",
+        "AC-5: `daysWithDelayWl(\">90 days\")` returns `4`.",
+        "AC-6: `\"  >3 days \"` → `2`, `\"\\t>90 days\\n\"` → `4`, `\" no delay\"` → `0` (`String.prototype.trim`); `\">3  days\"` (internal double space) → `RangeError`.",
+        "AC-7: `\">3 Days\"`, `\"NO DELAY\"`, `\"≤3 days\"`, `\"<= 3 days\"`, `\">30 days\"`, `\"\"`, `\"   \"`, `\"constructor\"`, `\"__proto__\"`, `\"toString\"` → `RangeError`; no default WL is ever returned.",
+        "AC-8: `undefined`, `null`, `3`, `0`, `true`, `{}`, `[]`, `[\">3 days\"]`, `new String(\">3 days\")`, and a call with no argument → `RangeError`. The `typeof` check happens before trimming.",
+        "AC-16: for an invalid input the error is `instanceof RangeError` and its message contains `daysWithDelayWl`; for strings it quotes the value, e.g. `daysWithDelayWl: invalid option \">3 Days\"`. Building the message must not itself throw for Symbol/object input (non-strings: describe via `typeof`). Tests assert only the type and the function name.",
+        "AC-17: mapping every entry of `DAYS_WITH_DELAY_OPTIONS` through `daysWithDelayWl` does not throw and gives `[0,0,2,3,4]`; `push` on the frozen list throws `TypeError` (ESM is strict) or leaves it unchanged, and the mapping is unchanged afterwards.",
+        "AC-18: the module is plain ESM `.mjs`, has no `import`, no I/O, no logging; `src/indicators/index.mjs` and any shared helper are not created; `node --test test/indicators/daysWithDelay.test.mjs` passes (and the full `node --test` stays green)."
+      ],
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T17:21:01Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/wt/T-01",
+      "branch": "job/JOB-20261003-1714-repayment-delay-indicators-2-3--T-01",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261003-1714-backend-1-h1",
+          "at": "2026-10-03T17:21:08Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261003-1714-qa-1-h1",
+          "at": "2026-10-03T17:22:02Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261003-1714-reviewer-1-h1",
+          "at": "2026-10-03T17:23:08Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "eb9c87b8fb14a626c24442a8a36c30257695433b",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/gates/T-01-a1-172150.log",
+        "at": "2026-10-03T17:21:50Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T17:21:51.448Z",
+          "author": "gate",
+          "text": "PASS — 14 checks ok, 0 failed (T-01-a1-172150.log)"
+        },
+        {
+          "at": "2026-10-03T17:23:06.736Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..8, AC-16, AC-17, AC-18 pass (12 integration tests, test/integration/indicators/daysWithDelay.test.mjs)"
+        },
+        {
+          "at": "2026-10-03T17:23:35.823Z",
+          "author": "reviewer",
+          "text": "approve — 0 blocking, 2 nits; typeof-before-trim, Map lookup, frozen list, scope OK"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "b6c7bcc256dab834c658932f854988c8b4efd851",
+        "gate_head": "eb9c87b8fb14a626c24442a8a36c30257695433b",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/gates/T-01-qa-a1-172306.log",
+        "summary": "AC-1..8, AC-16, AC-17, AC-18 pass (12 integration tests, test/integration/indicators/daysWithDelay.test.mjs)",
+        "at": "2026-10-03T17:23:06Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "b6c7bcc256dab834c658932f854988c8b4efd851",
+          "qa_verify": "PASS",
+          "summary": "AC-1..8, AC-16, AC-17, AC-18 pass (12 integration tests, test/integration/indicators/daysWithDelay.test.mjs)",
+          "at": "2026-10-03T17:23:06Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "b6c7bcc256dab834c658932f854988c8b4efd851",
+          "summary": "0 blocking, 2 nits; typeof-before-trim, Map lookup, frozen list, scope OK",
+          "at": "2026-10-03T17:23:35Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "b6c7bcc256dab834c658932f854988c8b4efd851",
+        "summary": "reviewer: approve — 0 blocking, 2 nits; typeof-before-trim, Map lookup, frozen list, scope OK",
+        "pending": [],
+        "at": "2026-10-03T17:23:35Z"
+      }
+    },
+    {
+      "id": "T-02",
+      "title": "Indicator 3 \"Delays in 12 months\": delayCountWl + DELAY_COUNT_OPTIONS (REQ-03-03)",
+      "role": "backend",
+      "component": "indicators",
+      "context": "Why: Watchlist-level (WL, 0-4, higher is worse) mapping for POC indicator 3 \"Delays in 12 months\"; pure function plus exported dropdown option list that later POC screens render. Plain Node 18+ ESM (.mjs), no npm deps, no imports, no I/O, no logging (CLAUDE.md). Tests: node:test + node:assert/strict. TDD: write the unit test first.\nFiles: create src/indicators/delayCount.mjs and test/indicators/delayCount.test.mjs. Touch nothing else; do NOT create src/indicators/index.mjs or any shared helper (the other indicator is built in parallel by another dev; tiny duplicated trim/validate logic is accepted).\nExports (named): DELAY_COUNT_OPTIONS = Object.freeze([\"0\",\"1\",\">1\"]) in exactly this order; function delayCountWl(option) -> number in {0, 1, 2}.\nMapping: \"0\"->0, \"1\"->1, \">1\"->2 (more than one delay in 12 months).\nCounting delays in the last 12 months and choosing the option is the CALLER's job (C6); do not implement it. Numbers such as 1 must be rejected even though they look like option \"1\".\nAlgorithm: (1) if typeof option !== 'string' throw RangeError (BEFORE trimming: String objects, arrays, numbers like 1 must be rejected); (2) t = option.trim() (String.prototype.trim; internal whitespace untouched); (3) exact, case-sensitive match against the option list using an own-property-safe lookup (Map, switch, or Object.hasOwn) - never plain map[option], which would accept 'constructor'/'__proto__'/'toString' (NFR-security); (4) otherwise throw RangeError, never return a default WL. Return plain numbers.\nError message (X-errors-msg): must contain the function name and quote the rejected value for strings, e.g. delayCountWl: invalid option \"2\"; for non-strings describe the type/value safely (e.g. `delayCountWl: invalid option (${typeof option})` or String()-free formatting; must not throw itself for Symbol/object input). Tests assert only instanceof RangeError and message includes 'delayCountWl'.\nInvalid inputs to cover in tests: \"2\", \">2\", \"01\", \"1.0\", \"-1\", \"> 1\", \"\", \"   \", \"one\", \"constructor\", \"__proto__\". Non-strings: 0, 1, 2, undefined, null, true, {}, [\"1\"], and call with no argument.\nAlso test: option list equals expected array and Object.isFrozen is true; every entry of the list maps without throwing to [0,1,2] (map over the list); push on the frozen list throws TypeError (ESM is strict) or leaves it unchanged, and mapping unchanged; whitespace trimming cases \" 1 \" -> 1, \"\\t>1\\n\" -> 2, \" 0\" -> 0.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/delayCount.mjs",
+        "test/indicators/delayCount.test.mjs"
+      ],
+      "verify": "node --test test/indicators/delayCount.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/delayCount.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/delayCount.test.mjs",
+      "acceptance": [
+        "AC-9: Given the module, when `DELAY_COUNT_OPTIONS` is read, then `deepEqual` to `[\"0\",\"1\",\">1\"]` (this order) and `Object.isFrozen(DELAY_COUNT_OPTIONS) === true`.",
+        "AC-10: `delayCountWl(\"0\")` returns `0` (`strictEqual`, a number).",
+        "AC-11: `delayCountWl(\"1\")` returns `1`.",
+        "AC-12: `delayCountWl(\">1\")` returns `2`.",
+        "AC-13: `\" 1 \"` → `1`, `\"\\t>1\\n\"` → `2`, `\" 0\"` → `0`.",
+        "AC-14: `\"2\"`, `\">2\"`, `\"01\"`, `\"1.0\"`, `\"-1\"`, `\"> 1\"`, `\"\"`, `\"   \"`, `\"one\"`, `\"constructor\"`, `\"__proto__\"` → `RangeError`.",
+        "AC-15: `0`, `1`, `2`, `undefined`, `null`, `true`, `{}`, `[\"1\"]`, and a call with no argument → `RangeError` (numbers rejected even though `1` looks like option `\"1\"`). The `typeof` check happens before trimming.",
+        "AC-16: for an invalid input the error is `instanceof RangeError` and its message contains `delayCountWl`; for strings it quotes the value, e.g. `delayCountWl: invalid option \"2\"`. Building the message must not itself throw for Symbol/object input. Tests assert only the type and the function name.",
+        "AC-17: mapping every entry of `DELAY_COUNT_OPTIONS` through `delayCountWl` does not throw and gives `[0,1,2]`; `push` on the frozen list throws `TypeError` or leaves it unchanged, and the mapping is unchanged afterwards.",
+        "AC-18: the module is plain ESM `.mjs`, has no `import`, no I/O, no logging; `src/indicators/index.mjs` and any shared helper are not created; `node --test test/indicators/delayCount.test.mjs` passes (and the full `node --test` stays green)."
+      ],
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "seat": "backend#2",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#2",
+          "by": "michael",
+          "at": "2026-10-03T17:21:03Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/wt/T-02",
+      "branch": "job/JOB-20261003-1714-repayment-delay-indicators-2-3--T-02",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#2",
+          "worker": "worker-seat-20261003-1714-backend-2-h1",
+          "at": "2026-10-03T17:21:09Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261003-1714-qa-1-h1",
+          "at": "2026-10-03T17:23:07Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261003-1714-reviewer-1-h1",
+          "at": "2026-10-03T17:24:08Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "95b64c3f94a3ad2f6b2ae64d1ea4bab633e5c92d",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/gates/T-02-a1-172151.log",
+        "at": "2026-10-03T17:21:52Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T17:21:52.642Z",
+          "author": "gate",
+          "text": "PASS — 14 checks ok, 0 failed (T-02-a1-172151.log)"
+        },
+        {
+          "at": "2026-10-03T17:23:59.637Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-9..15, AC-16, AC-17, AC-18 pass (11 integration tests, test/integration/indicators/delayCount.test.mjs)"
+        },
+        {
+          "at": "2026-10-03T17:24:34.919Z",
+          "author": "reviewer",
+          "text": "approve — 0 blocking, 2 nits; Map.has lookup, numbers rejected, frozen list, scope OK"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "8aaa1da8e0a67dfb424f9a3782f103e795452c61",
+        "gate_head": "95b64c3f94a3ad2f6b2ae64d1ea4bab633e5c92d",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/gates/T-02-qa-a1-172358.log",
+        "summary": "AC-9..15, AC-16, AC-17, AC-18 pass (11 integration tests, test/integration/indicators/delayCount.test.mjs)",
+        "at": "2026-10-03T17:23:59Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "8aaa1da8e0a67dfb424f9a3782f103e795452c61",
+          "qa_verify": "PASS",
+          "summary": "AC-9..15, AC-16, AC-17, AC-18 pass (11 integration tests, test/integration/indicators/delayCount.test.mjs)",
+          "at": "2026-10-03T17:23:59Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "8aaa1da8e0a67dfb424f9a3782f103e795452c61",
+          "summary": "0 blocking, 2 nits; Map.has lookup, numbers rejected, frozen list, scope OK",
+          "at": "2026-10-03T17:24:34Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "8aaa1da8e0a67dfb424f9a3782f103e795452c61",
+        "summary": "reviewer: approve — 0 blocking, 2 nits; Map.has lookup, numbers rejected, frozen list, scope OK",
+        "pending": [],
+        "at": "2026-10-03T17:24:34Z"
+      }
+    }
+  ]
+}

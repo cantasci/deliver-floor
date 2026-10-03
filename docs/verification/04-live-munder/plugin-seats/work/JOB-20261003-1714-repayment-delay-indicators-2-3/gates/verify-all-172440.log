@@ -1,0 +1,232 @@
+TAP version 13
+# Subtest: option list is exact, ordered and frozen
+ok 1 - option list is exact, ordered and frozen
+  ---
+  duration_ms: 5.729717
+  type: 'test'
+  ...
+# Subtest: maps each option to its WL
+ok 2 - maps each option to its WL
+  ---
+  duration_ms: 0.35305
+  type: 'test'
+  ...
+# Subtest: trims surrounding whitespace only
+ok 3 - trims surrounding whitespace only
+  ---
+  duration_ms: 0.574636
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError naming the function
+ok 4 - invalid strings throw RangeError naming the function
+  ---
+  duration_ms: 0.593929
+  type: 'test'
+  ...
+# Subtest: error message quotes rejected string
+ok 5 - error message quotes rejected string
+  ---
+  duration_ms: 0.312234
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError, even String objects and arrays
+ok 6 - non-strings throw RangeError, even String objects and arrays
+  ---
+  duration_ms: 0.383981
+  type: 'test'
+  ...
+# Subtest: every listed option maps to [0,0,2,3,4]; list cannot be mutated
+ok 7 - every listed option maps to [0,0,2,3,4]; list cannot be mutated
+  ---
+  duration_ms: 0.364832
+  type: 'test'
+  ...
+# Subtest: DELAY_COUNT_OPTIONS is the frozen ordered list
+ok 8 - DELAY_COUNT_OPTIONS is the frozen ordered list
+  ---
+  duration_ms: 1.752098
+  type: 'test'
+  ...
+# Subtest: maps options to WL
+ok 9 - maps options to WL
+  ---
+  duration_ms: 0.253937
+  type: 'test'
+  ...
+# Subtest: trims surrounding whitespace
+ok 10 - trims surrounding whitespace
+  ---
+  duration_ms: 0.116451
+  type: 'test'
+  ...
+# Subtest: rejects invalid strings
+ok 11 - rejects invalid strings
+  ---
+  duration_ms: 2.674192
+  type: 'test'
+  ...
+# Subtest: error message quotes string values
+ok 12 - error message quotes string values
+  ---
+  duration_ms: 0.321282
+  type: 'test'
+  ...
+# Subtest: rejects non-strings without throwing other errors
+ok 13 - rejects non-strings without throwing other errors
+  ---
+  duration_ms: 0.271942
+  type: 'test'
+  ...
+# Subtest: every listed option maps to [0,1,2]; list is immutable
+ok 14 - every listed option maps to [0,1,2]; list is immutable
+  ---
+  duration_ms: 0.427121
+  type: 'test'
+  ...
+# Subtest: AC-1: options list is the expected ordered array and frozen
+ok 15 - AC-1: options list is the expected ordered array and frozen
+  ---
+  duration_ms: 16.259707
+  type: 'test'
+  ...
+# Subtest: AC-2: "no delay" and "<=3 days" return 0
+ok 16 - AC-2: "no delay" and "<=3 days" return 0
+  ---
+  duration_ms: 0.347541
+  type: 'test'
+  ...
+# Subtest: AC-3: ">3 days" returns 2
+ok 17 - AC-3: ">3 days" returns 2
+  ---
+  duration_ms: 0.140446
+  type: 'test'
+  ...
+# Subtest: AC-4: ">60 days" returns 3
+ok 18 - AC-4: ">60 days" returns 3
+  ---
+  duration_ms: 0.122935
+  type: 'test'
+  ...
+# Subtest: AC-5: ">90 days" returns 4
+ok 19 - AC-5: ">90 days" returns 4
+  ---
+  duration_ms: 0.170535
+  type: 'test'
+  ...
+# Subtest: AC-6: surrounding whitespace is trimmed, internal whitespace is not
+ok 20 - AC-6: surrounding whitespace is trimmed, internal whitespace is not
+  ---
+  duration_ms: 0.491704
+  type: 'test'
+  ...
+# Subtest: AC-7: unlisted, wrong-case, unicode, empty and prototype-key strings throw RangeError
+ok 21 - AC-7: unlisted, wrong-case, unicode, empty and prototype-key strings throw RangeError
+  ---
+  duration_ms: 0.418379
+  type: 'test'
+  ...
+# Subtest: AC-8: non-strings throw RangeError (typeof check before trim)
+ok 22 - AC-8: non-strings throw RangeError (typeof check before trim)
+  ---
+  duration_ms: 0.236513
+  type: 'test'
+  ...
+# Subtest: AC-16: error is RangeError naming the function, quotes strings, and never throws itself
+ok 23 - AC-16: error is RangeError naming the function, quotes strings, and never throws itself
+  ---
+  duration_ms: 0.750451
+  type: 'test'
+  ...
+# Subtest: AC-17: mapping all options gives [0,0,2,3,4]; frozen list cannot be mutated
+ok 24 - AC-17: mapping all options gives [0,0,2,3,4]; frozen list cannot be mutated
+  ---
+  duration_ms: 0.63189
+  type: 'test'
+  ...
+# Subtest: AC-18: plain ESM, no imports/I-O/logging, no index or helper files
+ok 25 - AC-18: plain ESM, no imports/I-O/logging, no index or helper files
+  ---
+  duration_ms: 0.909974
+  type: 'test'
+  ...
+# Subtest: no default WL: every result is a plain number in {0,2,3,4}
+ok 26 - no default WL: every result is a plain number in {0,2,3,4}
+  ---
+  duration_ms: 0.145432
+  type: 'test'
+  ...
+# Subtest: AC-9: options list is ["0","1",">1"] in order and frozen
+ok 27 - AC-9: options list is ["0","1",">1"] in order and frozen
+  ---
+  duration_ms: 3.056457
+  type: 'test'
+  ...
+# Subtest: AC-10: "0" returns 0
+ok 28 - AC-10: "0" returns 0
+  ---
+  duration_ms: 0.341354
+  type: 'test'
+  ...
+# Subtest: AC-11: "1" returns 1
+ok 29 - AC-11: "1" returns 1
+  ---
+  duration_ms: 0.11656
+  type: 'test'
+  ...
+# Subtest: AC-12: ">1" returns 2
+ok 30 - AC-12: ">1" returns 2
+  ---
+  duration_ms: 0.10462
+  type: 'test'
+  ...
+# Subtest: AC-13: surrounding whitespace is trimmed
+ok 31 - AC-13: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.15197
+  type: 'test'
+  ...
+# Subtest: AC-14: unlisted, malformed, empty and prototype-key strings throw RangeError
+ok 32 - AC-14: unlisted, malformed, empty and prototype-key strings throw RangeError
+  ---
+  duration_ms: 0.597095
+  type: 'test'
+  ...
+# Subtest: AC-15: non-strings (incl. numbers 0/1/2) throw RangeError
+ok 33 - AC-15: non-strings (incl. numbers 0/1/2) throw RangeError
+  ---
+  duration_ms: 0.320972
+  type: 'test'
+  ...
+# Subtest: AC-16: RangeError names the function, quotes strings, message building never throws
+ok 34 - AC-16: RangeError names the function, quotes strings, message building never throws
+  ---
+  duration_ms: 0.22554
+  type: 'test'
+  ...
+# Subtest: AC-17: mapping all options gives [0,1,2]; frozen list cannot be mutated
+ok 35 - AC-17: mapping all options gives [0,1,2]; frozen list cannot be mutated
+  ---
+  duration_ms: 0.540719
+  type: 'test'
+  ...
+# Subtest: AC-18: plain ESM, no imports/I-O/logging, no index or helper files
+ok 36 - AC-18: plain ESM, no imports/I-O/logging, no index or helper files
+  ---
+  duration_ms: 1.018283
+  type: 'test'
+  ...
+# Subtest: no default WL: every result is a plain number in {0,1,2}
+ok 37 - no default WL: every result is a plain number in {0,1,2}
+  ---
+  duration_ms: 0.281693
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 329.217478
