@@ -4,15 +4,16 @@
 #
 #   scripts/run-headless.sh <repo path> ["<job description>"] [max rounds, default 10]
 #
-# Approvals: when it stops at a gate, run in the repo:  dl approve plan   (or merge, or dl reject … "<note>")
-# then start this script again. DELIVER_HEADLESS=1 makes the hooks refuse any approval from the model itself.
+# When it stops for the human (open business questions → QUESTIONS.md, a blocked card or the optional plan gate →
+# APPROVAL.md), answer in the repo:  dl clarify <id> "<answer>"  ·  dl card T-xx retry  ·  dl approve plan | dl reject plan "<note>"
+# then start this script again. DELIVER_HEADLESS=1 makes the hooks refuse any answer or approval from the model itself.
 set -euo pipefail
 repo="$(cd "${1:?repo path required}" && pwd)"; request="${2:-}"; rounds="${3:-10}"
 cd "$repo"
 command -v claude >/dev/null || { echo "claude CLI not found" >&2; exit 1; }
 
 # auto: classifier-based approvals (no prompts). If your plan lacks auto mode, use
-# PERMISSION_MODE=acceptEdits and pre-allow Bash commands in .claude/settings.json (docs/02-setup.md § 5).
+# PERMISSION_MODE=acceptEdits and pre-allow Bash commands in .claude/settings.json (docs/02-setup.md § 4.5).
 mode="${PERMISSION_MODE:-auto}"
 export DELIVER_HEADLESS=1
 export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1   # agents must finish inside the -p process (they default to background)

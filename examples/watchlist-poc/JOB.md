@@ -12,7 +12,7 @@ This job is a 2-requirement slice of that document. Build only these two require
 
 Related rule (REQ-03-13, Indicator 13 — external rating change): 2 notch downgrade → WL=1; 3+ notches → WL=2.
 
-## Clarifications for this slice (assumed — confirm with the business unit)
+## Clarifications for this slice (confirmed by the business unit)
 
 - C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.
   A notch is one step on this scale. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else is rejected with a RangeError.

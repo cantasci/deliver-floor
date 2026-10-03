@@ -948,7 +948,7 @@ cmd_md_dispatch() {
   mkdir -p "$hive/spawn-requests"
   local objective
   if [[ $provider == claude ]]; then
-    cmd="claude --agent $agent"
+    cmd="$(setting munder.claude_command)"; cmd="${cmd:-claude} --agent $agent"
     objective="$(cat "$rolecard"; printf '\n---\n\n'; cat "$pfile")"
   else
     # Other CLIs have no --agent: the agent definition's instructions travel inside the objective, after the role card.

@@ -67,7 +67,7 @@ if [[ $SC == incomplete ]]; then
   log ""; log "Open questions (QUESTIONS.md):"; sed 's/^/    /' "$J/QUESTIONS.md" >> "$REP"
   step "4 · the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
   while IFS=$'\t' read -r id q; do
-    ans="$(jq -r --arg q "$q" 'map(select($q | test(.match; "i"))) | first | .answer // empty' "$EX/HUMAN_ANSWERS.json")"
+    ans="$(jq -r --arg q "$q" 'map(select(.match as $m | $q | test($m; "i"))) | first | .answer // empty' "$EX/HUMAN_ANSWERS.json")"
     if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id — $(cut -c1-90 <<<"$q")"
     else bad "no prepared answer for $id — a real person must answer: $q"; fi
   done < <(jq -r '(.items // .)[] | select(.status=="open" and .owner != "pm") | [.id, .question] | @tsv' "$J/readiness.json")

@@ -3,69 +3,122 @@
 ## Layers
 
 ```text
-kit/skills/deliver/config.json   defaults for every repo          (edit once)
-<repo>/.deliver.json             per-repo overrides (deep merge)  (edit per repo, commit it)
-.work/<job>/job.json .settings   frozen snapshot at `dl new`      (what this job actually uses)
+kit/skills/deliver/config.json   defaults for every repo          (installed to ~/.claude/skills/deliver/config.json)
+<repo>/.deliver.json             per-repo overrides (deep merge)  (commit it)
+.work/<job>/job.json .settings   snapshot taken at `dl new`       (what this job actually uses; sealed)
 ```
 
-Changing `.deliver.json` mid-job has no effect on the running job. Edit `job.json` with `dl jobset '.settings.max_parallel=2'` if you must.
+Changing `.deliver.json` mid-job has no effect on the running job. `dl jobset '.settings.max_parallel=2'` changes the
+running job (logged in `events.log`). Editing `job.json` / `board.json` by hand is detected (sha256 seals) and refused until a
+human accepts it with `dl reseal "<reason>"`.
 
-## Flow settings (`config.json` / `.deliver.json`)
+## Flow
 
-| Key | Default | Effect | Tune it when |
-| --- | --- | --- | --- |
-| `base_branch` | `"auto"` | Branch the job starts from (`auto` = current branch of the main checkout) | You always ship from `develop` |
-| `max_parallel` | `3` | Max dev agents running at once | Lower to 1–2 on small repos (fewer merge conflicts), raise to 4–5 when cards are truly independent. Mobile cards sharing one device should stay at 1 |
-| `max_attempts` | `2` | Tries per card (gate fail, review "changes", conflict) before it is `blocked` | Raise to 3 for flaky domains; keep low to avoid burning tokens on a bad card |
-| `gates.plan` | `true` | Human approves plan + board before any code is written | Keep `true`. This is where your time pays off most |
-| `gates.merge` | `true` | Human approves before PR/merge | `false` only if `merge_strategy` is `pr` and the PR review is your gate |
-| `merge_strategy` | `"pr"` | `pr`: push `job/<id>` + `gh pr create`; `local`: merge into base locally | `local` for repos without a remote |
-| `verify_full` | `"npm test"` | Run on the integration worktree after all cards merge | Always set per repo: typecheck + tests + lint |
-| `worktree_setup` | `""` | Run inside every new worktree (deps, env) | See [02-setup § 4](02-setup.md#4-configure-each-repo-deliverjson) |
-| `stop_guard_max` | `5` | How many times the Stop hook may refuse Michael's stop before letting go | Raise for very long boards |
-
-## Roles (`kit/skills/deliver/roles.yaml`)
-
-- **Add a role:** add an entry with `kind`, `agent`, `when`, `does`. If it is a new code-writing role, also add an agent file (copy `backend-dev.md`).
-- **Change a reviewer:** edit `stack_reviewers`, e.g. `typescript: ecc:code-reviewer`.
-- **Turn a role off:** delete it or make its `when` stricter. Michael only picks from this file.
-- **Fewer leads:** for small teams, delete `backend-lead` / `frontend-lead` / `mobile-lead` and keep `tech-lead`. One architect call then produces every card.
-
-## Agents (`kit/agents/*.md`)
-
-| Field | Meaning | Note |
+| Key | Default | Effect |
 | --- | --- | --- |
-| `model` | `sonnet` for devs (cost/speed), `opus` for hard domains | ECC's planner and architect already use opus |
-| `effort` | `high` default | `xhigh` for gnarly cards |
-| `maxTurns` | 80–100 | Hitting it returns a partial result, and the gate will fail it |
-| `skills` | ECC skills preloaded into the dev's context | Each is ~3–5k tokens. Keep 2, load the rest on demand (the body tells the agent which ones) |
-| `tools` | Dev agents get no `Agent` tool on purpose | So devs can't spawn their own sub-teams |
+| `base_branch` | `"auto"` | Branch the job starts from and the PR targets (`auto` = the main checkout's current branch) |
+| `dispatch` | `"subagent"` | `subagent`: roles run as Claude Code subagents of Michael. `munder`: roles run as Munder Difflin floor workers (any CLI/model) — [07](07-munder-difflin.md) |
+| `max_parallel` | `3` | Max cards running at once (all roles together). Seats per role are set on the role (`"count": N`) |
+| `max_attempts` | `2` | Tries per card (gate fail, QA fail, review "changes", conflict) before it is `blocked` and the human decides |
+| `gates.plan` | `false` | `true` = the human approves plan + board before any code. Off by default: the human is asked at readiness (only open business questions) and at the PR |
+| `verify_full` | `"npm test"` | The full suite on the job branch after all cards merged (`dl verify-all`). Set it per repo |
+| `worktree_setup` | `""` | Runs inside every new card worktree (deps, env) — [02 § 4.1](02-setup.md#41-deliverjson--how-this-repo-is-verified-and-delivered) |
+| `worktree_exclude` | `node_modules, .venv, .env, .claude/settings.local.json` | Paths `worktree_setup` creates that must never count as changes (added to `.git/info/exclude`) |
+| `gate_timeout` | `1800` | Seconds a card's `verify` / `qa_verify` may run in the gate |
+| `stop_guard_max` | `5` | How many times the Stop hook may hold Michael before letting him stop (loop protection) |
 
-**ECC agent overrides:** plugin agents ignore `hooks`, `mcpServers` and `permissionMode` in their own frontmatter. That is why this kit's hooks live in `settings.json`. If you want to change an ECC agent (e.g. its model), copy it into `<target>/agents/` under a new name and point `roles.yaml` at it.
+## Merge modes
+
+| `merge_mode` | `dl ship` does | Human |
+| --- | --- | --- |
+| `human` (default) | pushes `job/<id>`, opens the PR (`gh`), body = `report.md` → `awaiting_pr_merge` | reviews and merges the PR |
+| `semi` | same + arms auto-merge (`gh pr merge --auto`) | approves; GitHub merges when the checks pass |
+| `auto` | same, waits for the PR checks, merges on green; red → a fix card, then `dl ship` again | none (reads the PR afterwards) |
+| `local` | merges `job/<id>` into the base branch in your main checkout (no remote needed) → `done` | none |
+
+There is exactly one human approval in `human` / `semi`: the PR. `dl pr` syncs the PR state (merged → `done`).
+
+## Branches and commits
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `push_branches` | `"auto"` | Push each card branch to `origin` when it is assigned and after each step (`auto` = when there is an origin and `merge_mode` is not `local`; `true`/`false` to force). Agents may push only their own card branch (bash-guard); the job branch is pushed by `dl ship`; nobody pushes main |
+| `commit.ai_attribution` | `false` | `false`: the gate fails a card whose commits carry AI attribution (`Co-Authored-By: Claude …`, "Generated with …"); `install.sh` also sets Claude Code's `attribution` to empty |
+| `commit.role_in_message` | `false` | `true`: every card commit must carry a `Role: <seat>` trailer (e.g. `Role: backend#2`) — the gate checks it, merge commits get `Role: michael` |
+
+## Tracker
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `tracker.kind` | `"local"` | `local` (kanban in the terminal + `kanban.html`), `jira`, or any registered plugin |
+| `tracker.columns` | `{}` | Rename the workflow columns (`todo`, `in_progress`, `qa`, `review`, `done`, `blocked`, `wontdo`) |
+| `tracker.jira.*` | `project`, `issue_type: Task`, `epic_type: Epic`, `labels: [deliver]`, `api_version: "3"` | Jira target. Credentials only in env |
+
+Details: [10-trackers](10-trackers.md).
+
+## Munder Difflin
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `munder.hive_root` | `""` | The hive folder, when `dl` runs outside Munder Difflin (inside, `HIVE_ROOT` is set) |
+| `munder.claude_command` | `"claude"` | The command floor workers of Claude roles run (`<command> --agent <agent>`): a wrapper, a pinned path |
+| `munder.model` | `""` | Default model for floor workers (a role's own `model` wins) |
+| `munder.token_cap` | `0` | Token cap per floor worker (0 = none) |
+
+## Per role (`job.roles[]`, set by Michael at intake)
+
+| Field | Example | Effect |
+| --- | --- | --- |
+| `role`, `agent`, `why` | `"backend"`, `"backend-dev"`, `"REQ-03-12: indicator rule"` | the role, its agent, the request text it serves |
+| `count` | `2` | seats: `backend#1`, `backend#2` work in parallel on their own branches |
+| `provider` | `"codex"` | which CLI runs the role (needs `dispatch: munder` for non-Claude) — [04](04-roles.md#models-and-clis-per-role) |
+| `model` | `"opus"`, `"gpt-5-codex"` | the model for that role (Agent tool `model`, or the floor worker's `--model`) |
+
+Components (with their path, stack, dev owner and reviewer) are not set on roles: the readiness review records them in
+`readiness.json → architecture.components`, and each role card lists the components that role builds, reviews or tests.
+
+## Roles, rules and readiness
+
+- `kit/skills/deliver/roles.yaml` — the role catalog, the rules every role card is built from, stack → reviewer map.
+- `kit/skills/deliver/readiness.yaml` — the decisions a delivery needs before planning.
+- Both: [04-roles](04-roles.md).
 
 ## Hooks (`settings.json`, installed by `install.sh`)
 
-| Hook | Event | Does | Turn off by |
-| --- | --- | --- | --- |
-| `stop-guard.sh` | Stop | Blocks Michael from stopping while open cards remain in `executing`/`integrating`. Owner session only. Gives up after `stop_guard_max` | removing its entry from `settings.json` |
-| `bash-guard.sh` | PreToolUse(Bash) | Denies push to main/master, force push, `rm -r` on `.work/`, removing the integration worktree, deleting `job/` branches | same |
-| `subagent-log.sh` | SubagentStop | Appends `agent_type` + the first 160 chars of each agent's answer to `events.log` | same |
+| Hook | Event | Does |
+| --- | --- | --- |
+| `stop-guard.sh` | Stop | Holds Michael while cards are open in `executing`/`integrating`; names idle seats with work. Owner session only. Gives up after `stop_guard_max` |
+| `bash-guard.sh` | PreToolUse(Bash) | Denies push to main/master, force push, an agent pushing anything but its own card branch, deleting `.work/` or job branches; agents may not run flow-changing `dl` commands (`phase`, `integrate`, `qa`, `review`, `ship`, …); nobody but a human terminal runs `dl clarify` / `unfreeze` / `reseal` |
+| `write-guard.sh` | PreToolUse(Edit\|Write) | Agents write only inside their card worktree; Michael writes `.work/` files but no product code |
+| `agent-guard.sh` | PreToolUse(Agent\|Task) | Headless only: refuses background agents (they die with `claude -p`) |
+| `subagent-log.sh` | SubagentStop | Appends each agent's role + summary line to `events.log` |
 
 ## Environment variables
 
 | Variable | Use |
 | --- | --- |
+| `DELIVER_REPO` / `dl -C <repo>` | Run `dl` against a repo from any directory |
 | `DELIVER_JOB=<id>` | Run `dl` against a job other than `.work/ACTIVE` |
-| `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` | Subagents can nest up to 3 levels by default. This kit stays flat on purpose (Michael → agent). Set it to `1` to make sure no agent spawns its own agents |
-| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | Only for agent-teams mode ([05-run-modes](05-run-modes.md#5-agent-teams-optional)). While on, named subagents become teammates. Keep it off for this flow |
-| `PERMISSION_MODE` | Used by `scripts/run-headless.sh` (`auto` by default, `acceptEdits` + allowlist otherwise) |
+| `DELIVER_HOME` | Where the job registry and knowledge live (default `~/.deliver`) |
+| `DELIVER_KNOWLEDGE` | Company standards directory (default `~/.deliver/knowledge`) |
+| `DELIVER_HEADLESS=1` | Set by `scripts/run-headless.sh`: foreground agents, questions go to `QUESTIONS.md` / `APPROVAL.md` |
+| `DELIVER_APPROVER` | Name recorded on human answers/approvals (default `$USER`) |
+| `DELIVER_GH` | The GitHub CLI to use (default `gh`; tests point it at a stub) |
+| `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN`, or `JIRA_PAT` | Jira credentials — [10](10-trackers.md#2-credentials--environment-only-never-in-deliverjson) |
+| `HIVE_ROOT`, `KG_CLI`, `KG_ROOT` | Set by Munder Difflin in its terminals: hive folder, knowledge graph CLI and store |
+| `PERMISSION_MODE` | `scripts/run-headless.sh` permission mode (`auto` default) |
+| `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` | Set by `run-headless.sh`: no background agents in `-p` runs |
+| `GATEGUARD_EXEMPT_GLOBS` | Set by `install.sh`: ECC's GateGuard lets Michael write `.work/` files |
 
 ## Recipes
 
 | Situation | Change |
 | --- | --- |
-| Small repo, frequent conflicts | `max_parallel: 1`, keep `max_attempts: 2` |
-| Large monorepo, independent packages | `max_parallel: 4`, `scope` per package, `verify` per package |
-| Costs too high | devs on `sonnet` (default), drop `tech-lead` for small jobs, `max_attempts: 1` |
-| Quality too low | add `security` always for backend, set the dev `effort: xhigh`, make `verify` stricter (lint + typecheck + tests) |
-| You want to approve less | `gates.merge: false` with `merge_strategy: pr`, so the PR review is the gate. Keep `gates.plan` on |
+| Small repo, frequent conflicts | `max_parallel: 1` |
+| Two mobile devs in parallel | role `{"role":"mobile","agent":"mobile-dev","count":2}`; cards with disjoint scopes |
+| Large monorepo, independent packages | `max_parallel: 4`, a component per package, `verify` per package |
+| Costs too high | devs on a cheaper model (`"model":"sonnet"`), no `tech-lead` on small jobs, `max_attempts: 1` |
+| Quality too low | add `security`/`quality` reviewers, stricter `verify` (lint + typecheck + tests), company standards with `## Must` lists |
+| A role on another vendor's model | `dispatch: "munder"`, `{"role":"backend","provider":"codex","model":"gpt-5-codex"}` |
+| No GitHub / no remote | `merge_mode: "local"` |
+| You never want to merge by hand | `merge_mode: "auto"` (with CI on the PR) |

@@ -109,6 +109,10 @@ export function learn(repo, job, role, text) {
   if (!existsSync(lf)) appendFileSync(lf, `# Lessons — ${basename(resolve(repo))}\n\nLearned by /deliver jobs. Promote a lesson to a standard by moving it into a knowledge file's "## Must" section.\n\n`);
   const line = `- [${new Date().toISOString().slice(0, 10)} ${job}] (${role}) ${text.replace(/\s+/g, " ").trim()}\n`;
   appendFileSync(lf, line);
+  // On the Munder Difflin floor the lesson also goes into Michael's own memory (HIVE_ROOT/agents/god/memory.md):
+  // Munder Difflin mines agents' memory.md into the shared MemPalace, so the lesson is searchable floor-wide.
+  const god = process.env.HIVE_ROOT && join(process.env.HIVE_ROOT, "agents", "god");
+  if (god && existsSync(god)) appendFileSync(join(god, "memory.md"), `- /deliver lesson for ${basename(resolve(repo))} ${line.slice(2)}`);
   return lf;
 }
 

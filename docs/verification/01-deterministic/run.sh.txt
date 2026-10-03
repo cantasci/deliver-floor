@@ -1,0 +1,314 @@
+scope matcher
+  ✔ ** spans directories
+  ✔ * stays in one segment
+  ✔ {a,b} alternatives
+  ✔ **/ matches zero directories
+repo + job
+  ✔ dl new returns id with ascii slug
+  ✔ job dir + integration worktree
+  ✔ job registered for the hooks
+  ✔ node_modules (no slash) excluded
+  ✔ second dl new refused while a job is active
+  ✔ dl -C works from outside the repo
+planning guards
+  ✔ planning refused while roles are incomplete
+  ✔ roles check names the missing always-on roles
+  ✔ planning refused before the readiness review
+  ✔ phase readiness with valid roles
+  ✔ readiness check fails without readiness.json
+  ✔ applicable items follow the roles (backend: ARC-layer; no mobile items)
+  ✔ a missing item and a decision without source are errors
+  ✔ …both reported
+  ✔ a missing architecture is an error
+  ✔ an open item is reported as a question
+  ✔ QUESTIONS.md lists the open question
+  ✔ planning refused while a question is open
+  ✔ next asks the human the open question
+  ✔ awaiting_clarification
+  ✔ agents cannot answer readiness questions
+  ✔ headless sessions cannot answer them either
+  ✔ the PM cannot decide a business question
+  ✔ the human's answer is recorded
+  ✔ answer stored with source human + history of the question
+  ✔ readiness.md carries the decision
+  ✔ next asks the PM to decide an implementation detail
+  ✔ planning refused while a PM decision is open
+  ✔ PM-owned items are not put to the human
+  ✔ the PM decides it with a rationale
+  ✔ recorded with source pm: michael + rationale
+  ✔ agents cannot record PM decisions
+  ✔ phase planning once nothing is open
+  ✔ planning froze readiness.json (sha256 in job.json)
+  ✔ role cards generated on planning
+  ✔ role cards carry kind rules + project facts
+  ✔ empty board is invalid
+  ✔ executing refused without approval
+  ✔ cards without BA specs are rejected
+  ✔ a spec without Given/When/Then is rejected
+  ✔ valid board passes
+  ✔ agent outside selected roles rejected
+  ✔ unknown AC reference rejected
+  ✔ no-op verify rejected
+  ✔ parallel scope overlap warned
+  ✔ scope escaping repo rejected
+  ✔ dependency cycle rejected
+  ✔ approve refused outside the waiting phase
+  ✔ awaiting_plan_approval
+  ✔ next asks the human
+  ✔ reject needs a note
+  ✔ next shows the revision
+  ✔ executing refused after rejection
+  ✔ re-entering the gate clears the old answer
+  ✔ executing after approval
+execution guards
+  ✔ next dispatches independent cards
+  ✔ card with unmerged deps refused
+  ✔ card state merged refused
+  ✔ card state running refused
+  ✔ worktree_setup ran (node_modules symlink)
+  ✔ max_parallel enforced
+  ✔ git add -A does not commit the node_modules symlink
+  ✔ integrate refused before gate
+  ✔ gate T-01 passes
+  ✔ gate moves running → review
+  ✔ integrate refused before review
+  ✔ next asks for QA after the gate
+  ✔ review refused before QA
+  ✔ qa needs a summary
+  ✔ QA without integration tests is refused
+  ✔ QA that changes product code is refused
+  ✔ QA 'pass' with failing QA tests is refused (dl runs qa_verify)
+  ✔ QA failure re-dispatches the dev
+  ✔ gate fails when the dev edits a QA test
+  ✔ gate fails when the dev deletes a QA test
+On branch job/JOB-20261003-1022-siparis-iptali--T-01
+nothing to commit, working tree clean
+  ✔ gate runs the QA tests after a QA round
+  ✔ gate passes once the dev's fix satisfies the QA tests
+  ✔ QA pass recorded (qa_verify green)
+  ✔ next asks for the review after QA
+  ✔ integrate T-01
+  ✔ rename out of scope is caught
+  ✔ next re-dispatches a failed gate
+  ✔ review refused on a failed gate
+  ✔ untracked file fails the gate
+  ✔ gate T-02 passes on attempt 2
+  ✔ last attempt with changes → BLOCK
+  ✔ max_attempts enforced
+  ✔ blocked card asks the human
+  ✔ integrate T-02 after human retry
+  ✔ merge conflict → exit 3
+  ✔ conflicted merge aborted cleanly
+Auto-merging src/index.mjs
+CONFLICT (add/add): Merge conflict in src/index.mjs
+Automatic merge failed; fix conflicts and then commit the result.
+  ✔ integrate refused: QA/review were for the old commit
+  ✔ integrate T-03 after resolving
+integration + delivery (merge_mode=local)
+  ✔ next moves to integrating
+  ✔ phase integrating
+  ✔ closing refused before verify-all
+  ✔ verify-all passes
+  ✔ closing
+  ✔ approve merge no longer exists
+  ✔ ship refused while report.md is the template
+  ✔ next asks for the report
+  ✔ done refused before shipping
+  ✔ ship (local) merges into the base
+  ✔ local merge delivered the cards, phase done
+hooks
+  ✔ stop-guard blocks the owner with open cards
+  ✔ stop-guard ignores other sessions
+  ✔ stop-guard ignores card worktree sessions
+  ✔ stop-guard gives up after stop_guard_max
+  ✔ stop-guard lets Michael wait for floor workers (munder)
+  ✔ interactive: waiting for background agents is allowed
+  ✔ headless: Michael may not stop while agents run in the foreground flow
+  ✔ agent-guard: headless background dispatch is denied
+  ✔ agent-guard: headless foreground dispatch is fine
+  ✔ agent-guard: headless dispatch without an explicit false is denied (subagents default to background)
+  ✔ agent-guard: headless with background tasks disabled lets any dispatch through (no background mode exists)
+  ✔ agent-guard: the string "false" counts as foreground
+  ✔ agent-guard: interactive background dispatch is fine
+  ✔ push to main denied
+  ✔ push refspec to main denied
+  ✔ force push denied
+  ✔ job branch push allowed for Michael
+  ✔ an agent outside a card worktree cannot push
+  ✔ rm -rf .work denied
+  ✔ subagent dl integrate denied
+  ✔ subagent dl status allowed
+  ✔ Michael dl gate allowed
+  ✔ dl phase --force denied
+  ✔ headless self-approval denied
+  ✔ subagent dl qa denied
+  ✔ interactive approval allowed
+  ✔ unrelated commands allowed
+  ✔ dev may write in its card worktree
+  ✔ dev may write its handoff
+  ✔ dev may not write the main checkout
+  ✔ dev may not write board.json
+  ✔ dev may not write the integration worktree
+  ✔ floor worker in its worktree may write there
+  ✔ Michael may write plan.md
+  ✔ Michael may not write product code
+  ✔ other sessions are not restricted
+  ✔ writes outside the repo are ignored
+  ✔ subagent-log appends the agent's summary
+munder difflin dispatch
+  ✔ md-dispatch writes a spawn request
+  ✔ spawn request: card worktree cwd, no extra isolation, dev agent
+  ✔ settings.munder.claude_command sets the workers' claude binary
+  ✔ a non-Claude role needs dispatch munder
+  ✔ codex worker: provider set, no claude --agent
+  ✔ the agent definition's instructions travel inside the objective for non-Claude CLIs
+  ✔ …without Claude frontmatter
+  ✔ md-brief briefs Michael for Claude, Codex-style (AGENTS.md) and Gemini CLIs
+architecture: mixed stacks, frozen decisions, seats, parallel assignment
+  ✔ a Go service reviewed by the Java reviewer is rejected
+  ✔ a component owned by a non-dev role is rejected
+  ✔ 4 Spring Boot + 1 Go service + a separately owned DB: valid
+  ✔ readiness.md shows the architecture table
+  ✔ backend role card names Spring Boot and Go skills per component
+  ✔ database role card lists only the db component
+  ✔ the Go reviewer's card lists only the Go service
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/arch/.work/JOB-20261003-1023-micro/readiness.md
+  ✔ cards on three components validate
+  ✔ a card reaching outside its component is rejected
+  ✔ a backend dev on the database component is rejected
+  ✔ editing the frozen readiness/architecture is refused
+  ✔ agents cannot unfreeze
+  ✔ concurrent assignment: exactly one of two cards gets the single database seat
+  ✔ an idle seat with work says so (backend#1 → T-01)
+  ✔ …and so does the second seat
+  ✔ dl seats lists every seat with its next card
+  ✔ no backend seat idle once both work
+  ✔ kanban shows seat utilisation
+  ✔ two backend devs work in parallel on seats backend#1 and backend#2, each on its own branch
+  ✔ …each on its own card branch
+  ✔ a third backend card waits: both backend seats are busy
+  ✔ assignment records michael + seat
+  ✔ kanban shows 3 cards in progress
+  ✔ local tracker renders kanban.html with seats
+traceability: card changes, jobset limits, seals
+  ✔ jobset cannot move the phase
+  ✔ jobset cannot approve a gate
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/trace/.work/JOB-20261003-1023-trace/readiness.md
+  ✔ jobset cannot clear the frozen hash
+  ✔ Michael's direct board edit is denied by the write-guard
+  ✔ an edit through any other tool breaks the seal: dl stops
+  ✔ only a human may reseal
+  ✔ the human reseals after inspecting
+  ✔ the reseal is in the event log
+  ✔ dl card set changes a field with a reason
+  ✔ card history keeps from/to/reason
+  ✔ an invalid change is reverted
+  ✔ …and the board is unchanged
+  ✔ dl card add gives the next id
+  ✔ a dev card reaching another card's QA tests is rejected
+tracker: jira (contract stub of Jira REST v3) — statuses, comments, branch links
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/jira-repo/.work/JOB-20261003-1023-jira-flow/readiness.md
+  ✔ executing opens an epic (WL-1) and one issue per card under it
+  ✔ T-02 depends_on T-01 becomes a 'Blocks' issue link
+  ✔ issues carry job, role and component labels
+  ✔ the card branch carries the issue key (Jira's Development panel links it)
+  ✔ dl pushed the card branch
+  ✔ assignment → In Progress
+  ✔ the branch is a remote link on the issue
+  ✔ …and in the description
+  ✔ gate PASS → QA
+  ✔ QA pass → Code Review
+  ✔ merge → Done
+  ✔ the roles' results are comments on the issue (gate, QA, review, assignment)
+  ✔ a missing workflow status is reported, the gate result stands
+  ✔ dl status shows the tracker error
+  ✔ board.json (the source of truth) is unaffected by the tracker outage
+  ✔ an agent may push its own card branch
+  ✔ …but not another card's branch
+  ✔ …nor the job branch
+  ✔ …nor main
+  ✔ …nor a force push of its own branch
+  ✔ …and must name the branch
+ECC specialists: decisions bring their reviewers; every reviewer must approve
+  ✔ an accessibility decision without the a11y role is an error
+  ✔ …a performance decision likewise
+  ✔ security is suggested, not forced
+  ✔ with ecc:a11y-architect, ecc:performance-optimizer and ecc:doc-updater on the job the readiness passes
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 25 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ecc/.work/JOB-20261003-1024-spec/readiness.md
+  ✔ an unknown reviewer role is rejected
+  ✔ next names both reviewers
+  ✔ one approval leaves the card pending
+  ✔ integrate refused while a reviewer is pending
+  ✔ a role that is not the card's reviewer is refused
+  ✔ a specialist's 'changes' makes the card 'changes'
+  ✔ next re-dispatches with the a11y finding
+  ✔ both approvals on the same commit → approve
+  ✔ …and the card merges
+robustness: dl next at full capacity with many ready cards (was SIGPIPE 141)
+  ✔ dl next survives a full board (5 runs)
+commit hygiene: no AI attribution, optional role trailer
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/commits/.work/JOB-20261003-1024-commits/readiness.md
+  ✔ role cards state the commit rule
+  ✔ a Claude co-author trailer fails the gate
+  ✔ a 'Generated with Claude Code' line fails the gate
+  ✔ a clean history passes
+  ✔ role_in_message on: a commit without 'Role:' fails
+  ✔ …and passes with the trailer
+tracker factory: a new tracker is one file in bin/trackers/
+  ✔ an unknown tracker kind is refused at dl new
+  ✔ …and the message lists the registered ones, including the new file
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/tk/.work/JOB-20261003-1024-tk/readiness.md
+  ✔ the new tracker receives open, sync and branch with no other change
+knowledge: standards, memory, Munder Difflin knowledge graph
+  ✔ company standard's Must reaches the dev role
+  ✔ applies_to filters roles
+  ✔ project standard overrides the company one
+  ✔ reviewer gets the review standards
+  ✔ only Must bullets are copied (rest by reference)
+  ✔ memory: a learned lesson reaches the next role cards
+  ✔ on the floor a lesson also lands in Michael's memory.md (mined into MemPalace)
+  ✔ sync-md re-ingests without duplicates
+  ✔ knowledge graph holds 3 docs (2 standards + lessons)
+merge modes: human / semi / auto (fake gh, bare origin)
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ship-human/.work/JOB-20261003-1024-ship-human/readiness.md
+  ✔ human: PR opened, waits for the human
+  ✔ human: job branch pushed
+  ✔ human: PR created, never merged by Michael
+  ✔ human: phase awaiting_pr_merge
+  ✔ human: stop-guard lets Michael hand over
+  ✔ human: dl pr shows an open PR
+  ✔ human: dl pr sees the merge → done
+  ✔ phase done
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ship-semi/.work/JOB-20261003-1024-ship-semi/readiness.md
+  ✔ semi: auto-merge armed
+  ✔ semi: gh pr merge --auto
+  ✔ semi: still waits for the human approval
+WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.WtapyG/ship-auto/.work/JOB-20261003-1024-ship-auto/readiness.md
+  ✔ auto: red CI → not merged
+  ✔ auto: no merge on red CI
+  ✔ auto: merged on green
+  ✔ auto: re-ship reuses the existing PR
+  ✔ auto: phase done
+install / uninstall
+  ✔ install --user
+  ✔ install is idempotent
+  ✔ 5 hooks, no duplicates
+  ✔ qa-tester agent installed
+  ✔ GateGuard exemption set
+  ✔ Claude Code commit/PR attribution switched off
+  ✔ backups stay out of skills/
+  ✔ changed skill backed up
+  ✔ uninstall
+  ✔ uninstall keeps foreign hooks and env
+  ✔ doctor sees the install and the repo
+
+result: 272 passed, 0 failed

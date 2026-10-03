@@ -338,6 +338,11 @@ export HIVE_ROOT="$TMP/hive"; mkdir -p "$HIVE_ROOT"
 expect_ok "md-dispatch writes a spawn request" "$DL" md-dispatch T-03 "$TMP/p.txt"
 reqf="$(ls "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
 contains "spawn request: card worktree cwd, no extra isolation, dev agent" "$(jq -c '{cwd,isolate,command}' "$reqf")" "\"isolate\":false,\"command\":\"claude --agent backend-dev\""
+"$DL" jobset '.settings.munder.claude_command="/opt/bin/claude"'
+jq '(.cards[] | select(.id=="T-03")).md_workers = []' "$R/.work/$JOB/board.json" > /dev/null
+"$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
+contains "settings.munder.claude_command sets the workers' claude binary" "$(jq -r .command "$(ls -t "$HIVE_ROOT"/spawn-requests/*.json | head -1)")" "/opt/bin/claude --agent backend-dev"
+"$DL" jobset '.settings.munder.claude_command="claude"'
 "$DL" jobset '(.roles[] | select(.role=="backend")) += {provider:"codex", model:"gpt-5-codex"}'
 out="$("$DL" phase readiness --force 2>&1; node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$R/.work/$JOB/job.json")"
 contains "a non-Claude role needs dispatch munder" "$out" "runs on codex: non-Claude roles run as Munder Difflin floor workers"
@@ -627,6 +632,9 @@ grep -q "Tests live in test/<area>/" ".work/$KJ/roles/qa.md" && ! grep -q "Every
 grep -q "Never leak stack traces" ".work/$KJ/roles/reviewer.md" && ok "reviewer gets the review standards" || bad "reviewer standard"
 grep -q "Background" ".work/$KJ/roles/backend.md" && bad "whole document pasted" || ok "only Must bullets are copied (rest by reference)"
 grep -q "rounding at .5" ".work/$KJ/roles/qa.md" && ok "memory: a learned lesson reaches the next role cards" || bad "lesson"
+mkdir -p "$TMP/mphive/agents/god"; HIVE_ROOT="$TMP/mphive" "$DL" learn all "Name QA tests after the AC id" >/dev/null
+grep -q "/deliver lesson for kn .*Name QA tests after the AC id" "$TMP/mphive/agents/god/memory.md" \
+  && ok "on the floor a lesson also lands in Michael's memory.md (mined into MemPalace)" || bad "lesson not in god memory"
 mkdir -p "$TMP/res"; cat > "$TMP/res/kg-core.cjs" <<'JS'
 const fs=require('fs'),p=require('path');
 const f=r=>p.join(r,'idx.json'), rd=r=>{try{return JSON.parse(fs.readFileSync(f(r)))}catch{return[]}};

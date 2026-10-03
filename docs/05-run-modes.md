@@ -2,59 +2,55 @@
 
 The kit is files (skill + agents + hooks + `dl`). Where the orchestrating session runs is your choice; the flow is identical.
 
-| Mode | Who is Michael | Gates | Best for |
-| --- | --- | --- | --- |
-| 1. Interactive Claude Code | your terminal/IDE session | asked in the chat | **start here**: learning the flow, most jobs |
-| 2. Munder Difflin | the GOD agent on the floor | chat / approvals | jobs arriving from Slack/webhooks, watching agents work |
-| 3. Headless script | `claude -p` in a loop | `dl approve` from your terminal | overnight runs, a queue of jobs |
-| 4. Agent SDK | your TypeScript/Python program | your code decides | CI, a service, budgets per job |
-| 5. Agent teams | lead session | chat | discussion-heavy work (not the default flow) |
+| Mode | Who is Michael | Roles run as | Human answers via | Best for |
+| --- | --- | --- | --- | --- |
+| 1. Interactive Claude Code | your terminal/IDE session | subagents (background, pipelined) | the chat (AskUserQuestion) | **start here**: learning the flow, most jobs |
+| 2. Munder Difflin | the god agent on the floor (any CLI) | floor workers (any CLI/model) or subagents | ASK ME cards / the composer | watching the roles work, jobs from Slack/webhooks, mixed models |
+| 3. Headless script | `claude -p` rounds | subagents (foreground, batched) | `dl clarify` / `dl approve` in a terminal | overnight runs, a queue of jobs |
+| 4. Agent SDK | your TypeScript/Python program | subagents | your code | CI, a service, budgets per job |
+
+The flow, `dl`, the hooks and the files in `.work/` are identical in every mode; a job started in one mode can be resumed in
+another (`/deliver resume`).
 
 ## 1. Interactive (recommended start)
 
 ```bash
 cd /path/to/repo
-claude --model opus          # Michael benefits from the strongest model; devs run on sonnet
+claude --model opus          # Michael benefits from the strongest model; roles use their own models
 ```
 
 ```text
-/deliver Users can cancel a pending order from the order page
+/deliver docs/requirements/feature.md
 /deliver status
-/deliver resume              # after a restart, or after you answered a gate elsewhere
+/deliver resume              # after a restart, or after you answered elsewhere
 ```
 
-Tips:
-
-- Leave the session focused on the job. Ask side questions in another session.
-- `dl status` and `tail -f .work/*/events.log` in a second terminal give you a live board.
+- Agents run in the background: Michael moves each card on the moment its agent reports and assigns the cards it unblocks.
+- Open business questions come as one AskUserQuestion with the BA's options; your words are recorded with `dl clarify`.
+- `dl status`, `dl kanban` and `tail -f .work/*/events.log` in a second terminal give you the live board.
 - Auto mode (`Shift+Tab`) removes most permission prompts. The hooks still apply.
 
-## 2. Michael in Munder Difflin
+## 2. Munder Difflin
 
-Munder Difflin's Michael is a Claude Code session, so it loads the same user-level kit. To use the flow:
-
-1. **Working directory.** Michael must run with the **target repo** as its cwd. The hooks find `.work/` through `CLAUDE_PROJECT_DIR`, and `dl` finds the repo through git. If your Michael lives in the hive directory, spawn a dedicated "delivery" agent with cwd = the repo instead, and let Michael route work to it.
-2. **Instruction.** Add this to Michael's (or the delivery agent's) instructions:
-
-   ```text
-   For any request to build, change or fix something in <repo>, run /deliver <request>.
-   For "status" questions, run /deliver status. Never write product code yourself.
-   Gates: ask the human and wait. Never approve on their behalf.
-   ```
-
-3. **Intake.** Slack/webhook messages that reach Michael's queue become `/deliver …` jobs. Gate questions go back to you through the normal ask flow.
-4. **Don't double-orchestrate.** Munder Difflin's own kanban/routing and `/deliver`'s board are two task systems. For a delivery job, let `/deliver` own the cards. Use the floor for visibility and for jobs outside `/deliver`.
+Michael is the floor's god agent; his folder is the hive, and the brief in the hive (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`)
+tells him to run every delivery request through `/deliver`. With `dispatch: "munder"` every dev, QA and reviewer is a floor
+worker at a desk, on whichever CLI and model its role names. Setup, ASK ME, knowledge graph: [07-munder-difflin](07-munder-difflin.md).
 
 ## 3. Headless
 
 ```bash
-scripts/run-headless.sh /path/to/repo "Users can cancel a pending order"   # starts + runs
-scripts/run-headless.sh /path/to/repo                                      # resume rounds
+scripts/run-headless.sh /path/to/repo "$(cat docs/requirements/feature.md)"   # starts + runs rounds
+scripts/run-headless.sh /path/to/repo                                          # resume rounds
 ```
 
-- Each round runs `claude -p "/deliver resume"`. The log goes to `.work/runs/*.jsonl`, and the script prints the result and cost.
-- At a gate, Michael writes `.work/<job>/APPROVAL.md` and stops. You read it, run `dl approve plan` (or `dl reject plan "…"`), and start the script again.
-- Permission mode is `auto` by default. Without auto mode, use `PERMISSION_MODE=acceptEdits` together with the allowlist from [02-setup § 5](02-setup.md#5-fewer-permission-prompts-recommended).
+- Each round runs `claude -p "/deliver resume"` with `DELIVER_HEADLESS=1` and background tasks disabled: agents must finish
+  inside the process (background agents die with `-p` — measured, see [09](09-testing.md)), so Michael puts every due
+  action (assignments, QA, reviews) into one message and they run together.
+- Logs: `.work/runs/*.jsonl`; the script prints each round's result and cost.
+- When the flow needs a person it stops and writes the question: `QUESTIONS.md` (open business items — answer with
+  `dl clarify <id> "<answer>"`), `APPROVAL.md` (a blocked card → `dl card T-xx retry` with guidance, or the optional plan
+  gate → `dl approve plan`). Then run the script again. The hooks refuse these commands from the model itself.
+- Permission mode is `auto` by default; otherwise `PERMISSION_MODE=acceptEdits` plus an allowlist ([02 § 4.5](02-setup.md#45-permissions)).
 
 ## 4. Agent SDK
 
@@ -98,7 +94,20 @@ for (let i = 0; i < 10 && existsSync(`${repo}/.work/ACTIVE`); i++) {
 
 Confirm in the init message that `ecc` shows up under `plugins` and `deliver` under `skills`.
 
-## 5. Agent teams (optional)
+## 5. Other agent CLIs (model and harness agnostic)
+
+Nothing in the flow is tied to one vendor:
+
+- **Roles** run on any model: `model` on a role (Claude subagents), `provider` + `model` on a role (Munder Difflin floor
+  workers on codex, gemini, grok, kimi, qwen, opencode, crush, pi, copilot, cursor, antigravity) — [04](04-roles.md#models-and-clis-per-role).
+- **Michael** can be any CLI Munder Difflin runs: the hive brief exists as `CLAUDE.md`, `AGENTS.md` (Codex, OpenCode, Crush,
+  Copilot, Cursor) and `GEMINI.md`; a CLI without skills or subagents follows `SKILL.md` as its playbook and dispatches every
+  role as a floor worker with `dl md-dispatch`.
+- **The guarantees** don't depend on the model: state, gates, scope, QA and review records, merges and shipping are `dl`
+  (bash + node), which refuses any out-of-order step whoever calls it. The Claude Code hooks add a second line of defence
+  where Claude Code runs; on other CLIs the same rules are in the role card and `dl` still refuses.
+
+## 6. Agent teams (optional)
 
 Agent teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) start full Claude Code sessions as teammates. They share a task list and message each other directly. They do **not** fit the core flow:
 

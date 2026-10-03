@@ -1,4 +1,13 @@
 [
+  { "topic": "the miscounted POC example (C2)",
+    "match": "miscount|BBB\\+ → BB\\+|BBB\\+ -> BB\\+|example .*(wrong|count)|which part of the example",
+    "answer": "C2 stands: the POC example miscounts. BBB+ → BB+ is 3 notches → calculator WL 2; the 2-notch example is BBB+ → BBB- → WL 1." },
+  { "topic": "which thresholds give the calculator's WL (C2/C6)",
+    "match": "threshold|Indicator 13|resultant WL|WL basis|disagree",
+    "answer": "C2/C6 stand: the calculator uses the Indicator 13 thresholds (2 notches → WL 1, 3+ → WL 2); Indicator 12 keeps its own (1 → 1, 2+ → 2). The difference is intended." },
+  { "topic": "rating scale coverage (C1)",
+    "match": "scale|Moody|\\bCC\\b|\\bNR\\b|SD/D",
+    "answer": "C1 stands: only the 19-step S&P-style scale in this slice; anything else is rejected with a RangeError." },
   { "topic": "sign of notchCalculator().notches",
     "match": "sign|signed|negative|upgrade|absolute|direction",
     "answer": "notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words." },
@@ -6,6 +15,6 @@
     "match": "1.notch|one notch|1-notch|single notch",
     "answer": "A 1-notch downgrade gives calculator WL 0 (Indicator 13 starts at 2 notches); Indicator 12 stays 1 notch → WL 1." },
   { "topic": "editable auto-filled value",
-    "match": "editab|override|edit",
+    "match": "editab|override|\\bedit",
     "answer": "The caller passes the rating the analyst confirmed or edited. No override parameter, no persistence, no audit trail in this slice." }
 ]
