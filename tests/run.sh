@@ -287,6 +287,7 @@ TR="$TMP/transcript.jsonl"; echo "{\"x\":\"$JOB\"}" > "$TR"
 "$DL" phase executing --force >/dev/null
 bedit "$B" '.cards[2].state="ready" | .cards[2].attempts=0'
 contains "stop-guard blocks the owner with open cards" "$(hook stop-guard.sh "{\"cwd\":\"$TMP\",\"transcript_path\":\"$TR\"}")" "rc=2"
+contains "…but lets a floor seat with the same transcript stop (only Michael is held to the board)" "$(AGENT_ID=worker-seat-x hook stop-guard.sh "{\"cwd\":\"$TMP\",\"transcript_path\":\"$TR\"}")" "rc=0"
 contains "stop-guard ignores other sessions" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"/dev/null\"}")" "rc=0"
 contains "stop-guard ignores card worktree sessions" "$(hook stop-guard.sh "{\"cwd\":\"$R/.work/$JOB/wt/T-03\",\"transcript_path\":\"$TR\"}")" "rc=0"
 for i in 1 2 3 4 5; do hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}" >/dev/null; done
@@ -377,6 +378,9 @@ echo '{"godId":"god","agents":{"god":{"id":"god","isGod":true,"status":"idle"}}}
 "$DL" jobset '.settings.dispatch="munder"' >/dev/null
 nseat="$(jq '[.roles[] | select(.agent != "artemis") | (.count // 1)] | add' "$R/.work/$JOB/job.json")"
 expect_ok "md-hire seats every role seat" "$DL" md-hire
+"$DL" roles >/dev/null
+[[ ! -e $R/.work/$JOB/munder/hires && ! -e $HIVE_ROOT/research/hires ]] && ok "no hire manifests that would need a click in the app" || bad "hire manifests written"
+contains "ROLES.md tells Michael the roles are people he seats" "$(cat "$R/.work/$JOB/ROLES.md")" "dl md-hire"
 [[ "$(ls "$HIVE_ROOT"/spawn-requests/seat-*.json | wc -l)" == "$nseat" ]] && ok "one spawn request per seat ($nseat) — every selected role, count seats each" || bad "seat requests: $(ls "$HIVE_ROOT"/spawn-requests)"
 sreq="$(ls "$HIVE_ROOT"/spawn-requests/seat-*-backend-1-h1.json)"
 contains "a seat is a plain claude in the repo, no --agent, no isolation" "$(jq -c '{command,cwd,isolate}' "$sreq")" "{\"command\":\"claude\",\"cwd\":\"$R\",\"isolate\":false}"
@@ -412,6 +416,17 @@ contains "a reaped seat shows as not seated" "$("$DL" md-seats)" "not seated: ba
 contains "…and sends no order into the void" "$("$DL" md-send backend#1 T-03 "$TMP/order.md" 2>&1)" "no one at the desk"
 "$DL" md-hire >/dev/null; contains "md-hire re-seats only that seat, same face" "$(ls "$HIVE_ROOT"/spawn-requests/*.json | xargs -n1 basename)" "backend-1-h2.json"
 contains "…logged as a re-seat" "$(grep md-hire "$R/.work/$JOB/events.log" | tail -1)" "re-seated, was gone"
+# Michael's inbox: each message shown once, archived exactly; a report archived unread is still found
+GI="$HIVE_ROOT/agents/god/inbox"; mkdir -p "$GI"; wq="$(jq -r '.munder.seats["qa#1"].worker' "$R/.work/$JOB/job.json")"
+echo "Test T-03." > "$TMP/qa.md"; "$DL" jobset '.settings.dispatch="munder"' >/dev/null
+jq --arg w "$wq" '.agents[$w].status = "idle"' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+"$DL" md-send qa#1 T-03 "$TMP/qa.md" >/dev/null 2>&1 || "$DL" md-send qa#1 plan-check "$TMP/qa.md" >/dev/null
+qtask="$(jq -r '.munder.seats["qa#1"].task' "$R/.work/$JOB/job.json")"
+jq -n --arg w "$wq" --arg t "$qtask" '{id:"m1", from:$w, act:"inform", subject:("done " + $t + " qa#1"), body:"6/6 integration tests pass", created_at:"2999-01-01T00:00:00.000Z"}' > "$GI/m1.json"
+out="$("$DL" md-inbox)"; contains "md-inbox shows a report with the sender as its seat" "$out" "qa#1 · inform · done $qtask qa#1"
+[[ ! -e $GI/m1.json && -f $GI/.done/m1.json ]] && ok "…and archives exactly what it showed" || bad "inbox archive"
+contains "a report archived without md-done is flagged as unrecorded" "$("$DL" md-inbox)" "UNRECORDED  qa#1 reported \"done $qtask\""
+"$DL" md-done qa#1 "6/6" >/dev/null; contains "…until it is recorded" "$("$DL" md-inbox)" "(no new messages)"
 n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-release >/dev/null
 [[ $(( $(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l) - n0 )) == $(( nseat - 1 )) ]] && ok "md-release sends every live seat home" || bad "release orders"
 # Guards: Michael on the floor has no Agent tool; seats are agents (their own lanes, no flow commands)
@@ -425,6 +440,9 @@ contains "…where Michael (god) may not" "$(AGENT_ID=god wg "$R/.work/$JOB/wt/T
 contains "a seat may write its analysis to out/" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/out/readiness.json" "$R" "" "$TR")" "rc=0"
 contains "a seat may not write the main checkout, even with the job in its transcript" "$(AGENT_ID=worker-seat-x wg "$R/src/x.ts" "$R" "" "$TR")" "rc=2"
 contains "a seat may not write board.json" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/board.json" "$R" "" "$TR")" "rc=2"
+contains "Michael may not move his inbox files (md-inbox reads them)" "$(AGENT_ID=god bg 'H=/h; mv $H/agents/god/inbox/*.json $H/agents/god/inbox/.done/')" "rc=2"
+contains "…reading them is fine" "$(AGENT_ID=god bg 'cat /h/agents/god/inbox/*.json')" "rc=0"
+contains "…and a seat still files its own inbox" "$(AGENT_ID=worker-seat-x bg 'mv inbox/m1.json inbox/.done/')" "rc=0"
 contains "a seat may not run flow commands" "$(AGENT_ID=worker-seat-x bg "\"\$DL\" qa T-03 pass")" "rc=2"
 contains "Michael (god) still writes the job's files" "$(AGENT_ID=god wg "$R/.work/$JOB/plan.md" "$R" "" "$TR")" "rc=0"
 "$DL" jobset '.settings.dispatch="subagent"' >/dev/null; unset HIVE_ROOT
@@ -842,6 +860,13 @@ mkdir -p "$HOME/.config/munder-difflin"; echo '{}' > "$HOME/.claude.json"
 contains "doctor finds Munder Difflin and warns about Claude Code's unfinished first run" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run is not completed"
 echo '{"hasCompletedOnboarding":true}' > "$HOME/.claude.json"
 contains "…and is satisfied once it is done" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run completed"
+echo '{"orchestratorMaySpawn":true}' > "$HOME/.config/munder-difflin/config.json"
+out="$("$HERE/scripts/doctor.sh" 2>&1)"
+contains "doctor: seats would be reaped after 20 idle minutes" "$out" "workerIdleTimeoutMinutes is 20"
+contains "doctor: a team would queue behind 4 workers" "$out" "maxConcurrentWorkers is 4"
+echo '{"orchestratorMaySpawn":true,"workerIdleTimeoutMinutes":480,"maxConcurrentWorkers":12}' > "$HOME/.config/munder-difflin/config.json"
+out="$("$HERE/scripts/doctor.sh" 2>&1)"
+[[ $out == *"seats are not sent home"* && $out == *"room for a whole team"* && $out == *"Michael may seat people"* ]] && ok "doctor: satisfied with the settings init writes" || bad "doctor seats: $out"
 
 echo
 echo "result: $pass passed, $failn failed"

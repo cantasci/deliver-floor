@@ -115,7 +115,7 @@ Every role can run on its own model, and — on Munder Difflin — on its own CL
 | Where | Claude roles | Other providers (`codex gemini grok kimi qwen opencode crush pi copilot cursor antigravity`) |
 | --- | --- | --- |
 | subagents (`dispatch: subagent`) | Agent tool with `model` | not possible — `dl` refuses: set `dispatch: munder` |
-| Munder Difflin (`dispatch: munder`) | floor worker `claude --agent <agent> --model <model>` | floor worker on that CLI; the agent definition's instructions travel inside the objective after the role card |
+| Munder Difflin (`dispatch: munder`) | a person at a seat for the whole job: `dl md-hire` seats a plain `claude --model <model>`; every work order (`dl md-send`) carries the role card + the agent's instructions | a person at a seat on that CLI, same work orders |
 
 Michael himself can run on any CLI Munder Difflin supports: the hive gets `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` with the
 same brief, and a non-Claude Michael follows `SKILL.md` as a playbook with `dl` ([07](07-munder-difflin.md)).

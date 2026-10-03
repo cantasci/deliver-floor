@@ -91,7 +91,7 @@ Full guide: [docs/02-setup.md](docs/02-setup.md).
 | [04-roles](docs/04-roles.md) | role lanes, catalog, role cards, mixed stacks, seats, models/CLIs per role, how ECC is used |
 | [05-run-modes](docs/05-run-modes.md) | interactive · Munder Difflin · headless · Agent SDK · other agent CLIs |
 | [06-troubleshooting](docs/06-troubleshooting.md) | symptoms → causes → fixes, manual control |
-| [07-munder-difflin](docs/07-munder-difflin.md) | the office floor: install, floor workers, ASK ME, authentication |
+| [07-munder-difflin](docs/07-munder-difflin.md) | the office floor: install, a person at a seat for every role (no subagents), ASK ME, authentication |
 | [08-knowledge](docs/08-knowledge.md) | company standards, memory (lessons), graphify, feeding the Knowledge Graph and MemPalace |
 | [09-testing](docs/09-testing.md) | the four test layers and how to run them |
 | [10-trackers](docs/10-trackers.md) | local kanban, Jira (credentials, workflow, branches on issues), adding a tracker |
@@ -107,7 +107,7 @@ Everything is in [`docs/verification/`](docs/verification/) — raw outputs, not
 | Deterministic — `tests/run.sh` | every `dl` guard, validator, roles, readiness, knowledge, hooks, Jira contract stub, merge modes, installer | [output](docs/verification/01-deterministic/run.sh.txt) |
 | Replay — `tests/replay-watchlist.sh` | the whole flow on the POC slice without a model, incl. a rejected scope violation; hidden oracle | [output](docs/verification/02-replay/replay-watchlist.txt) |
 | Live, headless — `tests/e2e-live.sh` | real Claude Code + ECC from GitHub + real agents, fresh HOME; scenarios `complete`, `incomplete`, `parallel` | [reports](docs/verification/03-live-headless/) |
-| Live, Munder Difflin — `tests/e2e-munder.sh` | init from scratch, the real app driven like a user, floor workers, screenshots | [report + screenshots](docs/verification/04-live-munder/) |
+| Live, Munder Difflin — `tests/e2e-munder.sh` | init from scratch, the real app driven like a user, a person per role seat doing that role's work, screenshots of people at work | [report + screenshots](docs/verification/04-live-munder/) |
 
 [`docs/verification/README.md`](docs/verification/README.md) maps every requirement of this project to the decision taken,
 where it is implemented and the test that proves it — including what failed along the way and how it was fixed.

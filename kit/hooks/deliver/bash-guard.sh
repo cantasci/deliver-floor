@@ -9,6 +9,12 @@ cmd="$(hk .tool_input.command)"
 [[ -n $cmd ]] || exit 0
 deny() { echo "deliver bash-guard: $1" >&2; exit 2; }
 
+# --- Munder Difflin: Michael reads his inbox through dl md-inbox ----------------------------------------------------
+# A glob move of agents/god/inbox files once filed a seat's report that had arrived seconds earlier, unread (run 15).
+if [[ ${AGENT_ID:-} == god ]] && grep -q 'god/inbox' <<<"$cmd" && grep -Eq '(^|[^[:alnum:]_-])(mv|rm|find[^|;]*-delete)([[:space:]]|$)' <<<"$cmd"; then
+  deny "read your inbox with \"\$DL\" md-inbox — it shows each message once and archives exactly those. Moving inbox files yourself can file a report unread."
+fi
+
 # --- git: everyone ---------------------------------------------------------------------------------------------
 if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]].*push' <<<"$cmd"; then
   grep -Eq -- '(--force|--force-with-lease|--mirror|--delete|[[:space:]]-f([[:space:]]|$)|[[:space:]]-d([[:space:]]|$)|[[:space:]]\+[[:alnum:]_/.-]+)' <<<"$cmd" \

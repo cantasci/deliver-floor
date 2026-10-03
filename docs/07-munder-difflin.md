@@ -58,7 +58,7 @@ Start it: `cd ~/.local/share/munder-difflin && npm run preview` (Linux as root /
 | the team | `dl md-hire` right after the roles are chosen: one person per seat of every selected role (`count` seats each, default 1), through the spawn queue — no click in the app. Each one sits down, says `seated <seat>`, and stays for the whole job |
 | any role's work | a work order: `dl md-send <role\|seat> <task> <prompt> --agent <ECC or kit agent>`. Task = a card id (dev, QA, review) or a plan step (`readiness`, `plan`, `cards-<lead>`, `spec-T-xx`, `closing`). The order carries the role card, the agent's instructions and the prompt; analysis goes to `.work/<job>/out/` |
 | a dev seat on a card | `dl wt add T-02` (assigns the card to a seat, e.g. `backend#2`) → `dl md-send backend T-02 <prompt>` goes to that seat |
-| done | the person's inform `done <task> <seat>` arrives in Michael's inbox → `dl md-done <seat> "<summary>"` → the card's next step |
+| done | the person's inform `done <task> <seat>` arrives in Michael's inbox; he reads it with `dl md-inbox` (each message once, archived exactly; a report archived but never recorded is flagged `UNRECORDED`) → `dl md-done <seat> "<summary>"` → the card's next step. Moving inbox files himself is refused by bash-guard: a glob move once filed a report unread |
 | who did what | `events.log`: `md-hire`, `md-send <task> <seat> (<agent>) → <worker>`, `md-done <task> <seat>: <summary>`; on the card: `md_workers` (role, seat, worker) |
 | empty desk | a seat released or reaped shows as `not seated` in `dl md-seats`; `dl md-hire` seats a replacement with the same face |
 | end of job | `dl md-release`: every seat gets the release order and goes home |

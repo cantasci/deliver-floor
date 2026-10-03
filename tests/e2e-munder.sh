@@ -53,10 +53,24 @@ jq --arg c "$CL" --arg m "${E2E_MODEL:-claude-sonnet-5-5}" '.munder = ((.munder 
 cj="$ISO_HOME/.claude.json"; [[ -s $cj ]] || echo '{}' > "$cj"
 jq '.hasCompletedOnboarding = true' "$cj" > "$cj.tmp" && mv "$cj.tmp" "$cj"
 git -C "$SB" add .deliver.json && git -C "$SB" commit -qm "deliver: dispatch on the floor" || true
+# E2E_PLUGIN=1: the kit as a Claude Code plugin from this repo's marketplace instead of the copy init made — namespaced
+# agents (deliver:…), hooks from the plugin, env/attribution from install.sh --plugin, Michael's brief pointing at the plugin.
+SKD="$ISO_HOME/.claude/skills/deliver"
+if [[ ${E2E_PLUGIN:-0} == 1 ]]; then
+  { iso_env bash "$HERE/scripts/install.sh" --user --uninstall && iso_env claude plugin marketplace add "$HERE" \
+      && iso_env claude plugin install deliver@skills-shop && iso_env bash "$HERE/scripts/install.sh" --user --plugin; } > "$W/plugin.log" 2>&1 \
+    || { bad "plugin install failed (plugin.log)"; tail -20 "$W/plugin.log"; exit 1; }
+  SKD="$(ls -d "$ISO_HOME"/.claude/plugins/cache/skills-shop/deliver/*/skills/deliver 2>/dev/null | tail -1)"
+  [[ -n $SKD && ! -e $ISO_HOME/.claude/skills/deliver ]] && ok "the kit runs as the plugin deliver@skills-shop (copied kit removed): $SKD" || bad "plugin layout: $SKD"
+  iso_env env DELIVER_SKILL_DIR="$SKD" bash "$HERE/scripts/md-brief.sh" "$W/hive" "$SB" > /dev/null && grep -q "$SKD" "$W/hive/CLAUDE.md" \
+    && ok "Michael's brief points at the plugin's playbook" || bad "brief does not name the plugin"
+  out="$(iso_env bash "$HERE/scripts/doctor.sh" "$SB" 2>&1)"; printf '%s\n' "$out" > "$W/doctor-plugin.log"
+  [[ $out == *"plugin: deliver"* && $out != *"installed twice"* ]] && ok "doctor sees the plugin install: $(grep -E '^result:' <<<"$out" | tail -1)" || bad "doctor (doctor-plugin.log)"
+fi
 
 step "2 · the floor: open the app, brief Michael with one message, watch"
 iso_env NODE_PATH="${NODE_PATH:-/usr/local/lib/node_modules_global}" xvfb-run -a node "$HERE/tests/md-drive.cjs" "$MD" "$ISO_HOME" "$W/shots" "$SB" \
-  "/deliver $EX/$JOBF" "${E2E_MINUTES:-75}" "$EX/HUMAN_ANSWERS.json" "$ISO_HOME/.claude/skills/deliver/bin/dl" 2>&1 | grep --line-buffered -v -E 'bus\.cc|viz_main|dbus|Fontconfig' | tee "$W/drive.log" | sed 's/^/    /'
+  "/deliver $EX/$JOBF" "${E2E_MINUTES:-75}" "$EX/HUMAN_ANSWERS.json" "$SKD/bin/dl" 2>&1 | grep --line-buffered -v -E 'bus\.cc|viz_main|dbus|Fontconfig' | tee "$W/drive.log" | sed 's/^/    /'
 [[ ${PIPESTATUS[0]} -eq 0 ]] && ok "the job finished on the floor" || bad "the job did not finish on the floor (drive.log)"
 ok "screenshots of the floor: $(ls "$W/shots" 2>/dev/null | wc -l) (shots/)"
 
@@ -87,9 +101,20 @@ if [[ -n $J ]]; then
   if [[ $nsub -gt 0 ]]; then
     bad "Michael ran $nsub subagent(s) on the floor: $(grep -P '\tagent\t' "$J/events.log" | grep -v ' @worker-' | head -3 | cut -f3 | cut -c1-60 | tr '\n' ';')"
   else ok "Michael ran no subagent: every role's work went to its seat (md-send → md-done)"; fi
+  # Proof of who did the work: the driver selected each seat on the floor and photographed its own terminal.
+  for s in $want; do
+    n="$(ls "$W/shots" 2>/dev/null | grep -c -- "-${s/\#/}-")"
+    [[ $n -ge 1 ]] && ok "$s's own terminal photographed at work: $n screenshot(s) (shots/p*-${s/\#/}-*.png)" || bad "no screenshot of $s at work"
+  done
+  # Everyone went home: Michael's release reached every seat and the floor archived them before the app closed.
+  left="$(jq -r --argjson ws "$(jq -c '[.munder.seats[].worker]' "$J/job.json")" '[.agents | to_entries[] | select(.key as $k | $ws | index($k)) | select((.value.archived != true) and (.value.status != "gone")) | .value.name] | join(", ")' "$W/hive/hive/registry.json" 2>/dev/null)"
+  [[ -z $left ]] && ok "every seat left the floor after the release" || bad "still on the floor after the run: $left"
+  if [[ ${E2E_PLUGIN:-0} == 1 ]]; then
+    grep -q '`deliver:backend-dev`' "$J/ROLES.md" && ok "plugin: ROLES.md names the kit's agents deliver:<agent>" || bad "plugin: ROLES.md without the deliver: prefix"
+  fi
 fi
 
 step "4 · verify the delivered job"
-"$HERE/tests/verify-job.sh" "$SB" "$ORACLE" "$REP" "$ISO_HOME/.claude/skills/deliver" || FAILED=1
+"$HERE/tests/verify-job.sh" "$SB" "$ORACLE" "$REP" "$SKD" || FAILED=1
 printf '\n**%s**\n' "$([[ $FAILED -eq 0 ]] && echo PASSED || echo FAILED)" >> "$REP"
 exit $FAILED

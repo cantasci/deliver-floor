@@ -107,6 +107,19 @@ elif compgen -G "$HOME/Library/Application Support/*[Mm]under*" >/dev/null || co
   jq -e '.hasCompletedOnboarding == true' "$HOME/.claude.json" >/dev/null 2>&1 \
     && pass "Claude Code first run completed (Michael's terminal on the floor opens ready)" \
     || note "Claude Code's first run is not completed in this HOME — run 'claude' once before opening the floor (docs/07-munder-difflin.md § 5)"
+  # /deliver seats a person per role for the whole job (dl md-hire): Michael must be allowed to seat people, seats wait
+  # between tasks and must not be reaped after the default 20 idle minutes, and a job's 6–10 seats must not queue behind 4.
+  mcfg="$(ls -d "$HOME/Library/Application Support/munder-difflin/config.json" "${XDG_CONFIG_HOME:-$HOME/.config}/munder-difflin/config.json" 2>/dev/null | head -1)"
+  if [[ -n $mcfg ]]; then
+    jq -e '.orchestratorMaySpawn == true' "$mcfg" >/dev/null 2>&1 && pass "Michael may seat people (orchestratorMaySpawn)" \
+      || fail "orchestratorMaySpawn is off — Michael cannot seat anyone: Settings → Autonomy & Budgets, or scripts/init.sh --munder"
+    v="$(jq -r '.workerIdleTimeoutMinutes // 20' "$mcfg")"
+    (( v >= 480 )) && pass "seats are not sent home while they wait (workerIdleTimeoutMinutes $v)" \
+      || fail "workerIdleTimeoutMinutes is $v — seats waiting between tasks get reaped: set ≥ 480 in $mcfg (scripts/init.sh --munder does)"
+    v="$(jq -r '.maxConcurrentWorkers // 4' "$mcfg")"
+    (( v >= 12 )) && pass "room for a whole team (maxConcurrentWorkers $v)" \
+      || fail "maxConcurrentWorkers is $v — a job's seats queue behind it: set ≥ 12 in $mcfg (scripts/init.sh --munder does)"
+  fi
 else
   note "Munder Difflin not detected — only needed for the office-floor run mode (docs/07-munder-difflin.md)"
 fi

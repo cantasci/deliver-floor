@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stop hook — while a job is executing/integrating, Michael cannot stop before the board is finished.
 # Only affects the session that owns the job (the one whose transcript mentions the job id); other Claude
-# sessions, dev workers in card worktrees and Munder Difflin workers are left alone.
+# sessions, subagents, dev workers in card worktrees and Munder Difflin seats (AGENT_ID ≠ god) are left alone.
 # dispatch=munder: devs run as floor workers and wake Michael through his inbox, so waiting is allowed
 # while the only open cards are running.
 # Loop protection: lets the stop through after job.settings.stop_guard_max blocks.
@@ -11,7 +11,7 @@ input="$(cat)"
 command -v jq >/dev/null || exit 0
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-in_card_worktree && exit 0
+is_agent && exit 0   # agents, card workers and floor seats wait for orders; only Michael is held to the board
 owned="$(owned_job)" || exit 0
 IFS=$'\t' read -r job root <<<"$owned"
 jf="$root/.work/$job/job.json"; bf="$root/.work/$job/board.json"

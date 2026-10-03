@@ -8,7 +8,7 @@ is summarised away.
 | 1. Deterministic | `tests/run.sh` | no | ~2 min | every `dl` guard, the validator, roles, readiness, knowledge, hooks, trackers (Jira contract stub), merge modes (fake `gh`, bare origin), installer |
 | 2. Replay | `tests/replay-watchlist.sh` | no | ~1 min | the whole flow on the POC slice, narrated step by step with real `dl` output; a scope violation rejected and retried; the hidden oracle passes |
 | 3. Live, headless | `tests/e2e-live.sh complete \| incomplete \| parallel` | yes | 10–25 min each | real Claude Code + real ECC from GitHub + real agents on a fresh HOME; the only input is a requirements file |
-| 4. Live, Munder Difflin | `tests/e2e-munder.sh` | yes | 30–60 min | `scripts/init.sh --munder` from nothing, the real Electron app driven like a user (Playwright + xvfb), Michael briefed with one message, floor workers build the cards |
+| 4. Live, Munder Difflin | `tests/e2e-munder.sh` | yes | 30–60 min | `scripts/init.sh --munder` from nothing, the real Electron app driven like a user (Playwright + xvfb), Michael briefed with one message, a person seated for every role seat does that role's work (no subagents), screenshots of the floor and of people at work |
 
 ## The test data
 
@@ -53,8 +53,15 @@ Every scenario writes `report.md` step by step, and `tests/verify-job.sh` checks
 
 `tests/e2e-munder.sh` adds: init from scratch (clone, native modules, build, config, brief), the app under xvfb, Michael
 briefed with `/deliver <JOB.md>` through the composer, a screenshot of the floor every minute, the human's answers through
-`dl clarify` + a composer message when Michael asks, and floor checks: spawn requests consumed, cards built by floor workers
-(`md_workers`). Then the same `verify-job.sh`.
+`dl clarify` + a composer message when Michael asks (retried every 30 s while he waits), screenshots of each person's own
+terminal while they work on an order and when they report done, and floor checks:
+
+- a seat was hired for every role seat the requirements called for (`job.roles[].count`), and Munder Difflin seated them;
+- every seat reported finished tasks (`md-done <task> <seat>` in `events.log`), and the cards record which seat built them;
+- Michael ran no subagent: every `agent` line in `events.log` comes from a seat (`@worker-…`), none from Michael (`@god`);
+- Michael sent every seat home at the end (`md-release`), and the driver waits for them to leave before closing the app.
+
+Then the same `verify-job.sh`.
 
 The test's HOME is brand new, so it marks Claude Code's first run as done (`hasCompletedOnboarding`), as a user who has
 started `claude` once already has — see [07 § 5](07-munder-difflin.md#5-authentication-and-first-run).

@@ -2,10 +2,10 @@
 // roles.mjs — reads roles.yaml and turns the job's selected roles into project-specific role cards.
 //   node roles.mjs catalog                 → the catalog as JSON
 //   node roles.mjs check <job.json>        → every selected role/agent exists in the catalog (exit 1 if not)
-//   node roles.mjs render <job dir>        → .work/<job>/roles/<role>.md + ROLES.md (+ munder/hires/*.hire.json)
+//   node roles.mjs render <job dir>        → .work/<job>/roles/<role>.md + ROLES.md
 // A role card = rules.all + rules.<kind> + the role's own rules + facts about this project and job.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { dirname, join, basename } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { section as knowledgeSection } from "./knowledge.mjs";
 
@@ -180,37 +180,14 @@ export function renderRole(sel, job, cat) {
   return { md, rules, entry: r };
 }
 
-export function hireManifest(sel, job, cat, rendered) {
-  const r = rendered.entry;
-  const repoName = basename(job.repo ?? "repo");
-  const goal = [
-    `${KIND_TITLE[r.kind] ?? r.kind} for ${repoName} in the /deliver flow. Michael dispatches one card at a time; work only on what he sends.`,
-    ...rendered.rules.map((x, k) => `${k + 1}. ${x}`),
-  ].join(" ").slice(0, 3800);
-  return {
-    spec: "munder-difflin/hire@1",
-    name: `${repoName} ${sel.role}`.slice(0, 60),
-    description: `${sel.role} (${r.kind}) for ${repoName} — /deliver role`.slice(0, 120),
-    goal,
-    character: r.floor?.character,
-    accent: r.floor?.accent,
-    provider: ["claude", "codex", "cursor", "antigravity"].includes(sel.provider ?? "claude") ? (sel.provider ?? "claude") : "claude", // hire@1 allows these
-    ...((sel.model ?? job.settings?.munder?.model) ? { model: sel.model ?? job.settings.munder.model } : {}),
-    capabilities: ["deliver", r.kind, ...(job.stack ?? [])].slice(0, 8),
-    isolate: false,
-    ...(job.settings?.munder?.token_cap > 0 ? { tokenCap: job.settings.munder.token_cap } : {}),
-    author: "/deliver kit",
-  };
-}
 
-export function render(jobDir, { hiveRoot } = {}) {
+export function render(jobDir) {
   const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
   const cat = loadCatalog();
   const errors = checkJobRoles(job, cat);
   if (errors.length) { for (const e of errors) console.error(`ERROR ${e}`); process.exit(1); }
   mkdirSync(join(jobDir, "roles"), { recursive: true });
-  const munder = job.settings?.dispatch === "munder" || !!hiveRoot;
-  if (munder) mkdirSync(join(jobDir, "munder", "hires"), { recursive: true });
+  const munder = job.settings?.dispatch === "munder";
   const rows = [];
   for (const sel of job.roles) {
     if (sel.agent === "artemis") { rows.push(`| ${sel.role} | artemis (Michael) | qa | ${sel.why ?? ""} | — |`); continue; }
@@ -218,22 +195,13 @@ export function render(jobDir, { hiveRoot } = {}) {
     const file = join(jobDir, "roles", `${sel.role}.md`);
     writeFileSync(file, out.md);
     rows.push(`| ${sel.role} | \`${agentCall(sel.agent)}\` | ${out.entry.kind} | ${sel.why ?? ""} | roles/${sel.role}.md |`);
-    if (munder) {
-      const m = hireManifest(sel, job, cat, out);
-      for (const k of Object.keys(m)) if (m[k] === undefined) delete m[k];
-      writeFileSync(join(jobDir, "munder", "hires", `${sel.role}.hire.json`), JSON.stringify(m, null, 2) + "\n");
-      if (hiveRoot) {
-        mkdirSync(join(hiveRoot, "research", "hires"), { recursive: true });
-        writeFileSync(join(hiveRoot, "research", "hires", `${job.id}-${sel.role}.hire.json`), JSON.stringify(m, null, 2) + "\n");
-      }
-    }
   }
   writeFileSync(join(jobDir, "ROLES.md"), [
     `# Roles for ${job.id}`, "", "| Role | Agent | Kind | Why | Rules |", "| --- | --- | --- | --- | --- |", ...rows, "",
     process.env.DELIVER_AGENT_NS ? `The kit runs as the \`${process.env.DELIVER_AGENT_NS}\` plugin: call its agents by the names above (subagent_type, claude --agent). job.json and board.json keep the plain names.\n` : "",
-    munder ? `Munder Difflin hire manifests: munder/hires/*.hire.json${hiveRoot ? ` (also offered in ${hiveRoot}/research/hires/ — confirm in the app to seat a role permanently)` : ""}.` : "",
+    munder ? "On the Munder Difflin floor each role seat is a person Michael hires for the whole job: dl md-hire, dl md-seats." : "",
   ].join("\n"));
-  console.log(`roles: ${job.roles.length} role card(s) → ${join(jobDir, "roles")}${munder ? " + hire manifests" : ""}`);
+  console.log(`roles: ${job.roles.length} role card(s) → ${join(jobDir, "roles")}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -243,6 +211,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const errs = checkJobRoles(JSON.parse(readFileSync(arg, "utf8")), loadCatalog());
     for (const e of errs) console.log(`ERROR ${e}`);
     process.exit(errs.length ? 1 : 0);
-  } else if (cmd === "render") render(arg, { hiveRoot: process.env.HIVE_ROOT || undefined });
+  } else if (cmd === "render") render(arg);
   else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir>"); process.exit(2); }
 }

@@ -19,7 +19,7 @@
 #   dl unfreeze "<reason>"         (human, terminal only) reopen the decisions frozen at planning
 #   dl reseal "<reason>"           (human, terminal only) accept an edit made to job.json/board.json outside dl
 #   dl roles                       check job.roles against roles.yaml and generate the project's role cards
-#                                  (.work/<job>/roles/*.md, ROLES.md; Munder Difflin hire manifests) — runs on dl phase planning
+#                                  (.work/<job>/roles/*.md, ROLES.md) — runs on dl phase planning
 #   dl learn <role|all> "<lesson>" remember a lesson for this repo (memory: ~/.deliver/knowledge/lessons/<repo>.md);
 #                                  the next jobs' role cards include it
 #   dl knowledge [list|sync-md]    standards + lessons that feed the role cards; sync-md → Munder Difflin knowledge graph
@@ -51,6 +51,7 @@
 #   dl md-send <seat|role> <task> <prompt-file> [--agent a]   a work order to a seat: role card + agent instructions + task
 #   dl md-done <seat> "<summary>"  record the seat's "done <task>" report; the seat is free again
 #   dl md-release                  end of job: send every seat home
+#   dl md-inbox                    your inbox on the floor: each new message once (sender as seat), then archived; flags unrecorded reports
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
 #   dl jobs                        jobs known on this machine (registry)
 #   dl seats                       role seats: busy / IDLE, and the card each idle seat should take
@@ -1179,6 +1180,32 @@ cmd_md_release() {
   echo "released $n seat(s)"
 }
 
+# Michael's inbox on the floor: shows each new message once (sender as its seat), then archives exactly the files it
+# showed — never a glob move, which can file a report that arrived a moment earlier unread. It also finds reports that
+# were archived without being recorded: a seat still holds the task its "done <task> <seat>" message reports.
+cmd_md_inbox() {
+  load_job
+  local hive god dir map f n=0; hive="$(md_hive)"; god="$(md_god "$hive")"; dir="$hive/agents/$god/inbox"
+  mkdir -p "$dir/.done"
+  map="$(jq -c '[.munder.seats // {} | to_entries[] | {key: .value.worker, value: .key}] | from_entries' "$JOBJ")"
+  local files=(); while IFS= read -r f; do files+=("$f"); done < <(find "$dir" -maxdepth 1 -name '*.json' | sort)
+  for f in "${files[@]}"; do
+    jq -r --argjson m "$map" '"── \(.created_at // "?") · \($m[.from] // .from) · \(.act // "inform") · \(.subject // "")\n\(.body // "" | split("\n")[0:40] | join("\n"))\n"' "$f" 2>/dev/null \
+      || echo "── (unreadable message: $(basename "$f"))"
+    mv "$f" "$dir/.done/"; n=$((n + 1))
+  done
+  local seat task since w r miss=0
+  while IFS=$'\t' read -r seat task since w; do
+    [[ -n $seat ]] || continue
+    r="$(find "$dir/.done" -maxdepth 1 -name '*.json' -exec jq -r --arg w "$w" --arg sub "done $task $seat" --arg s "$since" \
+          'select(.from == $w and (.subject // "" | startswith($sub)) and ((.created_at // "") >= $s)) | "\(.created_at) \(.body // "" | split("\n")[0])"' {} + 2>/dev/null | sort | tail -1)"
+    [[ -n $r ]] || continue
+    echo "UNRECORDED  $seat reported \"done $task\" at ${r%% *} — ${r#* }"
+    echo "            record it: dl md-done $seat \"<summary>\""; miss=$((miss + 1))
+  done < <(jq -r '.munder.seats // {} | to_entries[] | select(.value.task != null) | [.key, .value.task, (.value.since // ""), .value.worker] | @tsv' "$JOBJ")
+  [[ $n -gt 0 || $miss -gt 0 ]] || echo "(no new messages)"
+}
+
 cmd_cleanup() {
   load_job
   local d
@@ -1266,12 +1293,13 @@ main() {
     md-send) cmd_md_send "$@" ;;
     md-done) cmd_md_done "$@" ;;
     md-release) cmd_md_release ;;
+    md-inbox) cmd_md_inbox ;;
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,61p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,62p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

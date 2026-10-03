@@ -320,7 +320,9 @@ human talks only to you; every role the requirements call for is a person on the
    verdicts) — then copy, check and record it exactly as you would a subagent's answer. Several Agent calls in one message =
    several md-send to different seats, all at once.
 3. Each person reports in your inbox with an inform `done <task> <seat>` (or a `query` when blocked: answer it in their
-   conversation). Record it: `"$DL" md-done <seat> "<their summary>"` — the seat is free for the next order — and continue
+   conversation). **Read your inbox only with `"$DL" md-inbox`** — it shows each new message once, archives exactly those, and
+   lists any `UNRECORDED` report (archived but never recorded). Never move inbox files yourself: a glob move files a report that
+   arrived a second earlier unread, and you wait for it forever. Record each report: `"$DL" md-done <seat> "<their summary>"` — the seat is free for the next order — and continue
    exactly as the phase says (gate, QA, review, integrate …). A seat takes one task at a time; dev cards go to the seat
    `dl wt add` assigned.
 4. While only people on the floor are working you may stop — the inbox wakes you. Gate questions go to the human as ASK ME
