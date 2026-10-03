@@ -3,9 +3,11 @@
 # No model and no network needed — dev agents are simulated with git commits.
 #   tests/run.sh            → exit 0 when everything passes
 set -uo pipefail
+# grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
+gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")"
-trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO HIVE_ROOT CLAUDE_PROJECT_DIR
@@ -363,9 +365,9 @@ jq '(.cards[] | select(.id=="T-03")).md_workers = []' "$R/.work/$JOB/board.json"
 "$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
 reqc="$(grep -l "\"provider\": *\"codex\"" "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
 contains "codex worker: provider set, no claude --agent" "$(jq -c '{provider,command,model}' "$reqc")" '"provider":"codex","command":null,"model":"gpt-5-codex"'
-jq -r .objective "$reqc" | grep -q "Your role instructions (backend-dev)" && jq -r .objective "$reqc" | grep -q "TDD with unit tests" \
+jq -r .objective "$reqc" | gq "Your role instructions (backend-dev)" && jq -r .objective "$reqc" | gq "TDD with unit tests" \
   && ok "the agent definition's instructions travel inside the objective for non-Claude CLIs" || bad "agent body not embedded"
-jq -r .objective "$reqc" | grep -q "^---$" && ! jq -r .objective "$reqc" | grep -q "^tools: " && ok "…without Claude frontmatter" || bad "frontmatter leaked"
+jq -r .objective "$reqc" | gq "^---$" && ! jq -r .objective "$reqc" | gq "^tools: " && ok "…without Claude frontmatter" || bad "frontmatter leaked"
 "$DL" jobset '(.roles[] | select(.role=="backend")) |= del(.provider, .model) | .settings.dispatch="subagent"'
 unset HIVE_ROOT
 HV="$TMP/hive2"; DELIVER_SKILL_DIR=/opt/kit/skills/deliver "$HERE/scripts/md-brief.sh" "$HV" "$R" >/dev/null
@@ -427,7 +429,7 @@ out="$("$DL" next)"; contains "an idle seat with work says so (backend#1 → T-0
 contains "…and so does the second seat" "$out" "IDLE    backend#2 — free; take T-01"
 grep -qE "backend#2 +IDLE +→ assign T-01, T-02" <<<"$("$DL" seats)" && ok "dl seats lists every seat with its next card" || bad "dl seats: $("$DL" seats)"
 "$DL" wt add T-01 >/dev/null && "$DL" wt add T-02 >/dev/null
-! "$DL" next | grep -q "IDLE    backend" && ok "no backend seat idle once both work" || bad "idle after assign: $("$DL" next)"
+! "$DL" next | gq "IDLE    backend" && ok "no backend seat idle once both work" || bad "idle after assign: $("$DL" next)"
 grep -q "backend#1 busy (T-01)" "$AJ/kanban.html" && ok "kanban shows seat utilisation" || bad "kanban seats"
 [[ "$(jq -r '[.cards[] | select(.role=="backend") | .seat] | sort | join(",")' "$AJ/board.json")" == "backend#1,backend#2" ]] \
   && ok "two backend devs work in parallel on seats backend#1 and backend#2, each on its own branch" || bad "seats: $(jq -c '[.cards[]|{id,seat,branch}]' "$AJ/board.json")"
@@ -489,20 +491,20 @@ jst() { jq -r "$1" "$JS"; }
 [[ "$(jst '.issues | length')" == 3 && "$(jst '.issues["WL-2"].fields.parent.key')" == WL-1 && "$(jst '.issues["WL-1"].fields.issuetype.name')" == Epic ]] \
   && ok "executing opens an epic (WL-1) and one issue per card under it" || bad "jira open: $(jst '.issues|keys')"
 [[ "$(jst '.links | length')" == 1 ]] && ok "T-02 depends_on T-01 becomes a 'Blocks' issue link" || bad "issue links"
-jst '.issues["WL-2"].fields.labels | join(",")' | grep -q "component-app" && ok "issues carry job, role and component labels" || bad "labels"
+jst '.issues["WL-2"].fields.labels | join(",")' | gq "component-app" && ok "issues carry job, role and component labels" || bad "labels"
 W="$("$DL" wt add T-01)"
 [[ "$(jq -r '.cards[0].branch' "$JJ/board.json")" == *"--T-01-WL-2" ]] && ok "the card branch carries the issue key (Jira's Development panel links it)" || bad "branch name"
 git --git-dir="$TMP/gh-origin.git" rev-parse -q --verify "refs/heads/$(jq -r '.cards[0].branch' "$JJ/board.json")" >/dev/null && ok "dl pushed the card branch" || bad "card branch push"
 [[ "$(jst '.issues["WL-2"].status')" == "In Progress" ]] && ok "assignment → In Progress" || bad "status after assign: $(jst '.issues["WL-2"].status')"
-jst '.issues["WL-2"].remotelinks[0].object.url' | grep -q "https://github.com/acme/demo/tree/job/" && ok "the branch is a remote link on the issue" || bad "remotelink"
-jst '.issues["WL-2"].fields.description' | grep -q "Development: branch" && ok "…and in the description" || bad "description branch"
+jst '.issues["WL-2"].remotelinks[0].object.url' | gq "https://github.com/acme/demo/tree/job/" && ok "the branch is a remote link on the issue" || bad "remotelink"
+jst '.issues["WL-2"].fields.description' | gq "Development: branch" && ok "…and in the description" || bad "description branch"
 mkdir -p "$W/src" && echo 1 > "$W/src/a" && git -C "$W" add -A && git -C "$W" commit -qm "T-01"
 "$DL" gate T-01 >/dev/null; [[ "$(jst '.issues["WL-2"].status')" == QA ]] && ok "gate PASS → QA" || bad "after gate: $(jst '.issues["WL-2"].status')"
 mkdir -p "$W/it" && echo 1 > "$W/it/t" && git -C "$W" add -A && git -C "$W" commit -qm "T-01 QA"
 "$DL" qa T-01 pass "AC-1 pass" >/dev/null; [[ "$(jst '.issues["WL-2"].status')" == "Code Review" ]] && ok "QA pass → Code Review" || bad "after qa: $(jst '.issues["WL-2"].status')"
 "$DL" review T-01 approve "ok" >/dev/null; "$DL" integrate T-01 >/dev/null
 [[ "$(jst '.issues["WL-2"].status')" == Done ]] && ok "merge → Done" || bad "after integrate: $(jst '.issues["WL-2"].status')"
-jst '.issues["WL-2"].comments | join(" ")' | grep -q "qa-tester" && jst '.issues["WL-2"].comments | join(" ")' | grep -q "\[reviewer\] approve" \
+jst '.issues["WL-2"].comments | join(" ")' | gq "qa-tester" && jst '.issues["WL-2"].comments | join(" ")' | gq "\[reviewer\] approve" \
   && ok "the roles' results are comments on the issue (gate, QA, review, assignment)" || bad "comments: $(jst '.issues["WL-2"].comments')"
 echo "To Do,In Progress,Code Review,Done,Blocked" > "$JSF"   # the Jira admin removed the QA status
 W2="$("$DL" wt add T-02)"; mkdir -p "$W2/lib" && echo 1 > "$W2/lib/a" && git -C "$W2" add -A && git -C "$W2" commit -qm "T-02"
@@ -585,7 +587,7 @@ expect_ok "…and passes with the trailer" "$DL" gate T-01
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "tracker factory: a new tracker is one file in bin/trackers/"
-TK="$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"
+TK="$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"; mkdir -p "$(dirname "$TK")"
 cat > "$TK" <<'JS'
 import { Tracker, registerTracker } from "../tracker.mjs";
 import { appendFileSync } from "node:fs";
@@ -732,7 +734,7 @@ expect_ok "install is idempotent" "$INST" --user
 [[ "$(jq -c .attribution "$HOME/.claude/settings.json")" == '{"commit":"","pr":""}' ]] && ok "Claude Code commit/PR attribution switched off" || bad "attribution"
 echo "# local edit" >> "$HOME/.claude/skills/deliver/SKILL.md"
 "$INST" --user >/dev/null
-ls -d "$HOME"/.claude/skills/* | grep -qv '/deliver$' && bad "backup left inside skills/" || ok "backups stay out of skills/"
+ls -d "$HOME"/.claude/skills/* | gq -v '/deliver$' && bad "backup left inside skills/" || ok "backups stay out of skills/"
 ls "$HOME"/.claude/.deliver-backups/*/skills/deliver/SKILL.md >/dev/null 2>&1 && ok "changed skill backed up" || bad "backup missing"
 jq '.hooks.Stop += [{"hooks":[{"type":"command","command":"/usr/bin/true"}]}] | .env.MINE="1"' "$HOME/.claude/settings.json" > "$TMP/s" && mv "$TMP/s" "$HOME/.claude/settings.json"
 expect_ok "uninstall" "$INST" --user --uninstall

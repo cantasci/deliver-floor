@@ -14,6 +14,8 @@
 #   Each writes <work dir>/<scenario>/report.md (the scenario, step by step) and keeps every artifact.
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
 set -uo pipefail
+# grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
+gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SC="${1:?usage: e2e-live.sh complete|incomplete|parallel [work dir]}"
 EXN=watchlist-poc; EX="$HERE/examples/$EXN"
@@ -38,12 +40,12 @@ chk() { local d=$1; shift; if "$@" >/dev/null 2>&1; then ok "$d"; else bad "$d";
 printf '# Live E2E — scenario `%s`\n\nRequest: `%s`  ·  started %s\n' "$SC" "${REQ#$HERE/}" "$(date -u +%FT%TZ)" > "$REP"
 
 step "1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo"
-if iso_env claude plugin list 2>/dev/null | grep -q "ecc@ecc"; then log "ECC already installed in this HOME"
+if iso_env claude plugin list 2>/dev/null | gq "ecc@ecc"; then log "ECC already installed in this HOME"
 else
   iso_env claude plugin marketplace add https://github.com/affaan-m/ECC 2>&1 | tail -1 | tee -a "$REP"
   iso_env claude plugin install ecc@ecc 2>&1 | tail -1 | tee -a "$REP"
 fi
-iso_env claude plugin list 2>/dev/null | grep -q ecc@ecc && ok "ECC plugin installed ($(iso_env claude plugin list 2>/dev/null | grep -A1 ecc@ecc | grep -o 'Version: [0-9.]*'))" || bad "ECC plugin not installed"
+iso_env claude plugin list 2>/dev/null | gq ecc@ecc && ok "ECC plugin installed ($(iso_env claude plugin list 2>/dev/null | grep -A1 ecc@ecc | grep -o 'Version: [0-9.]*'))" || bad "ECC plugin not installed"
 iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
 SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" "$SB" "$EXN" > /dev/null
 iso_env "$HERE/scripts/doctor.sh" "$SB" > "$W/doctor.log" 2>&1 && ok "doctor: $(tail -1 "$W/doctor.log")" || bad "doctor: $(tail -1 "$W/doctor.log")"
@@ -119,7 +121,7 @@ grep -qE $'\tagent\tecc:[a-z-]*reviewer' "$J/events.log" && ok "role really ran:
 chk "kanban view rendered" test -f "$J/kanban.html"
 ! cmp -s "$J/report.md" "$ISO_HOME/.claude/skills/deliver/templates/report.md" && ok "report.md written by the closing check" || bad "report.md is the template"
 base="$(git -C "$SB" rev-list --max-parents=0 HEAD | tail -1)"
-if git -C "$SB" log --format='%an <%ae>%n%B' "$base..main" | grep -qiE 'co-authored-by:.*(claude|anthropic)|generated with \[?claude|noreply@anthropic'; then bad "AI attribution found in the delivered history"
+if git -C "$SB" log --format='%an <%ae>%n%B' "$base..main" | gq -iE 'co-authored-by:.*(claude|anthropic)|generated with \[?claude|noreply@anthropic'; then bad "AI attribution found in the delivered history"
 else ok "no AI attribution in the delivered history ($(git -C "$SB" rev-list --count "$base..main") commits)"; fi
 (cd "$SB" && node --test >/dev/null 2>&1) && ok "the whole test suite passes on main" || bad "tests fail on main"
 if "$HERE/scripts/check-oracle.sh" "$SB" main "$EXN" "$ORACLE" > "$W/oracle.log" 2>&1; then ok "hidden oracle passes ($(grep -c '✔' "$W/oracle.log") checks, $ORACLE)"

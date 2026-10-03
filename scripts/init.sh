@@ -13,6 +13,8 @@
 #
 # Idempotent: every step checks first and only does what is missing. Run with bash -x to see every command.
 set -euo pipefail
+# grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
+gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MD_REPO="https://github.com/chaitanyagiri/munder-difflin"
 ECC_MARKET="https://github.com/affaan-m/ECC"
@@ -40,9 +42,9 @@ echo "claude $(claude --version | awk 'NR==1') · node $(node -v) · git $(git -
 
 if [[ $ecc -eq 1 ]]; then
   step "ECC plugin"
-  if claude plugin list 2>/dev/null | grep -q "ecc@ecc"; then echo "ecc@ecc already installed"
+  if claude plugin list 2>/dev/null | gq "ecc@ecc"; then echo "ecc@ecc already installed"
   else
-    claude plugin marketplace list 2>/dev/null | grep -qi "ecc" || claude plugin marketplace add "$ECC_MARKET"
+    claude plugin marketplace list 2>/dev/null | gq -i "ecc" || claude plugin marketplace add "$ECC_MARKET"
     claude plugin install ecc@ecc
   fi
 fi
