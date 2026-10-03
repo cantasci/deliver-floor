@@ -7,8 +7,9 @@
 #
 #   tests/e2e-live.sh <scenario> [work dir]
 #     complete    a complete requirements slice (JOB.md) → delivered, oracle passes
-#     incomplete  a slice with a gap (JOB-incomplete.md) → Michael must STOP with the question; the human answers
-#                 (HUMAN_ANSWERS.md, recorded with dl clarify); the run resumes → delivered, oracle passes
+#     incomplete  a slice with a gap (JOB-incomplete.md) → Michael must STOP with the question; the human answers each
+#                 question from HUMAN_ANSWERS.json (matched by topic, recorded with dl clarify); the run resumes →
+#                 delivered, oracle passes. A question no prepared answer matches fails the scenario: a real person must answer.
 #     parallel    two independent requirements, "two backend developers in parallel" → two seats work at the same time
 #   Each writes <work dir>/<scenario>/report.md (the scenario, step by step) and keeps every artifact.
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
@@ -64,10 +65,12 @@ if [[ $SC == incomplete ]]; then
   [[ "$(jq '.cards | length' "$B")" == 0 ]] && ok "no card was cut before the answer" || bad "cards exist before the answer"
   [[ -z "$(git -C "$SB" ls-files src | grep -v gitkeep)" && ! -d $J/wt/T-01 ]] && ok "no code was written before the answer" || bad "code was written before the answer"
   log ""; log "Open questions (QUESTIONS.md):"; sed 's/^/    /' "$J/QUESTIONS.md" >> "$REP"
-  step "4 · the human answers (HUMAN_ANSWERS.md, recorded with dl clarify), the run resumes"
-  for id in $(jq -r '(.items // .)[] | select(.status=="open") | .id' "$J/readiness.json"); do
-    iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$(cat "$EX/HUMAN_ANSWERS.md")" > /dev/null && ok "answered $id"
-  done
+  step "4 · the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
+  while IFS=$'\t' read -r id q; do
+    ans="$(jq -r --arg q "$q" 'map(select($q | test(.match; "i"))) | first | .answer // empty' "$EX/HUMAN_ANSWERS.json")"
+    if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id — $(cut -c1-90 <<<"$q")"
+    else bad "no prepared answer for $id — a real person must answer: $q"; fi
+  done < <(jq -r '(.items // .)[] | select(.status=="open" and .owner != "pm") | [.id, .question] | @tsv' "$J/readiness.json")
   run_rounds | sed 's/^/    /'
 fi
 log "wall time: $(( ($(date +%s) - start) / 60 )) min"
@@ -79,19 +82,22 @@ log "roles: $(jq -r '[.roles[] | .role + (if .count then "×\(.count)" else "" e
 chk "roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason" jq -e '([.roles[].role] | (index("ba") and index("qa") and any(.[]; startswith("reviewer")))) and ([.roles[] | select((.why // "") == "")] | length == 0)' "$JJ"
 for r in $(jq -r '.roles[] | select(.agent != "artemis") | .role' "$JJ"); do [[ -f $J/roles/$r.md ]] || bad "role card missing: $r"; done
 chk "role cards generated for every role" test -f "$J/ROLES.md"
+grep -q $'\tdecide\t' "$J/events.log" && log "PM decisions: $(grep -c $'\tdecide\t' "$J/events.log") (implementation details, recorded with rationale)"
 chk "readiness review complete (no open item) with an architecture" jq -e '((.items // .) | all(.status != "open")) and (.architecture.components | length > 0)' "$J/readiness.json"
 log "readiness: $(jq -r '(.items // .) | "\(length) items — \(map(select(.status=="decided"))|length) decided, \(map(select(.status=="n_a"))|length) n/a"' "$J/readiness.json") · architecture: $(jq -r '.architecture | "\(.style): " + ([.components[] | "\(.id) [\(.stack|join("+"))]"] | join(", "))' "$J/readiness.json")"
 chk "readiness frozen at planning and unchanged since" bash -c "[[ \"\$(node -e 'process.stdout.write(require(\"crypto\").createHash(\"sha256\").update(require(\"fs\").readFileSync(process.argv[1])).digest(\"hex\"))' '$J/readiness.json')\" == \"\$(jq -r .frozen.readiness_sha256 '$JJ')\" ]]"
+ncards="$(jq '[.cards[] | select(.state != "archived")] | length' "$B")"
+[[ $ncards -ge 1 ]] && ok "the Leads cut $ncards card(s)" || bad "no cards on the board"
 chk "a BA spec for every card" bash -c "for c in \$(jq -r '.cards[] | select(.state != \"archived\") | .id' '$B'); do test -f '$J/specs/'\$c.md || exit 1; done"
 log ""; log "| Card | Component | Seat | Attempts | Gate | QA | Review | State |"; log "| --- | --- | --- | --- | --- | --- | --- | --- |"
 jq -r '.cards[] | "| \(.id) \(.title) | \(.component // "-") | \(.seat // "-") | \(.attempts) | \(.gate.result // "-") | \(.qa.verdict // "-") (qa_verify \(.qa.qa_verify // "-")) | \(.review.verdict // "-") | \(.state) |"' "$B" | tee -a "$REP"
-all_chain=1
+all_chain=$(( ncards >= 1 ? 1 : 0 ))
 for c in $(jq -r '.cards[] | select(.state != "archived") | .id' "$B"); do
   q() { jq -r --arg id "$c" ".cards[] | select(.id==\$id) | $1" "$B"; }
   [[ "$(q .state)" == merged && "$(q '.assignments[0].by')" == michael && "$(q .gate.result)" == PASS && "$(q .qa.verdict)" == pass \
      && "$(q .qa.gate_head)" == "$(q .gate.head)" && "$(q .review.verdict)" == approve && "$(q .review.head)" == "$(q .qa.head)" ]] || { all_chain=0; bad "$c did not go through assign → dev → gate → QA → review → merge"; }
 done
-[[ $all_chain -eq 1 ]] && ok "every card: assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged"
+[[ $all_chain -eq 1 ]] && ok "every card ($ncards): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged"
 qa_files=0
 for c in $(jq -r '.cards[] | select(.state=="merged") | .id' "$B"); do
   n="$(git -C "$SB" ls-files | node "$ISO_HOME/.claude/skills/deliver/bin/scope.mjs" "$(jq -c --arg id "$c" '.cards[] | select(.id==$id) | .qa_scope' "$B")" | wc -l)"
