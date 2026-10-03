@@ -55,28 +55,31 @@ async function answer(win) {
   // Proof of who does the work: when Michael sends a seat a work order (md-send), select that person on the floor and
   // screenshot their own terminal while they work; once more when they report done (md-done). Round-robin over busy seats.
   const busy = new Map(); let rr = 0, ns = 0;
+  // Select a person on the agent strip. Each name is a span titled "<name> — double-click to rename" (the text itself is
+  // upper-cased). A normal click first; cards that are still sliding in never count as stable, so then the DOM click
+  // event, which React handles exactly like a click on the card. A double click would rename the person instead.
+  const why = (e) => String(e?.message ?? e).split('\n').filter((l) => l.trim()).slice(0, 6).join(' | ').slice(0, 400);
   const select = async (name) => {
-    try {
-      if (name === 'Michael') {
-        const m = win.locator('[title="Michael — double-click to rename"]').first();
-        await ((await m.count()) ? m : win.getByText('BOSS', { exact: true }).first()).click({ timeout: 3000 });
-        return true;
-      }
-      // The agent strip along the bottom: each name is a span titled "<name> — double-click to rename" (its text is upper-
-      // cased, so a text match misses). One click selects the card; a double click would rename it.
-      const best = win.locator(`[title="${name} — double-click to rename"]`).first();
-      if (!(await best.count())) { log(`select ${name}: no card on the agent strip`); return false; }
-      await best.click({ timeout: 3000 });
-      return true;
-    } catch (e) { log(`select ${name} failed: ${String(e.message ?? e).split('\n')[0].slice(0, 120)}`); return false; }
+    const el = win.locator(`[title="${name} — double-click to rename"]`).first();
+    if (!(await el.count())) {
+      if (name !== 'Michael') { log(`select ${name}: no card on the agent strip`); return false; }
+      try { await win.getByText('BOSS', { exact: true }).first().click({ timeout: 3000 }); return true; } catch (e) { log(`select Michael failed: ${why(e)}`); return false; }
+    }
+    try { await el.click({ timeout: 3000 }); return true; } catch (e) {
+      try { await el.dispatchEvent('click'); log(`select ${name}: click timed out (${why(e)}) — sent the DOM click`); return true; }
+      catch (e2) { log(`select ${name} failed: ${why(e2)}`); return false; }
+    }
   };
   focusMichael = () => select('Michael');
   const seatShot = async (seat, b, tag) => {
     const name = b.name ?? (b.name = floorName(b.worker));
     if (!name || !(await select(name))) return;
-    await win.waitForTimeout(900);
+    // Proof only when the Command Center really shows this person: its terminal header names the worker ("pty worker-…").
+    const shown = await win.locator(`text=${b.worker}`).first().waitFor({ state: 'visible', timeout: 4000 }).then(() => true, () => false);
+    if (!shown) { log(`select ${name}: the Command Center does not show ${b.worker} — no screenshot`); await select('Michael'); return; }
+    await win.waitForTimeout(600);
     const file = `p${String(++ns).padStart(3, '0')}-${seat.replace('#', '')}-${b.task}-${tag}.png`;
-    await win.screenshot({ path: `${shots}/${file}` }); log(`shot ${file} (${name} at work)`);
+    await win.screenshot({ path: `${shots}/${file}` }); log(`shot ${file} (${name}'s own terminal, ${b.worker})`);
     await select('Michael');
   };
   const tab = async (name) => { const b = win.locator('button', { hasText: new RegExp(`^\\s*${name}\\s*$`, 'i') }).first(); if (await b.count()) await b.click().catch(() => {}); };
