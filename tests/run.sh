@@ -25,8 +25,9 @@ bedit() { # bedit <board.json> '<jq>' — a fixture edit made outside dl, accept
 ready_all() { # ready_all [<id> open] — the BA's readiness review: every applicable item decided (one left open if asked)
   local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"
   [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
-  node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$jd" | jq --arg o "${1:-}" --argjson arch "${ARCH:-null}" '{items: [.[] | if .id == $o
+  node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$jd" | jq --arg o "${1:-}" --arg spec "${SPECIALISTS:-}" --argjson arch "${ARCH:-null}" '{items: [.[] | if .id == $o
      then {id, status:"open", owner:"business", question:("Which option for " + .id + "?"), options:["a","b"]}
+     elif ($spec != "1" and (.id == "UX-a11y" or .id == "NFR-performance" or .id == "DEL-docs")) then {id, status:"n_a", answer:"not part of this fixture", source:"test fixture"}
      else {id, status:"decided", answer:"test decision", source:"test fixture"} end],
      architecture: ($arch // {style:"library", components:[{id:"app", kind:"library", stack:["generic"], path:".", owner:"backend", reviewer:"reviewer"}]})}' > "$jd/readiness.json"
 }
@@ -491,6 +492,38 @@ contains "…nor a force push of its own branch" "$(pg "git push -f origin $own2
 contains "…and must name the branch" "$(pg "git push")" "rc=2"
 kill $JPID 2>/dev/null; unset JIRA_BASE_URL JIRA_EMAIL JIRA_API_TOKEN
 "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+echo "ECC specialists: decisions bring their reviewers; every reviewer must approve"
+EC="$TMP/ecc"; mkdir -p "$EC" && cd "$EC" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "spec" "x" >/dev/null; EJ="$EC/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"frontend-lead","agent":"ecc:architect"},{"role":"frontend","agent":"frontend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:react-reviewer"}]'
+"$DL" phase readiness >/dev/null
+SPECIALISTS=1 ARCH='{"style":"library","components":[{"id":"web","kind":"web","stack":["react"],"path":".","owner":"frontend","reviewer":"reviewer"}]}' ready_all
+out="$("$DL" readiness 2>&1)"; contains "an accessibility decision without the a11y role is an error" "$out" "UX-a11y is decided"
+contains "…a performance decision likewise" "$out" "role 'performance' must be on the job"
+contains "security is suggested, not forced" "$out" "WARN  NFR-security is decided → consider role 'security'"
+"$DL" jobset '.roles += [{"role":"a11y","agent":"ecc:a11y-architect"},{"role":"performance","agent":"ecc:performance-optimizer"},{"role":"docs","agent":"ecc:doc-updater"}]'
+SPECIALISTS=1 ARCH='{"style":"library","components":[{"id":"web","kind":"web","stack":["react"],"path":".","owner":"frontend","reviewer":"reviewer"}]}' ready_all
+expect_ok "with ecc:a11y-architect, ecc:performance-optimizer and ecc:doc-updater on the job the readiness passes" "$DL" readiness
+"$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$EJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"button",role:"frontend",agent:"frontend-dev",component:"web",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[],reviewers:["reviewer","a11y","nobody"]}]}' > "$EJ/board.json"
+out="$("$DL" validate 2>&1)"; contains "an unknown reviewer role is rejected" "$out" "reviewer 'nobody' is not a role on this job"
+jq '.cards[0].reviewers=["reviewer","a11y"]' "$EJ/board.json" > "$EJ/b.t" && mv "$EJ/b.t" "$EJ/board.json"
+"$DL" phase executing >/dev/null; WE="$("$DL" wt add T-01)"
+mkdir -p "$WE/src" "$WE/it" && echo 1 > "$WE/src/a" && git -C "$WE" add -A && git -C "$WE" commit -qm "T-01"
+"$DL" gate T-01 >/dev/null; echo 1 > "$WE/it/t"; git -C "$WE" add -A; git -C "$WE" commit -qm "T-01 QA"; "$DL" qa T-01 pass "AC-1" >/dev/null
+contains "next names both reviewers" "$("$DL" next)" "reviewers: reviewer, a11y"
+out="$("$DL" review T-01 approve "react ok" --by reviewer)"; contains "one approval leaves the card pending" "$out" "card: pending, waiting for a11y"
+expect_fail 1 "integrate refused while a reviewer is pending" "$DL" integrate T-01
+expect_fail 1 "a role that is not the card's reviewer is refused" "$DL" review T-01 approve "x" --by performance
+out="$("$DL" review T-01 changes "button has no accessible name" --by a11y)"; contains "a specialist's 'changes' makes the card 'changes'" "$out" "card: changes"
+contains "next re-dispatches with the a11y finding" "$("$DL" next)" "REDISPATCH T-01  (review asked for changes"
+"$DL" review T-01 approve "label added" --by a11y >/dev/null
+contains "both approvals on the same commit → approve" "$(jq -r '.cards[0].review.verdict' "$EJ/board.json")" "approve"
+expect_ok "…and the card merges" "$DL" integrate T-01
+"$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"; unset ARCH
 
 echo "robustness: dl next at full capacity with many ready cards (was SIGPIPE 141)"
 PF="$TMP/pf"; mkdir -p "$PF" && cd "$PF" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","max_parallel":1}' > .deliver.json && git add -A && git commit -qm i

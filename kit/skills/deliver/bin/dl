@@ -35,7 +35,8 @@
 #   dl gate <card>                 mechanical gate: right branch, clean tree, commits, in scope, verify passes
 #   dl qa <card> pass|fail "<summary>"   record the QA/Test verdict on the card's acceptance criteria
 #                                  (needs a passed gate on the current commit)
-#   dl review <card> approve|changes "<summary>"   record the Lead review verdict (needs gate PASS + QA pass)
+#   dl review <card> approve|changes "<summary>" [--by <role>]   record a reviewer's verdict (needs gate PASS + QA pass);
+#                                  a card with "reviewers": [...] needs every one of them to approve the same commit
 #   dl integrate <card>            --no-ff merge into the job branch → merged (needs gate PASS + QA pass +
 #                                  review approve, all on the current commit; exit 3 on conflict)
 #   dl verify-all                  run verify_full in the integration worktree
@@ -331,7 +332,9 @@ cmd_next() {
             else echo "REDISPATCH $id  ($failed)"; fi
           elif ! gate_holds "$id" "$head"; then echo "GATE    dl gate $id"
           elif [[ $qv != pass || $qhead != "$head" ]]; then echo "QA      $id  (QA/Test role writes + runs the integration/e2e tests for the ACs → dl qa $id pass|fail)"
-          elif [[ $rv != approve || $rhead != "$head" ]]; then echo "REVIEW  $id  (Lead review → dl review $id approve|changes)"
+          elif [[ $rv != approve || $rhead != "$head" ]]; then
+            local pend; pend="$(card_get "$id" '(if .review.head == "'"$head"'" then .review.pending else (.reviewers // ["reviewer"]) end) // [] | join(", ")')"
+            echo "REVIEW  $id  (reviewers: ${pend:-reviewer} → dl review $id approve|changes \"<summary>\" --by <role>)"
           else echo "INTEGRATE dl integrate $id"; fi
         done
       cap=$(( max_par - running ))
@@ -761,19 +764,32 @@ cmd_qa() {
 
 cmd_review() {
   load_job
-  local card=${1:-} verdict=${2:-} summary=${3:-}
-  [[ -n $card && ( $verdict == approve || $verdict == changes ) ]] || die 'usage: dl review <card> approve|changes "<summary>"'
+  local card=${1:-} verdict=${2:-} summary=${3:-} by=""
+  [[ ${4:-} == --by ]] && by=${5:-}
+  [[ -n $card && ( $verdict == approve || $verdict == changes ) ]] || die 'usage: dl review <card> approve|changes "<summary>" [--by <reviewer role>]'
   card_exists "$card"
   local head; head="$(branch_head "$(card_get "$card" .branch)")"
   gate_holds "$card" "$head" || refuse 1 "$card has no passed gate for its current commit — run: dl gate $card"
   [[ "$(card_get "$card" .qa.verdict)" == pass && "$(card_get "$card" .qa.head)" == "$head" ]] \
     || refuse 1 "$card has no QA pass on its current commit — the QA/Test role checks the acceptance criteria first (dl qa $card pass|fail)"
-  card_set "$card" '(.cards[] | select(.id==$id)) |= (.review = {"verdict":$v,"head":$h,"summary":$s,"at":$t}
-      | .reviews = ((.reviews // []) + [{"verdict":$v,"head":$h,"summary":$s,"at":$t}]))' \
-    --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)"
-  reset_stop_guard; log_event review "$card $verdict${summary:+ — $summary}"
-  tracker sync "$card"; tracker note "$card" reviewer "$verdict${summary:+ — $summary}"
-  echo "review: $card $verdict"
+  # Reviewers of this card: card.reviewers (the stack reviewer + specialists such as a11y, performance, security), each
+  # records its own verdict; the card's review is "approve" only when every one approved this commit.
+  local required; required="$(card_get "$card" '(.reviewers // []) | join(" ")')"
+  [[ -n $by ]] || by="${required%% *}"; [[ -n $by ]] || by="reviewer"
+  if [[ -n $required && " $required " != *" $by "* ]]; then refuse 1 "$by is not a reviewer of $card (reviewers: $required)"; fi
+  jq -e --arg r "$by" '.roles[] | select(.role==$r)' "$JOBJ" >/dev/null || [[ -z $required && $by == reviewer ]] || refuse 1 "role '$by' is not on this job"
+  card_set "$card" '(.cards[] | select(.id==$id)) |= (
+      .reviews = ((.reviews // []) + [{"by":$by,"verdict":$v,"head":$h,"summary":$s,"at":$t}])
+      | ((.reviewers // [$by]) ) as $req
+      | ([.reviews[] | select(.head==$h)] | group_by(.by) | map(last)) as $latest
+      | ($req | map(. as $r | ($latest | map(select(.by==$r)) | first | .verdict) // "pending")) as $vs
+      | .review = {"verdict": (if any($vs[]; .=="changes") then "changes" elif all($vs[]; .=="approve") then "approve" else "pending" end),
+                   "head":$h, "summary": ([$latest[] | "\(.by): \(.verdict) — \(.summary)"] | join(" | ")),
+                   "pending": [$req[] as $r | select(($vs[$req | index($r)]) == "pending") | $r], "at":$t})' \
+    --arg by "$by" --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)"
+  reset_stop_guard; log_event review "$card $by $verdict${summary:+ — $summary}"
+  tracker sync "$card"; tracker note "$card" "$by" "$verdict${summary:+ — $summary}"
+  echo "review: $card $by $verdict  (card: $(card_get "$card" .review.verdict)$(card_get "$card" '.review.pending | if length>0 then ", waiting for " + join(", ") else "" end'))"
 }
 
 cmd_integrate() {

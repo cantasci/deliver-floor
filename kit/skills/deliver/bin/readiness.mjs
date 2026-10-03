@@ -39,7 +39,7 @@ export function areasOf(job) {
 }
 export const applicable = (job) => catalog().filter((i) => areasOf(job).has(i.area));
 
-export const KINDS = ["service", "bff", "app", "web", "mobile", "library", "worker", "db", "infra"];
+export const KINDS = ["service", "bff", "app", "web", "mobile", "library", "worker", "db", "infra", "docs"];
 export function readReadiness(jobDir) {
   const raw = JSON.parse(readFileSync(join(jobDir, "readiness.json"), "utf8"));
   return Array.isArray(raw) ? { items: raw, architecture: null } : { items: raw.items ?? [], architecture: raw.architecture ?? null };
@@ -91,6 +91,15 @@ export function check(jobDir) {
     if (i.status === "open" && !["business", "pm"].includes(i.owner)) errors.push(`${i.id}: open needs owner "business" (scope/behaviour/contract/business rule) or "pm" (implementation detail)`);
   }
   errors.push(...checkArchitecture(job, architecture).map((e) => `architecture: ${e}`));
+  // A decided item that needs a specialist brings that ECC role onto the job (e.g. an a11y target → ecc:a11y-architect).
+  const onJob = new Set((job.roles ?? []).map((r) => r.role)), cat = catalog();
+  const warnings = [];
+  for (const i of items) {
+    const c = cat.find((x) => x.id === i.id);
+    if (i.status !== "decided" || !c) continue;
+    if (c.requires_role && !onJob.has(c.requires_role)) errors.push(`${i.id} is decided ("${String(i.answer).slice(0, 60)}") → role '${c.requires_role}' must be on the job (dl jobset, see roles.yaml)`);
+    if (c.suggests_role && !onJob.has(c.suggests_role)) warnings.push(`${i.id} is decided → consider role '${c.suggests_role}' (its 'when' rule in roles.yaml decides)`);
+  }
   const open = items.filter((i) => i.status === "open");
   const openBusiness = open.filter((i) => i.owner !== "pm"), openPm = open.filter((i) => i.owner === "pm");
   const q = (c) => catalog().find((x) => x.id === c.id)?.q ?? c.question ?? "";
@@ -108,7 +117,7 @@ export function check(jobDir) {
     ...openBusiness.flatMap((i) => [`## ${i.id}`, "", i.question, ...(i.options?.length ? ["", ...i.options.map((o) => `- ${o}`)] : []),
       ...(i.impact ? ["", `_Why it matters:_ ${i.impact}`] : []), ""])].join("\n") : "";
   writeFileSync(join(jobDir, "QUESTIONS.md"), qs);
-  return { errors, open, openBusiness, openPm, items };
+  return { errors, warnings, open, openBusiness, openPm, items };
 }
 
 export function decide(jobDir, id, decision, rationale) { // the PM closes an implementation-detail item
@@ -146,6 +155,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     } else if (cmd === "check") {
       const r = check(jobDir);
       for (const e of r.errors) console.log(`ERROR ${e}`);
+      for (const w of r.warnings ?? []) console.log(`WARN  ${w}`);
       for (const o of r.openPm) console.log(`PM    ${o.id}: ${o.question}`);
       for (const o of r.openBusiness) console.log(`OPEN  ${o.id}: ${o.question}`);
       if (r.errors.length) process.exit(1);

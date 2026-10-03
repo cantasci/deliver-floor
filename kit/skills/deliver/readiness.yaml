@@ -3,7 +3,9 @@
 # nobody can answer becomes a question for the human. `dl phase planning` refuses while any item is open.
 # The BA also adds items this catalog does not have (ids starting with "X-") when the request needs them.
 #
-# area: always | backend | frontend | mobile | data | integration     (derived from the selected roles + request)
+# area: always | backend | frontend | mobile | data | integration | ui     (derived from the selected roles + request)
+# requires_role: when the item is DECIDED (not n_a), this role must be on the job — it is how the decision gets
+#   checked by the right ECC specialist (security → ecc:security-reviewer, a11y → ecc:a11y-architect, …)
 # Format: the same small YAML subset as roles.yaml.
 
 items:
@@ -77,6 +79,8 @@ items:
   - id: UX-a11y
     area: ui
     q: "Accessibility target (e.g. WCAG 2.1 AA): screen readers, contrast, keyboard/focus, dynamic type?"
+    requires_role: a11y
+
   - id: UX-i18n
     area: ui
     q: "Languages, locale formats (dates, numbers, currency), RTL?"
@@ -88,12 +92,16 @@ items:
   - id: NFR-performance
     area: always
     q: "Latency, throughput, data volume or load targets — or none for this delivery?"
+    requires_role: performance
+
   - id: NFR-availability
     area: backend
     q: "Availability/resilience expectations, degradation when a dependency is down?"
   - id: NFR-security
     area: always
     q: "Authentication, authorisation, input validation, secrets handling — what applies here?"
+    suggests_role: security
+
   - id: NFR-privacy
     area: always
     q: "Personal or sensitive data involved (KVKK/GDPR)? Retention, masking, logging rules?"
@@ -120,3 +128,4 @@ items:
   - id: DEL-docs
     area: always
     q: "Documentation, changelog or runbook updates required?"
+    requires_role: docs

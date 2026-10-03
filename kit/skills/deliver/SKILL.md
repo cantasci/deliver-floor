@@ -64,6 +64,9 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    Difflin floor workers (`settings.dispatch: "munder"`); Claude roles with a `"model"` get it on every Agent call
    (`model: "opus" | "sonnet" | "haiku"`) and on every floor worker.
 4. Record assumptions you made: `"$DL" jobset '.assumptions += ["…"]'`.
+   ECC specialists join through the readiness review: a decided accessibility target needs `a11y` (ecc:a11y-architect),
+   performance targets need `performance` (ecc:performance-optimizer), required docs need `docs` (ecc:doc-updater) — `dl readiness`
+   names any that are missing.
 5. `"$DL" phase readiness` — this checks the roles and **generates the project's role cards** (`roles/*.md`: rules + company
    standards + project facts) and `ROLES.md`. If it REFUSES, fix the roles it names.
 
@@ -226,7 +229,8 @@ Commit your tests ("T-xx QA: …"), leave the worktree clean, return the JSON yo
    Record: `"$DL" qa T-xx pass|fail "<AC-1 pass: …; AC-2 fail: …>"` — `dl` checks that QA only wrote in `qa_scope`, that
    there are QA tests, and runs `qa_verify` itself (a "pass" with failing QA tests is refused). Append the JSON under `## QA`
    in the handoff. `fail` → re-dispatch the dev with the failing QA tests as PREVIOUS FEEDBACK; the next gate runs them too.
-3. **Lead review** (after QA passes) — the stack reviewer from `job.roles` (+ `ecc:security-reviewer` in parallel if `security` is on the job and the card is sensitive):
+3. **Review** (after QA passes) — every role in the card's `reviewers`, **in parallel** (one message): the stack reviewer and
+   the ECC specialists (`ecc:a11y-architect`, `ecc:performance-optimizer`, `ecc:security-reviewer`, `ecc:silent-failure-hunter`):
 
 ```text
 Role: <area> Lead reviewer. Review only; do not modify files.
@@ -239,8 +243,8 @@ OUTPUT — only JSON: {"verdict":"approve|changes","blocking":[{"file":"…","li
 Use "changes" only when there is at least one blocking item.
 ```
 
-   Record: `"$DL" review T-xx approve|changes "<one line>"`, append it under `## Review` in the handoff.
-   `changes` → re-dispatch the dev with the blocking items (same retry rule).
+   Record each verdict: `"$DL" review T-xx approve|changes "<one line>" --by <reviewer role>`, append them under `## Review`
+   in the handoff. Any `changes` → re-dispatch the dev with all blocking items together (same retry rule).
 4. `"$DL" integrate T-xx` → merged. Exit 3 (conflict) → re-dispatch the dev with: "Conflict with the job branch: run
    `git merge <job.branch>` in your worktree, resolve, run verify, commit." Then gate → QA → review → integrate again.
 

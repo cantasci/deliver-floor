@@ -99,6 +99,14 @@ for (const c of cards) {
     if (overlapsGlob(sc, q)) errors.push(`${c.id}: scope '${sc}' reaches QA tests of ${o.id} ('${q}') — QA tests belong to the QA role (use a card with role "qa")`);
 }
 for (const c of cards) if (c.role === "qa" && c.agent !== "qa-tester") errors.push(`${c.id}: a QA card is done by agent qa-tester`);
+// card.reviewers: the roles that must each approve the card (stack reviewer + specialists); all must be review roles on the job
+if (job) {
+  const kinds = new Map((job.roles ?? []).map((r) => [r.role, r]));
+  for (const c of cards) if (c.reviewers !== undefined) {
+    if (!Array.isArray(c.reviewers) || !c.reviewers.length) { errors.push(`${c.id}: 'reviewers' must be a non-empty array of reviewer roles`); continue; }
+    for (const r of c.reviewers) if (!kinds.has(r)) errors.push(`${c.id}: reviewer '${r}' is not a role on this job`);
+  }
+}
 
 // The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.
 if (job && (job.roles ?? []).some((r) => r.role === "ba"))

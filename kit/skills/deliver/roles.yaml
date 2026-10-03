@@ -183,6 +183,40 @@ roles:
       character: angela
       accent: mint
 
+  a11y:
+    kind: review
+    agent: ecc:a11y-architect
+    writes: false
+    when: "readiness UX-a11y is decided (there is an accessibility target)"
+    does: "Reviews UI cards against the decided accessibility target, in addition to the stack reviewer."
+    rules:
+      - "Check the decided target (e.g. WCAG 2.1 AA) on every UI element the card adds or changes: names, roles, focus, contrast, motion."
+
+  performance:
+    kind: review
+    agent: ecc:performance-optimizer
+    writes: false
+    when: "readiness NFR-performance is decided (there are latency/throughput/volume targets)"
+    does: "Reviews cards on performance-critical paths against the decided targets."
+    rules:
+      - "Judge against the decided numbers, with evidence (a measurement, a complexity argument) — not taste."
+
+  quality:
+    kind: review
+    agent: ecc:silent-failure-hunter
+    writes: false
+    when: "Error handling or failure paths are central to the change (payments, integrations, data loss risk)"
+    does: "Looks for swallowed errors, silent fallbacks and missing failure paths, in addition to the stack reviewer."
+
+  docs:
+    kind: dev
+    agent: ecc:doc-updater
+    writes: true
+    when: "readiness DEL-docs is decided (documentation, changelog or runbook updates are required)"
+    does: "Writes the documentation cards (README, API docs, changelog, runbooks) in the docs component."
+    rules:
+      - "Document what was built and decided (plan, readiness, report) — nothing speculative."
+
   qa-web:
     kind: qa
     agent: ecc:e2e-runner
