@@ -38,7 +38,9 @@ async function answer(win) {
 }
 (async () => {
   fs.mkdirSync(shots, { recursive: true });
-  const app = await _electron.launch({ executablePath: `${mdDir}/node_modules/electron/dist/electron`, args: ['.', '--no-sandbox', '--disable-gpu'],
+  const app = await _electron.launch({ executablePath: `${mdDir}/node_modules/electron/dist/electron`, args: ['.', '--no-sandbox', '--disable-gpu',
+      // a headless display counts as background to Chromium: keep animation frames and timers running for the driver
+      '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'],
     cwd: mdDir, env: { ...process.env, HOME: home, ELECTRON_DISABLE_SANDBOX: '1' }, timeout: 90000 });
   const win = await app.firstWindow();
   await win.waitForTimeout(6000);
@@ -65,7 +67,7 @@ async function answer(win) {
       if (name !== 'Michael') { log(`select ${name}: no card on the agent strip`); return false; }
       try { await win.getByText('BOSS', { exact: true }).first().click({ timeout: 3000 }); return true; } catch (e) { log(`select Michael failed: ${why(e)}`); return false; }
     }
-    try { await el.click({ timeout: 3000 }); return true; } catch (e) {
+    try { await el.click({ timeout: 1500 }); return true; } catch (e) {
       try { await el.dispatchEvent('click'); log(`select ${name}: click timed out (${why(e)}) — sent the DOM click`); return true; }
       catch (e2) { log(`select ${name} failed: ${why(e2)}`); return false; }
     }
@@ -75,7 +77,8 @@ async function answer(win) {
     const name = b.name ?? (b.name = floorName(b.worker));
     if (!name || !(await select(name))) return;
     // Proof only when the Command Center really shows this person: its terminal header names the worker ("pty worker-…").
-    const shown = await win.locator(`text=${b.worker}`).first().waitFor({ state: 'visible', timeout: 4000 }).then(() => true, () => false);
+    // polled on a timer, not on animation frames (which a background window may not get)
+    const shown = await win.waitForFunction((w) => document.body.innerText.includes(w), b.worker, { polling: 250, timeout: 5000 }).then(() => true, () => false);
     if (!shown) { log(`select ${name}: the Command Center does not show ${b.worker} — no screenshot`); await select('Michael'); return; }
     await win.waitForTimeout(600);
     const file = `p${String(++ns).padStart(3, '0')}-${seat.replace('#', '')}-${b.task}-${tag}.png`;
