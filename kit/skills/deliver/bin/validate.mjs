@@ -1,7 +1,10 @@
 #!/usr/bin/env node
-// board.json validator — runs on the Leads' cards before execution starts.
+// board.json validator — runs on the Leads' cards before execution starts (and on every guarded phase change).
 // Error → exit 1 (execution must not start). Warning → exit 0, but Michael should fix it.
-import { readFileSync } from "node:fs";
+// If job.json / plan.md sit next to board.json, cards are also checked against the job's roles and the plan's ACs.
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { globToRegExp } from "./scope.mjs";
 
 const file = process.argv[2];
 if (!file) { console.error("usage: validate.mjs <board.json>"); process.exit(2); }
@@ -11,6 +14,12 @@ const errors = [], warnings = [];
 let board;
 try { board = JSON.parse(readFileSync(file, "utf8")); }
 catch (e) { console.error(`ERROR could not read board.json: ${e.message}`); process.exit(1); }
+
+const dir = dirname(file);
+const job = existsSync(join(dir, "job.json")) ? JSON.parse(readFileSync(join(dir, "job.json"), "utf8")) : null;
+const plan = existsSync(join(dir, "plan.md")) ? readFileSync(join(dir, "plan.md"), "utf8") : "";
+const roleAgents = new Set((job?.roles ?? []).map((r) => r.agent));
+const planACs = new Set([...plan.matchAll(/\bAC-(\d+)\b/g)].map((m) => `AC-${m[1]}`));
 
 const cards = Array.isArray(board.cards) ? board.cards : (errors.push("missing cards array"), []);
 if (cards.length === 0) errors.push("board has no cards");
@@ -28,8 +37,25 @@ for (const c of cards) {
   if (!Array.isArray(c.depends_on)) errors.push(`${id}: 'depends_on' must be an array ([] is fine)`);
   if (!STATES.has(c.state)) errors.push(`${id}: invalid state '${c.state}'`);
   if (typeof c.attempts !== "number") errors.push(`${id}: 'attempts' must be a number`);
-  if (Array.isArray(c.scope) && c.scope.some((p) => p === "**" || p === "*" || p.startsWith("/")))
-    errors.push(`${id}: scope is too broad or absolute ('**', '*', '/…' are not allowed)`);
+  if (!Array.isArray(c.notes)) errors.push(`${id}: 'notes' must be an array ([] is fine)`);
+  if (Array.isArray(c.scope)) {
+    for (const p of c.scope) {
+      if (typeof p !== "string" || !p.trim()) { errors.push(`${id}: empty scope entry`); continue; }
+      if (/^(\*\*?|\*\*\/\*)$/.test(p) || p.startsWith("/") || p.split("/").includes(".."))
+        errors.push(`${id}: scope '${p}' is too broad or escapes the repo ('**', '*', '/…', '..' are not allowed)`);
+      if (p.startsWith(".work/") || p.startsWith(".git/")) errors.push(`${id}: scope '${p}' points into .work/ or .git/`);
+      try { globToRegExp(p); } catch { errors.push(`${id}: scope '${p}' is not a valid glob`); }
+    }
+  }
+  if (job && roleAgents.size && c.agent && !roleAgents.has(c.agent))
+    errors.push(`${id}: agent '${c.agent}' is not one of the job's selected roles (${[...roleAgents].join(", ")})`);
+  if (planACs.size && Array.isArray(c.acceptance)) {
+    const refs = c.acceptance.flatMap((a) => [...String(a).matchAll(/\bAC-(\d+)\b/g)].map((m) => `AC-${m[1]}`));
+    for (const r of refs) if (!planACs.has(r)) errors.push(`${id}: references ${r}, which is not in plan.md`);
+    if (refs.length === 0) warnings.push(`${id}: acceptance does not reference any AC-n from plan.md`);
+  }
+  if (typeof c.verify === "string" && /^\s*(true|:|echo\b|exit 0)/.test(c.verify))
+    errors.push(`${id}: verify '${c.verify}' proves nothing — it must run the card's tests`);
 }
 
 for (const c of cards)
@@ -49,6 +75,13 @@ const visit = (id, path) => {
 };
 for (const id of byId.keys()) visit(id, []);
 
+// Every AC of the plan should be covered by at least one live card.
+if (planACs.size) {
+  const covered = new Set(cards.filter((c) => c.state !== "archived")
+    .flatMap((c) => (c.acceptance ?? []).flatMap((a) => [...String(a).matchAll(/\bAC-(\d+)\b/g)].map((m) => `AC-${m[1]}`))));
+  for (const ac of planACs) if (!covered.has(ac)) warnings.push(`${ac} from plan.md is not covered by any card`);
+}
+
 // Cards that can run in parallel (no dependency path between them) must not share scope → warning
 const reach = (from, to, seen = new Set()) => {
   if (from === to) return true;
@@ -57,11 +90,17 @@ const reach = (from, to, seen = new Set()) => {
   return (byId.get(from).depends_on ?? []).some((d) => reach(d, to, seen));
 };
 const prefix = (g) => g.split(/[*?[{]/)[0];
-const overlaps = (a, b) => { const pa = prefix(a), pb = prefix(b); return pa.startsWith(pb) || pb.startsWith(pa); };
-const ids = [...byId.keys()];
-for (let i = 0; i < ids.length; i++)
-  for (let j = i + 1; j < ids.length; j++) {
-    const a = byId.get(ids[i]), b = byId.get(ids[j]);
+const overlaps = (a, b) => {
+  const pa = prefix(a), pb = prefix(b);
+  if (pa === a && pb === b) return a === b;                 // two plain paths
+  if (pa === a) return globToRegExp(b).test(a);             // path vs glob
+  if (pb === b) return globToRegExp(a).test(b);
+  return pa.startsWith(pb) || pb.startsWith(pa);            // two globs: shared directory prefix
+};
+const live = [...byId.values()].filter((c) => c.state !== "archived" && c.state !== "merged");
+for (let i = 0; i < live.length; i++)
+  for (let j = i + 1; j < live.length; j++) {
+    const a = live[i], b = live[j];
     if (reach(a.id, b.id) || reach(b.id, a.id)) continue;
     const hit = (a.scope ?? []).flatMap((x) => (b.scope ?? []).filter((y) => overlaps(x, y)).map((y) => `${x} ~ ${y}`));
     if (hit.length) warnings.push(`${a.id} and ${b.id} can run in parallel but their scopes overlap (${hit[0]}) → add depends_on or split the scope`);

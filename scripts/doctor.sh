@@ -9,30 +9,43 @@ pass() { printf '  \033[32m✔\033[0m %s\n' "$1"; ok=$((ok+1)); }
 note() { printf '  \033[33m!\033[0m %s\n' "$1"; warn=$((warn+1)); }
 fail() { printf '  \033[31m✘\033[0m %s\n' "$1"; bad=$((bad+1)); }
 have() { command -v "$1" >/dev/null 2>&1; }
+vge() { printf '%s\n%s\n' "$2" "$1" | sort -V -C; }   # vge <have> <need> → have >= need
 
 repo="${1:-}"
+[[ -z $repo ]] || repo="$(cd "$repo" 2>/dev/null && pwd)" || { echo "no such directory: $1"; exit 1; }
 
 echo "Required tools"
 if have claude; then
   v="$(claude --version 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
-  IFS=. read -r ma mi pa <<<"$v"
-  if (( ma > 2 || (ma == 2 && mi >= 1 && pa >= 200) )); then pass "Claude Code $v"; else note "Claude Code $v — update recommended (claude update); kit was written against 2.1.28x"; fi
+  if vge "${v:-0}" 2.1.0; then pass "Claude Code $v"; else note "Claude Code ${v:-?} — update (claude update); the kit needs plugin agents, skills with frontmatter and hook agent_type"; fi
 else fail "Claude Code (claude) not on PATH"; fi
-have git && pass "git $(git --version | awk '{print $3}')" || fail "git"
-have jq && pass "jq $(jq --version)" || fail "jq — brew install jq"
+if have git; then gv="$(git --version | awk '{print $3}')"; vge "$gv" 2.38 && pass "git $gv" || fail "git $gv — need 2.38+ (worktrees, rev-parse --path-format)"; else fail "git"; fi
+have jq && pass "jq $(jq --version)" || fail "jq — brew install jq / apt install jq"
 if have node; then
   nv="$(node -v | tr -d v)"; [[ ${nv%%.*} -ge 18 ]] && pass "node $nv" || fail "node $nv — need 18+"
 else fail "node 18+ — brew install node"; fi
 
 echo "Optional tools"
-have gh && pass "gh (PR creation)" || note "gh not found — needed only for merge_strategy=pr (brew install gh && gh auth login)"
-have tmux && pass "tmux (agent-team split panes)" || note "tmux not found — only for agent-teams split-pane mode"
+have gh && pass "gh (PR creation)" || note "gh not found — needed only for merge_strategy=pr (gh auth login)"
+have timeout && pass "timeout (gate_timeout for verify commands)" || note "timeout not found — verify commands run without a time limit (brew install coreutils)"
 have adb && pass "adb (mobile / ARTEMIS)" || note "adb not found — only for mobile jobs"
 
 echo "ECC plugin"
-if jq -e '.plugins | keys[] | select(startswith("ecc@"))' "$HOME/.claude/plugins/installed_plugins.json" >/dev/null 2>&1 \
+ipj="$HOME/.claude/plugins/installed_plugins.json"
+if jq -e '.plugins | keys[] | select(startswith("ecc@"))' "$ipj" >/dev/null 2>&1 \
    || ls -d "$HOME"/.claude/plugins/cache/ecc* >/dev/null 2>&1; then
-  pass "ecc installed"
+  ecc_dir="$(ls -d "$HOME"/.claude/plugins/cache/ecc/*/* 2>/dev/null | tail -1)"
+  pass "ecc installed${ecc_dir:+ ($ecc_dir)}"
+  if [[ -n $ecc_dir ]]; then
+    miss=""
+    for a in planner architect code-reviewer typescript-reviewer security-reviewer e2e-runner; do [[ -f $ecc_dir/agents/$a.md ]] || miss+=" $a"; done
+    [[ -z $miss ]] && pass "ecc agents present (planner, architect, reviewers, e2e-runner)" || fail "ecc agents missing:$miss — update ECC (/plugin update ecc@ecc)"
+    miss=""
+    for s in tdd-workflow backend-patterns frontend-patterns; do [[ -d $ecc_dir/skills/$s ]] || miss+=" $s"; done
+    [[ -z $miss ]] && pass "ecc skills present (tdd-workflow, backend-patterns, frontend-patterns)" || note "ecc skills missing:$miss — dev agents load them on demand"
+  fi
+  prof="${ECC_HOOK_PROFILE:-standard}"
+  note "ECC hook profile: $prof. GateGuard (standard/strict) asks for facts before the first edit of each file; the kit exempts .work/ bookkeeping (GATEGUARD_EXEMPT_GLOBS). Set ECC_GATEGUARD=off if agents loop on it"
 else
   if [[ -d $HOME/.claude/plugins/marketplaces/ecc ]]; then
     fail "ECC marketplace is added but the plugin is NOT installed → in Claude Code: /plugin install ecc@ecc, then restart"
@@ -40,18 +53,23 @@ else
     fail "ECC not found → in Claude Code: /plugin marketplace add https://github.com/affaan-m/ECC  then  /plugin install ecc@ecc"
   fi
 fi
+[[ -f $HOME/.claude/agents/planner.md && -f $HOME/.claude/agents/architect.md ]] \
+  && note "ECC agents also found in ~/.claude/agents (ECC's own install.sh?) — use ONE install path, or agents/hooks load twice"
 
 check_install() { # check_install <claude dir> <label>
-  local d=$1 label=$2 a
+  local d=$1 label=$2 a h s
   [[ -f $d/skills/deliver/SKILL.md ]] || return 1
   pass "$label: deliver skill"
   for a in backend-dev frontend-dev mobile-dev; do
     [[ -f $d/agents/$a.md ]] && pass "$label: agent $a" || note "$label: agent $a missing"
   done
   [[ -x $d/skills/deliver/bin/dl ]] && pass "$label: dl executable" || fail "$label: dl not executable (chmod +x)"
-  local s=$d/settings.json
-  for h in stop-guard bash-guard subagent-log; do
+  s=$d/settings.json
+  for h in stop-guard bash-guard write-guard subagent-log; do
     grep -q "$h.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
+  done
+  for h in "$d"/skills/deliver*.bak* "$d"/skills/deliver.bak*; do
+    [[ -e $h ]] && fail "$label: stale backup $h is loaded as a second skill — delete it (newer install.sh backs up to .deliver-backups/)"
   done
   return 0
 }
@@ -61,19 +79,37 @@ found=0
 check_install "$HOME/.claude" "user" && found=1
 if [[ -n $repo ]]; then check_install "$repo/.claude" "project" && found=1; fi
 [[ $found -eq 1 ]] || fail "deliver kit not installed → scripts/install.sh --user (or --project <repo>)"
+have dl && pass "dl on PATH ($(command -v dl))" || note "dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl"
+
+echo "Munder Difflin (optional)"
+if [[ -n ${HIVE_ROOT:-} ]]; then
+  pass "running inside Munder Difflin (HIVE_ROOT=$HIVE_ROOT)"
+  [[ -d $HIVE_ROOT/spawn-requests ]] && pass "spawn-requests/ exists (dispatch=munder possible once Settings → Autonomy allows worker spawning)" \
+    || note "no spawn-requests/ yet — dispatch=munder needs worker spawning enabled in Settings → Autonomy & Budgets"
+elif ls -d "$HOME/Library/Application Support/"*[Mm]under* "$HOME/.config/"*[Mm]under* >/dev/null 2>&1; then
+  pass "Munder Difflin app data found (run doctor from an agent terminal on the floor to check the hive)"
+else
+  note "Munder Difflin not detected — only needed for the office-floor run mode (docs/07-munder-difflin.md)"
+fi
 
 if [[ -n $repo ]]; then
   echo "Repo: $repo"
   if git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
     pass "git repository"
     b="$(git -C "$repo" symbolic-ref --short HEAD 2>/dev/null)" && pass "on branch $b" || note "detached HEAD — set base_branch in .deliver.json"
+    git -C "$repo" rev-parse -q --verify HEAD >/dev/null && pass "has commits" || fail "no commits yet — make an initial commit first"
     [[ -z "$(git -C "$repo" status --porcelain --untracked-files=no)" ]] && pass "working tree clean" || note "uncommitted changes in the main checkout — jobs branch from the last commit, not from these"
     git -C "$repo" remote get-url origin >/dev/null 2>&1 && pass "remote origin" || note "no remote 'origin' — use merge_strategy=local"
+    if [[ -n "$(git -C "$repo" config user.email)" ]]; then pass "git identity set"; else fail "git user.email not set — dev agents cannot commit"; fi
   else
     fail "not a git repository"
   fi
   if [[ -f $repo/.deliver.json ]]; then
-    jq -e . "$repo/.deliver.json" >/dev/null 2>&1 && pass ".deliver.json valid: $(jq -c '{verify_full,worktree_setup,merge_strategy}' "$repo/.deliver.json")" || fail ".deliver.json is not valid JSON"
+    if jq -e . "$repo/.deliver.json" >/dev/null 2>&1; then
+      pass ".deliver.json valid: $(jq -c '{verify_full,worktree_setup,merge_strategy,dispatch}' "$repo/.deliver.json")"
+      [[ "$(jq -r '.merge_strategy // "pr"' "$repo/.deliver.json")" == pr ]] && ! git -C "$repo" remote get-url origin >/dev/null 2>&1 \
+        && fail "merge_strategy=pr but no remote — set \"merge_strategy\": \"local\""
+    else fail ".deliver.json is not valid JSON"; fi
   else
     note "no .deliver.json — defaults apply (verify_full: npm test, no worktree_setup). See docs/03-settings.md"
   fi

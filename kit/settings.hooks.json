@@ -1,4 +1,7 @@
 {
+  "env": {
+    "GATEGUARD_EXEMPT_GLOBS": ".work/*/*.md,.work/*/*.json,.work/*/handoffs/**,.work/*/prompts/**"
+  },
   "hooks": {
     "Stop": [
       {
@@ -12,6 +15,12 @@
         "matcher": "Bash",
         "hooks": [
           { "type": "command", "command": "__HOOKS_DIR__/bash-guard.sh", "timeout": 10 }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "__HOOKS_DIR__/write-guard.sh", "timeout": 10 }
         ]
       }
     ],

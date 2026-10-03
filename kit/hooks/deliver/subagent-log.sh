@@ -4,11 +4,16 @@
 set -uo pipefail
 input="$(cat)"
 command -v jq >/dev/null || exit 0
-root="${CLAUDE_PROJECT_DIR:-$(jq -r '.cwd // empty' <<<"$input")}"
-[[ -n $root && -f $root/.work/ACTIVE ]] || exit 0
-job="$(cat "$root/.work/ACTIVE")"
-[[ -d $root/.work/$job ]] || exit 0
-jq -r --arg t "$(date -u +%FT%TZ)" \
-  '[$t, "agent", "\(.agent_type // "?") \(.agent_id // "" | .[0:8]): \((.last_assistant_message // "") | gsub("\\s+"; " ") | .[0:160])"] | @tsv' \
-  <<<"$input" >> "$root/.work/$job/events.log"
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+owned="$(owned_job)" || owned="$(active_jobs | head -1)"
+[[ -n $owned ]] || exit 0
+IFS=$'\t' read -r job root <<<"$owned"
+
+msg="$(hk .last_assistant_message)"
+if [[ -z $msg ]]; then # older Claude Code: read the agent's own transcript
+  at="$(hk .agent_transcript_path)"
+  [[ -n $at && -f $at ]] && msg="$(jq -rs '[.[] | select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text] | last // ""' "$at" 2>/dev/null)"
+fi
+printf '%s\tagent\t%s %s: %s\n' "$(date -u +%FT%TZ)" "$(hk .agent_type)" "$(hk .agent_id | cut -c1-8)" \
+  "$(tr -s '[:space:]' ' ' <<<"$msg" | cut -c1-160)" >> "$root/.work/$job/events.log"
 exit 0

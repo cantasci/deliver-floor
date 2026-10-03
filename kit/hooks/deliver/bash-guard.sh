@@ -1,25 +1,43 @@
 #!/usr/bin/env bash
-# PreToolUse(Bash) — blocks hard-to-reverse commands for every agent.
+# PreToolUse(Bash) — blocks hard-to-reverse commands, and keeps the flow's state in Michael's hands.
 # This is a guardrail, not a sandbox: also enable branch protection on the remote.
 set -uo pipefail
+input="$(cat)"
 command -v jq >/dev/null || exit 0
-cmd="$(jq -r '.tool_input.command // ""')"
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+cmd="$(hk .tool_input.command)"
+[[ -n $cmd ]] || exit 0
 deny() { echo "deliver bash-guard: $1" >&2; exit 2; }
 
-if grep -Eq 'git[[:space:]].*push' <<<"$cmd"; then
-  grep -Eq -- '(--force|--force-with-lease|[[:space:]]-f([[:space:]]|$)|[[:space:]]\+[[:alnum:]_/.-]+)' <<<"$cmd" \
-    && deny "force push is not allowed."
+# --- git: everyone ---------------------------------------------------------------------------------------------
+if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]].*push' <<<"$cmd"; then
+  grep -Eq -- '(--force|--force-with-lease|--mirror|--delete|[[:space:]]-f([[:space:]]|$)|[[:space:]]-d([[:space:]]|$)|[[:space:]]\+[[:alnum:]_/.-]+)' <<<"$cmd" \
+    && deny "force push / remote delete is not allowed."
   grep -Eq '(^|[[:space:]:/])(main|master)([[:space:]]|$)' <<<"$cmd" \
     && deny "pushing directly to main/master is not allowed. Push the job/<id> branch and open a PR (after the merge gate)."
+  is_agent && deny "agents never push. Michael pushes the job branch after the merge gate."
 fi
 
 grep -Eq 'rm[[:space:]]+-[[:alpha:]]*[rR][[:alpha:]]*[[:space:]]+([^;&|]*[[:space:]])?[^[:space:]]*\.work(/|[[:space:]]|$)' <<<"$cmd" \
   && deny ".work/ must not be deleted — job state lives there. Use 'dl cleanup'."
 
-grep -Eq 'git[[:space:]].*worktree[[:space:]]+remove[^;&|]*_integration' <<<"$cmd" \
-  && deny "the integration worktree must not be removed by hand. Use 'dl cleanup --all'."
+grep -Eq 'git[[:space:]].*worktree[[:space:]]+(remove|prune)[^;&|]*(_integration|\.work)' <<<"$cmd" \
+  && deny "job worktrees are managed by dl. Use 'dl cleanup'."
 
-grep -Eq 'git[[:space:]].*branch[[:space:]]+-[dD][^;&|]*job/' <<<"$cmd" \
+grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*job/' <<<"$cmd" \
   && deny "job/ branches must not be deleted by agents. Delete them yourself after the job is closed."
+
+# --- dl: who may change the flow's state ------------------------------------------------------------------------
+dl_re='(^|[;&|[:space:](/"'"'"'])dl[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
+if grep -Eq "${dl_re}(new|phase|jobset|wt|card|gate|review|integrate|verify-all|approve|reject|md-dispatch|cleanup)([[:space:]]|$)" <<<"$cmd"; then
+  is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
+fi
+if grep -Eq "${dl_re}(approve|reject)([[:space:]]|$)" <<<"$cmd"; then
+  [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write APPROVAL.md and stop; the human runs 'dl approve|reject' in a terminal."
+fi
+grep -Eq "${dl_re}phase[[:space:]][^;&|]*--force" <<<"$cmd" \
+  && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it, from their own terminal."
+grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [[ ${DELIVER_HEADLESS:-} == 1 ]] \
+  && deny "granting a blocked card new attempts is a human decision; in headless mode the human runs it."
 
 exit 0
