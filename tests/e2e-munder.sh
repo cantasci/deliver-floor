@@ -81,6 +81,8 @@ if [[ -n $J ]]; then
     tasks="$(grep -P "\tmd-done\t\S+ $s:" "$J/events.log" | cut -f3 | cut -d' ' -f1 | tr '\n' ' ')"
     [[ -n $tasks ]] && ok "$s (${on:-$w}) did: $tasks" || bad "$s never reported a finished task"
   done
+  nrel="$(grep -cP '\tmd-release\t' "$J/events.log")"; nwant="$(wc -w <<<"$want")"
+  [[ $nrel -ge $nwant ]] && ok "Michael sent all $nwant seats home at the end (md-release)" || bad "md-release for $nrel of $nwant seats"
   nsub="$(grep -P '\tagent\t' "$J/events.log" | grep -vc ' @worker-')"
   if [[ $nsub -gt 0 ]]; then
     bad "Michael ran $nsub subagent(s) on the floor: $(grep -P '\tagent\t' "$J/events.log" | grep -v ' @worker-' | head -3 | cut -f3 | cut -c1-60 | tr '\n' ';')"

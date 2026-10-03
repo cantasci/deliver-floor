@@ -8,6 +8,7 @@ Everything in this folder is raw output of real runs. Nothing is edited except s
 | [02-replay/](02-replay/) | `tests/replay-watchlist.sh` — the whole flow narrated without a model |
 | [03-live-headless/](03-live-headless/) | `tests/e2e-live.sh` reports per scenario + the delivered job's `.work/` (readiness, plan, board, specs, handoffs, gate logs, events) |
 | [04-live-munder/](04-live-munder/) | `tests/e2e-munder.sh` report, drive log, floor screenshots, the delivered job's `.work/` |
+| [04-live-munder/seats/](04-live-munder/seats/) | the floor with a person per role seat, no subagents: report, who did which task, frames of people at work (`at-work/`) |
 | [05-evidence/](05-evidence/) | measurements that decisions rest on (e.g. background agents under `claude -p`) |
 | [HISTORY.md](HISTORY.md) | every live run, including the failed ones, what each one found and what was changed |
 

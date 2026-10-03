@@ -56,9 +56,12 @@ async function answer(win) {
   const select = async (name) => {
     try {
       if (name === 'Michael') { await win.getByText('BOSS', { exact: true }).first().click({ timeout: 3000 }); return true; }
-      const note = win.locator(`[aria-label="Note for ${name}"]`).first();
-      if (!(await note.count())) return false;
-      await note.locator('xpath=ancestor::*[@draggable="true"][1]').click({ position: { x: 12, y: 12 }, timeout: 3000 });
+      // The agent strip along the bottom: the card whose name text matches, lowest on screen (the floor's labels sit above).
+      const hits = win.getByText(name, { exact: true });
+      let best = null, by = -1;
+      for (let k = 0; k < await hits.count(); k++) { const b = await hits.nth(k).boundingBox(); if (b && b.y > by) { by = b.y; best = hits.nth(k); } }
+      if (!best) return false;
+      await best.click({ timeout: 3000 });
       return true;
     } catch (e) { log(`select ${name} failed: ${String(e.message ?? e).split('\n')[0].slice(0, 120)}`); return false; }
   };
@@ -101,7 +104,16 @@ async function answer(win) {
       try { await answer(win); } catch (e) { log(`answering failed: ${String(e.message ?? e).slice(0, 200)}`); }
     }
     if (shot <= 120 && (Date.now() - t0) / 60000 >= shot) await win.screenshot({ path: `${shots}/${String(shot++).padStart(2, '0')}-floor.png` });
-    if (j && ['done', 'awaiting_pr_merge', 'aborted'].includes(j.phase)) { log(`finished: ${j.phase}`); await win.screenshot({ path: `${shots}/99-final.png` }); await closeApp(app); process.exit(j.phase === 'aborted' ? 1 : 0); }
+    if (j && ['done', 'awaiting_pr_merge', 'aborted'].includes(j.phase)) {
+      log(`finished: ${j.phase}`); await win.screenshot({ path: `${shots}/98-finished.png` });
+      // Seats on the floor: wait (≤ 4 min) for Michael's release and for every seat to leave, so the run ends as a user's would.
+      const seats = Object.values(j.munder?.seats ?? {}).map((x) => x.worker);
+      const gone = () => { try { const r = JSON.parse(fs.readFileSync(path.join(hiveRoot(), 'registry.json'), 'utf8')); return seats.every((w) => !r.agents[w] || r.agents[w].archived || r.agents[w].status === 'gone'); } catch { return true; } };
+      for (let k = 0; seats.length && k < 48 && !gone(); k++) await win.waitForTimeout(5000);
+      log(seats.length ? (gone() ? `all ${seats.length} seats released` : 'seats still on the floor after 4 minutes') : 'no seats');
+      for (const e of events().slice(lastLen)) log(`event ${e.split('\t').slice(1).join(' ').slice(0, 150)}`);
+      await win.screenshot({ path: `${shots}/99-final.png` }); await closeApp(app); process.exit(j.phase === 'aborted' ? 1 : 0);
+    }
     if (Date.now() - lastChange > 20 * 60000) { log('stalled: no event for 20 minutes'); await win.screenshot({ path: `${shots}/99-stalled.png` }); await closeApp(app); process.exit(1); }
   }
   log('timeout'); await win.screenshot({ path: `${shots}/99-timeout.png` }); await closeApp(app); process.exit(1);

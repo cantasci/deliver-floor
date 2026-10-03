@@ -1,0 +1,111 @@
+2026-10-03T15:05:31Z	new	Repayment delay indicators 2-3
+2026-10-03T15:05:31Z	jobset	stack: .stack=["javascript"]
+2026-10-03T15:05:32Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/03: domain logic (indicator→WL mapping) in src/indicators"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (Plain Node ESM) → stack reviewer"}]
+2026-10-03T15:05:32Z	jobset	assumptions: .assumptions += ["No UI and no security specialist: pure functions with closed option lists (C4, C5); input validation is covered by RangeError ACs"]
+2026-10-03T15:05:32Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T15:05:32Z	phase	readiness
+2026-10-03T15:05:35Z	md-hire	ba#1 → worker-seat-20261003-1505-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-03T15:05:36Z	md-hire	backend-lead#1 → worker-seat-20261003-1505-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-03T15:05:36Z	md-hire	backend#1 → worker-seat-20261003-1505-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-03T15:05:36Z	md-hire	backend#2 → worker-seat-20261003-1505-backend-2-h1 (claude claude-sonnet-5-5, jim)
+2026-10-03T15:05:36Z	md-hire	qa#1 → worker-seat-20261003-1505-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-03T15:05:36Z	md-hire	reviewer#1 → worker-seat-20261003-1505-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-03T15:05:45Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261003-1505-ba-1-h1
+2026-10-03T15:06:51Z	readiness	30 items: 15 decided, 13 n/a, 2 open
+2026-10-03T15:06:59Z	decide	X-immutable-options: Frozen: export Object.freeze([...]) arrays; tests assert Object.isFrozen and exact order — Shared option lists are rendered by later POC screens; freezing prevents one consumer mutating another's dropdown at zero cost
+2026-10-03T15:06:59Z	decide	X-error-message: RangeError message includes the offending value (JSON.stringify/String) and the allowed list; tests assert only instanceof RangeError — Diagnosable for the later screen developers; tests stay robust by not pinning text
+2026-10-03T15:06:59Z	jobset	assumptions: .assumptions += ["No security role: NFR-security is only strict validation of a closed option list (C1/C5), covered by RangeError acceptance criteria and the stack reviewer"]
+2026-10-03T15:07:00Z	freeze	readiness + architecture frozen (dd85ff98e9f1)
+2026-10-03T15:07:00Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T15:07:00Z	phase	planning
+2026-10-03T15:07:08Z	md-done	readiness ba#1: readiness: 28+3 items answered, 0 business open; architecture indicators-lib
+2026-10-03T15:07:08Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261003-1505-ba-1-h1
+2026-10-03T15:07:57Z	md-done	plan ba#1: plan: 10 ACs (AC-1..4 REQ-03-02, AC-5..8 REQ-03-03, AC-9..10 shared), no open questions
+2026-10-03T15:07:57Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261003-1505-backend-lead-1-h1
+2026-10-03T15:08:49Z	md-done	cards-backend-lead backend-lead#1: cards: T-01 daysWithDelay (AC-1..4,9,10), T-02 delayCount (AC-5..10); parallel, disjoint scopes
+2026-10-03T15:08:49Z	md-send	spec-all ba#1 (business-analyst) → worker-seat-20261003-1505-ba-1-h1
+2026-10-03T15:09:35Z	md-done	spec-all ba#1: specs T-01, T-02 written (6 numbered criteria each)
+2026-10-03T15:09:36Z	phase	executing
+2026-10-03T15:09:47Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T15:09:48Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-03T15:10:00Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261003-1505-backend-1-h1
+2026-10-03T15:10:00Z	md-send	T-02 backend#2 (backend-dev) → worker-seat-20261003-1505-backend-2-h1
+2026-10-03T15:10:41Z	gate	T-02 PASS
+2026-10-03T15:11:05Z	md-done	T-02 backend#2: T-02 built: delayCount.mjs + unit tests, 5 pass, commit 899f665
+2026-10-03T15:11:06Z	md-send	T-02 qa#1 (qa-tester) → worker-seat-20261003-1505-qa-1-h1
+2026-10-03T15:11:21Z	gate	T-01 PASS
+2026-10-03T15:11:30Z	md-done	T-01 backend#1: T-01 built: daysWithDelay.mjs + unit tests, 5 pass, commit ded7d35
+2026-10-03T15:11:58Z	qa	T-02 pass (qa_verify PASS) — AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass (incl. constructor/__proto__); AC-9 pass; AC-10 pass — 6/6 integration tests
+2026-10-03T15:11:59Z	md-done	T-02 qa#1: T-02 QA pass: 6/6 integration tests AC-5..10
+2026-10-03T15:12:00Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261003-1505-qa-1-h1
+2026-10-03T15:12:00Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261003-1505-reviewer-1-h1
+2026-10-03T15:12:43Z	review	T-02 reviewer approve — AC-5..10 met, 11/11 pass, scope clean; nit: JSON.stringify in error msg → TypeError for BigInt/circular (C5 follow-up)
+2026-10-03T15:12:44Z	md-done	T-02 reviewer#1: T-02 review: approve (1 nit BigInt/circular TypeError)
+2026-10-03T15:12:45Z	integrate	T-02 merged
+2026-10-03T15:12:46Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass (incl. constructor/__proto__/toString); AC-9 pass; AC-10 pass — 6/6 integration tests
+2026-10-03T15:12:46Z	md-done	T-01 qa#1: T-01 QA pass: 6/6 integration tests AC-1..4,9,10
+2026-10-03T15:13:08Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261003-1505-reviewer-1-h1
+2026-10-03T15:13:08Z	card-add	T-03: T-02 review nit: C5 requires RangeError for every non-string; JSON.stringify throws TypeError on BigInt/circular
+2026-10-03T15:13:20Z	assign	T-03 → backend-dev (backend#1) attempt=1
+2026-10-03T15:13:34Z	md-send	T-03 backend#1 (backend-dev) → worker-seat-20261003-1505-backend-1-h1
+2026-10-03T15:14:16Z	review	T-01 reviewer changes — C5: JSON.stringify in error msg → TypeError for BigInt/circular; must be RangeError
+2026-10-03T15:14:17Z	md-done	T-01 reviewer#1: T-01 review: changes (C5 BigInt/circular)
+2026-10-03T15:14:17Z	md-done	T-03 backend#1: T-03 fix: safe describe() helper, RangeError for BigInt/circular, ffdf080
+2026-10-03T15:14:19Z	gate	T-03 PASS
+2026-10-03T15:14:19Z	assign	T-01 → backend-dev (backend#1) attempt=2
+2026-10-03T15:14:30Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261003-1505-backend-1-h1
+2026-10-03T15:14:31Z	md-send	T-03 qa#1 (qa-tester) → worker-seat-20261003-1505-qa-1-h1
+2026-10-03T15:14:56Z	md-done	T-01 backend#1: T-01 attempt 2: safe describe(), BigInt/Symbol/circular → RangeError, 5507a6d
+2026-10-03T15:14:59Z	gate	T-01 PASS
+2026-10-03T15:24:32Z	qa	T-03 pass (qa_verify PASS) — 1 pass: 1n → RangeError; 2 pass: circular → RangeError; 3 pass: existing tests unchanged (17/17)
+2026-10-03T15:24:33Z	md-done	T-03 qa#1: T-03 QA pass: 5/5 C5 integration tests
+2026-10-03T15:24:33Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261003-1505-qa-1-h1
+2026-10-03T15:24:34Z	md-send	T-03 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261003-1505-reviewer-1-h1
+2026-10-03T15:25:01Z	review	T-03 reviewer approve — C5 met: describe() formats BigInt/circular/Symbol safely, every non-string → RangeError; 17/17
+2026-10-03T15:25:02Z	md-done	T-03 reviewer#1: T-03 review: approve
+2026-10-03T15:25:03Z	integrate	T-03 merged
+2026-10-03T15:25:16Z	qa	T-01 pass (qa_verify PASS) — Round 2: AC-1..4 pass (incl. C5 BigInt/Symbol/circular → RangeError), AC-9, AC-10 pass — 7/7
+2026-10-03T15:25:17Z	md-done	T-01 qa#1: T-01 QA round 2 pass 7/7
+2026-10-03T15:25:18Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261003-1505-reviewer-1-h1
+2026-10-03T15:25:52Z	review	T-01 reviewer approve — Round 2: C5 fix verified (1n, circular, Symbol, Proxy → RangeError), 13/13, scope clean
+2026-10-03T15:25:53Z	md-done	T-01 reviewer#1: T-01 re-review: approve
+2026-10-03T15:25:53Z	integrate	T-01 merged
+2026-10-03T15:25:54Z	phase	integrating
+2026-10-03T15:25:55Z	verify-all	FAIL
+2026-10-03T15:26:32Z	card-add	T-04: verify-all: per-card AC-10 QA tests pin the whole diff, fail on merged branch
+2026-10-03T15:26:44Z	phase	executing
+2026-10-03T15:26:45Z	assign	T-04 → backend-dev (backend#1) attempt=1
+2026-10-03T15:26:53Z	md-send	T-04 backend#1 (backend-dev) → worker-seat-20261003-1505-backend-1-h1
+2026-10-03T15:27:27Z	md-done	T-04 backend#1: T-04: test/indicators/job.test.mjs, 4 pass, b7e1bf1
+2026-10-03T15:27:29Z	gate	T-04 PASS
+2026-10-03T15:27:39Z	md-send	T-04 qa#1 (qa-tester) → worker-seat-20261003-1505-qa-1-h1
+2026-10-03T15:28:46Z	state	T-04=blocked
+2026-10-03T15:28:47Z	note	T-04: PM contract error: qa_verify passed a directory (MODULE_NOT_FOUND on Node 22); fixing to explicit files
+2026-10-03T15:28:47Z	card-set	T-04.qa_verify = "node --test test/indicators/integration/daysWithDelay.integration.test.mjs test/indicators/integration/delayCount.integ — node --test with a directory argument fails on Node 22; list the QA files
+2026-10-03T15:28:47Z	state	T-04=ready
+2026-10-03T15:28:49Z	gate	T-04 FAIL
+2026-10-03T15:29:18Z	assign	T-04 → backend-dev (backend#1) attempt=2
+2026-10-03T15:29:18Z	state	T-04=review
+2026-10-03T15:29:40Z	gate	T-04 PASS
+2026-10-03T15:29:52Z	qa	T-04 pass (qa_verify PASS) — 1 pass: full node --test 34/34; 2 pass: per-card AC-10 relaxed (own files included, only indicators dirs); 3 pass: package.json unchanged
+2026-10-03T15:30:05Z	md-done	T-04 qa#1: T-04 QA pass: per-card AC-10 relaxed, full suite 34/34
+2026-10-03T15:30:05Z	md-send	T-04 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261003-1505-reviewer-1-h1
+2026-10-03T15:30:30Z	review	T-04 reviewer approve — 34/34 on merged branch; job-level AC-10 + robust per-card AC-10; nit: tests need git history (shallow clone)
+2026-10-03T15:30:30Z	md-done	T-04 reviewer#1: T-04 review: approve
+2026-10-03T15:30:31Z	integrate	T-04 merged
+2026-10-03T15:30:31Z	phase	integrating
+2026-10-03T15:30:32Z	verify-all	PASS
+2026-10-03T15:30:49Z	phase	closing
+2026-10-03T15:30:50Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261003-1505-ba-1-h1
+2026-10-03T15:31:36Z	md-done	closing ba#1: closing: all 10 ACs met, 34/34
+2026-10-03T15:31:49Z	learn	all: Name exotic non-string inputs (BigInt, Symbol, circular) explicitly in validation ACs; error-message formatting must never throw (JSON.stringify throws on BigInt/circular)
+2026-10-03T15:31:49Z	learn	qa: Per-card QA tests must not pin the whole-branch diff (exact added-file list): parallel cards merge into one branch
+2026-10-03T15:31:50Z	learn	all: verify/qa_verify list test files explicitly: 'node --test <directory>' fails with MODULE_NOT_FOUND on Node 22
+2026-10-03T15:31:53Z	ship	local merge into main
+2026-10-03T15:32:03Z	md-release	ba#1 → worker-seat-20261003-1505-ba-1-h1
+2026-10-03T15:32:03Z	md-release	backend-lead#1 → worker-seat-20261003-1505-backend-lead-1-h1
+2026-10-03T15:32:03Z	md-release	backend#1 → worker-seat-20261003-1505-backend-1-h1
+2026-10-03T15:32:03Z	md-release	backend#2 → worker-seat-20261003-1505-backend-2-h1
+2026-10-03T15:32:03Z	md-release	qa#1 → worker-seat-20261003-1505-qa-1-h1
+2026-10-03T15:32:03Z	md-release	reviewer#1 → worker-seat-20261003-1505-reviewer-1-h1
+2026-10-03T15:32:03Z	cleanup	

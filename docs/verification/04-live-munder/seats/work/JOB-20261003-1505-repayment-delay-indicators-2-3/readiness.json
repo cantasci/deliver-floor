@@ -1,0 +1,232 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Provide the WL mapping for Indicator 2 (days with delay) and Indicator 3 (delays in 12 months) as pure functions plus exported option lists. Success: the mappings in REQ-03-02/03 hold for every option, invalid input throws RangeError, node --test is green.",
+      "source": "JOB request, REQ-03-02, REQ-03-03, C1-C2"
+    },
+    {
+      "id": "PRD-users",
+      "status": "n_a",
+      "answer": "No end users or roles in this slice; the consumers are later POC screens/rating code calling the functions. No UI, no access control.",
+      "source": "JOB request C3, C4"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In: src/indicators/daysWithDelay.mjs and delayCount.mjs with option lists and WL functions, plus their tests. Out: Indicator 1 and its collapsing of 2-3, UI, counting delays (caller does), aggregation to overall WL.",
+      "source": "JOB request C3, C4, C6, Contract"
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Yes. Option→WL: Ind.2 'no delay'→0, '<=3 days'→0, '>3 days'→2, '>60 days'→3, '>90 days'→4; Ind.3 '0'→0, '1'→1, '>1'→2. Invalid: ' >3 days ' trimmed OK; '>3 Days', '', 'foo', null, 5 → RangeError.",
+      "source": "REQ-03-02, REQ-03-03, C1, C2, C5"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "Two surface differences, both resolved by the request: (1) POC writes '≤3 days', clarification C1 fixes the ASCII string '<=3 days'; (2) REQ-03-02 acceptance summary lists WL only for >3/>60/>90, C2 supplies 0 for 'no delay' and '<=3 days'. Options '>3 days'/'>60 days'/'>90 days' overlap numerically but are discrete exact-match labels, so no conflict.",
+      "source": "C1, C2, REQ-03-02"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Both requirements are equal priority (Must) and independent; they ship together, either can merge first.",
+      "source": "JOB request ('independent of each other')"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "daysWithDelay.mjs: export const DAYS_WITH_DELAY_OPTIONS (5 strings in order: 'no delay','<=3 days','>3 days','>60 days','>90 days'); export function daysWithDelayWl(option) → 0|2|3|4. delayCount.mjs: export const DELAY_COUNT_OPTIONS ('0','1','>1'); export function delayCountWl(option) → 0|1|2. Input: string, trimmed, exact case-sensitive match.",
+      "source": "Contract, C1, C5"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Any value not in the list after trimming, and any non-string (null, undefined, number, object), throws RangeError. Message text is not specified.",
+      "source": "C1, C5"
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "New files only; repo src/ is empty, nothing to keep compatible. No versioning.",
+      "source": "repo: src/ and test/ empty"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Library: pure functions in a single-package plain Node ESM repo, under src/indicators.",
+      "source": "CLAUDE.md, Contract"
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "One component, see architecture.",
+      "source": "CLAUDE.md, Contract"
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Shared domain library layer (src/indicators), no I/O.",
+      "source": "CLAUDE.md: 'Pure functions, no I/O in src/ratings and src/indicators'"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ES modules (.mjs), node:test + node:assert/strict; no new dependencies allowed.",
+      "source": "CLAUDE.md, JOB request"
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No data stored.",
+      "source": "pure functions, CLAUDE.md"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems.",
+      "source": "pure functions, CLAUDE.md"
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous pure functions.",
+      "source": "Contract signatures"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No targets; constant-time lookup.",
+      "source": "JOB request is silent; trivial mapping"
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "In-process library, no dependencies.",
+      "source": "CLAUDE.md"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Only input validation applies: strict type and value check, RangeError on anything unexpected; no secrets, auth.",
+      "source": "C1, C5"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "Inputs are dropdown labels, no personal data; no logging.",
+      "source": "Contract"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "No auditing in this slice.",
+      "source": "JOB request scope"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "None; pure functions, no I/O.",
+      "source": "CLAUDE.md"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "n_a",
+      "answer": "No regulation constrains this slice beyond the WL values stated in the POC.",
+      "source": "JOB request"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests by the devs (TDD) in test/indicators/<name>.test.mjs with node:test; QA verifies each AC end to end via the public exports. Test data: every option, trimmed variants, wrong case, empty string, unknown string, non-strings. Full run: node --test.",
+      "source": "CLAUDE.md, JOB request"
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "node --test must pass; no lint/typecheck configured in package.json.",
+      "source": "package.json, role card"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "n_a",
+      "answer": "Library consumed by later parts via import; no deploy, flags or migrations. Rollback = revert commit.",
+      "source": "JOB request C4"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No docs required beyond JSDoc-level comments matching surrounding code; no changelog exists.",
+      "source": "repo files: CLAUDE.md, README.md only"
+    },
+    {
+      "id": "X-immutable-options",
+      "status": "decided",
+      "answer": "Frozen: export Object.freeze([...]) arrays; tests assert Object.isFrozen and exact order",
+      "question": "Should the exported *_OPTIONS arrays be frozen (Object.freeze) so consumers cannot mutate them?",
+      "options": [
+        "Frozen (safer, tests can assert Object.isFrozen)",
+        "Plain arrays"
+      ],
+      "impact": "Internal robustness only; values and order are unchanged.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Should the exported *_OPTIONS arrays be frozen (Object.freeze) so consumers cannot mutate them?",
+          "at": "2026-10-03T15:06:58.919Z"
+        }
+      ],
+      "source": "pm: michael 2026-10-03 — Shared option lists are rendered by later POC screens; freezing prevents one consumer mutating another's dropdown at zero cost"
+    },
+    {
+      "id": "X-error-message",
+      "status": "decided",
+      "answer": "RangeError message includes the offending value (JSON.stringify/String) and the allowed list; tests assert only instanceof RangeError",
+      "question": "Exact RangeError message text.",
+      "options": [
+        "Include the offending value and the allowed list",
+        "Fixed generic text"
+      ],
+      "impact": "None on mapping; tests should assert type RangeError only.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Exact RangeError message text.",
+          "at": "2026-10-03T15:06:59.185Z"
+        }
+      ],
+      "source": "pm: michael 2026-10-03 — Diagnosable for the later screen developers; tests stay robust by not pinning text"
+    },
+    {
+      "id": "X-trim-scope",
+      "status": "decided",
+      "answer": "'Trimmed' means String.prototype.trim (leading/trailing whitespace); inner whitespace is not normalised, so '>3  days' is a RangeError.",
+      "source": "C1, C5 (exact match after trimming)"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "indicators-lib",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node-esm"
+        ],
+        "path": [
+          "src/indicators/",
+          "test/indicators/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Two independent modules (daysWithDelay.mjs, delayCount.mjs), one per backend dev; pure, no I/O, no dependencies."
+      }
+    ]
+  }
+}

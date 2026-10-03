@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="10"><title>JOB-20261003-1505-repayment-delay-indicators-2-3 kanban</title><style>
+:root{--bg:#f6f7f9;--col:#eceef2;--card:#fff;--ink:#1d2330;--mute:#5d6678;--line:#d8dce4}
+@media (prefers-color-scheme:dark){:root{--bg:#14171d;--col:#1c2028;--card:#252a34;--ink:#e7eaf0;--mute:#9aa3b5;--line:#323846}}
+body{margin:0;padding:16px;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,sans-serif}
+h1{font-size:16px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 16px}
+.board{display:flex;gap:12px;overflow-x:auto;align-items:flex-start}
+section{flex:0 0 240px;background:var(--col);border-radius:8px;padding:8px}
+section h2{font-size:13px;margin:4px 4px 8px;color:var(--mute)}
+article{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:8px}
+article h3{font-size:13px;margin:0 0 4px}.meta,.checks,.note{margin:2px 0;color:var(--mute);font-size:12px}
+a{color:inherit}</style></head><body>
+<h1>Repayment delay indicators 2-3</h1><p class="sub">JOB-20261003-1505-repayment-delay-indicators-2-3 · phase executing · refreshes every 10 s</p>
+<p class="sub">Seats: backend#1 IDLE · backend#2 IDLE</p>
+<div class="board"><section><h2>To Do (0)</h2></section><section><h2>In Progress (0)</h2></section><section><h2>QA (0)</h2></section><section><h2>Code Review (0)</h2></section><section><h2>Done (4)</h2><article><h3>T-01 · Indicator 2: days with delay options and WL mapping (REQ-03-02)</h3>
+    <p class="meta">indicators-lib · backend#1 → backend-dev · attempt 2</p>
+    <p class="meta">branch <code>job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-01</code></p>
+    <p class="checks">gate PASS · QA pass · review approve</p>
+    <p class="note"><b>qa-tester</b> pass (qa_verify PASS): Round 2: AC-1..4 pass (incl. C5 BigInt/Symbol/circular → RangeError), AC-9, AC-10 pass — 7/7</p><p class="note"><b>reviewer</b> approve — Round 2: C5 fix verified (1n, circular, Symbol, Proxy → RangeError), 13/13, scope clean</p></article><article><h3>T-02 · Indicator 3: delays in 12 months options and WL mapping (REQ-03-03)</h3>
+    <p class="meta">indicators-lib · backend#2 → backend-dev · attempt 1</p>
+    <p class="meta">branch <code>job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-02</code></p>
+    <p class="checks">gate PASS · QA pass · review approve</p>
+    <p class="note"><b>qa-tester</b> pass (qa_verify PASS): AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass (incl. constructor/__proto__); AC-9 pass; AC-10 pass — 6/6 integration tests</p><p class="note"><b>reviewer</b> approve — AC-5..10 met, 11/11 pass, scope clean; nit: JSON.stringify in error msg → TypeError for BigInt/circular (C5 follow-up)</p></article><article><h3>T-03 · Ind.3 delayCountWl: RangeError (not TypeError) for BigInt/circular input (C5)</h3>
+    <p class="meta">indicators-lib · backend#1 → backend-dev · attempt 1</p>
+    <p class="meta">branch <code>job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-03</code></p>
+    <p class="checks">gate PASS · QA pass · review approve</p>
+    <p class="note"><b>qa-tester</b> pass (qa_verify PASS): 1 pass: 1n → RangeError; 2 pass: circular → RangeError; 3 pass: existing tests unchanged (17/17)</p><p class="note"><b>reviewer</b> approve — C5 met: describe() formats BigInt/circular/Symbol safely, every non-string → RangeError; 17/17</p></article><article><h3>T-04 · Merged-branch AC-10 check: QA tests assert per-card files without pinning the whole diff</h3>
+    <p class="meta">indicators-lib · backend#1 → backend-dev · attempt 2</p>
+    <p class="meta">branch <code>job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-04</code></p>
+    <p class="checks">gate PASS · QA pass · review approve</p>
+    <p class="note"><b>qa-tester</b> pass (qa_verify PASS): 1 pass: full node --test 34/34; 2 pass: per-card AC-10 relaxed (own files included, only indicators dirs); 3 pass: package.json unchanged</p><p class="note"><b>reviewer</b> approve — 34/34 on merged branch; job-level AC-10 + robust per-card AC-10; nit: tests need git history (shallow clone)</p></article></section></div>
+</body></html>

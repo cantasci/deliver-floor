@@ -1,0 +1,254 @@
+TAP version 13
+# Subtest: options list is the expected frozen list
+ok 1 - options list is the expected frozen list
+  ---
+  duration_ms: 1.422535
+  type: 'test'
+  ...
+# Subtest: every option maps to its WL
+ok 2 - every option maps to its WL
+  ---
+  duration_ms: 0.378361
+  type: 'test'
+  ...
+# Subtest: surrounding whitespace is trimmed
+ok 3 - surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.122042
+  type: 'test'
+  ...
+# Subtest: invalid input throws RangeError
+ok 4 - invalid input throws RangeError
+  ---
+  duration_ms: 10.142652
+  type: 'test'
+  ...
+# Subtest: throws RangeError (not TypeError) for BigInt, Symbol, circular and unprintable input
+ok 5 - throws RangeError (not TypeError) for BigInt, Symbol, circular and unprintable input
+  ---
+  duration_ms: 0.357295
+  type: 'test'
+  ...
+# Subtest: is pure: no throw, valid WL, stable results, options unchanged
+ok 6 - is pure: no throw, valid WL, stable results, options unchanged
+  ---
+  duration_ms: 0.182225
+  type: 'test'
+  ...
+# Subtest: option list is ["0","1",">1"] and frozen
+ok 7 - option list is ["0","1",">1"] and frozen
+  ---
+  duration_ms: 9.459913
+  type: 'test'
+  ...
+# Subtest: maps each option to its WL
+ok 8 - maps each option to its WL
+  ---
+  duration_ms: 0.282747
+  type: 'test'
+  ...
+# Subtest: trims surrounding whitespace first
+ok 9 - trims surrounding whitespace first
+  ---
+  duration_ms: 0.127405
+  type: 'test'
+  ...
+# Subtest: throws RangeError for invalid input
+ok 10 - throws RangeError for invalid input
+  ---
+  duration_ms: 1.977162
+  type: 'test'
+  ...
+# Subtest: throws RangeError (not TypeError) for BigInt, Symbol, circular and unprintable input
+ok 11 - throws RangeError (not TypeError) for BigInt, Symbol, circular and unprintable input
+  ---
+  duration_ms: 0.263929
+  type: 'test'
+  ...
+# Subtest: is pure: every option valid, repeatable, options unchanged
+ok 12 - is pure: every option valid, repeatable, options unchanged
+  ---
+  duration_ms: 0.159529
+  type: 'test'
+  ...
+# Subtest: AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five ASCII labels in order and is frozen
+ok 13 - AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five ASCII labels in order and is frozen
+  ---
+  duration_ms: 1.355797
+  type: 'test'
+  ...
+# Subtest: AC-2: each valid option maps to its WL
+ok 14 - AC-2: each valid option maps to its WL
+  ---
+  duration_ms: 0.310189
+  type: 'test'
+  ...
+# Subtest: AC-3: surrounding whitespace is trimmed first
+ok 15 - AC-3: surrounding whitespace is trimmed first
+  ---
+  duration_ms: 0.212474
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid input throws RangeError naming value and allowed list
+ok 16 - AC-4: invalid input throws RangeError naming value and allowed list
+  ---
+  duration_ms: 0.845652
+  type: 'test'
+  ...
+# Subtest: AC-9: every option is valid, in {0,2,3,4}, repeatable, and the list is unchanged
+ok 17 - AC-9: every option is valid, in {0,2,3,4}, repeatable, and the list is unchanged
+  ---
+  duration_ms: 0.221932
+  type: 'test'
+  ...
+# Subtest: AC-10: unit tests exit 0; card adds only its two files; package.json untouched
+not ok 18 - AC-10: unit tests exit 0; card adds only its two files; package.json untouched
+  ---
+  duration_ms: 213.190048
+  type: 'test'
+  location: '/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/_integration/test/indicators/integration/daysWithDelay.integration.test.mjs:47:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    [32m+ actual[39m [31m- expected[39m
+    
+    [39m  [
+    [39m    'src/indicators/daysWithDelay.mjs',
+    [32m+[39m   'src/indicators/delayCount.mjs',
+    [39m    'test/indicators/daysWithDelay.test.mjs',
+    [32m+[39m   'test/indicators/delayCount.test.mjs'
+    [39m  ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'src/indicators/daysWithDelay.mjs'
+    1: 'test/indicators/daysWithDelay.test.mjs'
+  actual:
+    0: 'src/indicators/daysWithDelay.mjs'
+    1: 'src/indicators/delayCount.mjs'
+    2: 'test/indicators/daysWithDelay.test.mjs'
+    3: 'test/indicators/delayCount.test.mjs'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/_integration/test/indicators/integration/daysWithDelay.integration.test.mjs:53:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: AC-4/C5: BigInt, Symbol, circular and other exotic non-strings throw RangeError, not TypeError
+ok 19 - AC-4/C5: BigInt, Symbol, circular and other exotic non-strings throw RangeError, not TypeError
+  ---
+  duration_ms: 0.476528
+  type: 'test'
+  ...
+# Subtest: AC-8/C5: BigInt input throws RangeError, not TypeError
+ok 20 - AC-8/C5: BigInt input throws RangeError, not TypeError
+  ---
+  duration_ms: 9.40331
+  type: 'test'
+  ...
+# Subtest: AC-8/C5: circular object throws RangeError, not TypeError
+ok 21 - AC-8/C5: circular object throws RangeError, not TypeError
+  ---
+  duration_ms: 0.220837
+  type: 'test'
+  ...
+# Subtest: AC-8/C5: other non-string inputs (symbol, function, no-toString object) throw RangeError
+ok 22 - AC-8/C5: other non-string inputs (symbol, function, no-toString object) throw RangeError
+  ---
+  duration_ms: 0.417247
+  type: 'test'
+  ...
+# Subtest: AC-8/C5: error message still names the allowed list for BigInt input
+ok 23 - AC-8/C5: error message still names the allowed list for BigInt input
+  ---
+  duration_ms: 6.373097
+  type: 'test'
+  ...
+# Subtest: AC-6..9: valid options and string RangeErrors are unchanged
+ok 24 - AC-6..9: valid options and string RangeErrors are unchanged
+  ---
+  duration_ms: 0.282024
+  type: 'test'
+  ...
+# Subtest: AC-5: DELAY_COUNT_OPTIONS deep-equals ["0","1",">1"] in order and is frozen
+ok 25 - AC-5: DELAY_COUNT_OPTIONS deep-equals ["0","1",">1"] in order and is frozen
+  ---
+  duration_ms: 9.512929
+  type: 'test'
+  ...
+# Subtest: AC-6: "0"→0, "1"→1, ">1"→2
+ok 26 - AC-6: "0"→0, "1"→1, ">1"→2
+  ---
+  duration_ms: 0.275067
+  type: 'test'
+  ...
+# Subtest: AC-7: surrounding whitespace is trimmed first
+ok 27 - AC-7: surrounding whitespace is trimmed first
+  ---
+  duration_ms: 1.841277
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid input throws RangeError naming value and allowed list
+ok 28 - AC-8: invalid input throws RangeError naming value and allowed list
+  ---
+  duration_ms: 0.778158
+  type: 'test'
+  ...
+# Subtest: AC-9: every option is valid, in {0,1,2}, repeatable, and the list is unchanged
+ok 29 - AC-9: every option is valid, in {0,1,2}, repeatable, and the list is unchanged
+  ---
+  duration_ms: 0.893091
+  type: 'test'
+  ...
+# Subtest: AC-10: unit tests exit 0; card adds only its two files; package.json untouched
+not ok 30 - AC-10: unit tests exit 0; card adds only its two files; package.json untouched
+  ---
+  duration_ms: 79.761635
+  type: 'test'
+  location: '/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/_integration/test/indicators/integration/delayCount.integration.test.mjs:45:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    [32m+ actual[39m [31m- expected[39m
+    
+    [39m  [
+    [32m+[39m   'src/indicators/daysWithDelay.mjs',
+    [39m    'src/indicators/delayCount.mjs',
+    [32m+[39m   'test/indicators/daysWithDelay.test.mjs',
+    [39m    'test/indicators/delayCount.test.mjs'
+    [39m  ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'src/indicators/delayCount.mjs'
+    1: 'test/indicators/delayCount.test.mjs'
+  actual:
+    0: 'src/indicators/daysWithDelay.mjs'
+    1: 'src/indicators/delayCount.mjs'
+    2: 'test/indicators/daysWithDelay.test.mjs'
+    3: 'test/indicators/delayCount.test.mjs'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/_integration/test/indicators/integration/delayCount.integration.test.mjs:51:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 28
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 355.3207
