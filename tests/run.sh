@@ -19,6 +19,9 @@ expect_fail() { local code=$1 d=$2; shift 2; out="$("$@" 2>&1)"; local rc=$?
 contains() { [[ $2 == *"$3"* ]] && ok "$1" || bad "$1 — got: $2"; }
 
 DL="$HERE/kit/skills/deliver/bin/dl"
+bedit() { # bedit <board.json> '<jq>' — a fixture edit made outside dl, accepted by "the human" with dl reseal
+  local f=$1; jq "$2" "$f" > "$f.t" && mv "$f.t" "$f"; "$DL" reseal "test fixture edit: $2" >/dev/null
+}
 ready_all() { # ready_all [<id> open] — the BA's readiness review: every applicable item decided (one left open if asked)
   local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"
   [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
@@ -128,19 +131,19 @@ spec T-01; spec T-02; echo "# T-03 no criteria" > "$R/.work/$JOB/specs/T-03.md"
 expect_fail 1 "a spec without Given/When/Then is rejected" "$DL" validate
 spec T-03
 expect_ok "valid board passes" "$DL" validate
-jq '.cards[0].agent="frontend-dev"' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[0].agent="frontend-dev"'
 expect_fail 1 "agent outside selected roles rejected" "$DL" validate
-jq '.cards[0].agent="backend-dev" | .cards[0].acceptance=["AC-9: x"]' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[0].agent="backend-dev" | .cards[0].acceptance=["AC-9: x"]'
 expect_fail 1 "unknown AC reference rejected" "$DL" validate
-jq '.cards[0].acceptance=["AC-1: add"] | .cards[0].verify="true"' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[0].acceptance=["AC-1: add"] | .cards[0].verify="true"'
 expect_fail 1 "no-op verify rejected" "$DL" validate
-jq '.cards[0].verify="node --test test/add/*.test.mjs" | .cards[1].scope=["src/add/**"]' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[0].verify="node --test test/add/*.test.mjs" | .cards[1].scope=["src/add/**"]'
 out="$("$DL" validate 2>&1)"; contains "parallel scope overlap warned" "$out" "WARN  T-01 and T-02"
-jq '.cards[1].scope=["src/sub/**","test/sub/**"] | .cards[1].scope += ["../x"]' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[1].scope=["src/sub/**","test/sub/**"] | .cards[1].scope += ["../x"]'
 expect_fail 1 "scope escaping repo rejected" "$DL" validate
-jq '.cards[1].scope=["src/sub/**","test/sub/**"] | .cards[0].depends_on=["T-03"]' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[1].scope=["src/sub/**","test/sub/**"] | .cards[0].depends_on=["T-03"]'
 expect_fail 1 "dependency cycle rejected" "$DL" validate
-jq '.cards[0].depends_on=[]' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[0].depends_on=[]'
 
 expect_fail 1 "approve refused outside the waiting phase" "$DL" approve plan
 expect_ok "awaiting_plan_approval" "$DL" phase awaiting_plan_approval
@@ -161,9 +164,9 @@ expect_fail 1 "card state merged refused" "$DL" card T-01 state merged
 expect_fail 1 "card state running refused" "$DL" card T-01 state running
 W1="$("$DL" wt add T-01)"; W2="$("$DL" wt add T-02)"
 [[ -L $W1/node_modules ]] && ok "worktree_setup ran (node_modules symlink)" || bad "worktree_setup"
-jq '.cards[2].depends_on=[]' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[2].depends_on=[]'
 expect_fail 5 "max_parallel enforced" "$DL" wt add T-03
-jq '.cards[2].depends_on=["T-01","T-02"]' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[2].depends_on=["T-01","T-02"]'
 
 # --- simulated dev T-01: good work
 mkdir -p "$W1/src/add" "$W1/test/add"
@@ -268,15 +271,15 @@ echo "hooks"
 H="$HERE/kit/hooks/deliver"
 hook() { local h=$1 json=$2; out="$(printf '%s' "$json" | "$H/$h" 2>&1)"; echo "rc=$? $out"; }
 TR="$TMP/transcript.jsonl"; echo "{\"x\":\"$JOB\"}" > "$TR"
-"$DL" jobset '.phase="executing"'
-jq '.cards[2].state="ready" | .cards[2].attempts=0' "$B" > "$B.t" && mv "$B.t" "$B"
+"$DL" phase executing --force >/dev/null
+bedit "$B" '.cards[2].state="ready" | .cards[2].attempts=0'
 contains "stop-guard blocks the owner with open cards" "$(hook stop-guard.sh "{\"cwd\":\"$TMP\",\"transcript_path\":\"$TR\"}")" "rc=2"
 contains "stop-guard ignores other sessions" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"/dev/null\"}")" "rc=0"
 contains "stop-guard ignores card worktree sessions" "$(hook stop-guard.sh "{\"cwd\":\"$R/.work/$JOB/wt/T-03\",\"transcript_path\":\"$TR\"}")" "rc=0"
 for i in 1 2 3 4 5; do hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}" >/dev/null; done
 contains "stop-guard gives up after stop_guard_max" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
 "$DL" jobset '.settings.dispatch="munder"'; rm -f "$R/.work/$JOB/.stop-blocks"
-jq '.cards[2].state="running"' "$B" > "$B.t" && mv "$B.t" "$B"
+bedit "$B" '.cards[2].state="running"'
 contains "stop-guard lets Michael wait for floor workers (munder)" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
 "$DL" jobset '.settings.dispatch="subagent"'
 
@@ -313,7 +316,7 @@ contains "subagent-log appends the agent's summary" "$out" "backend-dev abcdef12
 
 echo "munder difflin dispatch"
 export HIVE_ROOT="$TMP/hive"; mkdir -p "$HIVE_ROOT"
-"$DL" jobset '.phase="executing"' ; echo "do the card" > "$TMP/p.txt"
+"$DL" phase executing --force >/dev/null ; echo "do the card" > "$TMP/p.txt"
 expect_ok "md-dispatch writes a spawn request" "$DL" md-dispatch T-03 "$TMP/p.txt"
 reqf="$(ls "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
 contains "spawn request: card worktree cwd, no extra isolation, dev agent" "$(jq -c '{cwd,isolate,command}' "$reqf")" "\"isolate\":false,\"command\":\"claude --agent backend-dev\""
@@ -346,11 +349,11 @@ acard() { jq -n --arg id "$1" --arg comp "$2" --arg role "$3" --arg p "$4" '{id:
 for c in T-01 T-02 T-03; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$AJ/specs/$c.md"; done
 jq -n --argjson a "$(acard T-01 orders backend services/orders/)" --argjson b "$(acard T-02 pricing backend services/pricing/)" --argjson c "$(acard T-03 db database db/)" '{cards:[$a,$b,$c]}' > "$AJ/board.json"
 expect_ok "cards on three components validate" "$DL" validate
-jq '.cards[0].scope=["services/payments/src/**"]' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"
+bedit "$AJ/board.json" '.cards[0].scope=["services/payments/src/**"]'
 out="$("$DL" validate 2>&1)"; contains "a card reaching outside its component is rejected" "$out" "outside component orders"
-jq '.cards[0].scope=["services/orders/src/**"] | .cards[2].role="backend"' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"
+bedit "$AJ/board.json" '.cards[0].scope=["services/orders/src/**"] | .cards[2].role="backend"'
 out="$("$DL" validate 2>&1)"; contains "a backend dev on the database component is rejected" "$out" "owned by role 'database'"
-jq '.cards[2].role="database"' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"
+bedit "$AJ/board.json" '.cards[2].role="database"'
 cp "$AJ/readiness.json" "$TMP/rd.bak"; jq '.architecture.components[4].stack=["rust"]' "$TMP/rd.bak" > "$AJ/readiness.json"
 expect_fail 6 "editing the frozen readiness/architecture is refused" "$DL" validate
 contains "agents cannot unfreeze" "$(printf '%s' '{"tool_input":{"command":"dl unfreeze \"x\""},"cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
@@ -358,7 +361,7 @@ cp "$TMP/rd.bak" "$AJ/readiness.json"
 "$DL" phase executing >/dev/null
 # two parallel assignments race for the single database seat… and two backend seats work side by side
 "$DL" jobset '(.roles[] | select(.role=="database")).count = 1'
-jq '.cards += [(.cards[2] | .id="T-04" | .title="T-04")]' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"; cp "$AJ/specs/T-03.md" "$AJ/specs/T-04.md"
+bedit "$AJ/board.json" '.cards += [(.cards[2] | .id="T-04" | .title="T-04")]'; cp "$AJ/specs/T-03.md" "$AJ/specs/T-04.md"
 ( "$DL" wt add T-03 >"$TMP/r3" 2>&1; echo $? >> "$TMP/r3" ) & ( "$DL" wt add T-04 >"$TMP/r4" 2>&1; echo $? >> "$TMP/r4" ) & wait
 [[ "$(jq '[.cards[] | select(.role=="database" and .state=="running")] | length' "$AJ/board.json")" == 1 ]] && grep -q "seats are busy" "$TMP/r3" "$TMP/r4" \
   && ok "concurrent assignment: exactly one of two cards gets the single database seat" || bad "race: $(cat "$TMP/r3" "$TMP/r4")"
@@ -366,12 +369,40 @@ jq '.cards += [(.cards[2] | .id="T-04" | .title="T-04")]' "$AJ/board.json" > "$A
 [[ "$(jq -r '[.cards[] | select(.role=="backend") | .seat] | sort | join(",")' "$AJ/board.json")" == "backend#1,backend#2" ]] \
   && ok "two backend devs work in parallel on seats backend#1 and backend#2, each on its own branch" || bad "seats: $(jq -c '[.cards[]|{id,seat,branch}]' "$AJ/board.json")"
 [[ "$(git -C "$AR" branch --list '*--T-01' '*--T-02' | wc -l)" == 2 ]] && ok "…each on its own card branch" || bad "branches"
-jq '.cards += [(.cards[0] | .id="T-05" | .title="T-05" | .state="ready" | del(.seat))]' "$AJ/board.json" > "$AJ/b.t" && mv "$AJ/b.t" "$AJ/board.json"; cp "$AJ/specs/T-01.md" "$AJ/specs/T-05.md"
+bedit "$AJ/board.json" '.cards += [(.cards[0] | .id="T-05" | .title="T-05" | .state="ready" | del(.seat))]'; cp "$AJ/specs/T-01.md" "$AJ/specs/T-05.md"
 out="$("$DL" wt add T-05 2>&1)"; contains "a third backend card waits: both backend seats are busy" "$out" "all 2 'backend' seats are busy"
 jq -e '[.cards[] | select(.id=="T-01") | .assignments[0] | .by=="michael" and .seat=="backend#1"] | all' "$AJ/board.json" >/dev/null && ok "assignment records michael + seat" || bad "assignment record"
 "$DL" kanban > "$TMP/kanban.txt"; grep -q "In Progress (3)" "$TMP/kanban.txt" && ok "kanban shows 3 cards in progress" || bad "kanban: $(cat "$TMP/kanban.txt")"
 [[ -f $AJ/kanban.html ]] && grep -q "backend#2" "$AJ/kanban.html" && ok "local tracker renders kanban.html with seats" || bad "kanban.html"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"; unset ARCH
+
+echo "traceability: card changes, jobset limits, seals"
+TR2="$TMP/trace"; mkdir -p "$TR2" && cd "$TR2" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "trace" "x" >/dev/null; TJ="$TR2/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+expect_fail 1 "jobset cannot move the phase" "$DL" jobset '.phase="done"'
+expect_fail 1 "jobset cannot approve a gate" "$DL" jobset '.gates.plan={"status":"approved"}'
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+expect_fail 1 "jobset cannot clear the frozen hash" "$DL" jobset '.frozen=null'
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$TJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$TJ/board.json"
+"$DL" phase executing >/dev/null
+contains "Michael's direct board edit is denied by the write-guard" "$(printf '%s' "{\"tool_input\":{\"file_path\":\"$TJ/board.json\"},\"cwd\":\"$TR2\",\"transcript_path\":\"$TR\"}" | sed "s#$JOB#$(basename "$TJ")#" > /dev/null; echo "{\"x\":\"$(basename "$TJ")\"}" > "$TMP/tr2.jsonl"; printf '%s' "{\"tool_input\":{\"file_path\":\"$TJ/board.json\"},\"cwd\":\"$TR2\",\"transcript_path\":\"$TMP/tr2.jsonl\"}" | "$HERE/kit/hooks/deliver/write-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+jq '.cards[0].verify="echo ok"' "$TJ/board.json" > "$TJ/b.t" && mv "$TJ/b.t" "$TJ/board.json"
+expect_fail 7 "an edit through any other tool breaks the seal: dl stops" "$DL" status
+contains "only a human may reseal" "$(printf '%s' '{"tool_input":{"command":"dl reseal \"ok\""},"cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+expect_ok "the human reseals after inspecting" "$DL" reseal "verify change inspected"
+grep -q $'\treseal\t' "$TJ/events.log" && ok "the reseal is in the event log" || bad "reseal log"
+expect_ok "dl card set changes a field with a reason" "$DL" card T-01 set verify "test -f package.json || true" "package.json is optional in this repo"
+jq -e '.cards[0].history[-1] | .field=="verify" and .reason=="package.json is optional in this repo" and .by=="michael"' "$TJ/board.json" >/dev/null && ok "card history keeps from/to/reason" || bad "history"
+expect_fail 1 "an invalid change is reverted" "$DL" card T-01 set scope '["**"]' "too broad"
+[[ "$(jq -c '.cards[0].scope' "$TJ/board.json")" == '["src/**"]' ]] && ok "…and the board is unchanged" || bad "revert"
+jq -n '{title:"fix",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["lib/**"],qa_scope:["it2/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: y"],context:"fix"}' > "$TMP/fix.json"
+contains "dl card add gives the next id" "$("$DL" card add "$TMP/fix.json" "verify-all found a gap" 2>&1)" "T-02"
+jq -n '{title:"bad",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["it/**"],qa_scope:["it3/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: z"],context:"x"}' > "$TMP/bad.json"
+out="$("$DL" card add "$TMP/bad.json" "dev edits QA tests" 2>&1)"; contains "a dev card reaching another card's QA tests is rejected" "$out" "QA tests belong to the QA role"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "knowledge: standards, memory, Munder Difflin knowledge graph"
 K="$HOME/.deliver/knowledge"; mkdir -p "$K" "$TMP/kn/.deliver/knowledge"

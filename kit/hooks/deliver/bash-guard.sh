@@ -35,8 +35,8 @@ fi
 if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then
   [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write the question down (APPROVAL.md / QUESTIONS.md) and stop; the human answers in a terminal (dl approve | reject | clarify)."
 fi
-grep -Eq "${dl_re}unfreeze([[:space:]]|$)" <<<"$cmd" \
-  && deny "frozen decisions are reopened only by a human, from their own terminal (dl unfreeze \"<reason>\")."
+grep -Eq "${dl_re}(unfreeze|reseal)([[:space:]]|$)" <<<"$cmd" \
+  && deny "frozen decisions and seals are a human's call, from their own terminal (dl unfreeze | dl reseal \"<reason>\")."
 grep -Eq "${dl_re}phase[[:space:]][^;&|]*--force" <<<"$cmd" \
   && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it, from their own terminal."
 grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [[ ${DELIVER_HEADLESS:-} == 1 ]] \

@@ -16,6 +16,7 @@
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
 #   dl clarify <id> "<answer>"     record the human's answer to an open readiness question
 #   dl unfreeze "<reason>"         (human, terminal only) reopen the decisions frozen at planning
+#   dl reseal "<reason>"           (human, terminal only) accept an edit made to job.json/board.json outside dl
 #   dl roles                       check job.roles against roles.yaml and generate the project's role cards
 #                                  (.work/<job>/roles/*.md, ROLES.md; Munder Difflin hire manifests) — runs on dl phase planning
 #   dl learn <role|all> "<lesson>" remember a lesson for this repo (memory: ~/.deliver/knowledge/lessons/<repo>.md);
@@ -28,6 +29,8 @@
 #   dl card <card> state <state>   review | blocked | ready (from blocked) | archived
 #   dl card <card> note "<text>"   attach a note to a card (blocked reason, guidance, …)
 #   dl card <card> retry           human-granted: attempts=0 and state=ready (after guidance)
+#   dl card <card> set <field> <value> "<reason>"   change a ready/blocked card's contract (validated, logged, history)
+#   dl card add <card.json> "<reason>"              add a card (e.g. a fix card) — gets the next id, validated, logged
 #   dl gate <card>                 mechanical gate: right branch, clean tree, commits, in scope, verify passes
 #   dl qa <card> pass|fail "<summary>"   record the QA/Test verdict on the card's acceptance criteria
 #                                  (needs a passed gate on the current commit)
@@ -93,6 +96,16 @@ _jq_inplace() {
   local f=$1; shift
   local tmp; tmp="$(mktemp "$f.XXXXXX")"
   if jq "$@" "$f" > "$tmp"; then mv "$tmp" "$f"; else rm -f "$tmp"; die "jq update failed on $f"; fi
+  seal "$f"
+}
+# Tamper evidence: dl seals job.json (always) and board.json (once work has started) with a sha256 after every write;
+# every dl command checks the seals, so an edit made outside dl — by any tool — stops the flow until a human reseals.
+seal() { [[ $1 == */job.json || $1 == */board.json ]] && node -e 'process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(process.argv[1])).digest("hex"))' "$1" > "$(dirname "$1")/.seal-$(basename "$1")"; return 0; }
+seal_ok() { local f=$1 sf; sf="$(dirname "$f")/.seal-$(basename "$f")"; [[ ! -f $sf ]] || [[ "$(cat "$sf")" == "$(node -e 'process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(process.argv[1])).digest("hex"))' "$f")" ]]; }
+check_seals() {
+  seal_ok "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
+  case "$(jq -r .phase "$JOBJ")" in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
+  seal_ok "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and runs: dl reseal \"<reason>\""
 }
 jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
 git_locked() { with_lock git git "$@"; }
@@ -110,6 +123,7 @@ load_job() {
   [[ -f $JOBJ ]] || die "job not found: $JOB"
   JOB_BRANCH="$(jq -r .branch "$JOBJ")"
   IWT="$(jq -r .integration_worktree "$JOBJ")"
+  [[ ${DL_NO_SEAL_CHECK:-} == 1 ]] || check_seals
 }
 
 setting() { jq -r ".settings.$1 // empty" "$JOBJ"; }
@@ -139,7 +153,8 @@ reset_stop_guard() { rm -f "$JOB_DIR/.stop-blocks"; }
 # outage never blocks the flow: the error is logged and shown by dl status, and the next sync catches up.
 tracker() { # tracker sync [card] [--event text] | note <card> <author> <text> | open
   [[ -f $BOARD ]] || return 0
-  local out; out="$(node "$BIN_DIR/tracker.mjs" "$1" "$JOB_DIR" "${@:2}" 2>&1)" && return 0
+  local out rc=0; out="$(with_lock board.json node "$BIN_DIR/tracker.mjs" "$1" "$JOB_DIR" "${@:2}" 2>&1)" || rc=$?
+  seal "$BOARD"; [[ $rc -eq 0 ]] && return 0
   printf '%s\t%s\t%s\n' "$(now)" tracker-error "$out" >> "$JOB_DIR/events.log"
   echo "dl: warning — tracker: $out" >&2; return 0
 }
@@ -209,6 +224,7 @@ cmd_new() {
      '.id=$id | .title=$title | .request=$req | .created=$now | .repo=$root | .base_branch=$base
       | .branch=$branch | .integration_worktree=$iwt | .settings=$settings' \
      "$SKILL_DIR/templates/job.json" > "$WORK/$id/job.json"
+  seal "$WORK/$id/job.json"
   echo "$id" > "$WORK/ACTIVE"
   mkdir -p "$REG" && echo "$ROOT" > "$REG/$id"
   JOB=$id; JOB_DIR="$WORK/$id"; JOBJ="$JOB_DIR/job.json"
@@ -368,7 +384,7 @@ cmd_phase() {
     awaiting_plan_approval) jq_inplace "$JOBJ" '.gates.plan = null' ;;
   esac
   jq_inplace "$JOBJ" --arg p "$p" '.phase=$p'
-  [[ $p == executing ]] && tracker open
+  [[ $p == executing ]] && { seal "$BOARD"; tracker open; }
   if [[ $p == planning ]]; then
     jq_inplace "$JOBJ" --arg h "$(sha256_of "$JOB_DIR/readiness.json")" --arg t "$(now)" '.frozen = {"readiness_sha256":$h,"at":$t}'
     log_event freeze "readiness + architecture frozen ($(sha256_of "$JOB_DIR/readiness.json" | cut -c1-12))"
@@ -377,7 +393,24 @@ cmd_phase() {
   reset_stop_guard; log_event phase "$p$([[ $force -eq 1 ]] && echo ' (forced)')"; echo "phase: $p"
 }
 
-cmd_jobset() { load_job; [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"; jq_inplace "$JOBJ" "$1"; }
+# jobset may change only what Michael decides (stack, roles, assumptions, areas, settings) — never phase, gates,
+# frozen hashes, PR state or ids: those move only through their own guarded commands. Every change is logged.
+JOBSET_KEYS='["stack","roles","assumptions","areas","settings"]'
+cmd_jobset() {
+  load_job; [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"
+  local new; new="$(jq "$1" "$JOBJ")" || die "invalid jq expression"
+  local bad; bad="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" \
+    '[($a|keys) + ($b|keys) | unique[] | select(. as $k | ($ok | index($k)) | not) | select($a[.] != $b[.])] | join(", ")')"
+  [[ -z $bad ]] || refuse 1 "dl jobset may not change: $bad (use the dl command that owns it)"
+  if [[ "$(phase_now)" =~ ^(executing|integrating|closing|awaiting_pr_merge)$ ]]; then
+    jq -en --argjson a "$(cat "$JOBJ")" --argjson b "$new" '($a.settings.gates == $b.settings.gates) and ($a.settings.merge_mode == $b.settings.merge_mode)' >/dev/null \
+      || refuse 1 "gates and merge_mode are fixed once work has started"
+  fi
+  local changed; changed="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" '[$ok[] | select($a[.] != $b[.])] | join(",")')"
+  jq_inplace "$JOBJ" "$1"
+  [[ -n $changed ]] && log_event jobset "$changed: $1"
+  return 0
+}
 
 cmd_validate() { load_job; assert_frozen; node "$BIN_DIR/validate.mjs" "$BOARD"; }
 
@@ -500,8 +533,24 @@ cmd_wt() {
   esac
 }
 
+CARD_FIELDS="title context verify qa_verify scope qa_scope acceptance depends_on component"
+cmd_card_add() { # dl card add <card.json> "<reason>"
+  local file=${1:-} reason=${2:-}
+  [[ -f $file && -n $reason ]] || die 'usage: dl card add <card.json> "<reason>"'
+  [[ "$(phase_now)" =~ ^(planning|awaiting_plan_approval|executing|integrating)$ ]] || refuse 1 "cards are added in planning/executing/integrating (now: $(phase_now))"
+  local id; id="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
+  cp "$BOARD" "$BOARD.bak"
+  jq_inplace "$BOARD" --slurpfile c "$file" --arg id "$id" --arg r "$reason" --arg t "$(now)" \
+    '.cards += [$c[0] + {id:$id, state:"ready", attempts:0, notes:[], history:[{"at":$t,"by":"michael","change":"added","reason":$r}]}]'
+  if ! node "$BIN_DIR/validate.mjs" "$BOARD" > "$JOB_DIR/.validate.out" 2>&1; then
+    mv "$BOARD.bak" "$BOARD"; seal "$BOARD"; grep -E '^ERROR' "$JOB_DIR/.validate.out" | grep "$id" >&2; refuse 1 "the new card is invalid — nothing added"
+  fi
+  rm -f "$BOARD.bak"; log_event card-add "$id: $reason"; tracker open; echo "$id"
+}
+
 cmd_card() {
   load_job
+  [[ ${1:-} == add ]] && { cmd_card_add "${@:2}"; return; }
   local card=${1:-} what=${2:-} val=${3:-}
   [[ -n $card && -n $what ]] || die "usage: dl card <card> state <state> | note \"<text>\" | retry"
   card_exists "$card"
@@ -521,6 +570,19 @@ cmd_card() {
       [[ -n $val ]] || die "usage: dl card $card note \"<text>\""
       card_set "$card" '(.cards[] | select(.id==$id)).notes += [{"at":$t,"note":$n}]' --arg n "$val" --arg t "$(now)"
       log_event note "$card: $val" ;;
+    set) # dl card <id> set <field> <value | JSON> "<reason>"
+      local field=$val value=${4:-} reason=${5:-}
+      [[ " $CARD_FIELDS " == *" $field "* && -n $value && -n $reason ]] || die "usage: dl card $card set <$(tr ' ' '|' <<<"$CARD_FIELDS")> <value> \"<reason>\""
+      [[ $cur == ready || $cur == blocked ]] || refuse 1 "$card is $cur — a card's contract changes only while it is ready or blocked"
+      local json; json="$(jq -c . <<<"$value" 2>/dev/null)" || json="$(jq -cn --arg v "$value" '$v')"
+      cp "$BOARD" "$BOARD.bak"
+      card_set "$card" '(.cards[] | select(.id==$id)) |= (.history = ((.history // []) + [{"at":$t,"by":"michael","field":$f,"from":.[$f],"to":$v,"reason":$r}]) | .[$f] = $v)' \
+        --arg f "$field" --argjson v "$json" --arg r "$reason" --arg t "$(now)"
+      if ! node "$BIN_DIR/validate.mjs" "$BOARD" > "$JOB_DIR/.validate.out" 2>&1; then
+        mv "$BOARD.bak" "$BOARD"; seal "$BOARD"; grep -E '^ERROR' "$JOB_DIR/.validate.out" >&2; refuse 1 "the change makes the board invalid — reverted"
+      fi
+      rm -f "$BOARD.bak"; log_event card-set "$card.$field = $(jq -c . <<<"$json" | cut -c1-120) — $reason"
+      tracker note "$card" michael "changed $field: $reason"; echo "$card.$field updated" ;;
     retry)
       [[ $cur == blocked || $cur == ready ]] || refuse 1 "retry is for blocked cards (now: $cur)"
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.attempts=0 | .state="ready")'
@@ -826,7 +888,12 @@ cmd_kanban() {
   node "$BIN_DIR/tracker.mjs" kanban "$JOB_DIR" "$@"
   echo; echo "tracker: $(jq -r '.settings.tracker.kind // "local"' "$JOBJ")$(jq -r '.tracker.url // empty | " · " + .' "$JOBJ")  · html: $JOB_DIR/kanban.html"
 }
-cmd_tracker() { load_job; case ${1:-sync} in open|sync) node "$BIN_DIR/tracker.mjs" "${1:-sync}" "$JOB_DIR" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
+cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
+cmd_reseal() { # human only (bash-guard): accept the current job.json/board.json after inspecting an outside change
+  DL_NO_SEAL_CHECK=1 load_job
+  local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl reseal "<what was changed outside dl and why it is accepted>"'
+  seal "$JOBJ"; seal "$BOARD"; log_event reseal "${DELIVER_APPROVER:-${USER:-human}}: $reason"; echo "resealed"
+}
 
 cmd_jobs() {
   [[ -d $REG ]] || { echo "no jobs registered"; return 0; }
@@ -852,6 +919,7 @@ main() {
     readiness) cmd_readiness ;;
     clarify) cmd_clarify "$@" ;;
     unfreeze) cmd_unfreeze "$@" ;;
+    reseal) cmd_reseal "$@" ;;
     learn) cmd_learn "$@" ;;
     knowledge) cmd_knowledge "$@" ;;
     ready) cmd_ready ;;
@@ -871,7 +939,7 @@ main() {
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,49p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,52p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

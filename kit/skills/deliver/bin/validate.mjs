@@ -91,6 +91,15 @@ if (arch?.components?.length) {
   }
 }
 
+// Role lanes: QA tests (any card's qa_scope) are written by the QA role only. A dev card's scope must not reach them;
+// fixing a QA test is a card with role "qa" (agent qa-tester).
+for (const c of cards) {
+  if (c.state === "archived" || c.state === "merged" || c.role === "qa") continue;
+  for (const o of cards) for (const q of o.qa_scope ?? []) for (const sc of c.scope ?? [])
+    if (overlapsGlob(sc, q)) errors.push(`${c.id}: scope '${sc}' reaches QA tests of ${o.id} ('${q}') — QA tests belong to the QA role (use a card with role "qa")`);
+}
+for (const c of cards) if (c.role === "qa" && c.agent !== "qa-tester") errors.push(`${c.id}: a QA card is done by agent qa-tester`);
+
 // The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.
 if (job && (job.roles ?? []).some((r) => r.role === "ba"))
   for (const c of cards) {
@@ -133,6 +142,13 @@ const reach = (from, to, seen = new Set()) => {
   seen.add(from);
   return (byId.get(from).depends_on ?? []).some((d) => reach(d, to, seen));
 };
+function overlapsGlob(a, b) { // shared helper (hoisted): do two globs/paths cover a common file?
+  const pa = a.split(/[*?[{]/)[0], pb = b.split(/[*?[{]/)[0];
+  if (pa === a && pb === b) return a === b;
+  if (pa === a) return globToRegExp(b).test(a);
+  if (pb === b) return globToRegExp(a).test(b);
+  return pa.startsWith(pb) || pb.startsWith(pa);
+}
 const prefix = (g) => g.split(/[*?[{]/)[0];
 const overlaps = (a, b) => {
   const pa = prefix(a), pb = prefix(b);
