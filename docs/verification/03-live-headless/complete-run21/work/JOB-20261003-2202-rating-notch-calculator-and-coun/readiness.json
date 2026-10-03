@@ -1,0 +1,273 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Two pure functions for the Watchlist POC. (1) A notch calculator (REQ-06-02): previous + current rating -> signed notch change, direction and resulting WL. (2) The WL for Indicator 12, country rating change (REQ-03-12). Success: other POC parts import the contract names and get the values the REQ acceptance criteria require, as corrected by C2/C3/C6. E.g. BBB+ -> BB+ gives notches 3, downgrade, WL 2; BBB+ -> BBB- gives notches 2, WL 1; Indicator 12: 1 notch -> WL 1, 2+ notches -> WL 2.",
+      "source": "JOB.md title and 'Requirements' table (REQ-06-02, REQ-03-12); C2, C3, C6; 'Contract' section"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "End user: the credit analyst, who chooses or edits the previous and current rating (REQ-06-02; C7). Direct consumers: other POC modules importing the functions. No UI, endpoint or session in this slice (C8), so no roles or permissions to enforce.",
+      "source": "REQ-06-02; C7; C8; Contract section"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "IN: src/ratings/notch.mjs (RATING_SCALE, notchChange, notchCalculator), src/indicators/countryRating.mjs (countryRatingChangeWl), node:test tests under test/. OUT: fetching the country rating from a public source (C4); override parameter, persistence, audit trail (C7); any UI/CLI/printed output (C8); Indicator 13 as its own function (REQ-03-13 is only the related rule whose thresholds the calculator reuses, per C2); ratings outside the 19-step scale (C1); all other POC requirements.",
+      "source": "JOB.md intro 'Build only these two requirements'; C1, C2, C4, C7, C8; Contract section"
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Testable once clarifications are applied. REQ-06-02: BBB+ -> BB+ = {notches:3, direction:'downgrade', wl:2}; BBB+ -> BBB- = {notches:2, downgrade, wl:1}; 1-notch downgrade wl 0 (C6); upgrade/unchanged wl 0 (C3); notches signed like notchChange (C5). REQ-03-12: 1-notch downgrade -> 1; 2+ -> 2; upgrade/unchanged -> 0 (C3). Public-source pre-fill out (C4); editability via caller input (C7); 'displayed' via return value (C8).",
+      "source": "REQ-06-02, REQ-03-12, C2, C3, C5, C6, C7, C8"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "(a) The REQ-06-02 POC example 'BBB+ -> BB+ = 2 notch downgrade -> WL=1' miscounts: on the C1 scale it is 3 notches. Resolved by C2: BBB+ -> BB+ = 3-notch downgrade -> WL=2; BBB+ -> BBB- = 2 notches -> WL=1. The verbatim POC example must NOT be used as a test case. (b) Calculator thresholds (2 -> 1, 3+ -> 2) differ from Indicator 12 (1 -> 1, 2+ -> 2); intended per C2/C6 (BBB+ -> BBB: calculator wl 0, Indicator 12 wl 1). (c) 'Pre-filled from public source' vs input-only slice: resolved by C4/C7. No unresolved contradiction.",
+      "source": "REQ-06-02 example vs C1 scale; C2; C6; C4; C7"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Both requirements are Must. notch.mjs is a prerequisite of countryRating.mjs ('built on notchChange'); neither ships alone.",
+      "source": "JOB.md intro; Contract section ('built on notchChange')"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "src/ratings/notch.mjs: RATING_SCALE = the 19 C1 strings, uppercase, best first (AAA index 0, CCC- index 18). notchChange(previous, current) -> integer index(current)-index(previous): positive downgrade, negative upgrade, 0 unchanged. notchCalculator(previous, current) -> { notches, direction, wl }: notches = notchChange (C5); direction 'downgrade' if >0, 'upgrade' if <0, 'unchanged' if 0; wl 0 for notches <=1 (C3,C6), 1 for exactly 2, 2 for >=3 (C2). src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) -> 0|1|2: 0 for notchChange <=0 (C3), 1 for exactly 1, 2 for >=2 (REQ-03-12), built on notchChange. Inputs: two positional rating strings, trimmed, case-insensitive (C1).",
+      "source": "Contract section; C1, C2, C3, C5, C6; REQ-03-12"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Any input that is not, after trimming and case-folding, one of the 19 C1 ratings throws a RangeError (empty, whitespace-only, 'BBB +', 'CC', 'D', 'NR', unknown strings, non-strings such as null/undefined/123). Applies to either argument of all three functions. No fallback, no null return. Message wording not part of the contract.",
+      "source": "C1 'anything else is rejected with a RangeError'; Contract section"
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "No existing behaviour to keep: src/ and test/ contain only .gitkeep. Contract names, paths and return shapes are binding going forward. Private 0.1.0 package, no versioning scheme.",
+      "source": "src/.gitkeep, test/.gitkeep; package.json; Contract 'other parts of the POC will import exactly these'"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Library: plain ES modules inside the single watchlist-poc package; src/ratings/notch.mjs and src/indicators/countryRating.mjs with tests under test/.",
+      "source": "JOB.md Contract section; CLAUDE.md; README.md"
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "One library component watchlist-poc-lib; stack javascript (Node 18+ ESM); paths src/ratings/, src/indicators/, test/; owner backend; reviewer reviewer. No services, BFFs, apps, workers or databases.",
+      "source": "JOB.md Contract section; CLAUDE.md; README.md"
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Domain logic in a shared pure library. src/ratings holds the scale and notch math; src/indicators holds the Indicator 12 WL, which depends on src/ratings (notchChange). No I/O. UI consumes it later (C8).",
+      "source": "CLAUDE.md 'Pure functions, no I/O in src/ratings and src/indicators'; Contract; C8"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ESM (.mjs). No npm dependencies may be added. Tests use node:test and node:assert/strict. package.json has type 'module'. Code must stay Node 18 compatible.",
+      "source": "CLAUDE.md; package.json; JOB.md 'Plain Node ESM, no dependencies'"
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "Nothing is stored; no persistence of edited values, no database.",
+      "source": "C7; CLAUDE.md 'no I/O'"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external system is called; the public-source rating fetch is excluded, ratings come in as arguments.",
+      "source": "C4"
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous pure functions; no queues, events or jobs; deterministic and idempotent.",
+      "source": "CLAUDE.md 'Pure functions, no I/O'; Contract signatures"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No latency or volume target stated; constant-time lookup over a 19-item scale.",
+      "source": "JOB.md (no NFR stated); CLAUDE.md"
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "In-process library without runtime dependencies or I/O; nothing that can be down.",
+      "source": "CLAUDE.md 'No npm dependencies', 'no I/O'; C4"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Only input validation applies: strict allow-list against the 19 C1 ratings, RangeError otherwise. No authn/authz/secrets since there is no endpoint or UI.",
+      "source": "C1; C8; CLAUDE.md 'no I/O'"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "Inputs are credit rating symbols only, no personal data; no logging or storage.",
+      "source": "Contract signatures; C7; C8; CLAUDE.md"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "The business explicitly excluded an audit trail for analyst edits from this slice.",
+      "source": "C7 'no audit trail in this slice'"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "No logs, metrics or printed output; pure modules with no I/O.",
+      "source": "CLAUDE.md 'no I/O in src/ratings and src/indicators'; C8"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "No regulation beyond the confirmed business rules is named. Binding policy: C1 scale, Indicator 12 thresholds (REQ-03-12), calculator thresholds (Indicator 13 per C2), upgrade/unchanged = 0 (C3).",
+      "source": "JOB.md 'Clarifications for this slice (confirmed by the business unit)'; REQ-03-12; C2; C3"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests with node:test + node:assert/strict in test/<area>/<name>.test.mjs (test/ratings/notch.test.mjs, test/indicators/countryRating.test.mjs), run by `node --test`. Expected data from C1/C2/C3/C5/C6 and REQ-03-12, not from the verbatim REQ-06-02 example (C2). No coverage percentage set.",
+      "source": "CLAUDE.md 'Tests'; JOB.md 'tests with node --test'; .deliver.json verify_full"
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "Merge check is `node --test`, must pass. No lint/typecheck/security scan configured. Commits carry no AI attribution.",
+      "source": ".deliver.json 'verify_full': 'node --test'; package.json scripts.test; role card Commits rule"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "answer": "Nothing is deployed; other POC parts import the two modules. Merge is local into main. No feature flags or migrations; rollback = revert the commit.",
+      "source": "JOB.md Contract section; .deliver.json 'merge_mode': 'local'"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "owner": "pm",
+      "question": "Should this slice update README.md or add JSDoc on the exports, or ship code and tests only?",
+      "options": [
+        "Code and tests only",
+        "JSDoc on the 4 exports, citing REQ ids and clarifications",
+        "JSDoc plus a short README section on the contract"
+      ],
+      "impact": "No effect on behaviour or the contract; affects discoverability and review effort.",
+      "history": [
+        {
+          "status": "open",
+          "question": "Should this slice update README.md or add JSDoc on the exports, or ship code and tests only?",
+          "at": "2026-10-03T22:05:32.209Z"
+        }
+      ],
+      "answer": "No documentation deliverable is required: code and tests only (short JSDoc inside scope files is optional).",
+      "source": "JOB.md (no docs, changelog or runbook requested); PM decision: michael 2026-10-03"
+    },
+    {
+      "id": "X-error-message",
+      "status": "decided",
+      "owner": "pm",
+      "question": "C1 fixes the error type (RangeError) but not the message. Should the message name the rejected value and argument, and must tests assert the message or only the type?",
+      "options": [
+        "Tests assert the type only; message free-form but includes the offending value",
+        "Fixed message format, asserted in tests"
+      ],
+      "impact": "Debugging convenience and test strictness only; no WL or business rule changes.",
+      "history": [
+        {
+          "status": "open",
+          "question": "C1 fixes the error type (RangeError) but not the message. Should the message name the rejected value and argument, and must tests assert the message or only the type?",
+          "at": "2026-10-03T22:05:32.406Z"
+        }
+      ],
+      "answer": "Tests assert RangeError type only; message includes the offending value",
+      "source": "pm: michael 2026-10-03 — Type is the contract (C1); wording is a debugging detail"
+    },
+    {
+      "id": "X-trim-semantics",
+      "status": "decided",
+      "owner": "pm",
+      "question": "'Trimmed' in C1: String.prototype.trim (all Unicode whitespace) or ASCII spaces only? Inner whitespace stays invalid either way.",
+      "options": [
+        "String.prototype.trim (standard JS meaning)",
+        "ASCII space only"
+      ],
+      "impact": "Edge case only: whether tab/NBSP-padded input is accepted. Valid rating set and thresholds unchanged.",
+      "history": [
+        {
+          "status": "open",
+          "question": "'Trimmed' in C1: String.prototype.trim (all Unicode whitespace) or ASCII spaces only? Inner whitespace stays invalid either way.",
+          "at": "2026-10-03T22:05:32.579Z"
+        }
+      ],
+      "answer": "String.prototype.trim",
+      "source": "pm: michael 2026-10-03 — Standard JS meaning of trimmed; no effect on valid set or thresholds"
+    },
+    {
+      "id": "X-scale-immutability",
+      "status": "decided",
+      "owner": "pm",
+      "question": "Should RATING_SCALE be a frozen array?",
+      "options": [
+        "Object.freeze([...19 ratings])",
+        "Plain array"
+      ],
+      "impact": "Internal robustness only; contract only requires the 19 ratings, best first.",
+      "history": [
+        {
+          "status": "open",
+          "question": "Should RATING_SCALE be a frozen array?",
+          "at": "2026-10-03T22:05:32.755Z"
+        }
+      ],
+      "answer": "Object.freeze array",
+      "source": "pm: michael 2026-10-03 — Prevents importers mutating the shared scale; contract unchanged"
+    },
+    {
+      "id": "X-non-string-input",
+      "status": "decided",
+      "answer": "Non-string arguments (null, undefined, numbers, objects) are rejected with RangeError, not TypeError; the function must not crash with a different error such as .trim on undefined. Both arguments required; a missing one counts as undefined and is rejected.",
+      "source": "C1 'anything else is rejected with a RangeError'"
+    },
+    {
+      "id": "X-c2-test-data",
+      "status": "decided",
+      "answer": "The verbatim REQ-06-02 example is wrong and must not appear as an expected value. Binding values: notchCalculator('BBB+','BB+') = {notches:3, direction:'downgrade', wl:2}; ('BBB+','BBB-') = {notches:2, downgrade, wl:1}; ('BBB+','BBB') = {notches:1, downgrade, wl:0}; ('BB+','BBB+') = {notches:-3, upgrade, wl:0}; ('A','A') = {notches:0, unchanged, wl:0}; countryRatingChangeWl('BBB+','BBB') = 1; ('BBB+','BBB-') = 2; ('AAA','CCC-') = 2 (notchChange 18).",
+      "source": "C2, C3, C5, C6; REQ-03-12"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "watchlist-poc-lib",
+        "kind": "library",
+        "stack": [
+          "javascript"
+        ],
+        "path": [
+          "src/ratings/",
+          "src/indicators/",
+          "test/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Plain Node 18+ ESM (.mjs), no npm deps, pure functions with no I/O. src/ratings/notch.mjs exports RATING_SCALE, notchChange, notchCalculator; src/indicators/countryRating.mjs exports countryRatingChangeWl and imports notchChange from ../ratings/notch.mjs. Tests in test/ratings/ and test/indicators/ using node:test + node:assert/strict."
+      }
+    ]
+  }
+}

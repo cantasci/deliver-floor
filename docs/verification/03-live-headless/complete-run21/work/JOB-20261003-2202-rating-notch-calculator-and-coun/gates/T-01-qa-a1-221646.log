@@ -1,0 +1,305 @@
+# qa_verify: node --test test/integration/ratings/*.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE deep-equals the 19 C1 ratings, best first
+ok 1 - AC-1: RATING_SCALE deep-equals the 19 C1 ratings, best first
+  ---
+  duration_ms: 1.975164
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is immutable (frozen, push/assign throw TypeError)
+ok 2 - AC-1: RATING_SCALE is immutable (frozen, push/assign throw TypeError)
+  ---
+  duration_ms: 0.54212
+  type: 'test'
+  ...
+# Subtest: C2: module exports exactly RATING_SCALE, notchCalculator, notchChange (no Indicator 13 export)
+ok 3 - C2: module exports exactly RATING_SCALE, notchCalculator, notchChange (no Indicator 13 export)
+  ---
+  duration_ms: 0.146787
+  type: 'test'
+  ...
+# Subtest: AC-2: BBB+ -> BB+ is 3, BBB+ -> BBB- is 2, BBB- -> BB+ is 1
+ok 4 - AC-2: BBB+ -> BB+ is 3, BBB+ -> BBB- is 2, BBB- -> BB+ is 1
+  ---
+  duration_ms: 0.247197
+  type: 'test'
+  ...
+# Subtest: AC-2: BB+ -> BBB+ is -3 (upgrade)
+ok 5 - AC-2: BB+ -> BBB+ is -3 (upgrade)
+  ---
+  duration_ms: 0.139188
+  type: 'test'
+  ...
+# Subtest: AC-2: equal ratings give +0, never -0
+ok 6 - AC-2: equal ratings give +0, never -0
+  ---
+  duration_ms: 0.131045
+  type: 'test'
+  ...
+# Subtest: AC-2: scale ends AAA -> CCC- is 18 and CCC- -> AAA is -18
+ok 7 - AC-2: scale ends AAA -> CCC- is 18 and CCC- -> AAA is -18
+  ---
+  duration_ms: 0.095522
+  type: 'test'
+  ...
+# Subtest: AC-2: all 361 pairs return index(current) - index(previous), an integer, antisymmetric
+ok 8 - AC-2: all 361 pairs return index(current) - index(previous), an integer, antisymmetric
+  ---
+  duration_ms: 0.650716
+  type: 'test'
+  ...
+# Subtest: AC-3: lower case, surrounding whitespace and mixed case are normalised
+ok 9 - AC-3: lower case, surrounding whitespace and mixed case are normalised
+  ---
+  duration_ms: 0.318627
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator(" bbb+","BBB- ") deep-strict-equals {2, downgrade, 1}
+ok 10 - AC-3: notchCalculator(" bbb+","BBB- ") deep-strict-equals {2, downgrade, 1}
+  ---
+  duration_ms: 0.541861
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator gives the same result for normalised and canonical input
+ok 11 - AC-3: notchCalculator gives the same result for normalised and canonical input
+  ---
+  duration_ms: 0.207832
+  type: 'test'
+  ...
+# Subtest: AC-3 (X-trim-semantics): Unicode whitespace removed by trim() is valid
+ok 12 - AC-3 (X-trim-semantics): Unicode whitespace removed by trim() is valid
+  ---
+  duration_ms: 0.095656
+  type: 'test'
+  ...
+# Subtest: AC-3: inner whitespace, whitespace-only, zero-width space and "aaa-" are rejected
+ok 13 - AC-3: inner whitespace, whitespace-only, zero-width space and "aaa-" are rejected
+  ---
+  duration_ms: 0.285402
+  type: 'test'
+  ...
+# Subtest: AC-3: look-alikes (U+2212 minus, en dash, full-width letters) are rejected
+ok 14 - AC-3: look-alikes (U+2212 minus, en dash, full-width letters) are rejected
+  ---
+  duration_ms: 0.349166
+  type: 'test'
+  ...
+# Subtest: AC-4: BBB+ -> BB+ is 3 notches, downgrade, WL 2 (C2 corrected example)
+ok 15 - AC-4: BBB+ -> BB+ is 3 notches, downgrade, WL 2 (C2 corrected example)
+  ---
+  duration_ms: 0.143084
+  type: 'test'
+  ...
+# Subtest: AC-4: BBB+ -> BBB- is 2 notches, downgrade, WL 1
+ok 16 - AC-4: BBB+ -> BBB- is 2 notches, downgrade, WL 1
+  ---
+  duration_ms: 0.089826
+  type: 'test'
+  ...
+# Subtest: AC-5: 1-notch downgrades A -> A- and BBB+ -> BBB are WL 0 (C6)
+ok 17 - AC-5: 1-notch downgrades A -> A- and BBB+ -> BBB are WL 0 (C6)
+  ---
+  duration_ms: 0.141584
+  type: 'test'
+  ...
+# Subtest: AC-5: A -> BBB+ is 2 notches, WL 1
+ok 18 - AC-5: A -> BBB+ is 2 notches, WL 1
+  ---
+  duration_ms: 0.075228
+  type: 'test'
+  ...
+# Subtest: AC-5: A -> BBB is 3 notches WL 2; AAA -> CCC- is 18 notches WL 2
+ok 19 - AC-5: A -> BBB is 3 notches WL 2; AAA -> CCC- is 18 notches WL 2
+  ---
+  duration_ms: 0.088981
+  type: 'test'
+  ...
+# Subtest: AC-5: derived data rows (AAA->AA+, CCC->CCC-, A+->A-, CCC+->CCC-, AA-->A-, BB->B-)
+ok 20 - AC-5: derived data rows (AAA->AA+, CCC->CCC-, A+->A-, CCC+->CCC-, AA-->A-, BB->B-)
+  ---
+  duration_ms: 0.151707
+  type: 'test'
+  ...
+# Subtest: AC-6: upgrades give negative notches, direction "upgrade" and WL 0 (C3, C5)
+ok 21 - AC-6: upgrades give negative notches, direction "upgrade" and WL 0 (C3, C5)
+  ---
+  duration_ms: 0.097866
+  type: 'test'
+  ...
+# Subtest: AC-6: unchanged ratings give {0, "unchanged", 0} (not -0)
+ok 22 - AC-6: unchanged ratings give {0, "unchanged", 0} (not -0)
+  ---
+  duration_ms: 0.071627
+  type: 'test'
+  ...
+# Subtest: AC-7: for all 361 pairs the result is a plain {notches, direction, wl} consistent with notchChange
+ok 23 - AC-7: for all 361 pairs the result is a plain {notches, direction, wl} consistent with notchChange
+  ---
+  duration_ms: 2.172279
+  type: 'test'
+  ...
+# Subtest: AC-7: 361-pair totals (downgrade 171 / upgrade 171 / unchanged 19; WL0 208 / WL1 17 / WL2 136)
+ok 24 - AC-7: 361-pair totals (downgrade 171 / upgrade 171 / unchanged 19; WL0 208 / WL1 17 / WL2 136)
+  ---
+  duration_ms: 0.849939
+  type: 'test'
+  ...
+# Subtest: AC-7: calls are deterministic and return a fresh object each time
+ok 25 - AC-7: calls are deterministic and return a fresh object each time
+  ---
+  duration_ms: 0.26684
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "" as previous or current throws RangeError (both functions)
+ok 26 - AC-11: invalid "" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.238571
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "   " as previous or current throws RangeError (both functions)
+ok 27 - AC-11: invalid "   " as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.102196
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "BBB +" as previous or current throws RangeError (both functions)
+ok 28 - AC-11: invalid "BBB +" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.094359
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "BBB++" as previous or current throws RangeError (both functions)
+ok 29 - AC-11: invalid "BBB++" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.10495
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "AA−" as previous or current throws RangeError (both functions)
+ok 30 - AC-11: invalid "AA−" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.09587
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "CC" as previous or current throws RangeError (both functions)
+ok 31 - AC-11: invalid "CC" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.085677
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "C" as previous or current throws RangeError (both functions)
+ok 32 - AC-11: invalid "C" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.086719
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "D" as previous or current throws RangeError (both functions)
+ok 33 - AC-11: invalid "D" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.107251
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "SD" as previous or current throws RangeError (both functions)
+ok 34 - AC-11: invalid "SD" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.144366
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "NR" as previous or current throws RangeError (both functions)
+ok 35 - AC-11: invalid "NR" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.165211
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "Baa1" as previous or current throws RangeError (both functions)
+ok 36 - AC-11: invalid "Baa1" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.111704
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "AAA-" as previous or current throws RangeError (both functions)
+ok 37 - AC-11: invalid "AAA-" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.094187
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid null as previous or current throws RangeError (both functions)
+ok 38 - AC-11: invalid null as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.116071
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid undefined as previous or current throws RangeError (both functions)
+ok 39 - AC-11: invalid undefined as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.086831
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid 7 as previous or current throws RangeError (both functions)
+ok 40 - AC-11: invalid 7 as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.087933
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid [object Object] as previous or current throws RangeError (both functions)
+ok 41 - AC-11: invalid [object Object] as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.125443
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid AAA as previous or current throws RangeError (both functions)
+ok 42 - AC-11: invalid AAA as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.099301
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid true as previous or current throws RangeError (both functions)
+ok 43 - AC-11: invalid true as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.086384
+  type: 'test'
+  ...
+# Subtest: AC-11: missing arguments throw RangeError
+ok 44 - AC-11: missing arguments throw RangeError
+  ---
+  duration_ms: 0.172122
+  type: 'test'
+  ...
+# Subtest: AC-11: off-scale ratings and null/number input throw RangeError, never return a value
+ok 45 - AC-11: off-scale ratings and null/number input throw RangeError, never return a value
+  ---
+  duration_ms: 0.201612
+  type: 'test'
+  ...
+# Subtest: AC-11: exotic non-strings and prototype keys throw RangeError, never TypeError
+ok 46 - AC-11: exotic non-strings and prototype keys throw RangeError, never TypeError
+  ---
+  duration_ms: 0.587519
+  type: 'test'
+  ...
+# Subtest: AC-12: calling the functions writes nothing to stdout/stderr and exits 0 (fresh process)
+ok 47 - AC-12: calling the functions writes nothing to stdout/stderr and exits 0 (fresh process)
+  ---
+  duration_ms: 34.733587
+  type: 'test'
+  ...
+# Subtest: AC-12: src/ratings has no imports and no I/O, process or network access
+ok 48 - AC-12: src/ratings has no imports and no I/O, process or network access
+  ---
+  duration_ms: 1.015869
+  type: 'test'
+  ...
+# Subtest: AC-13 (C2): the old miscounted example is not what the library returns
+ok 49 - AC-13 (C2): the old miscounted example is not what the library returns
+  ---
+  duration_ms: 0.129132
+  type: 'test'
+  ...
+1..49
+# tests 49
+# suites 0
+# pass 49
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 144.498592

@@ -1,0 +1,85 @@
+# gate: T-02  attempt: 1  2026-10-03T22:17:59Z
+ok    on job/JOB-20261003-2202-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: normalises case and whitespace (AC-3)
+ok 1 - normalises case and whitespace (AC-3)
+  ---
+  duration_ms: 2.08105
+  type: 'test'
+  ...
+# Subtest: unchanged rating or upgrade gives WL 0 (AC-8, C3)
+ok 2 - unchanged rating or upgrade gives WL 0 (AC-8, C3)
+  ---
+  duration_ms: 0.249585
+  type: 'test'
+  ...
+# Subtest: 1-notch downgrade gives WL 1 (AC-8)
+ok 3 - 1-notch downgrade gives WL 1 (AC-8)
+  ---
+  duration_ms: 0.141821
+  type: 'test'
+  ...
+# Subtest: downgrade of 2 or more notches gives WL 2 (AC-8)
+ok 4 - downgrade of 2 or more notches gives WL 2 (AC-8)
+  ---
+  duration_ms: 0.125258
+  type: 'test'
+  ...
+# Subtest: all 361 pairs follow the threshold rule on notchChange (AC-8)
+ok 5 - all 361 pairs follow the threshold rule on notchChange (AC-8)
+  ---
+  duration_ms: 1.278505
+  type: 'test'
+  ...
+# Subtest: differs from notchCalculator only for 1 and 2 notch downgrades (AC-9, C6)
+ok 6 - differs from notchCalculator only for 1 and 2 notch downgrades (AC-9, C6)
+  ---
+  duration_ms: 0.729459
+  type: 'test'
+  ...
+# Subtest: has exactly two parameters, is stateless and ignores extra arguments (AC-10, C7)
+ok 7 - has exactly two parameters, is stateless and ignores extra arguments (AC-10, C7)
+  ---
+  duration_ms: 0.195628
+  type: 'test'
+  ...
+# Subtest: exports only countryRatingChangeWl
+ok 8 - exports only countryRatingChangeWl
+  ---
+  duration_ms: 0.217508
+  type: 'test'
+  ...
+# Subtest: invalid ratings throw RangeError in either position (AC-11, C1)
+ok 9 - invalid ratings throw RangeError in either position (AC-11, C1)
+  ---
+  duration_ms: 1.89695
+  type: 'test'
+  ...
+# Subtest: missing arguments throw RangeError (AC-11)
+ok 10 - missing arguments throw RangeError (AC-11)
+  ---
+  duration_ms: 0.392409
+  type: 'test'
+  ...
+# Subtest: errors are never swallowed (AC-11)
+ok 11 - errors are never swallowed (AC-11)
+  ---
+  duration_ms: 0.300898
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 72.115568
+ok    verify passed
