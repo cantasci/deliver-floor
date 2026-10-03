@@ -26,7 +26,7 @@ async function answer(win) {
   for (const it of (r.items ?? r).filter((x) => x.status === 'open' && x.owner !== 'pm')) {
     // the answer that fits best (tests/pick-answer.mjs) — a first match once answered the wrong question
     let a = null;
-    try { a = { answer: execFileSync('node', [path.join(__dirname, 'pick-answer.mjs'), answersFile, it.question], { encoding: 'utf8' }) }; } catch { a = null; }
+    try { a = { answer: execFileSync('node', [path.join(__dirname, 'pick-answer.mjs'), answersFile, it.question, it.id], { encoding: 'utf8' }) }; } catch { a = null; }
     if (!a) { if (!unanswered.has(it.id)) log(`no prepared answer for ${it.id} — a real person must answer: ${it.question}`); unanswered.add(it.id); continue; }
     execFileSync(dlBin, ['-C', repo, 'clarify', it.id, a.answer], { env: { ...process.env, DELIVER_APPROVER: 'e2e-human' } });
     log(`human answered ${it.id}: ${it.question.slice(0, 90)}`); n++;

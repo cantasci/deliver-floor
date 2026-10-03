@@ -108,7 +108,10 @@ READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.m
 3. Open items owned by **pm** (implementation details) are yours: decide each with a rationale —
    `"$DL" decide <id> "<decision>" "<rationale>"`. `dl` refuses this for business-owned items.
    Open items owned by **business** → `"$DL" phase awaiting_clarification` and ask the human — all in one go (AskUserQuestion, one
-   question per item, the BA's options as choices). Record each answer **in their words**: `"$DL" clarify <id> "<answer>"`.
+   question per item, the BA's options as choices). Record each answer **in their words**: `"$DL" clarify <id> "<answer>"` —
+   but first check it answers **that** item: the same subject, and it settles the question (picks an option or states the
+   rule). An answer about something else (another item, a rule already in the request) is not recorded: tell the human which
+   question it does not answer and ask that one again.
    Never answer a business item yourself, never pick a default. Headless: `QUESTIONS.md` is the question; stop.
    On resume, answers already recorded with `dl clarify` (source `human: …`) **are the human's**: hooks stop every agent and every
    headless session from running `dl clarify`, so only a person at a terminal can have recorded them. Read each answer; if one

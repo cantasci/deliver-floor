@@ -13,7 +13,7 @@ Last updated: 2026-10-03.
 | L1 | Headless `complete` (`tests/e2e-live.sh complete`) | last passed in run 7; shared code changed since (`stop-guard`, validate path rule, `roles.mjs`, plugin detection) | **done** — run 21 passed 25/25 ([report](verification/03-live-headless/complete-run21/report.md)) |
 | L2 | Headless `incomplete` (`tests/e2e-live.sh incomplete`) | run 19 failed in the test's prepared human (first-match answer, fixed: `tests/pick-answer.mjs`); run 20 stopped correctly on two new business questions, which the user answered | re-running with the user's answers |
 | L3 | Munder Difflin floor with the kit **copied** (not a plugin) and seats | last live with a copy was run 15, before the `md-inbox` and `stop-guard` fixes; run 18 verified the plugin install | waits for L1/L2 |
-| L4 | **Interactive mode** — a person at the terminal with Michael (`tests/e2e-interactive.sh`, new) | never run live before | running |
+| L4 | **Interactive mode** — a person at the terminal with Michael (`tests/e2e-interactive.sh`, new) | never run live before; the first run's prepared human answered a compliance question wrongly (R2), so it is repeated after the picker fix | first run finishing; repeat planned |
 
 ## Multiple projects on one floor
 
@@ -33,6 +33,8 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | # | What | Proposal |
 | --- | --- | --- |
 | R1 | The readiness review can pass an **interpretation as a sourced decision**: in run 18 the BA marked what "trimmed" means as `decided`, citing C1/C5, which did not define it (the user has since decided it: `String.prototype.trim()`, now in `JOB-parallel.md` C5). | a decision's source must state the decision itself; a term the source uses but does not define is an open business item. Changing this makes the BA ask more questions — the live tests' prepared answers must then cover them. Needs the user's go-ahead. |
+
+| R2 | **Michael recorded an answer that does not answer its question.** In the first interactive run the test's prepared human (a first-keyword match) answered a compliance question ("is any banking regulation a constraint?") with the WL-thresholds answer; Michael recorded it with `dl clarify` and moved on. In headless run 19 he caught the same kind of mismatch and asked again — so the playbook rule exists but was not applied. | Michael checks each answer against its question before `dl clarify` and asks again when it does not answer it (playbook wording + a check in the live tests: every recorded clarify answers its question). The test's picker is being made strict (an item id, or at least two keywords — else a person answers). |
 
 ## Verified by the owner, not here
 
