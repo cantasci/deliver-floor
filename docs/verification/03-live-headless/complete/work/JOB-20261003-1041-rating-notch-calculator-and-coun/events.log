@@ -1,0 +1,42 @@
+2026-10-03T10:41:22Z	new	Rating notch calculator and country indicator
+2026-10-03T10:41:31Z	jobset	stack: .stack=["javascript"]
+2026-10-03T10:41:31Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: pure domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02 notchCalculator and REQ-03-12 countryRatingChangeWl implementation"},{"role":"qa","agent":"qa-tester","why":"always: integration tests for the REQ-06-02 and REQ-03-12 acceptance criteria"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer for the Node ESM change"}]
+2026-10-03T10:41:31Z	jobset	assumptions: .assumptions += ["No UI/CLI/persistence in this slice (C7, C8); REQ-03-13 is only the WL threshold rule reused by the calculator, not a separate indicator","Unit tests live in test/ratings and test/indicators; integration tests in test/integration/**"]
+2026-10-03T10:41:32Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T10:41:32Z	phase	readiness
+2026-10-03T10:42:56Z	agent	business-analyst a4b5b1aa: {"items":[ {"id":"PRD-goal","status":"decided","answer":"Deliver a notch calculator (REQ-06-02) and the Indicator 12 country rating change WL (REQ-03-12) as imp
+2026-10-03T10:43:17Z	readiness	29 items: 17 decided, 9 n/a, 3 open
+2026-10-03T10:43:23Z	decide	DEL-docs: JSDoc on the exports only — The request asks for no docs; the contract is consumed by other parts, so short JSDoc on the exports is cheap and enough. No README change.
+2026-10-03T10:43:23Z	decide	X-scale-immutability: Frozen array (Object.freeze) — RATING_SCALE is shared by importers; freezing prevents accidental mutation without changing content, order or the contract.
+2026-10-03T10:43:23Z	decide	X-error-message: Message names the parameter and the rejected value; tests assert RangeError only — C1 fixes only the error type; a descriptive message aids diagnosis and tests stay independent of the text.
+2026-10-03T10:43:39Z	readiness	29 items: 19 decided, 10 n/a, 0 open
+2026-10-03T10:43:40Z	freeze	readiness + architecture frozen (516f6c99f69d)
+2026-10-03T10:43:40Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T10:43:40Z	phase	planning
+2026-10-03T10:45:48Z	agent	business-analyst a8d375be: # Plan > Produced by the Business Analyst (MODE PLAN), written to this file by Michael. Keep the headings as they are — the ACs are checked one by one at clos
+2026-10-03T10:47:26Z	agent	ecc:architect a007d745: [{"tmp_id":"B1","title":"Rating scale, notchChange and notchCalculator (REQ-06-02) in src/ratings/notch.mjs","role":"backend","component":"watchlist-lib","conte
+2026-10-03T10:51:12Z	agent	business-analyst a6d0e0ff: === T-01 === # T-01: Rating scale, notchChange and notchCalculator (REQ-06-02) in src/ratings/notch.mjs ## User story As a developer building other parts of the
+2026-10-03T10:52:19Z	phase	executing
+2026-10-03T10:52:24Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T10:53:46Z	agent	backend-dev a21743cb: status: done commit: 8f3bcca verify: passed (`node --test test/ratings/*.test.mjs`: 32 tests, 0 fail) open issues: The branch is not pushed. The `bash-guard.sh`
+2026-10-03T10:53:50Z	gate	T-01 PASS
+2026-10-03T10:54:54Z	agent	qa-tester adfce7d0: All 21 tests pass and `qa_verify` exits 0, but the push failed because the sandbox hook blocked it. The commit is local only, as `e1ce1ed` "T-01 QA: integration
+2026-10-03T10:54:58Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-9 pass, AC-14 pass, AC-15 (notch part) pass: 21 integration tests incl. 361-pair sweeps and 138-call invalid matrix
+2026-10-03T10:55:19Z	agent	ecc:typescript-reviewer a4c21c62: ```json {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: describeValue returns Object.prototype.toString.call(value) for objects. That is safe
+2026-10-03T10:55:23Z	review	T-01 reviewer approve — ACs met, no blocking items; 53 tests green in worktree
+2026-10-03T10:55:24Z	integrate	T-01 merged
+2026-10-03T10:55:29Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-03T10:56:29Z	agent	backend-dev ae70ed81: status: done commit: 2197628 verify: passed (`node --test test/indicators/*.test.mjs` gives 57 pass, 0 fail; the full `node --test` gives 110 pass, 0 fail) open
+2026-10-03T10:56:33Z	gate	T-02 PASS
+2026-10-03T10:57:32Z	agent	qa-tester a519ea04: ```json {"verdict":"pass", "tests":["test/integration/countryRating.integration.test.mjs","test/integration/purity.integration.test.mjs"], "criteria":[ {"ac":"A
+2026-10-03T10:57:38Z	qa	T-02 pass (qa_verify PASS) — AC-4,AC-5 (indicator), AC-10..AC-15 pass: 26 integration tests incl. 361-pair sweeps, purity/silence/deps checks; full suite 136 pass 0 fail
+2026-10-03T10:57:54Z	agent	ecc:typescript-reviewer aed75a19: {"verdict":"approve","blocking":[],"nits":["test/integration/countryRating.integration.test.mjs: the AC-2 matrix and the 361-pair sweeps run inside single tests
+2026-10-03T10:57:58Z	review	T-02 reviewer approve — ACs met, no blocking items; nits only (test-style)
+2026-10-03T10:57:59Z	integrate	T-02 merged
+2026-10-03T10:58:03Z	phase	integrating
+2026-10-03T10:58:04Z	verify-all	PASS
+2026-10-03T10:58:08Z	phase	closing
+2026-10-03T10:59:16Z	agent	business-analyst a0aca4a0: ## Closing check: JOB-20261003-1041, rating notch calculator and Indicator 12 All 15 ACs are met. I re-ran the full suite myself on a copy of the merged branch 
+2026-10-03T10:59:30Z	learn	backend: Run unit tests with a glob (node --test test/<area>/*.test.mjs): a bare directory argument fails on Node 22.
+2026-10-03T10:59:30Z	learn	all: A decided DEL-docs readiness item forces the docs role; if only inline JSDoc is wanted, record DEL-docs as n_a before freezing.
+2026-10-03T10:59:35Z	ship	local merge into main

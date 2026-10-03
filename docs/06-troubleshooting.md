@@ -46,7 +46,7 @@ Start with `scripts/doctor.sh <repo>`, then `dl status`, then `tail -50 .work/<j
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| Michael's terminal shows "Select login method" | Munder Difflin strips `CLAUDE_*` variables from its terminals; this `claude` was never logged in on this user (or authenticates through such variables) | log in once with `claude` in a normal terminal (`/login`), or set `ANTHROPIC_API_KEY`; in CI/containers point Munder Difflin's `defaultCommand` and `settings.munder.claude_command` at a wrapper that exports the auth variables and `exec claude "$@"` ([07](07-munder-difflin.md#authentication)) |
+| Michael's terminal shows Claude Code's first-run screens ("Select login method", theme) and your message went into them | Claude Code was never started interactively in this HOME (fresh user, CI) | run `claude` once in a normal terminal, or set `"hasCompletedOnboarding": true` in `~/.claude.json`; restart the floor. If you authenticate through a `CLAUDE_*` variable other than `CLAUDE_CODE_OAUTH_TOKEN`, see [07 § 5](07-munder-difflin.md#5-authentication-and-first-run) — Munder Difflin strips those |
 | Electron fails to start: `pty.node` / `better_sqlite3.node` | native modules not built for Electron | `scripts/init.sh --munder …` rebuilds them (node-pty from local headers, better-sqlite3 from the Electron prebuild) |
 | `dl md-dispatch`: HIVE_ROOT is not set | run outside Munder Difflin | run from Michael's floor terminal, or set `settings.munder.hive_root` |
 | A floor worker never starts | `orchestratorMaySpawn` off, or the provider CLI is missing | `scripts/init.sh --munder` sets it; Munder Difflin offers to install the CLI |

@@ -37,7 +37,8 @@ grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*j
   && deny "job/ branches must not be deleted by agents. Delete them yourself after the job is closed."
 
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
-dl_re='(^|[;&|[:space:](/"'"'"'])dl[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
+# dl as a word, a path (…/bin/dl) or the variable the playbook uses ("$DL", ${DL})
+dl_re='(^|[;&|[:space:](/"'"'"'])(dl|\$\{?DL\}?)"?[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
 if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|learn|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|cleanup)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
@@ -50,5 +51,20 @@ grep -Eq "${dl_re}phase[[:space:]][^;&|]*--force" <<<"$cmd" \
   && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it, from their own terminal."
 grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [[ ${DELIVER_HEADLESS:-} == 1 ]] \
   && deny "granting a blocked card new attempts is a human decision; in headless mode the human runs it."
+
+# --- the flow's state files: written by dl only, once work has started -----------------------------------------
+# job.json and board.json are sealed (sha256); a write by any other tool stops the flow until a human reseals. Refuse
+# such a write up front, with the command to use instead, so the session corrects itself.
+if grep -Eq '(job|board)\.json' <<<"$cmd" && grep -Eq '(writeFileSync|>[[:space:]]*[^[:space:]|&;]*(job|board)\.json|sed[[:space:]]+(-[a-zA-Z]*i|--in-place)|tee[[:space:]][^|&;]*(job|board)\.json|(mv|cp)[[:space:]][^|&;]*(job|board)\.json[[:space:]]*($|[;&|])|open\([^)]*(job|board)\.json[^)]*["'"'"'][wa])' <<<"$cmd"; then
+  if owned="$(owned_job || active_jobs | awk 'NR==1')" && [[ -n $owned ]]; then
+    IFS=$'\t' read -r job root <<<"$owned"
+    phase="$(jq -r .phase "$root/.work/$job/job.json" 2>/dev/null)"
+    grep -Eq '(^|[^[:alnum:]_])job\.json' <<<"$cmd" \
+      && deny "job.json is written by dl only (sealed). Use: dl jobset '<jq expr>' (logged) — or ask the human."
+    case $phase in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) ;;
+      *) deny "board.json is written by dl only once work has started (phase $phase; sealed). Change a ready/blocked card with: dl card <id> set <field> <json> \"<reason>\" · add one with: dl card add <card.json> \"<reason>\" · a running card's contract does not change — put extra detail in the dispatch prompt." ;;
+    esac
+  fi
+fi
 
 exit 0

@@ -63,6 +63,9 @@ REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
 
 die() { echo "dl: $*" >&2; exit 1; }
 refuse() { local code=$1; shift; echo "dl: REFUSED — $*" >&2; exit "$code"; }
+# Human decisions are never taken inside an unattended session (run-headless.sh sets DELIVER_HEADLESS=1 for claude -p).
+# The bash-guard hook stops them too; this check holds whatever name the command is called by.
+human_only() { [[ ${DELIVER_HEADLESS:-} == 1 ]] && refuse 8 "$1 is the human's decision and this session is unattended (DELIVER_HEADLESS=1). Write it down (QUESTIONS.md / APPROVAL.md) and stop; the human runs it in a terminal."; return 0; }
 command -v jq >/dev/null || die "jq is required (brew install jq / apt install jq)"
 command -v git >/dev/null || die "git is required"
 
@@ -379,7 +382,7 @@ cmd_next() {
 cmd_phase() {
   load_job
   [[ ${1:-} == aborted || ${1:-} == readiness ]] || assert_frozen
-  local p=${1:-} force=0; [[ ${2:-} == --force ]] && force=1
+  local p=${1:-} force=0; [[ ${2:-} == --force ]] && { human_only "dl phase --force"; force=1; }
   [[ " $PHASES " == *" $p "* ]] || die "invalid phase: '$p' — valid: $PHASES"
   local cur; cur="$(phase_now)"
   if [[ $force -eq 0 ]]; then
@@ -457,7 +460,7 @@ assert_frozen() {
     || refuse 6 "readiness.json (requirements decisions + architecture) changed after it was frozen at planning. Frozen decisions do not change; only the human can reopen them from a terminal: dl unfreeze \"<reason>\""
 }
 cmd_unfreeze() {
-  load_job
+  human_only "dl unfreeze"; load_job
   local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl unfreeze "<why the frozen decisions must change>"'
   [[ -n "$(jq -r '.frozen.readiness_sha256 // empty' "$JOBJ")" ]] || refuse 1 "nothing is frozen"
   jq_inplace "$JOBJ" --arg r "$reason" --arg t "$(now)" --arg by "${DELIVER_APPROVER:-${USER:-human}}" \
@@ -481,7 +484,7 @@ cmd_decide() {
   reset_stop_guard; log_event decide "$id: $decision — $why"
 }
 cmd_clarify() {
-  load_job
+  human_only "answering a business question (dl clarify)"; load_job
   local id=${1:-} answer=${2:-}; [[ -n $id && -n $answer ]] || die 'usage: dl clarify <id> "<answer>"'
   [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "clarifications are recorded in readiness / awaiting_clarification (now: $(phase_now))"
   node "$BIN_DIR/readiness.mjs" clarify "$JOB_DIR" "$id" "${DELIVER_APPROVER:-${USER:-human}}" "$answer" || exit 1
@@ -631,6 +634,7 @@ cmd_card() {
       rm -f "$BOARD.bak"; log_event card-set "$card.$field = $(jq -c . <<<"$json" | cut -c1-120) — $reason"
       tracker note "$card" michael "changed $field: $reason"; echo "$card.$field updated" ;;
     retry)
+      human_only "granting a blocked card new attempts (dl card retry)"
       [[ $cur == blocked || $cur == ready ]] || refuse 1 "retry is for blocked cards (now: $cur)"
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.attempts=0 | .state="ready")'
       reset_stop_guard; log_event retry "$card (human-granted)"; tracker sync "$card" --event "retry granted by the human"; echo "$card → ready, attempts reset" ;;
@@ -837,8 +841,8 @@ cmd_verify_all() {
   if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; tail -n 40 "$log"; exit 1; fi
 }
 
-cmd_approve() { _gate_record "${1:-}" approved "${2:-}"; }
-cmd_reject()  { [[ -n ${2:-} ]] || die 'usage: dl reject plan "<what to change>"'; _gate_record "${1:-}" rejected "$2"; }
+cmd_approve() { human_only "approving the plan"; _gate_record "${1:-}" approved "${2:-}"; }
+cmd_reject()  { human_only "rejecting the plan"; [[ -n ${2:-} ]] || die 'usage: dl reject plan "<what to change>"'; _gate_record "${1:-}" rejected "$2"; }
 _gate_record() {
   load_job
   local gate=$1 status=$2 note=$3
@@ -1007,7 +1011,7 @@ cmd_kanban() {
 }
 cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
 cmd_reseal() { # human only (bash-guard): accept the current job.json/board.json after inspecting an outside change
-  DL_NO_SEAL_CHECK=1 load_job
+  human_only "dl reseal"; DL_NO_SEAL_CHECK=1 load_job
   local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl reseal "<what was changed outside dl and why it is accepted>"'
   seal "$JOBJ"; seal "$BOARD"; log_event reseal "${DELIVER_APPROVER:-${USER:-human}}: $reason"; echo "resealed"
 }

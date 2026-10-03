@@ -86,8 +86,13 @@ if [[ -n ${HIVE_ROOT:-} ]]; then
   pass "running inside Munder Difflin (HIVE_ROOT=$HIVE_ROOT)"
   [[ -d $HIVE_ROOT/spawn-requests ]] && pass "spawn-requests/ exists (dispatch=munder possible once Settings → Autonomy allows worker spawning)" \
     || note "no spawn-requests/ yet — dispatch=munder needs worker spawning enabled in Settings → Autonomy & Budgets"
-elif ls -d "$HOME/Library/Application Support/"*[Mm]under* "$HOME/.config/"*[Mm]under* >/dev/null 2>&1; then
+elif compgen -G "$HOME/Library/Application Support/*[Mm]under*" >/dev/null || compgen -G "${XDG_CONFIG_HOME:-$HOME/.config}/*[Mm]under*" >/dev/null; then
   pass "Munder Difflin app data found (run doctor from an agent terminal on the floor to check the hive)"
+  # Michael's terminal on the floor is an interactive claude: in a HOME that never finished Claude Code's first run it
+  # opens on the first-run screens and swallows the first message (docs/07 § 5).
+  jq -e '.hasCompletedOnboarding == true' "$HOME/.claude.json" >/dev/null 2>&1 \
+    && pass "Claude Code first run completed (Michael's terminal on the floor opens ready)" \
+    || note "Claude Code's first run is not completed in this HOME — run 'claude' once before opening the floor (docs/07-munder-difflin.md § 5)"
 else
   note "Munder Difflin not detected — only needed for the office-floor run mode (docs/07-munder-difflin.md)"
 fi

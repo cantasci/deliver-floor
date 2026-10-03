@@ -32,6 +32,10 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 ## Invariants (never break these)
 
 1. Only `dl` changes card state, records gates/QA/reviews, merges and ships. Only you call `dl`.
+   `job.json` is never written by hand (`dl jobset`), and once `dl phase executing` ran neither is `board.json` — not with
+   Write, not with a script: `dl card <id> set …` (ready/blocked cards) or `dl card add …`. A running card's contract does not
+   change; extra detail goes into the dispatch prompt. Finish the board (acceptance lines from the specs included) before
+   `dl validate` and `dl phase executing`.
 2. Every card is **assigned by you** (`dl wt add`) to the agent of its role. Product code is written only by that dev agent, only in its card worktree.
 3. Roles stay in their lane: the **BA** only analyses (plan, specs, closing check); the **dev** builds the card with **unit tests,
    TDD**; the **QA role writes and runs the card's integration/e2e tests** for the spec's acceptance criteria (in `qa_scope`).
@@ -168,7 +172,8 @@ REPO: <absolute repo root>
 ```
 
 Split the answer on the `=== T-xx ===` lines and write each part to `.work/<job>/specs/T-xx.md`. Replace each card's
-`acceptance` with the spec's numbered criteria in one line each (keep the `AC-n` references).
+`acceptance` with the spec's numbered criteria in one line each (keep the `AC-n` references) — now, while the board is still
+yours to write; after `dl phase executing` it is `dl`'s.
 
 - `"$DL" validate` — fix every ERROR (a missing or criteria-less spec is one); for every WARN add a `depends_on` or narrow the
   scopes. Repeat until clean.

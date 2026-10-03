@@ -8,6 +8,8 @@ const { _electron } = require('playwright');
 const fs = require('fs'), path = require('path');
 const [,, mdDir, home, shots, repo, message, mins = '60', answersFile, dlBin] = process.argv;
 const { execFileSync } = require('child_process');
+// Munder Difflin may keep its window while agent terminals live: closing is bounded, the verdict is already decided.
+const closeApp = (app) => Promise.race([app.close().catch(() => {}), new Promise((r) => setTimeout(r, 15000))]);
 const t0 = Date.now(), log = (m) => console.log(`[${Math.round((Date.now() - t0) / 1000)}s] ${m}`);
 const job = () => { try { const id = fs.readFileSync(path.join(repo, '.work/ACTIVE'), 'utf8').trim(); return JSON.parse(fs.readFileSync(path.join(repo, '.work', id, 'job.json'), 'utf8')); } catch { return null; } };
 const lastJob = () => { try { const d = fs.readdirSync(path.join(repo, '.work')).filter((x) => x.startsWith('JOB-')).sort().pop(); return d && JSON.parse(fs.readFileSync(path.join(repo, '.work', d, 'job.json'), 'utf8')); } catch { return null; } };
@@ -43,17 +45,28 @@ async function answer(win) {
   await win.keyboard.press('Enter');
   log(`briefed Michael: ${message}`);
   let shot = 1, lastLen = 0, lastChange = Date.now(), lastPhase = '';
+  let burst = 0, nb = 0;
+  const tab = async (name) => { const b = win.locator('button', { hasText: new RegExp(`^\\s*${name}\\s*$`, 'i') }).first(); if (await b.count()) await b.click().catch(() => {}); };
   while (Date.now() - t0 < Number(mins) * 60000) {
-    await win.waitForTimeout(30000);
+    await win.waitForTimeout(5000);
+    // While floor workers run: the Command Center's workers tab, a screenshot every 5 s (they can finish within a minute).
+    if (burst > 0) {
+      if (burst === 8) await tab('workers');
+      await win.screenshot({ path: `${shots}/w${String(++nb).padStart(3, '0')}-workers.png` });
+      if (--burst === 0) await tab('terminal');
+    }
     const j = job() ?? lastJob(), ev = events();
-    if (ev.length !== lastLen) { for (const e of ev.slice(lastLen)) log(`event ${e.split('\t').slice(1).join(' ').slice(0, 150)}`); lastLen = ev.length; lastChange = Date.now(); }
+    if (ev.length !== lastLen) {
+      for (const e of ev.slice(lastLen)) { log(`event ${e.split('\t').slice(1).join(' ').slice(0, 150)}`); if (e.split('\t')[1] === 'md-dispatch' && burst === 0) burst = 8; }
+      lastLen = ev.length; lastChange = Date.now();
+    }
     if (j && j.phase !== lastPhase) {
       log(`phase ${j.phase}`); lastPhase = j.phase;
       if (j.phase === 'awaiting_clarification' && answersFile && dlBin) await answer(win);
     }
     if (shot <= 120 && (Date.now() - t0) / 60000 >= shot) await win.screenshot({ path: `${shots}/${String(shot++).padStart(2, '0')}-floor.png` });
-    if (j && ['done', 'awaiting_pr_merge', 'aborted'].includes(j.phase)) { log(`finished: ${j.phase}`); await win.screenshot({ path: `${shots}/99-final.png` }); await app.close(); process.exit(j.phase === 'aborted' ? 1 : 0); }
-    if (Date.now() - lastChange > 20 * 60000) { log('stalled: no event for 20 minutes'); await win.screenshot({ path: `${shots}/99-stalled.png` }); await app.close(); process.exit(1); }
+    if (j && ['done', 'awaiting_pr_merge', 'aborted'].includes(j.phase)) { log(`finished: ${j.phase}`); await win.screenshot({ path: `${shots}/99-final.png` }); await closeApp(app); process.exit(j.phase === 'aborted' ? 1 : 0); }
+    if (Date.now() - lastChange > 20 * 60000) { log('stalled: no event for 20 minutes'); await win.screenshot({ path: `${shots}/99-stalled.png` }); await closeApp(app); process.exit(1); }
   }
-  log('timeout'); await win.screenshot({ path: `${shots}/99-timeout.png` }); await app.close(); process.exit(1);
+  log('timeout'); await win.screenshot({ path: `${shots}/99-timeout.png` }); await closeApp(app); process.exit(1);
 })().catch((e) => { console.error('ERR', e.message); process.exit(1); });

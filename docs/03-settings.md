@@ -88,7 +88,7 @@ Components (with their path, stack, dev owner and reviewer) are not set on roles
 | Hook | Event | Does |
 | --- | --- | --- |
 | `stop-guard.sh` | Stop | Holds Michael while cards are open in `executing`/`integrating`; names idle seats with work. Owner session only. Gives up after `stop_guard_max` |
-| `bash-guard.sh` | PreToolUse(Bash) | Denies push to main/master, force push, an agent pushing anything but its own card branch, deleting `.work/` or job branches; agents may not run flow-changing `dl` commands (`phase`, `integrate`, `qa`, `review`, `ship`, …); nobody but a human terminal runs `dl clarify` / `unfreeze` / `reseal` |
+| `bash-guard.sh` | PreToolUse(Bash) | Denies push to main/master, force push, an agent pushing anything but its own card branch, deleting `.work/` or job branches; agents may not run flow-changing `dl` commands (`phase`, `integrate`, `qa`, `review`, `ship`, …); nobody but a human terminal runs `dl clarify` / `unfreeze` / `reseal` (recognised as `dl`, `…/bin/dl`, `"$DL"`; `dl` itself also refuses them under `DELIVER_HEADLESS=1`); scripts may not write `job.json`, nor `board.json` once work has started |
 | `write-guard.sh` | PreToolUse(Edit\|Write) | Agents write only inside their card worktree; Michael writes `.work/` files but no product code |
 | `agent-guard.sh` | PreToolUse(Agent\|Task) | Headless only: refuses background agents (they die with `claude -p`) |
 | `subagent-log.sh` | SubagentStop | Appends each agent's role + summary line to `events.log` |

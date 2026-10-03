@@ -1,112 +1,139 @@
 # /deliver — a job in, a reviewed PR out
 
 A multi-agent delivery flow for Claude Code, built on the **ECC** plugin and runnable on the **Munder Difflin** office floor.
+You hand it a request — a sentence or a requirements `.md` — and a team of roles delivers it the way a good team would:
 
-- **Michael** is the PM and orchestrator: he picks the roles, assigns every card, and never touches the code.
-- **ECC** supplies the know-how: architect, stack reviewers, security reviewer, e2e runner, skills.
-- **This kit** supplies the discipline: the Business Analyst, QA and dev roles, role cards with company standards, `dl`, hooks.
-- **`dl`** keeps the state and refuses every step the flow does not allow yet.
-- **Hooks** enforce isolation: agents write only in their card worktree, Michael writes no code, nobody pushes to main.
-
-You give it a request — a sentence or a requirements `.md` file. Michael selects the roles the request needs, the Business
-Analyst turns it into a traceable plan and specs every card, the Leads cut the work into cards, each dev builds its card in its
-own git worktree, **QA tests every card against its acceptance criteria**, a Lead reviews it, and `dl` merges it. The first time
-a human is needed is the **PR** — reviewed and merged by you, by you + auto-merge, or automatically on green CI.
+- **Michael** (PM, orchestrator) checks the requirements one by one, picks the roles the request needs, assigns every card,
+  and never touches the code.
+- The **Business Analyst** finds the gaps before any work starts, writes the plan with testable acceptance criteria, specs
+  every card and does the closing check. Analysis only.
+- **Devs** build each card in their own git worktree, **unit tests first (TDD)**. Several devs of one role work in parallel.
+- **QA** writes and runs the **integration/e2e tests** for every acceptance criterion.
+- **Reviewers** (ECC's stack reviewers + security / accessibility / performance specialists when a decision needs them)
+  approve the same commit QA passed.
+- **`dl`** keeps the state and refuses every step the flow does not allow yet; **hooks** keep every role in its lane.
+- **You** answer real business questions once, before work starts, and take over at the **PR**.
 
 ```text
 /deliver requirements.md
-  → Michael: roles from the request → role cards (rules + company standards + memory)
-  → BA: plan (Given/When/Then ACs, traced to REQ ids) → Leads: cards → BA: a spec per card
-  → per card: Michael assigns → dev (worktree) → gate → QA (ACs) → Lead review → merge
-  → verify-all → BA closing check → report → PR  (merge_mode: human | semi | auto | local)
+  → Michael: roles from the request → role cards (rules + company standards + lessons)
+  → BA: readiness review, item by item (architecture, stacks, a11y, security, …) → you answer what only the business can
+     → decisions frozen
+  → BA: plan (Given/When/Then ACs traced to REQ ids) → Leads: cards → BA: a spec per card
+  → per card, in parallel seats: Michael assigns → dev (TDD, worktree) → gate → QA (integration/e2e per AC)
+     → reviewers → merge                      (local kanban or Jira follows every step)
+  → verify-all → BA closing check → report → PR   (merge_mode: human | semi | auto | local)
 ```
+
+## Getting started
+
+Requirements: git, jq, Node 18+, Claude Code (logged in). `scripts/doctor.sh` checks them.
+
+```bash
+git clone https://github.com/cantasci/skills-shop && cd skills-shop
+scripts/init.sh                       # ECC plugin + this kit into ~/.claude + doctor
+```
+
+Try it on a sandbox — nothing of yours is touched (a 2-requirement slice of a real POC document):
+
+```bash
+scripts/sandbox.sh /tmp/wl watchlist-poc && cd /tmp/wl && claude
+```
+
+```text
+/deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md
+```
+
+In a second terminal: `~/.claude/skills/deliver/bin/dl -C /tmp/wl kanban` (or open `/tmp/wl/.work/JOB-*/kanban.html`).
+
+No model at hand? `tests/replay-watchlist.sh` plays a whole job in your terminal with the real `dl` output.
+
+Want the office floor? `scripts/init.sh --munder --hive ~/md-hive --repo /tmp/wl` installs Munder Difflin from source and
+teaches Michael `/deliver` — [docs/07](docs/07-munder-difflin.md).
+
+## Taking a normal project into the flow
+
+```bash
+scripts/init.sh --repo /path/to/your/repo          # writes a starter .deliver.json
+```
+
+1. **`.deliver.json`** — how the repo is verified and delivered:
+
+   ```json
+   { "verify_full": "npm run typecheck && npm run lint && npm test",
+     "worktree_setup": "npm ci --prefer-offline",
+     "merge_mode": "human" }
+   ```
+
+   `verify_full` = what your CI runs; `worktree_setup` = what a fresh checkout needs (deps, `.env`); `merge_mode` = who
+   merges (`human` PR · `semi` auto-merge on approval · `auto` on green CI · `local` no remote).
+2. **Standards** — your company's rules in `~/.deliver/knowledge/*.md`, the project's in `<repo>/.deliver/knowledge/*.md`;
+   each file's `## Must` list goes into the role cards of the roles it applies to ([docs/08](docs/08-knowledge.md)).
+3. **Requirements** — a `.md` with goal, users, requirement ids with examples, out of scope, non-functional targets.
+   Whatever is missing becomes a question before any work starts; nothing is assumed.
+4. **Optional:** Jira instead of the local kanban ([docs/10](docs/10-trackers.md)); several devs per role (`"count": 2`);
+   a role on another model or CLI ([docs/04](docs/04-roles.md#models-and-clis-per-role)).
+5. `scripts/doctor.sh /path/to/repo`, then in the repo: `claude` → `/deliver docs/requirements/feature.md`.
+
+Full guide: [docs/02-setup.md](docs/02-setup.md).
+
+## Documentation
+
+| Doc | What |
+| --- | --- |
+| [00-flow](docs/00-flow.md) | ★ the whole flow: diagrams, who does what, phases, seats, branches, files |
+| [01-tools](docs/01-tools.md) | required and optional tools |
+| [02-setup](docs/02-setup.md) | `init`, install, and taking a normal project into the flow |
+| [03-settings](docs/03-settings.md) | every knob: flow, merge modes, commits, tracker, Munder Difflin, per-role models, hooks, env |
+| [04-roles](docs/04-roles.md) | role lanes, catalog, role cards, mixed stacks, seats, models/CLIs per role, how ECC is used |
+| [05-run-modes](docs/05-run-modes.md) | interactive · Munder Difflin · headless · Agent SDK · other agent CLIs |
+| [06-troubleshooting](docs/06-troubleshooting.md) | symptoms → causes → fixes, manual control |
+| [07-munder-difflin](docs/07-munder-difflin.md) | the office floor: install, floor workers, ASK ME, authentication |
+| [08-knowledge](docs/08-knowledge.md) | company standards, memory (lessons), graphify, feeding the Knowledge Graph and MemPalace |
+| [09-testing](docs/09-testing.md) | the four test layers and how to run them |
+| [10-trackers](docs/10-trackers.md) | local kanban, Jira (credentials, workflow, branches on issues), adding a tracker |
+| [verification/](docs/verification/) | ★ every test run's raw output, and every requirement → decision → implementation → evidence |
+| [council/](docs/council/) | the end-to-end review by a council of roles, and what was changed because of it |
+
+## Tests performed
+
+Everything is in [`docs/verification/`](docs/verification/) — raw outputs, not summaries:
+
+| Layer | What ran | Result |
+| --- | --- | --- |
+| Deterministic — `tests/run.sh` | every `dl` guard, validator, roles, readiness, knowledge, hooks, Jira contract stub, merge modes, installer | [output](docs/verification/01-deterministic/run.sh.txt) |
+| Replay — `tests/replay-watchlist.sh` | the whole flow on the POC slice without a model, incl. a rejected scope violation; hidden oracle | [output](docs/verification/02-replay/replay-watchlist.txt) |
+| Live, headless — `tests/e2e-live.sh` | real Claude Code + ECC from GitHub + real agents, fresh HOME; scenarios `complete`, `incomplete`, `parallel` | [reports](docs/verification/03-live-headless/) |
+| Live, Munder Difflin — `tests/e2e-munder.sh` | init from scratch, the real app driven like a user, floor workers, screenshots | [report + screenshots](docs/verification/04-live-munder/) |
+
+[`docs/verification/README.md`](docs/verification/README.md) maps every requirement of this project to the decision taken,
+where it is implemented and the test that proves it — including what failed along the way and how it was fixed.
 
 ## What's in this repo
 
 ```text
-README.md                         you are here
-docs/
-├── 00-flow.md                    ★ the whole flow: diagrams, who does what, states, branches, files
-├── 01-tools.md                   required / optional tools and what each one is for
-├── 02-setup.md                   step-by-step install + first run
-├── 03-settings.md                every knob: config, merge modes, roles, agents, hooks, env vars
-├── 04-roles.md                   role catalog, rules, role cards, adding a role
-├── 05-run-modes.md               interactive · headless · Agent SDK · Munder Difflin
-├── 06-troubleshooting.md         symptoms → causes → fixes, manual control
-├── 07-munder-difflin.md          Michael on the office floor: setup, floor workers, ASK ME, knowledge graph
-├── 08-knowledge.md               company standards, memory (lessons), graphify, feeding Munder Difflin
-└── 09-testing.md                 unit tests, replay, the live end-to-end test and its evidence
-kit/                              ← what gets installed into ~/.claude (or <repo>/.claude)
-├── skills/deliver/
-│   ├── SKILL.md                  Michael's playbook: phases, prompts, invariants
-│   ├── roles.yaml                role catalog + the rules every role card is built from
-│   ├── config.json               flow defaults (merge_mode, parallelism, attempts, …)
-│   ├── templates/                job.json · plan.md · board.json · handoff.md · report.md
-│   └── bin/
-│       ├── dl                    board / phases / worktrees / gate / qa / review / merge / ship
-│       ├── validate.mjs          board validator (schema, deps, cycles, scope overlap, specs, ACs)
-│       ├── roles.mjs             roles check + role cards + Munder Difflin hire manifests
-│       ├── knowledge.mjs         standards + lessons → role cards; sync into Munder Difflin's knowledge graph
-│       └── scope.mjs             the glob matcher the gate uses
-├── agents/                       business-analyst · qa-tester · backend-dev · frontend-dev · mobile-dev
-├── hooks/deliver/                stop-guard · bash-guard · write-guard · subagent-log (+ lib.sh)
-└── settings.hooks.json           hook + env entries merged into settings.json by install.sh
-scripts/
-├── install.sh                    install / update / uninstall the kit (--user | --project <repo>)
-├── doctor.sh                     check tools, ECC, kit, hooks, Munder Difflin, repo readiness
-├── run-headless.sh               unattended /deliver rounds (claude -p)
-├── sandbox.sh                    a fresh repo from an example's seed
-└── check-oracle.sh               run an example's hidden acceptance tests against a delivered branch
-examples/watchlist-poc/           a 2-requirement slice of POC_Requirements_v0.2_EN.md: JOB.md, seed repo, oracle, reference
-example/                          a filled-in .work/<job>/ snapshot, for reading
-tests/
-├── run.sh                        deterministic tests of dl, validator, roles, knowledge, hooks, ship modes, installer
-├── replay-watchlist.sh           the whole flow on the POC slice, narrated, no model
-└── e2e-live.sh                   the live end-to-end test: fresh HOME, real ECC, real agents, oracle
+kit/                       ← what gets installed into ~/.claude (or <repo>/.claude)
+├── skills/deliver/        SKILL.md (Michael's playbook) · roles.yaml · readiness.yaml · config.json · templates/ · bin/dl + helpers
+├── agents/                business-analyst · qa-tester · backend-dev · frontend-dev · mobile-dev · database-dev
+├── hooks/deliver/         stop-guard · bash-guard · write-guard · agent-guard · subagent-log
+└── settings.hooks.json    hooks, env and attribution merged into settings.json
+scripts/                   init · install · doctor · sandbox · run-headless · md-brief · check-oracle
+examples/watchlist-poc/    the test data: requests (complete / incomplete / parallel), human answers, seed, hidden oracles
+tests/                     run.sh · replay-watchlist.sh · e2e-live.sh · e2e-munder.sh (+ helpers)
+docs/                      the guides above, verification/, council/
 ```
-
-## Quick start
-
-```bash
-# 1. ECC, inside Claude Code (or: claude plugin marketplace add https://github.com/affaan-m/ECC && claude plugin install ecc@ecc)
-/plugin marketplace add https://github.com/affaan-m/ECC
-/plugin install ecc@ecc
-# 2. the kit
-scripts/install.sh --user
-# 3. per repo: how to verify, how to prepare a worktree, how to deliver
-echo '{"verify_full":"npm run typecheck && npm test","worktree_setup":"ln -s \"$ROOT/node_modules\" node_modules","merge_mode":"human"}' > /path/to/repo/.deliver.json
-# 4. check
-scripts/doctor.sh /path/to/repo
-# 5. run, inside Claude Code in that repo
-/deliver docs/requirements/my-feature.md
-```
-
-Try it without touching a real repo: `scripts/sandbox.sh /tmp/wl && cd /tmp/wl && claude` →
-`/deliver <this repo>/examples/watchlist-poc/JOB.md`. Or watch the flow without a model: `tests/replay-watchlist.sh`.
-
-## Reading order
-
-1. [`docs/00-flow.md`](docs/00-flow.md): the flow (10 min).
-2. `tests/replay-watchlist.sh`: watch a job run end to end in your terminal (1 min, no model).
-3. [`docs/02-setup.md`](docs/02-setup.md): install it.
-4. [`kit/skills/deliver/SKILL.md`](kit/skills/deliver/SKILL.md): exactly what Michael is told to do.
-5. [`docs/07-munder-difflin.md`](docs/07-munder-difflin.md) and [`docs/08-knowledge.md`](docs/08-knowledge.md) when you take it to the office floor.
 
 ## Design principles
 
-1. **One manager.** Michael is the PM and the only dispatcher. Every card is assigned by him; he writes no code.
-2. **Code decides state.** Board, branches, gates, QA and review records, merges and shipping go through `dl`, which refuses
-   any step out of order. A model's memory is never the source of truth.
-3. **"Done" is evidence.** A card merges only with a passed gate (its `verify` command), a QA pass against its spec's acceptance
-   criteria, and a Lead approval — all on the same commit.
-4. **Isolation by default.** One git worktree per card, a narrow `scope` per card; the gate rejects anything outside it, and a
-   hook stops agents from writing anywhere else.
-5. **Files, not chat.** Plans, specs, role cards, handoffs and logs live in `.work/`, so a crash or restart loses nothing
-   (`/deliver resume`).
-6. **Standards are inputs.** Company and project standards, lessons from earlier jobs and the code graph are compiled into each
-   role's card, so every agent starts from the house rules.
-7. **The human decides at the PR.** Before that, only blocked cards and genuinely scope-changing questions reach you.
-
-## Status
-
-See [`docs/09-testing.md`](docs/09-testing.md) for what is tested and how, including the live end-to-end run on the POC slice.
+1. **One PM.** Michael is the only dispatcher; every card is assigned by him; he writes no code.
+2. **Nothing on assumptions.** Every requirement and decision is checked before planning; what only the business can answer
+   is asked, once; decisions are then frozen.
+3. **Code decides state.** `dl` owns the board, branches, gates, QA and review records, merges and shipping, and refuses
+   anything out of order. A model's memory is never the source of truth.
+4. **"Done" is evidence.** A card merges only with a passed gate, a QA pass against its acceptance criteria and every
+   reviewer's approval — all on the same commit.
+5. **Lanes are enforced.** Worktree per card, `scope` for the dev, `qa_scope` for QA, hooks for everyone, no push to main,
+   no AI attribution in the delivered history.
+6. **No idle seat while work exists**, no stage waiting on another.
+7. **Any model, any CLI** for any role; the guarantees live in `dl`, not in a model.
+8. **Files, not chat.** Everything lives in `.work/`; a crash loses nothing (`/deliver resume`), and every step is traceable.

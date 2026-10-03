@@ -104,6 +104,8 @@ jq -e '.items[] | select(.id=="X-immutable") | .status=="decided" and (.source|s
 contains "agents cannot record PM decisions" "$(printf '%s' '{"tool_input":{"command":"dl decide X a b"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 expect_ok "phase planning once nothing is open" "$DL" phase planning
 jq -e '.frozen.readiness_sha256 | length == 64' "$R/.work/$JOB/job.json" >/dev/null && ok "planning froze readiness.json (sha256 in job.json)" || bad "freeze"
+contains "in planning Michael may still write board.json with a script (the Leads' cards)" \
+  "$(printf '%s' "$(jq -n --arg c 'node -e "fs.writeFileSync(d+\"/board.json\", s)"' --arg cwd "$R" '{tool_input:{command:$c},cwd:$cwd}')" | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=0"
 [[ -f $R/.work/$JOB/roles/backend.md && -f $R/.work/$JOB/roles/qa.md && -f $R/.work/$JOB/ROLES.md ]] && ok "role cards generated on planning" || bad "role cards"
 grep -q "TDD" "$R/.work/$JOB/roles/backend.md" && grep -q "integration and/or end-to-end tests" "$R/.work/$JOB/roles/qa.md" \
   && grep -q "node --test" "$R/.work/$JOB/roles/backend.md" && ok "role cards carry kind rules + project facts" || bad "role card content"
@@ -314,6 +316,16 @@ contains "Michael dl gate allowed" "$(bg '/x/bin/dl gate T-01')" "rc=0"
 contains "dl phase --force denied" "$(bg 'dl phase executing --force')" "rc=2"
 contains "headless self-approval denied" "$(DELIVER_HEADLESS=1 bg 'dl approve plan ok')" "rc=2"
 contains "subagent dl qa denied" "$(bg 'dl qa T-01 pass x' "$R" abc123)" "rc=2"
+contains "the playbook's \"\$DL\" form is recognised: headless self-answer denied" "$(DELIVER_HEADLESS=1 bg '"$DL" clarify PRD-goal "yes"')" "rc=2"
+contains "…and \${DL} with -C too" "$(DELIVER_HEADLESS=1 bg '${DL} -C /x approve plan ok')" "rc=2"
+contains "a subagent calling \"\$DL\" gate is denied" "$(bg 'DL=/k/bin/dl; "$DL" gate T-01' "$R" abc123)" "rc=2"
+PH="$(jq -r .phase "$R/.work/$(cat "$R/.work/ACTIVE" 2>/dev/null || echo none)/job.json" 2>/dev/null)"
+contains "a script writing board.json once work has started is denied (phase ${PH:-?})" \
+  "$(bg 'node -e "fs.writeFileSync(d+\"/board.json\", s)"')" "rc=2"
+contains "…so is a redirect into job.json" "$(bg 'jq ".phase=\"done\"" a > .work/J/job.json')" "rc=2"
+contains "…while reading them stays allowed" "$(bg 'jq .cards .work/J/board.json > /tmp/cards.json')" "rc=0"
+out="$(DELIVER_HEADLESS=1 "$DL" reseal "x" 2>&1; echo "rc=$?")"
+contains "dl itself refuses a human decision in an unattended session, whatever it is called by" "$out" "rc=8"
 contains "interactive approval allowed" "$(bg 'dl approve plan "user said yes"')" "rc=0"
 contains "unrelated commands allowed" "$(bg 'npm test -- --watch=false')" "rc=0"
 
@@ -341,7 +353,7 @@ contains "spawn request: card worktree cwd, no extra isolation, dev agent" "$(jq
 "$DL" jobset '.settings.munder.claude_command="/opt/bin/claude"'
 jq '(.cards[] | select(.id=="T-03")).md_workers = []' "$R/.work/$JOB/board.json" > /dev/null
 "$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
-contains "settings.munder.claude_command sets the workers' claude binary" "$(jq -r .command "$(ls -t "$HIVE_ROOT"/spawn-requests/*.json | head -1)")" "/opt/bin/claude --agent backend-dev"
+contains "settings.munder.claude_command sets the workers' claude binary" "$(jq -r .command "$(grep -l "/opt/bin/claude" "$HIVE_ROOT"/spawn-requests/*.json | head -1)")" "/opt/bin/claude --agent backend-dev"
 "$DL" jobset '.settings.munder.claude_command="claude"'
 "$DL" jobset '(.roles[] | select(.role=="backend")) += {provider:"codex", model:"gpt-5-codex"}'
 out="$("$DL" phase readiness --force 2>&1; node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$R/.work/$JOB/job.json")"
@@ -349,7 +361,7 @@ contains "a non-Claude role needs dispatch munder" "$out" "runs on codex: non-Cl
 "$DL" jobset '.settings.dispatch="munder"'; "$DL" phase executing --force >/dev/null
 jq '(.cards[] | select(.id=="T-03")).md_workers = []' "$R/.work/$JOB/board.json" > /dev/null
 "$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
-reqc="$(ls -t "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
+reqc="$(grep -l "\"provider\": *\"codex\"" "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
 contains "codex worker: provider set, no claude --agent" "$(jq -c '{provider,command,model}' "$reqc")" '"provider":"codex","command":null,"model":"gpt-5-codex"'
 jq -r .objective "$reqc" | grep -q "Your role instructions (backend-dev)" && jq -r .objective "$reqc" | grep -q "TDD with unit tests" \
   && ok "the agent definition's instructions travel inside the objective for non-Claude CLIs" || bad "agent body not embedded"
@@ -729,6 +741,10 @@ expect_ok "uninstall" "$INST" --user --uninstall
 "$INST" --user >/dev/null
 out="$("$HERE/scripts/doctor.sh" "$R" 2>&1)"
 contains "doctor sees the install and the repo" "$out" "user: hook write-guard"
+mkdir -p "$HOME/.config/munder-difflin"; echo '{}' > "$HOME/.claude.json"
+contains "doctor finds Munder Difflin and warns about Claude Code's unfinished first run" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run is not completed"
+echo '{"hasCompletedOnboarding":true}' > "$HOME/.claude.json"
+contains "…and is satisfied once it is done" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run completed"
 
 echo
 echo "result: $pass passed, $failn failed"

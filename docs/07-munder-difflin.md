@@ -76,23 +76,20 @@ worktree is already isolated by `dl`); `tokenCap`, `character`, `accent`.
 - MemPalace mines each agent's `hive/agents/<id>/memory.md`; `dl learn` on the floor also appends the lesson to Michael's
   `memory.md`, so lessons are searchable across the floor. Details: [08-knowledge](08-knowledge.md).
 
-## 5. Authentication
+## 5. Authentication and first run
 
-Munder Difflin removes `CLAUDE_*` variables from the terminals it opens (it keeps `CLAUDE_CONFIG_DIR`,
-`CLAUDE_CODE_OAUTH_TOKEN`, `CLAUDE_CODE_USE_BEDROCK/VERTEX`). On a workstation this does not matter: log in once with
-`claude` (`/login`) and every terminal on the floor is logged in. Where Claude Code authenticates through other `CLAUDE_*`
-variables (CI, cloud containers), use a two-line wrapper and point both Michael and the workers at it:
+Michael and the workers are ordinary `claude` processes started by Munder Difflin in your HOME, so they use your login.
+Two things to know:
 
-```bash
-#!/usr/bin/env bash
-export CLAUDE_SESSION_INGRESS_TOKEN_FILE=/path/to/token   # whatever variables your environment authenticates with
-exec /usr/local/bin/claude "$@"
-```
-
-Name it `claude` (Munder Difflin infers the provider from the binary name), then: Munder Difflin config
-`"defaultCommand": "/opt/md/bin/claude"` (Michael) and `.deliver.json` `"munder": {"claude_command": "/opt/md/bin/claude"}`
-(workers). `ANTHROPIC_API_KEY` passes through unchanged and needs no wrapper. The live test does exactly this
-(`tests/e2e-munder.sh`).
+- **First run.** A HOME where Claude Code was never started interactively shows its first-run screens (theme, login method)
+  in Michael's terminal, and anything typed there — e.g. your first message — goes into those screens. Start `claude` once in
+  a normal terminal (or set `"hasCompletedOnboarding": true` in `~/.claude.json` on a provisioned machine) before opening the
+  floor. Munder Difflin itself accepts the folder-trust and bypass-permissions prompts.
+- **Credentials in variables.** Munder Difflin removes `CLAUDE_*` variables from the terminals it opens (it keeps
+  `CLAUDE_CONFIG_DIR`, `CLAUDE_CODE_OAUTH_TOKEN`, `CLAUDE_CODE_USE_BEDROCK/VERTEX`; `ANTHROPIC_*` pass through). A login
+  (`/login`), `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` work as they are. If your setup authenticates through another
+  `CLAUDE_*` variable, point Munder Difflin's `defaultCommand` (Michael) and `.deliver.json` `"munder": {"claude_command": …}`
+  (workers) at a two-line wrapper named `claude` that exports it and runs `exec /path/to/claude "$@"`.
 
 ## 6. Watching
 

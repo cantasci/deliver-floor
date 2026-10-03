@@ -78,11 +78,13 @@ The readiness review records the architecture — e.g. 4 Spring Boot services, 1
 
 ```json
 { "architecture": { "style": "microservices", "components": [
-  { "id": "orders-svc",  "kind": "service", "stack": ["java", "spring-boot"], "path": "services/orders/**",  "owner": "backend",    "reviewer": "reviewer-java" },
-  { "id": "pricing-svc", "kind": "service", "stack": ["go"],                  "path": "services/pricing/**", "owner": "backend-go", "reviewer": "reviewer-go" },
-  { "id": "db",          "kind": "database", "stack": ["postgres"],           "path": "db/**",               "owner": "database",   "reviewer": "reviewer-db" } ] } }
+  { "id": "orders-svc",  "kind": "service", "stack": ["java", "spring-boot"], "path": "services/orders/",    "owner": "backend",    "reviewer": "reviewer-java" },
+  { "id": "pricing-svc", "kind": "service", "stack": ["go"],                  "path": "services/pricing/",   "owner": "backend-go", "reviewer": "reviewer-go" },
+  { "id": "db",          "kind": "database", "stack": ["postgres"],           "path": "db/",                 "owner": "database",   "reviewer": "reviewer-db" } ] } }
 ```
 
+- `path` is a directory or a list of them — every place the component's code **and tests** live
+  (`["src/ratings/", "test/unit/ratings/", "test/integration/ratings/"]`); `"."` for a one-component repo.
 - Each component names its dev owner and reviewer; `dl readiness` refuses a component whose owner/reviewer is not on the job.
 - Two dev roles can share an agent with different stacks (`backend` → Spring Boot, `backend-go` → Go): each gets its own role
   card listing its components and the stack skills to load (`stack_skills`: `springboot-patterns`, `golang-patterns`, …).

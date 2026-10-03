@@ -1,0 +1,83 @@
+# qa_verify: node --test test/integration/indicators/delayCount.integration.test.mjs
+TAP version 13
+# Subtest: AC-7: DELAY_COUNT_OPTIONS is exactly ["0", "1", ">1"], strings, in order, frozen
+ok 1 - AC-7: DELAY_COUNT_OPTIONS is exactly ["0", "1", ">1"], strings, in order, frozen
+  ---
+  duration_ms: 2.653737
+  type: 'test'
+  ...
+# Subtest: AC-7: the frozen list cannot grow or change; "2" stays unknown
+ok 2 - AC-7: the frozen list cannot grow or change; "2" stays unknown
+  ---
+  duration_ms: 1.993228
+  type: 'test'
+  ...
+# Subtest: AC-8: "0" -> 0, "1" -> 1, ">1" -> 2 as primitive numbers, deterministic
+ok 3 - AC-8: "0" -> 0, "1" -> 1, ">1" -> 2 as primitive numbers, deterministic
+  ---
+  duration_ms: 0.265918
+  type: 'test'
+  ...
+# Subtest: AC-9: leading and trailing whitespace is ignored (trim semantics)
+ok 4 - AC-9: leading and trailing whitespace is ignored (trim semantics)
+  ---
+  duration_ms: 0.166623
+  type: 'test'
+  ...
+# Subtest: AC-9 edge: NBSP and CR/LF are trimmed too
+ok 5 - AC-9 edge: NBSP and CR/LF are trimmed too
+  ---
+  duration_ms: 0.211428
+  type: 'test'
+  ...
+# Subtest: AC-10: unknown strings throw RangeError (no numeric parsing, no inner-whitespace normalising)
+ok 6 - AC-10: unknown strings throw RangeError (no numeric parsing, no inner-whitespace normalising)
+  ---
+  duration_ms: 0.372883
+  type: 'test'
+  ...
+# Subtest: AC-10 edge: characters outside String.prototype.trim (zero-width space) throw RangeError
+ok 7 - AC-10 edge: characters outside String.prototype.trim (zero-width space) throw RangeError
+  ---
+  duration_ms: 0.181584
+  type: 'test'
+  ...
+# Subtest: AC-10 edge: other inherited/prototype names and case variants throw RangeError
+ok 8 - AC-10 edge: other inherited/prototype names and case variants throw RangeError
+  ---
+  duration_ms: 0.225156
+  type: 'test'
+  ...
+# Subtest: AC-11: non-strings throw RangeError, numbers included, never TypeError
+ok 9 - AC-11: non-strings throw RangeError, numbers included, never TypeError
+  ---
+  duration_ms: 0.571302
+  type: 'test'
+  ...
+# Subtest: AC-11 edge: number vs string distinction
+ok 10 - AC-11 edge: number vs string distinction
+  ---
+  duration_ms: 0.444697
+  type: 'test'
+  ...
+# Subtest: AC-11 edge: a function and NaN are rejected with RangeError
+ok 11 - AC-11 edge: a function and NaN are rejected with RangeError
+  ---
+  duration_ms: 0.22232
+  type: 'test'
+  ...
+# Subtest: AC-12: consumer iterates DELAY_COUNT_OPTIONS -> [0, 1, 2]; 1 and "2" throw RangeError
+ok 12 - AC-12: consumer iterates DELAY_COUNT_OPTIONS -> [0, 1, 2]; 1 and "2" throw RangeError
+  ---
+  duration_ms: 0.247208
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 141.418215

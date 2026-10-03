@@ -1,0 +1,241 @@
+# gate: T-02  attempt: 1  2026-10-03T10:54:05Z
+ok    on job/JOB-20261003-1042-repayment-delay-indicators-2-3--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/delayCount.mjs","test/indicators/delayCount.test.mjs"] (+ QA tests ["test/integration/indicators/delayCount.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/delayCount.test.mjs
+TAP version 13
+# Subtest: options list is exact, ordered, string-only and frozen
+ok 1 - options list is exact, ordered, string-only and frozen
+  ---
+  duration_ms: 1.975821
+  type: 'test'
+  ...
+# Subtest: options list is immutable
+ok 2 - options list is immutable
+  ---
+  duration_ms: 0.794657
+  type: 'test'
+  ...
+# Subtest: maps every option to its WL
+ok 3 - maps every option to its WL
+  ---
+  duration_ms: 0.138606
+  type: 'test'
+  ...
+# Subtest: returns primitive numbers, idempotent
+ok 4 - returns primitive numbers, idempotent
+  ---
+  duration_ms: 0.198759
+  type: 'test'
+  ...
+# Subtest: trims both ends
+ok 5 - trims both ends
+  ---
+  duration_ms: 0.207134
+  type: 'test'
+  ...
+# Subtest: does not normalise internal whitespace
+ok 6 - does not normalise internal whitespace
+  ---
+  duration_ms: 0.130571
+  type: 'test'
+  ...
+# Subtest: unknown string "2" -> RangeError
+ok 7 - unknown string "2" -> RangeError
+  ---
+  duration_ms: 0.176313
+  type: 'test'
+  ...
+# Subtest: unknown string "01" -> RangeError
+ok 8 - unknown string "01" -> RangeError
+  ---
+  duration_ms: 0.094264
+  type: 'test'
+  ...
+# Subtest: unknown string "1.0" -> RangeError
+ok 9 - unknown string "1.0" -> RangeError
+  ---
+  duration_ms: 0.34555
+  type: 'test'
+  ...
+# Subtest: unknown string "-1" -> RangeError
+ok 10 - unknown string "-1" -> RangeError
+  ---
+  duration_ms: 0.406554
+  type: 'test'
+  ...
+# Subtest: unknown string "> 1" -> RangeError
+ok 11 - unknown string "> 1" -> RangeError
+  ---
+  duration_ms: 0.157072
+  type: 'test'
+  ...
+# Subtest: unknown string ">0" -> RangeError
+ok 12 - unknown string ">0" -> RangeError
+  ---
+  duration_ms: 1.603503
+  type: 'test'
+  ...
+# Subtest: unknown string ">2" -> RangeError
+ok 13 - unknown string ">2" -> RangeError
+  ---
+  duration_ms: 0.103271
+  type: 'test'
+  ...
+# Subtest: unknown string "≥1" -> RangeError
+ok 14 - unknown string "≥1" -> RangeError
+  ---
+  duration_ms: 0.061925
+  type: 'test'
+  ...
+# Subtest: unknown string "one" -> RangeError
+ok 15 - unknown string "one" -> RangeError
+  ---
+  duration_ms: 0.057178
+  type: 'test'
+  ...
+# Subtest: unknown string "" -> RangeError
+ok 16 - unknown string "" -> RangeError
+  ---
+  duration_ms: 0.057057
+  type: 'test'
+  ...
+# Subtest: unknown string "   " -> RangeError
+ok 17 - unknown string "   " -> RangeError
+  ---
+  duration_ms: 0.1541
+  type: 'test'
+  ...
+# Subtest: unknown string "constructor" -> RangeError
+ok 18 - unknown string "constructor" -> RangeError
+  ---
+  duration_ms: 0.065087
+  type: 'test'
+  ...
+# Subtest: unknown string "__proto__" -> RangeError
+ok 19 - unknown string "__proto__" -> RangeError
+  ---
+  duration_ms: 0.095227
+  type: 'test'
+  ...
+# Subtest: unknown string "toString" -> RangeError
+ok 20 - unknown string "toString" -> RangeError
+  ---
+  duration_ms: 0.061695
+  type: 'test'
+  ...
+# Subtest: unknown string "hasOwnProperty" -> RangeError
+ok 21 - unknown string "hasOwnProperty" -> RangeError
+  ---
+  duration_ms: 0.054349
+  type: 'test'
+  ...
+# Subtest: case-sensitive / near misses rejected
+ok 22 - case-sensitive / near misses rejected
+  ---
+  duration_ms: 0.117451
+  type: 'test'
+  ...
+# Subtest: non-string 0 -> RangeError
+ok 23 - non-string 0 -> RangeError
+  ---
+  duration_ms: 0.090204
+  type: 'test'
+  ...
+# Subtest: non-string 1 -> RangeError
+ok 24 - non-string 1 -> RangeError
+  ---
+  duration_ms: 0.06801
+  type: 'test'
+  ...
+# Subtest: non-string 2 -> RangeError
+ok 25 - non-string 2 -> RangeError
+  ---
+  duration_ms: 0.064837
+  type: 'test'
+  ...
+# Subtest: non-string none -> RangeError
+ok 26 - non-string none -> RangeError
+  ---
+  duration_ms: 0.072098
+  type: 'test'
+  ...
+# Subtest: non-string undefined -> RangeError
+ok 27 - non-string undefined -> RangeError
+  ---
+  duration_ms: 0.093999
+  type: 'test'
+  ...
+# Subtest: non-string null -> RangeError
+ok 28 - non-string null -> RangeError
+  ---
+  duration_ms: 0.128162
+  type: 'test'
+  ...
+# Subtest: non-string true -> RangeError
+ok 29 - non-string true -> RangeError
+  ---
+  duration_ms: 0.130827
+  type: 'test'
+  ...
+# Subtest: non-string array -> RangeError
+ok 30 - non-string array -> RangeError
+  ---
+  duration_ms: 0.091283
+  type: 'test'
+  ...
+# Subtest: non-string customToString -> RangeError
+ok 31 - non-string customToString -> RangeError
+  ---
+  duration_ms: 0.091581
+  type: 'test'
+  ...
+# Subtest: non-string stringObject -> RangeError
+ok 32 - non-string stringObject -> RangeError
+  ---
+  duration_ms: 0.081363
+  type: 'test'
+  ...
+# Subtest: non-string symbol -> RangeError
+ok 33 - non-string symbol -> RangeError
+  ---
+  duration_ms: 0.092148
+  type: 'test'
+  ...
+# Subtest: non-string bigint -> RangeError
+ok 34 - non-string bigint -> RangeError
+  ---
+  duration_ms: 0.072116
+  type: 'test'
+  ...
+# Subtest: non-string nullProto -> RangeError
+ok 35 - non-string nullProto -> RangeError
+  ---
+  duration_ms: 0.121201
+  type: 'test'
+  ...
+# Subtest: non-string fn -> RangeError
+ok 36 - non-string fn -> RangeError
+  ---
+  duration_ms: 0.084539
+  type: 'test'
+  ...
+# Subtest: non-string nan -> RangeError
+ok 37 - non-string nan -> RangeError
+  ---
+  duration_ms: 0.081631
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 166.621868
+ok    verify passed

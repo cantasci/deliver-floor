@@ -56,8 +56,8 @@ briefed with `/deliver <JOB.md>` through the composer, a screenshot of the floor
 `dl clarify` + a composer message when Michael asks, and floor checks: spawn requests consumed, cards built by floor workers
 (`md_workers`). Then the same `verify-job.sh`.
 
-In containers that authenticate Claude Code through `CLAUDE_*` variables, the test uses the wrapper described in
-[07 § 5](07-munder-difflin.md#5-authentication) — the same thing a user would configure.
+The test's HOME is brand new, so it marks Claude Code's first run as done (`hasCompletedOnboarding`), as a user who has
+started `claude` once already has — see [07 § 5](07-munder-difflin.md#5-authentication-and-first-run).
 
 ## Running them yourself
 
