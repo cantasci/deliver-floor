@@ -15,7 +15,16 @@ if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]].*push' <<<"$cmd"; then
     && deny "force push / remote delete is not allowed."
   grep -Eq '(^|[[:space:]:/])(main|master)([[:space:]]|$)' <<<"$cmd" \
     && deny "pushing directly to main/master is not allowed. Push the job/<id> branch and open a PR (after the merge gate)."
-  is_agent && deny "agents never push. Michael pushes the job branch after the merge gate."
+  # Agents may push only their own card branch (job/<JOB>--T-xx…), from inside its worktree; never main, never the job
+  # branch, never another card's branch. Michael (dl) pushes card branches and the job branch.
+  if is_agent; then
+    own="$(git -C "$(hk .cwd)" symbolic-ref --short -q HEAD 2>/dev/null || true)"
+    [[ $own == job/*--T-* ]] || deny "agents push only their own card branch, from inside its worktree (this directory is not a card worktree)."
+    grep -Eq "(^|[[:space:]:])(job/[^[:space:]:]*)" <<<"$cmd" || deny "name the branch explicitly: git push origin $own"
+    for ref in $(grep -Eo "job/[^[:space:]:]+" <<<"$cmd"); do
+      [[ $ref == "$own" ]] || deny "agents push only their own card branch ($own), not $ref."
+    done
+  fi
 fi
 
 grep -Eq 'rm[[:space:]]+-[[:alpha:]]*[rR][[:alpha:]]*[[:space:]]+([^;&|]*[[:space:]])?[^[:space:]]*\.work(/|[[:space:]]|$)' <<<"$cmd" \

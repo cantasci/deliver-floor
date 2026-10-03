@@ -27,7 +27,7 @@ the way another part of the system or a user will use it.
    Use the project's test runner (look at `package.json`, existing tests, the role card). Load a testing skill when useful
    (`ecc:e2e-testing`, `ecc:python-testing`, `ecc:react-testing`, …).
 4. Run `qa_verify` in the worktree. Then commit only your tests: `git -C <worktree> add <your files> && git -C <worktree> commit -m "<CARD-ID> QA: integration tests"`.
-   No push, no merge, no branch switching. Leave the worktree clean.
+   Push only your own card branch (`git -C <worktree> push origin <card branch>`) — never main, never the job branch; no merge, no branch switching. Leave the worktree clean.
 5. **Do not fix product code.** If a criterion fails, keep the failing test committed — it is the evidence and the dev's target —
    and report it. The dev will be sent back with your failures; your tests must then pass unchanged.
 6. On a re-run after a dev fix: run `qa_verify` again, add tests only if the spec demands more coverage.

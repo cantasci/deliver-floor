@@ -4,6 +4,8 @@
 #   scripts/install.sh --user                 → ~/.claude            (every project)
 #   scripts/install.sh --project <repo path>  → <repo>/.claude       (one project, can be committed)
 #   add --dry-run to only print what would happen, --uninstall to remove the kit again
+#   --keep-attribution: keep Claude Code's "Co-Authored-By"/"Generated with" lines in commits and PRs
+#   (by default the kit sets attribution.commit/pr to "" so delivered history carries no AI attribution)
 #
 # Copies: kit/agents/*.md, kit/skills/deliver/, kit/hooks/deliver/
 # Merges: kit/settings.hooks.json into <target>/settings.json (backup first, no duplicates, existing env kept)
@@ -14,13 +16,14 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KIT="$HERE/kit"
-mode="" target="" dry=0 uninstall=0
+mode="" target="" dry=0 uninstall=0 keep_attr=0
 while [[ $# -gt 0 ]]; do
   case $1 in
     --user) mode=user; target="$HOME/.claude"; shift ;;
     --project) mode=project; target="$(cd "${2:?repo path required}" && pwd)/.claude"; shift 2 ;;
     --dry-run) dry=1; shift ;;
     --uninstall) uninstall=1; shift ;;
+    --keep-attribution) keep_attr=1; shift ;;
     *) echo "unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -49,7 +52,8 @@ copy() { # copy <src> <dst> — skips if identical, backs up an existing differe
 
 # Hook commands: absolute path for --user, $CLAUDE_PROJECT_DIR for --project (portable when committed)
 if [[ $mode == user ]]; then hooks_dir="$target/hooks/deliver"; else hooks_dir='"${CLAUDE_PROJECT_DIR}"/.claude/hooks/deliver'; fi
-snippet="$(jq --arg d "$hooks_dir" '(.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; $d)' "$KIT/settings.hooks.json")"
+snippet="$(jq --arg d "$hooks_dir" --argjson keep "$keep_attr" '(.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; $d)
+  | if $keep == 1 then del(.attribution) else . end' "$KIT/settings.hooks.json")"
 settings="$target/settings.json"
 if [[ -f $settings ]]; then current="$(cat "$settings")"; else current='{}'; fi
 jq -e . >/dev/null 2>&1 <<<"$current" || { echo "$settings is not valid JSON — fix it first" >&2; exit 1; }
@@ -71,6 +75,7 @@ if [[ $uninstall -eq 1 ]]; then
     (if .hooks then .hooks |= (with_entries(.value |= map(select(([.hooks[]?.command] | any(test("hooks/deliver/"))) | not)))
                                | with_entries(select(.value | length > 0))) else . end)
     | (if .env then .env |= with_entries(select(. as $e | ($k.env[$e.key] // null) != $e.value)) else . end)
+    | (if .attribution == $k.attribution then del(.attribution) else . end)
     | (if .env == {} then del(.env) else . end) | (if .hooks == {} then del(.hooks) else . end)' <<<"$current")"
   write_settings "$cleaned"
   echo "Uninstalled. Backups: $backup_dir   (ECC is untouched: /plugin uninstall ecc@ecc if you want it gone)"
@@ -84,7 +89,8 @@ run chmod +x "$target/skills/deliver/bin/dl" "$target/skills/deliver/bin/"*.mjs 
 
 # Append our hook entries per event, skipping any whose command is already present; add env keys only if unset.
 merged="$(jq --argjson k "$snippet" '
-  .env = (($k.env // {}) + ((.env // {}) | with_entries(select(
+  (if ($k.attribution != null and .attribution == null and .includeCoAuthoredBy == null) then .attribution = $k.attribution else . end)
+  | .env = (($k.env // {}) + ((.env // {}) | with_entries(select(
       # keep the user'"'"'s own values; replace values an older kit version wrote (they mention .work/)
       (($k.env[.key] // null) == null) or ((.value | tostring | test("\\.work/")) | not)))))
   | .hooks = ((.hooks // {}) as $h

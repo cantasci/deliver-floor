@@ -288,7 +288,7 @@ contains "push to main denied" "$(bg 'git push origin main')" "rc=2"
 contains "push refspec to main denied" "$(bg 'git push origin job/x:main')" "rc=2"
 contains "force push denied" "$(bg 'git push -f origin job/x')" "rc=2"
 contains "job branch push allowed for Michael" "$(bg "git -C x push -u origin job/$JOB")" "rc=0"
-contains "agent push denied" "$(bg 'git push origin job/x--T-01' "$R/.work/$JOB/wt/T-01")" "rc=2"
+contains "an agent outside a card worktree cannot push" "$(bg 'git push origin job/x--T-01' "$R/.work/$JOB/wt/T-01")" "rc=2"
 contains "rm -rf .work denied" "$(bg 'rm -rf .work')" "rc=2"
 contains "subagent dl integrate denied" "$(bg 'dl integrate T-01' "$R" abc123)" "rc=2"
 contains "subagent dl status allowed" "$(bg 'dl status' "$R" abc123)" "rc=0"
@@ -402,6 +402,82 @@ jq -n '{title:"fix",role:"backend",agent:"backend-dev",component:"app",depends_o
 contains "dl card add gives the next id" "$("$DL" card add "$TMP/fix.json" "verify-all found a gap" 2>&1)" "T-02"
 jq -n '{title:"bad",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["it/**"],qa_scope:["it3/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: z"],context:"x"}' > "$TMP/bad.json"
 out="$("$DL" card add "$TMP/bad.json" "dev edits QA tests" 2>&1)"; contains "a dev card reaching another card's QA tests is rejected" "$out" "QA tests belong to the QA role"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+echo "tracker: jira (contract stub of Jira REST v3) — statuses, comments, branch links"
+JS="$TMP/jira-state.json"; JSF="$TMP/jira-statuses"; : > "$TMP/jira.port"
+STUB_STATUSES_FILE="$JSF" node "$HERE/tests/jira-stub.mjs" "$JS" > "$TMP/jira.port" & JPID=$!
+for _ in $(seq 50); do grep -q listening "$TMP/jira.port" && break; sleep 0.1; done
+export JIRA_BASE_URL="http://127.0.0.1:$(awk '{print $2}' "$TMP/jira.port")" JIRA_EMAIL=bot@example.com JIRA_API_TOKEN=t0ken
+git init -q --bare "$TMP/gh-origin.git"
+JR="$TMP/jira-repo"; mkdir -p "$JR" && cd "$JR" && git init -q -b main
+git remote add origin https://github.com/acme/demo.git && git config url."$TMP/gh-origin.git".insteadOf https://github.com/acme/demo.git
+echo '{"verify_full":"true","merge_mode":"human","tracker":{"kind":"jira","jira":{"project":"WL"}}}' > .deliver.json && git add -A && git commit -qm i && git push -q origin main
+"$DL" new "jira flow" "x" >/dev/null; JJ="$JR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$JJ/specs/T-01.md"; cp "$JJ/specs/T-01.md" "$JJ/specs/T-02.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"ctx",attempts:0,notes:[]},
+  {id:"T-02",title:"two",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:["T-01"],scope:["lib/**"],qa_scope:["it2/**"],
+  verify:"test -d lib",qa_verify:"test -d it2",acceptance:["AC-1: y"],context:"ctx2",attempts:0,notes:[]}]}' > "$JJ/board.json"
+"$DL" phase executing >/dev/null
+jst() { jq -r "$1" "$JS"; }
+[[ "$(jst '.issues | length')" == 3 && "$(jst '.issues["WL-2"].fields.parent.key')" == WL-1 && "$(jst '.issues["WL-1"].fields.issuetype.name')" == Epic ]] \
+  && ok "executing opens an epic (WL-1) and one issue per card under it" || bad "jira open: $(jst '.issues|keys')"
+[[ "$(jst '.links | length')" == 1 ]] && ok "T-02 depends_on T-01 becomes a 'Blocks' issue link" || bad "issue links"
+jst '.issues["WL-2"].fields.labels | join(",")' | grep -q "component-app" && ok "issues carry job, role and component labels" || bad "labels"
+W="$("$DL" wt add T-01)"
+[[ "$(jq -r '.cards[0].branch' "$JJ/board.json")" == *"--T-01-WL-2" ]] && ok "the card branch carries the issue key (Jira's Development panel links it)" || bad "branch name"
+git --git-dir="$TMP/gh-origin.git" rev-parse -q --verify "refs/heads/$(jq -r '.cards[0].branch' "$JJ/board.json")" >/dev/null && ok "dl pushed the card branch" || bad "card branch push"
+[[ "$(jst '.issues["WL-2"].status')" == "In Progress" ]] && ok "assignment → In Progress" || bad "status after assign: $(jst '.issues["WL-2"].status')"
+jst '.issues["WL-2"].remotelinks[0].object.url' | grep -q "https://github.com/acme/demo/tree/job/" && ok "the branch is a remote link on the issue" || bad "remotelink"
+jst '.issues["WL-2"].fields.description' | grep -q "Development: branch" && ok "…and in the description" || bad "description branch"
+mkdir -p "$W/src" && echo 1 > "$W/src/a" && git -C "$W" add -A && git -C "$W" commit -qm "T-01"
+"$DL" gate T-01 >/dev/null; [[ "$(jst '.issues["WL-2"].status')" == QA ]] && ok "gate PASS → QA" || bad "after gate: $(jst '.issues["WL-2"].status')"
+mkdir -p "$W/it" && echo 1 > "$W/it/t" && git -C "$W" add -A && git -C "$W" commit -qm "T-01 QA"
+"$DL" qa T-01 pass "AC-1 pass" >/dev/null; [[ "$(jst '.issues["WL-2"].status')" == "Code Review" ]] && ok "QA pass → Code Review" || bad "after qa: $(jst '.issues["WL-2"].status')"
+"$DL" review T-01 approve "ok" >/dev/null; "$DL" integrate T-01 >/dev/null
+[[ "$(jst '.issues["WL-2"].status')" == Done ]] && ok "merge → Done" || bad "after integrate: $(jst '.issues["WL-2"].status')"
+jst '.issues["WL-2"].comments | join(" ")' | grep -q "qa-tester" && jst '.issues["WL-2"].comments | join(" ")' | grep -q "\[reviewer\] approve" \
+  && ok "the roles' results are comments on the issue (gate, QA, review, assignment)" || bad "comments: $(jst '.issues["WL-2"].comments')"
+echo "To Do,In Progress,Code Review,Done,Blocked" > "$JSF"   # the Jira admin removed the QA status
+W2="$("$DL" wt add T-02)"; mkdir -p "$W2/lib" && echo 1 > "$W2/lib/a" && git -C "$W2" add -A && git -C "$W2" commit -qm "T-02"
+out="$("$DL" gate T-02 2>&1)"; contains "a missing workflow status is reported, the gate result stands" "$out" "no transition to 'QA'"
+contains "dl status shows the tracker error" "$("$DL" status 2>&1)" "tracker: "
+[[ "$(jq -r '.cards[1].gate.result' "$JJ/board.json")" == PASS ]] && ok "board.json (the source of truth) is unaffected by the tracker outage" || bad "gate record"
+own2="$(jq -r '.cards[1].branch' "$JJ/board.json")"
+pg() { printf '%s' "$(jq -n --arg c "$1" --arg cwd "$W2" '{tool_input:{command:$c},cwd:$cwd,agent_id:"dev1"}')" | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?"; }
+contains "an agent may push its own card branch" "$(pg "git push origin $own2")" "rc=0"
+contains "…but not another card's branch" "$(pg "git push origin $(jq -r '.cards[0].branch' "$JJ/board.json")")" "rc=2"
+contains "…nor the job branch" "$(pg "git push origin $(jq -r .branch "$JJ/job.json")")" "rc=2"
+contains "…nor main" "$(pg "git push origin main")" "rc=2"
+contains "…nor a force push of its own branch" "$(pg "git push -f origin $own2")" "rc=2"
+contains "…and must name the branch" "$(pg "git push")" "rc=2"
+kill $JPID 2>/dev/null; unset JIRA_BASE_URL JIRA_EMAIL JIRA_API_TOKEN
+"$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+echo "commit hygiene: no AI attribution, optional role trailer"
+CH="$TMP/commits"; mkdir -p "$CH" && cd "$CH" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "commits" "x" >/dev/null; CJ="$CH/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+grep -q "no AI attribution" "$CJ/roles/backend.md" && ok "role cards state the commit rule" || bad "commit rule in role card"
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$CJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$CJ/board.json"
+"$DL" phase executing >/dev/null; WC="$("$DL" wt add T-01)"
+mkdir -p "$WC/src" && echo 1 > "$WC/src/a" && git -C "$WC" add -A && git -C "$WC" commit -qm "T-01: one" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
+out="$("$DL" gate T-01 2>&1)"; contains "a Claude co-author trailer fails the gate" "$out" "AI attribution in the card's commits"
+git -C "$WC" commit -q --amend -m "T-01: one" -m "Generated with [Claude Code](https://claude.com/claude-code)"
+out="$("$DL" gate T-01 2>&1)"; contains "a 'Generated with Claude Code' line fails the gate" "$out" "AI attribution"
+git -C "$WC" commit -q --amend -m "T-01: one"
+expect_ok "a clean history passes" "$DL" gate T-01
+"$DL" jobset '.settings.commit.role_in_message=true'
+out="$("$DL" gate T-01 2>&1)"; contains "role_in_message on: a commit without 'Role:' fails" "$out" "without a 'Role: <seat>' trailer"
+git -C "$WC" commit -q --amend -m "T-01: one" -m "Role: backend#1"
+expect_ok "…and passes with the trailer" "$DL" gate T-01
+"$DL" jobset '.settings.commit.role_in_message=false'
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "knowledge: standards, memory, Munder Difflin knowledge graph"
@@ -520,6 +596,7 @@ expect_ok "install is idempotent" "$INST" --user
 [[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 4 ]] && ok "4 hooks, no duplicates" || bad "hook count"
 [[ -f $HOME/.claude/agents/qa-tester.md ]] && ok "qa-tester agent installed" || bad "qa-tester missing"
 [[ "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$HOME/.claude/settings.json")" == .work/* ]] && ok "GateGuard exemption set" || bad "env"
+[[ "$(jq -c .attribution "$HOME/.claude/settings.json")" == '{"commit":"","pr":""}' ]] && ok "Claude Code commit/PR attribution switched off" || bad "attribution"
 echo "# local edit" >> "$HOME/.claude/skills/deliver/SKILL.md"
 "$INST" --user >/dev/null
 ls -d "$HOME"/.claude/skills/* | grep -qv '/deliver$' && bad "backup left inside skills/" || ok "backups stay out of skills/"

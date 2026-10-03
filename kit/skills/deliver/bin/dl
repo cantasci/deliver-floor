@@ -154,7 +154,7 @@ reset_stop_guard() { rm -f "$JOB_DIR/.stop-blocks"; }
 tracker() { # tracker sync [card] [--event text] | note <card> <author> <text> | open
   [[ -f $BOARD ]] || return 0
   local out rc=0; out="$(with_lock board.json node "$BIN_DIR/tracker.mjs" "$1" "$JOB_DIR" "${@:2}" 2>&1)" || rc=$?
-  seal "$BOARD"; [[ $rc -eq 0 ]] && return 0
+  seal "$BOARD"; seal "$JOBJ"; [[ $rc -eq 0 ]] && return 0
   printf '%s\t%s\t%s\n' "$(now)" tracker-error "$out" >> "$JOB_DIR/events.log"
   echo "dl: warning — tracker: $out" >&2; return 0
 }
@@ -172,6 +172,23 @@ table() { # tab-separated stdin → aligned columns (no dependency on `column`)
 }
 
 # ---------------------------------------------------------------------------------------------------------------
+
+# Card branches are pushed by dl (never by agents) when settings.push_branches allows it: "auto" = when there is an
+# origin and merge_mode is not local. That makes every branch visible on the Git host and in the tracker.
+push_card() {
+  local card=$1 mode; mode="$(setting push_branches)"; mode=${mode:-auto}
+  [[ $mode == false ]] && return 0
+  git -C "$ROOT" remote get-url origin >/dev/null 2>&1 || return 0
+  [[ $mode == auto && "$(setting merge_mode)" == local ]] && return 0
+  local br; br="$(card_get "$card" .branch)"
+  if git_locked -C "$ROOT" push -q -u origin "$br" >/dev/null 2>&1; then
+    local url; url="$(git -C "$ROOT" config --get remote.origin.url | sed -E 's#^git@github.com:#https://github.com/#; s#\.git$##')"
+    [[ $url == https://github.com/* ]] && card_set "$card" '(.cards[] | select(.id==$id)).branch_url = $u' --arg u "$url/tree/$br"
+    log_event push "$br"
+  else
+    log_event push-error "$br (push failed — the branch stays local)"
+  fi
+}
 
 cmd_new() {
   resolve_root
@@ -198,6 +215,9 @@ cmd_new() {
   settings="$(jq 'if .merge_strategy then .merge_mode = (if .merge_strategy == "local" then "local" else (.merge_mode // "human") end) | del(.merge_strategy) else . end' <<<"$settings")"
   local mm; mm="$(jq -r .merge_mode <<<"$settings")"
   [[ " $MERGE_MODES " == *" $mm "* ]] || die "merge_mode must be one of: $MERGE_MODES (got '$mm')"
+  local tk; tk="$(jq -r '.tracker.kind // "local"' <<<"$settings")"
+  node --input-type=module -e "import {trackerKinds} from '$BIN_DIR/tracker.mjs'; process.exit(trackerKinds().includes('$tk') ? 0 : 1)" \
+    || die "tracker.kind '$tk' is not a known tracker ($(node --input-type=module -e "import {trackerKinds} from '$BIN_DIR/tracker.mjs'; console.log(trackerKinds().join(', '))"))"
   base="$(jq -r .base_branch <<<"$settings")"
   if [[ $base == auto || $base == null ]]; then
     base="$(git -C "$ROOT" symbolic-ref --short HEAD 2>/dev/null)" || die "could not resolve base branch (detached HEAD?) — set base_branch in .deliver.json"
@@ -503,7 +523,10 @@ cmd_wt() {
   load_job
   local sub=${1:-} card=${2:-} flag=${3:-}; [[ -n $card ]] || die "usage: dl wt add|rm <card> [--resume]"
   card_exists "$card"
-  local path="$JOB_DIR/wt/$card" branch="$JOB_BRANCH--$card"
+  local path="$JOB_DIR/wt/$card" branch
+  # The card branch carries the tracker key when there is one (Jira links branches by key), and never changes once made.
+  branch="$(card_get "$card" '.branch // empty')"
+  [[ -n $branch ]] || branch="$JOB_BRANCH--$card$(card_get "$card" '.tracker.key // "" | if . != "" then "-" + . else "" end')"
   case $sub in
     add)
       # 1. checks + reservation, atomically (two parallel assignments can't take the same seat or exceed a limit);
@@ -520,9 +543,11 @@ cmd_wt() {
         run_setup "$path"
       fi
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b)' --arg p "$path" --arg b "$branch"
+      push_card "$card"
       reset_stop_guard
       log_event "assign" "$card → $(card_get "$card" .agent)$(card_get "$card" '(.seat // "") | if . != "" then " (" + . + ")" else "" end') attempt=$(card_get "$card" .attempts)${flag:+ $flag}"
       tracker sync "$card" --event "assigned by michael to $(card_get "$card" '.seat // .agent') (attempt $(card_get "$card" .attempts))"
+      [[ "$(card_get "$card" '.assignments | length')" == 1 || $flag == --resume ]] && tracker branch "$card"
       echo "$path"
       ;;
     rm)
@@ -640,6 +665,20 @@ cmd_gate() {
       else echo "ok    QA tests untouched by the dev"; fi
     fi
 
+    # Commit hygiene: no AI attribution in the delivered history (settings.commit.ai_attribution=false, the default);
+    # the role trailer is required only when settings.commit.role_in_message is on.
+    if [[ "$(setting commit.ai_attribution)" != true ]]; then
+      local attr; attr="$(git -C "$wt" log --format='%H%n%an <%ae>%n%cn <%ce>%n%B%n----' "$JOB_BRANCH..HEAD" \
+        | grep -inE 'co-authored-by:.*(claude|anthropic)|generated with \[?claude|🤖 generated|noreply@anthropic\.com|^claude <' | head -3)"
+      if [[ -n $attr ]]; then echo "FAIL  AI attribution in the card's commits (settings.commit.ai_attribution=false):"; sed 's/^/        /' <<<"$attr"; fail=1
+      else echo "ok    no AI attribution in commits"; fi
+    fi
+    if [[ "$(setting commit.role_in_message)" == true ]]; then
+      local missing; missing="$(git -C "$wt" log --no-merges --format='%h %s%n%b%n----' "$JOB_BRANCH..HEAD" | awk 'BEGIN{RS="----\n"} !/(^|\n)Role: /{split($0,a,"\n"); if (a[1]!="") print a[1]}')"
+      if [[ -n $missing ]]; then echo "FAIL  commits without a 'Role: <seat>' trailer (settings.commit.role_in_message=true):"; sed 's/^/        /' <<<"$missing"; fail=1
+      else echo "ok    every commit names its role"; fi
+    fi
+
     echo "----- verify: $verify"
     local runner=(bash -c "$verify")
     command -v timeout >/dev/null && runner=(timeout "$tmo" bash -c "$verify")
@@ -660,6 +699,7 @@ cmd_gate() {
   reset_stop_guard
   tracker sync "$card"; tracker note "$card" gate "$result — $(grep -c '^ok' "$log") checks ok, $(grep -c '^FAIL' "$log") failed ($(basename "$log"))"
   if [[ $fail -eq 0 ]]; then
+    push_card "$card"
     log_event gate "$card PASS"; echo "GATE PASSED: $card  (log: $log)"
   else
     log_event gate "$card FAIL"
@@ -694,6 +734,7 @@ cmd_qa() {
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"log":$l,"summary":$s,"at":$t}
       | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"qa_verify":$r,"summary":$s,"at":$t}]))' \
     --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)"
+  push_card "$card"
   reset_stop_guard; log_event qa "$card $verdict (qa_verify $qres) — $summary"
   tracker sync "$card"; tracker note "$card" qa-tester "$verdict (qa_verify $qres): $summary"
   echo "qa: $card $verdict  (qa_verify: $qres)"
@@ -732,7 +773,9 @@ cmd_integrate() {
     || refuse 1 "$card: no Lead review approval on commit ${head:0:9} — review, then: dl review $card approve"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
     || refuse 1 "the integration worktree has uncommitted changes — nothing may be written there by hand (git -C $IWT status)"
-  if ! git_locked -C "$IWT" merge --no-ff -q -m "Merge $card: $title" "$branch" >/dev/null 2>&1; then
+  local mmsg="Merge $card: $title"
+  [[ "$(setting commit.role_in_message)" == true ]] && mmsg+=$'\n\n'"Role: michael (integration of $(card_get "$card" '.seat // .role'))"
+  if ! git_locked -C "$IWT" merge --no-ff -q -m "$mmsg" "$branch" >/dev/null 2>&1; then
     git_locked -C "$IWT" merge --abort 2>/dev/null || true
     log_event integrate "$card CONFLICT"
     echo "CONFLICT: $card conflicts with $JOB_BRANCH. Re-dispatch the dev (dl wt add $card) with: run 'git merge $JOB_BRANCH' in the worktree, resolve, run verify, commit. Then gate + review + integrate again." >&2
@@ -888,7 +931,7 @@ cmd_kanban() {
   node "$BIN_DIR/tracker.mjs" kanban "$JOB_DIR" "$@"
   echo; echo "tracker: $(jq -r '.settings.tracker.kind // "local"' "$JOBJ")$(jq -r '.tracker.url // empty | " · " + .' "$JOBJ")  · html: $JOB_DIR/kanban.html"
 }
-cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
+cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
 cmd_reseal() { # human only (bash-guard): accept the current job.json/board.json after inspecting an outside change
   DL_NO_SEAL_CHECK=1 load_job
   local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl reseal "<what was changed outside dl and why it is accepted>"'

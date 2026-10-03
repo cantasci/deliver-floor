@@ -57,6 +57,8 @@ export class Tracker {
   async sync(_card, _event) {}
   /** comment on a card on behalf of a role */
   async note(_card, _author, _text) {}
+  /** attach the card's git branch to the task (where the tool has a place for it, else in the description) */
+  async branch(_card) {}
   /** a short line describing where people see the board */
   where() { return ""; }
   card(id) { const c = this.board.cards.find((x) => x.id === id); if (!c) throw new Error(`no such card: ${id}`); return c; }
@@ -73,6 +75,7 @@ export class LocalTracker extends Tracker {
     c.comments = [...(c.comments ?? []), { at: new Date().toISOString(), author, text }];
     this.saveBoard(); this.render();
   }
+  async branch() { this.render(); } // the branch is on the card (board.json) and shown on the kanban card
   where() { return `kanban: ${join(this.jobDir, "kanban.html")} · dl kanban`; }
   render() { writeFileSync(join(this.jobDir, "kanban.html"), kanbanHtml(this.job, this.board, this.columns)); }
 }
@@ -119,12 +122,12 @@ export class JiraTracker extends Tracker {
     }
     for (const c of this.board.cards) if (!c.tracker?.key) {
       const fields = { project: { key: this.project }, issuetype: { name: this.issueType }, summary: `${c.id}: ${c.title}`.slice(0, 250),
-        labels: [...this.labels, this.job.id, `role-${c.role}`],
-        description: this.doc([c.context, "Acceptance criteria:\n" + (c.acceptance ?? []).map((a) => `- ${a}`).join("\n"),
-          `Scope: ${(c.scope ?? []).join(", ")}  ·  QA tests: ${(c.qa_scope ?? []).join(", ")}`, `Verify: ${c.verify}`].join("\n\n")) };
+        labels: [...this.labels, this.job.id, `role-${c.role}`, ...(c.component ? [`component-${c.component}`] : [])],
+        description: this.description(c) };
       fields.parent = { key: this.job.tracker.epic };
       const i = await this.req("POST", "/issue", { fields });
       c.tracker = { key: i.key, url: `${this.base}/browse/${i.key}`, column: null };
+      c.tracker.column = (await this.req("GET", `/issue/${i.key}?fields=status`)).fields?.status?.name ?? null;
       this.saveBoard();
       if ((c.depends_on ?? []).length) for (const d of c.depends_on) {
         const dk = this.board.cards.find((x) => x.id === d)?.tracker?.key;
@@ -141,6 +144,10 @@ export class JiraTracker extends Tracker {
       if (c.tracker.column === target) continue;
       const { transitions = [] } = await this.req("GET", `/issue/${c.tracker.key}/transitions`);
       const t = transitions.find((x) => (x.to?.name ?? x.name).toLowerCase() === target.toLowerCase());
+      if (!t) { // already there (Jira lists no transition to the current status)?
+        const now = (await this.req("GET", `/issue/${c.tracker.key}?fields=status`)).fields?.status?.name;
+        if (now && now.toLowerCase() === target.toLowerCase()) { c.tracker.column = now; this.saveBoard(); continue; }
+      }
       if (!t) throw new Error(`${c.tracker.key}: no transition to '${target}' (available: ${transitions.map((x) => x.to?.name ?? x.name).join(", ")}) — map it in settings.tracker.columns`);
       await this.req("POST", `/issue/${c.tracker.key}/transitions`, { transition: { id: t.id } });
       c.tracker.column = target; this.saveBoard();
@@ -151,6 +158,27 @@ export class JiraTracker extends Tracker {
     const c = this.card(card);
     if (!c.tracker?.key) await this.open();
     await this.req("POST", `/issue/${c.tracker.key}/comment`, { body: this.doc(`[${author}] ${text}`) });
+  }
+  description(c) {
+    return this.doc([c.context, "Acceptance criteria:\n" + (c.acceptance ?? []).map((a) => `- ${a}`).join("\n"),
+      `Component: ${c.component ?? "-"}  ·  Scope: ${(c.scope ?? []).join(", ")}  ·  QA tests: ${(c.qa_scope ?? []).join(", ")}`,
+      `Verify: ${c.verify}  ·  QA verify: ${c.qa_verify ?? "-"}`,
+      ...(c.branch ? [`Development: branch ${c.branch}${c.branch_url ? ` — ${c.branch_url}` : ""}`] : [])].join("\n\n"));
+  }
+  // Jira shows branches in the issue's Development panel when the branch name carries the issue key and the Git host is
+  // connected (GitHub/Bitbucket/GitLab for Jira) — dl puts the key in the branch name and pushes it. In addition the
+  // branch goes into the description, and as a remote link when its URL is known, so it is visible without the app too.
+  async branch(card) {
+    const c = this.card(card);
+    if (!c.branch) return;
+    if (!c.tracker?.key) await this.open();
+    await this.req("PUT", `/issue/${c.tracker.key}`, { fields: { description: this.description(c) } });
+    if (c.branch_url && c.tracker.branch_linked !== c.branch_url) {
+      await this.req("POST", `/issue/${c.tracker.key}/remotelink`, { globalId: `deliver-branch:${c.branch}`,
+        object: { url: c.branch_url, title: `branch ${c.branch}`, icon: { url16x16: "https://github.com/favicon.ico", title: "git" } } });
+      c.tracker.branch_linked = c.branch_url; this.saveBoard();
+    }
+    await this.note(card, "michael", `branch ${c.branch}${c.branch_url ? ` (${c.branch_url})` : ""}`);
   }
   where() { return this.job.tracker?.url ? `jira: ${this.job.tracker.url}` : `jira: ${this.base} (project ${this.project})`; }
 }
@@ -225,6 +253,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       if (cmd === "open") { await t.open(); console.log(t.where()); }
       else if (cmd === "sync") { const ev = flag("--event"); await t.sync(rest[0], ev); }
       else if (cmd === "note") { const [card, author, ...text] = rest; await t.note(card, author, text.join(" ")); }
+      else if (cmd === "branch") await t.branch(rest[0]);
       else throw new Error(`unknown command: ${cmd}`);
     }
   } catch (e) { console.error(`tracker: ${e.message}`); process.exit(1); }
