@@ -18,6 +18,7 @@ const hiveRoot = () => { try { return path.join(JSON.parse(fs.readFileSync(path.
 const floorName = (worker) => { try { return JSON.parse(fs.readFileSync(path.join(hiveRoot(), 'registry.json'), 'utf8')).agents[worker]?.name ?? null; } catch { return null; } };
 const events = () => { try { const d = fs.readdirSync(path.join(repo, '.work')).filter((x) => x.startsWith('JOB-')).sort().pop(); return fs.readFileSync(path.join(repo, '.work', d, 'events.log'), 'utf8').split('\n').filter(Boolean); } catch { return []; } };
 const unanswered = new Set();
+let focusMichael = null; // set once the window is up: selects Michael so the composer is his
 async function answer(win) {
   const id = fs.readFileSync(path.join(repo, '.work/ACTIVE'), 'utf8').trim();
   const r = JSON.parse(fs.readFileSync(path.join(repo, '.work', id, 'readiness.json'), 'utf8'));
@@ -30,6 +31,7 @@ async function answer(win) {
     log(`human answered ${it.id}: ${it.question.slice(0, 90)}`); n++;
   }
   if (n) {
+    if (focusMichael) await focusMichael();
     await win.fill('textarea[placeholder*="Michael"]', 'I answered your questions (recorded with dl clarify, see readiness.json). Continue the /deliver job.');
     await win.keyboard.press('Enter'); log('told Michael the questions are answered');
   }
@@ -55,16 +57,20 @@ async function answer(win) {
   const busy = new Map(); let rr = 0, ns = 0;
   const select = async (name) => {
     try {
-      if (name === 'Michael') { await win.getByText('BOSS', { exact: true }).first().click({ timeout: 3000 }); return true; }
-      // The agent strip along the bottom: the card whose name text matches, lowest on screen (the floor's labels sit above).
-      const hits = win.getByText(name, { exact: true });
-      let best = null, by = -1;
-      for (let k = 0; k < await hits.count(); k++) { const b = await hits.nth(k).boundingBox(); if (b && b.y > by) { by = b.y; best = hits.nth(k); } }
-      if (!best) return false;
+      if (name === 'Michael') {
+        const m = win.locator('[title="Michael — double-click to rename"]').first();
+        await ((await m.count()) ? m : win.getByText('BOSS', { exact: true }).first()).click({ timeout: 3000 });
+        return true;
+      }
+      // The agent strip along the bottom: each name is a span titled "<name> — double-click to rename" (its text is upper-
+      // cased, so a text match misses). One click selects the card; a double click would rename it.
+      const best = win.locator(`[title="${name} — double-click to rename"]`).first();
+      if (!(await best.count())) { log(`select ${name}: no card on the agent strip`); return false; }
       await best.click({ timeout: 3000 });
       return true;
     } catch (e) { log(`select ${name} failed: ${String(e.message ?? e).split('\n')[0].slice(0, 120)}`); return false; }
   };
+  focusMichael = () => select('Michael');
   const seatShot = async (seat, b, tag) => {
     const name = b.name ?? (b.name = floorName(b.worker));
     if (!name || !(await select(name))) return;
