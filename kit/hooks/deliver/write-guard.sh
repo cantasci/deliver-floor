@@ -2,7 +2,7 @@
 # PreToolUse(Edit|Write|MultiEdit|NotebookEdit) — isolation, enforced.
 # While a job is active in a repo:
 #   - agents (subagents, and floor workers inside a card worktree) may write inside that repo only in a
-#     card worktree (.work/<job>/wt/T-*) or the handoffs folder — never in the main checkout, the integration
+#     card worktree (.work/<job>/wt/T-*), the handoffs folder or out/ (a floor seat's analysis) — never in the main checkout, the integration
 #     worktree, or the job's state files;
 #   - the orchestrator (the session that owns the job) writes only the job's files under .work/<job>/ —
 #     product code is written by dev agents.
@@ -22,8 +22,8 @@ while IFS=$'\t' read -r job root; do
   if is_agent; then
     case $f in
       "$jd"/wt/_integration/*) deny "nothing is written in the integration worktree; work in your card worktree." ;;
-      "$jd"/wt/T-*/*|"$jd"/handoffs/*) exit 0 ;;
-      "$jd"/*) deny "the job's state files (board, plan, job.json) are Michael's. Write only in your worktree and handoff." ;;
+      "$jd"/wt/T-*/*|"$jd"/handoffs/*|"$jd"/out/*) exit 0 ;;
+      "$jd"/*) deny "the job's state files (board, plan, job.json) are Michael's. Write only in your worktree, your handoff or .work/<job>/out/." ;;
       *) deny "you may only write inside your card worktree ($jd/wt/<card>/…) and your handoff file — not in the main checkout ($f)." ;;
     esac
   elif owns_job "$job"; then

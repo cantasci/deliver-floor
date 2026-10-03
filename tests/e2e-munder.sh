@@ -69,6 +69,23 @@ if [[ -n $J ]]; then
   [[ $d -ge 1 ]] && ok "Munder Difflin consumed $d spawn request(s) (spawn-requests/.done)" || bad "no spawn request was consumed"
   jq -r '.agents | to_entries[] | select(.key | startswith("worker-")) | "    worker: \(.key) — \(.value.name // "")"' "$W/hive/hive/registry.json" 2>/dev/null | tee -a "$REP"
 fi
+# Every role the requirements called for is a person at a desk who did that role's work — Michael ran no subagent.
+if [[ -n $J ]]; then
+  seats="$(jq -r '.munder.seats // {} | keys[]' "$J/job.json")"
+  want="$(jq -r '.roles[] | select(.agent != "artemis") | . as $r | range(1; (($r.count // 1) + 1)) | "\($r.role)#\(.)"' "$J/job.json" | sort)"
+  [[ -n $seats && "$(sort <<<"$seats")" == "$want" ]] && ok "a seat was hired for every role seat the requirements called for: $(tr '\n' ' ' <<<"$want")" \
+    || bad "seats hired ($(tr '\n' ' ' <<<"$seats")) ≠ seats needed ($(tr '\n' ' ' <<<"$want"))"
+  for s in $want; do
+    w="$(jq -r --arg s "$s" '.munder.seats[$s].worker' "$J/job.json")"
+    on="$(jq -r --arg w "$w" '.agents[$w] // empty | .name' "$W/hive/hive/registry.json" 2>/dev/null)"
+    tasks="$(grep -P "\tmd-done\t\S+ $s:" "$J/events.log" | cut -f3 | cut -d' ' -f1 | tr '\n' ' ')"
+    [[ -n $tasks ]] && ok "$s (${on:-$w}) did: $tasks" || bad "$s never reported a finished task"
+  done
+  nsub="$(grep -P '\tagent\t' "$J/events.log" | grep -vc ' @worker-')"
+  if [[ $nsub -gt 0 ]]; then
+    bad "Michael ran $nsub subagent(s) on the floor: $(grep -P '\tagent\t' "$J/events.log" | grep -v ' @worker-' | head -3 | cut -f3 | cut -c1-60 | tr '\n' ';')"
+  else ok "Michael ran no subagent: every role's work went to its seat (md-send → md-done)"; fi
+fi
 
 step "4 · verify the delivered job"
 "$HERE/tests/verify-job.sh" "$SB" "$ORACLE" "$REP" "$ISO_HOME/.claude/skills/deliver" || FAILED=1

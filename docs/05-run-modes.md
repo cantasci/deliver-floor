@@ -101,8 +101,8 @@ Nothing in the flow is tied to one vendor:
 - **Roles** run on any model: `model` on a role (Claude subagents), `provider` + `model` on a role (Munder Difflin floor
   workers on codex, gemini, grok, kimi, qwen, opencode, crush, pi, copilot, cursor, antigravity) — [04](04-roles.md#models-and-clis-per-role).
 - **Michael** can be any CLI Munder Difflin runs: the hive brief exists as `CLAUDE.md`, `AGENTS.md` (Codex, OpenCode, Crush,
-  Copilot, Cursor) and `GEMINI.md`; a CLI without skills or subagents follows `SKILL.md` as its playbook and dispatches every
-  role as a floor worker with `dl md-dispatch`.
+  Copilot, Cursor) and `GEMINI.md`; a CLI without skills follows `SKILL.md` as its playbook. On the floor no Michael uses
+  subagents: every role is a person at a seat (`dl md-hire`, `dl md-send`) — [07](07-munder-difflin.md#2-how-the-flow-maps-onto-the-floor).
 - **The guarantees** don't depend on the model: state, gates, scope, QA and review records, merges and shipping are `dl`
   (bash + node), which refuses any out-of-order step whoever calls it. The Claude Code hooks add a second line of defence
   where Claude Code runs; on other CLIs the same rules are in the role card and `dl` still refuses.

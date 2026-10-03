@@ -96,10 +96,14 @@ if [[ $munder -eq 1 ]]; then
     | .recentHives = ([$h] + ((.recentHives // []) - [$h]))
     | .registeredRepos = (((.registeredRepos // []) + (if $r != "" then [$r] else [] end)) | unique)
     | .orchestratorMaySpawn = true
+    # /deliver seats a person per role for the whole job: they wait between tasks (QA for the devs, …), so the floor must not
+    # reap them after 20 idle minutes, and a job with 6–10 seats must not queue behind the default limit of 4 workers.
+    | .workerIdleTimeoutMinutes = ([.workerIdleTimeoutMinutes // 0, 480] | max)
+    | .maxConcurrentWorkers = ([.maxConcurrentWorkers // 0, 12] | max)
     | .knowledgeGraph = ((.knowledgeGraph // {}) + {enabled: true})
     | (if $skip == 1 then .onboardingComplete = true | .audience = (.audience // "technical") else . end)' \
     "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
-  echo "config: $cfg"; jq -c '{harnessHome, registeredRepos, orchestratorMaySpawn, knowledgeGraph, onboardingComplete}' "$cfg"
+  echo "config: $cfg"; jq -c '{harnessHome, registeredRepos, orchestratorMaySpawn, workerIdleTimeoutMinutes, maxConcurrentWorkers, knowledgeGraph, onboardingComplete}' "$cfg"
   if [[ -n $repo ]]; then
     jq '.dispatch = "munder"' "$repo/.deliver.json" > "$repo/.deliver.json.tmp" 2>/dev/null && mv "$repo/.deliver.json.tmp" "$repo/.deliver.json" \
       || echo '{"dispatch":"munder"}' > "$repo/.deliver.json"

@@ -2,19 +2,24 @@
 
 [Munder Difflin](https://munderdiffl.in) is a desktop app (Electron) where agents sit at desks on an office floor: a god agent
 (**Michael**) runs the floor, workers appear at desks while they work, and the hive (a folder) holds their memory, mailboxes,
-board and log. `/deliver` runs on it unchanged — Michael is the PM, and every role of the job can be a worker at a desk on
-the CLI and model its role names.
+board and log. `/deliver` runs on it with one rule more: **you talk only to Michael, and Michael uses no subagents.** Every
+role the requirements call for — BA, Leads, every dev seat, QA, reviewers, specialists — is a person Michael seats at a desk
+for the whole job, on the CLI and model its role names. Michael gives each of them their work orders, with the ECC or kit
+instructions and skills for the task.
 
 ```text
  you ── message / Slack / webhook ──► MICHAEL (god agent, cwd = hive)  ──► /deliver <request>
-                                         │  dl -C <repo> …  (same flow, same guards)
-                                         │  dl md-dispatch T-02 prompt.md   → hive/spawn-requests/<id>.json
+                                         │  dl -C <repo> …  (same flow, same guards — and no Agent tool on the floor)
+                                         │  dl md-hire                       → one spawn request per seat
+                                         │  dl md-send backend T-02 order.md → a work order in the seat's inbox
                                          ▼
-                   ┌─────────── floor workers (one desk per card × role) ────────────┐
-                   │ backend#1: claude --agent backend-dev  (cwd = card worktree)    │
-                   │ backend#2: codex --model gpt-5-codex   (role card + agent body) │
-                   │ qa:        claude --agent qa-tester                             │
-                   └── act:"done" → Michael's inbox → gate → QA → review → merge ────┘
+          ┌──────────── people at their desks, for the whole job (one per role seat) ────────────┐
+          │ ba         readiness · plan · specs · closing        (kit business-analyst)           │
+          │ backend-lead  cards                                  (ecc:architect)                  │
+          │ backend 1 / backend 2  cards T-01, T-02 … in their worktrees  (kit backend-dev, TDD)  │
+          │ qa         integration/e2e tests per card            (kit qa-tester)                  │
+          │ reviewer   review per card                           (ecc:typescript-reviewer …)      │
+          └── inform "done <task> <seat>" → Michael's inbox → dl md-done → gate → QA → review ─────┘
    ASK ME cards ◄── open business questions / blocked cards (hive/tasks.json → humanQA)
    Knowledge Graph ◄── dl knowledge sync-md (company standards + lessons)
    MemPalace ◄── Michael's memory.md (dl learn writes lessons there too)
@@ -32,7 +37,9 @@ scripts/init.sh --munder --hive ~/md-hive --repo /path/to/repo
 | dependencies | `npm install` |
 | native modules | `node-pty` rebuilt against the local Node headers (N-API, Electron loads it), `better-sqlite3` from the official Electron prebuild — works where Electron's header download is blocked |
 | build | `npm run build` |
-| configure | `~/.config/munder-difflin/config.json` (macOS: `~/Library/Application Support/munder-difflin/`): `harnessHome` = the hive, repo in `registeredRepos`, `orchestratorMaySpawn: true` (Michael may start workers), Knowledge Graph on; `--skip-onboarding` marks the first-run wizard done |
+| configure | `~/.config/munder-difflin/config.json` (macOS: `~/Library/Application Support/munder-difflin/`): `harnessHome` = the hive, repo in `registeredRepos`, `orchestratorMaySpawn: true` (Michael may seat people), `workerIdleTimeoutMinutes` ≥ 480 (a seat waits between tasks — QA
+for the devs — and must not be sent home after the default 20 idle minutes), `maxConcurrentWorkers` ≥ 12 (a job's seats all at
+once instead of queueing behind the default 4), Knowledge Graph on; `--skip-onboarding` marks the first-run wizard done |
 | repo | `.deliver.json` gets `"dispatch": "munder"` |
 | brief | `scripts/md-brief.sh` writes the `/deliver` section into the hive's `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` (any CLI that runs Michael reads its file) |
 
@@ -47,19 +54,20 @@ Start it: `cd ~/.local/share/munder-difflin && npm run preview` (Linux as root /
 
 | Flow | On the floor |
 | --- | --- |
-| Michael (PM) | the god agent at the boss desk; his terminal is the Command Center |
-| BA, Leads | subagents of Michael (Claude) — or floor workers via `dl md-dispatch` when Michael is not Claude |
-| a dev seat on a card | a floor worker: `dl wt add T-02` (assignment) → prompt file → `dl md-dispatch T-02 <prompt> [role]` |
-| QA, reviewers | `dl md-dispatch T-02 <prompt> qa` / `reviewer` — a worker in the same worktree, read-only by its rules |
-| worker done | the worker's `act:"done"` arrives in Michael's inbox; he runs the card's next step |
-| card record | `md_workers` on the card: which worker (role, provider) did what |
+| Michael (PM) | the god agent at the boss desk; his terminal is the Command Center. No subagents: the agent-guard hook refuses the Agent tool while a floor job is active |
+| the team | `dl md-hire` right after the roles are chosen: one person per seat of every selected role (`count` seats each, default 1), through the spawn queue — no click in the app. Each one sits down, says `seated <seat>`, and stays for the whole job |
+| any role's work | a work order: `dl md-send <role\|seat> <task> <prompt> --agent <ECC or kit agent>`. Task = a card id (dev, QA, review) or a plan step (`readiness`, `plan`, `cards-<lead>`, `spec-T-xx`, `closing`). The order carries the role card, the agent's instructions and the prompt; analysis goes to `.work/<job>/out/` |
+| a dev seat on a card | `dl wt add T-02` (assigns the card to a seat, e.g. `backend#2`) → `dl md-send backend T-02 <prompt>` goes to that seat |
+| done | the person's inform `done <task> <seat>` arrives in Michael's inbox → `dl md-done <seat> "<summary>"` → the card's next step |
+| who did what | `events.log`: `md-hire`, `md-send <task> <seat> (<agent>) → <worker>`, `md-done <task> <seat>: <summary>`; on the card: `md_workers` (role, seat, worker) |
+| empty desk | a seat released or reaped shows as `not seated` in `dl md-seats`; `dl md-hire` seats a replacement with the same face |
+| end of job | `dl md-release`: every seat gets the release order and goes home |
 | human questions | ASK ME cards (`hive/tasks.json → humanQA`) — or the composer; answers recorded with `dl clarify` |
-| role → desk | `roles.yaml → floor` (character + accent); `dl roles` writes `hire@1` manifests to `.work/<job>/munder/hires/` and offers them in `hive/research/hires/` to seat a role permanently |
+| role → face | `roles.yaml → floor` (character + accent) for a role's first seat; further seats get a cast member nobody on the job has |
 
-`dl md-dispatch` writes the spawn request: `objective` = the role card + (for non-Claude CLIs) the agent definition's
-instructions + the prompt; `cwd` = the card worktree; `command` = `<settings.munder.claude_command> --agent <agent>` for
-Claude roles or `provider` for the others; `model` = the role's model (or `settings.munder.model`); `isolate: false` (the
-worktree is already isolated by `dl`); `tokenCap`, `character`, `accent`.
+A seat is a plain `claude` (or the role's provider) in the repo with `isolate: false`: its instructions come with every order,
+so one person can follow `ecc:architect` for one task and a kit agent for the next. `dl md-dispatch` (an ephemeral worker per
+card, released when it reports `done`) is still there for floors that want it, but the playbook uses seats.
 
 ## 3. Models and CLIs
 

@@ -48,7 +48,10 @@ Start with `scripts/doctor.sh <repo>`, then `dl status`, then `tail -50 .work/<j
 | --- | --- | --- |
 | Michael's terminal shows Claude Code's first-run screens ("Select login method", theme) and your message went into them | Claude Code was never started interactively in this HOME (fresh user, CI) | run `claude` once in a normal terminal, or set `"hasCompletedOnboarding": true` in `~/.claude.json`; restart the floor. If you authenticate through a `CLAUDE_*` variable other than `CLAUDE_CODE_OAUTH_TOKEN`, see [07 § 5](07-munder-difflin.md#5-authentication-and-first-run) — Munder Difflin strips those |
 | Electron fails to start: `pty.node` / `better_sqlite3.node` | native modules not built for Electron | `scripts/init.sh --munder …` rebuilds them (node-pty from local headers, better-sqlite3 from the Electron prebuild) |
-| `dl md-dispatch`: HIVE_ROOT is not set | run outside Munder Difflin | run from Michael's floor terminal, or set `settings.munder.hive_root` |
+| `dl md-hire` / `md-send` / `md-dispatch`: HIVE_ROOT is not set | run outside Munder Difflin | run from Michael's floor terminal, or set `settings.munder.hive_root` |
+| `agent-guard: on the Munder Difflin floor every role works at its own seat` | Michael tried the Agent tool on a floor job | send the work to the role's seat: `dl md-send <role> <task> <prompt>`; `dl md-seats` shows who sits where |
+| `dl md-send`: "no one at the desk" / `md-seats`: `not seated` | the seat was released or reaped (idle longer than `workerIdleTimeoutMinutes`) | `dl md-hire` seats a replacement; `scripts/init.sh --munder` sets the idle timeout to 480 minutes |
+| seats stay `pending` | more seats than `maxConcurrentWorkers`, or `orchestratorMaySpawn` is off | Settings → Autonomy & Budgets; `scripts/init.sh --munder` sets both |
 | A floor worker never starts | `orchestratorMaySpawn` off, or the provider CLI is missing | `scripts/init.sh --munder` sets it; Munder Difflin offers to install the CLI |
 
 ## Manual control (you can always take over)

@@ -371,6 +371,64 @@ jq -r .objective "$reqc" | gq "^---$" && ! jq -r .objective "$reqc" | gq "^tools
 "$DL" jobset '(.roles[] | select(.role=="backend")) |= del(.provider, .model) | .settings.dispatch="subagent"'
 unset HIVE_ROOT
 
+echo "munder difflin seats: one person per role seat, work orders, no subagents for Michael"
+export HIVE_ROOT="$TMP/hive-seats"; mkdir -p "$HIVE_ROOT"
+echo '{"godId":"god","agents":{"god":{"id":"god","isGod":true,"status":"idle"}}}' > "$HIVE_ROOT/registry.json"
+"$DL" jobset '.settings.dispatch="munder"' >/dev/null
+nseat="$(jq '[.roles[] | select(.agent != "artemis") | (.count // 1)] | add' "$R/.work/$JOB/job.json")"
+expect_ok "md-hire seats every role seat" "$DL" md-hire
+[[ "$(ls "$HIVE_ROOT"/spawn-requests/seat-*.json | wc -l)" == "$nseat" ]] && ok "one spawn request per seat ($nseat) — every selected role, count seats each" || bad "seat requests: $(ls "$HIVE_ROOT"/spawn-requests)"
+sreq="$(ls "$HIVE_ROOT"/spawn-requests/seat-*-backend-1-h1.json)"
+contains "a seat is a plain claude in the repo, no --agent, no isolation" "$(jq -c '{command,cwd,isolate}' "$sreq")" "{\"command\":\"claude\",\"cwd\":\"$R\",\"isolate\":false}"
+contains "…its charter: stay for the job, report each task, done only on release" "$(jq -r .objective "$sreq")" 'only when Michael sends you the release message'
+[[ "$(jq -r '[.munder.seats[].character] | (length == (unique | length))' "$R/.work/$JOB/job.json")" == true ]] && ok "every person on the floor has a face of their own" || bad "duplicate characters: $(jq -c '.munder.seats' "$R/.work/$JOB/job.json")"
+contains "a seat not on the floor yet is pending" "$("$DL" md-seats)" "pending"
+expect_ok "md-hire again does not hire twice" "$DL" md-hire
+[[ "$(ls "$HIVE_ROOT"/spawn-requests/seat-*.json | wc -l)" == "$nseat" ]] && ok "…same requests" || bad "hired twice"
+# Munder Difflin consumes the requests: workers on the floor (registry), requests archived to .done
+mkdir -p "$HIVE_ROOT/spawn-requests/.done"
+for f in "$HIVE_ROOT"/spawn-requests/seat-*.json; do w="worker-$(basename "$f" .json)"; mv "$f" "$HIVE_ROOT/spawn-requests/.done/"
+  jq --arg w "$w" '.agents[$w] = {id:$w, role:"worker", status:"idle"}' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"; done
+out="$("$DL" md-seats)"; [[ $out != *pending* && $out == *live* && $out != *"not seated"* ]] && ok "md-seats: everyone is at their desk" || bad "md-seats: $out"
+echo "Build T-03 test-first." > "$TMP/order.md"
+out="$("$DL" md-send backend T-03 "$TMP/order.md" 2>&1)"; contains "md-send gives a running card to its role's seat" "$out" "T-03 → backend#1"
+ord="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)"
+contains "the order goes from Michael's outbox to that seat's worker" "$(jq -c '{to:(.to|startswith("worker-seat-")),act}' "$ord")" '{"to":true,"act":"request"}'
+body="$(jq -r .body "$ord")"
+[[ $body == *"## Your role card"* && $body == *"Role: backend"* && $body == *"## Instructions for this task — backend-dev"* && $body == *"TDD with unit tests"* && $body == *"Build T-03 test-first."* && $body == *"Work in: $R/.work/$JOB/wt/T-03"* ]] \
+  && ok "…carrying the role card, the agent's instructions, the task and the card worktree" || bad "order body: ${body:0:400}"
+contains "a busy seat takes no second order" "$("$DL" md-send backend#1 T-03 "$TMP/order.md" 2>&1)" "busy with T-03"
+contains "the card records which seat worked on it" "$(jq -c '[.cards[] | select(.id=="T-03") | .md_workers[-1] | {role,seat}]' "$R/.work/$JOB/board.json")" '{"role":"backend","seat":"backend#1"}'
+expect_ok "md-done records the seat's report" "$DL" md-done backend#1 "T-03 built, 4 unit tests, commit abc123"
+contains "…in the event log" "$(tail -1 "$R/.work/$JOB/events.log")" "md-done	T-03 backend#1: T-03 built"
+echo "Write the readiness review." > "$TMP/ba.md"
+out="$("$DL" md-send ba readiness "$TMP/ba.md" --agent business-analyst 2>&1)"; contains "plan steps go to a seat too (BA: readiness)" "$out" "readiness → ba#1"
+contains "…working in the repo, writing its analysis to out/" "$(jq -r .body "$(ls -t "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)")" "Work in: $R"
+"$DL" md-done ba#1 "readiness in out/readiness.json" >/dev/null
+# A seat reaped by the floor is noticed and re-seated
+w1="$(jq -r '.munder.seats["backend#1"].worker' "$R/.work/$JOB/job.json")"
+jq --arg w "$w1" '.agents[$w].status = "gone"' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+contains "a reaped seat shows as not seated" "$("$DL" md-seats)" "not seated: backend#1"
+contains "…and sends no order into the void" "$("$DL" md-send backend#1 T-03 "$TMP/order.md" 2>&1)" "no one at the desk"
+"$DL" md-hire >/dev/null; contains "md-hire re-seats only that seat, same face" "$(ls "$HIVE_ROOT"/spawn-requests/*.json | xargs -n1 basename)" "backend-1-h2.json"
+contains "…logged as a re-seat" "$(grep md-hire "$R/.work/$JOB/events.log" | tail -1)" "re-seated, was gone"
+n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-release >/dev/null
+[[ $(( $(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l) - n0 )) == $(( nseat - 1 )) ]] && ok "md-release sends every live seat home" || bad "release orders"
+# Guards: Michael on the floor has no Agent tool; seats are agents (their own lanes, no flow commands)
+ag() { hook agent-guard.sh '{"tool_input":{"subagent_type":"backend-dev","run_in_background":true}}'; }
+contains "Michael on the floor may not start subagents" "$(AGENT_ID=god ag)" "rc=2"
+contains "…the message names md-send" "$(AGENT_ID=god ag)" "md-send"
+contains "a seat may use subagents for its own work" "$(AGENT_ID=worker-seat-x ag)" "rc=0"
+contains "outside the floor nothing changes" "$(ag)" "rc=0"
+contains "a seat is not mistaken for Michael: it may write in a card worktree" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/wt/T-03/src/a.ts" "$R" "" "$TR")" "rc=0"
+contains "…where Michael (god) may not" "$(AGENT_ID=god wg "$R/.work/$JOB/wt/T-03/src/a.ts" "$R" "" "$TR")" "rc=2"
+contains "a seat may write its analysis to out/" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/out/readiness.json" "$R" "" "$TR")" "rc=0"
+contains "a seat may not write the main checkout, even with the job in its transcript" "$(AGENT_ID=worker-seat-x wg "$R/src/x.ts" "$R" "" "$TR")" "rc=2"
+contains "a seat may not write board.json" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/board.json" "$R" "" "$TR")" "rc=2"
+contains "a seat may not run flow commands" "$(AGENT_ID=worker-seat-x bg "\"\$DL\" qa T-03 pass")" "rc=2"
+contains "Michael (god) still writes the job's files" "$(AGENT_ID=god wg "$R/.work/$JOB/plan.md" "$R" "" "$TR")" "rc=0"
+"$DL" jobset '.settings.dispatch="subagent"' >/dev/null; unset HIVE_ROOT
+
 echo "plugin install: the kit's agents are namespaced, job files keep plain names"
 DELIVER_AGENT_NS=deliver "$DL" roles >/dev/null
 out="$(cat "$R/.work/$JOB/ROLES.md")"

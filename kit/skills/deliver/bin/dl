@@ -46,6 +46,11 @@
 #   dl approve plan [note]         record the human's plan approval (only when gates.plan is on; off by default)
 #   dl reject  plan "<note>"       record the human's rejection of the plan
 #   dl md-dispatch <card> <prompt-file>   Munder Difflin: run the card's dev as a worker on the floor
+#   dl md-hire                     Munder Difflin: seat one person per role seat (job.roles[].count) — the whole job
+#   dl md-seats                    who sits where: pending / live / gone, and each seat's open task
+#   dl md-send <seat|role> <task> <prompt-file> [--agent a]   a work order to a seat: role card + agent instructions + task
+#   dl md-done <seat> "<summary>"  record the seat's "done <task>" report; the seat is free again
+#   dl md-release                  end of job: send every seat home
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
 #   dl jobs                        jobs known on this machine (registry)
 #   dl seats                       role seats: busy / IDLE, and the card each idle seat should take
@@ -989,6 +994,191 @@ cmd_md_dispatch() {
   echo "worker-$req  (request: $hive/spawn-requests/$req.json)"
 }
 
+# ---- Munder Difflin seats: one person on the floor per role seat, for the whole job ---------------------------------------
+# On the floor Michael uses no subagents. md-hire seats a worker for every seat of every role the requirements called for
+# (job.roles[].count seats each, default 1) through the spawn queue — no click in the app. A seat stays for the whole job:
+# md-send hands it one task at a time as a hive message (role card + the ECC/kit agent instructions + the task), the seat
+# answers with an inform "done <task>", Michael records it with md-done, and md-release sends everyone home at the end.
+CAST="jim pam dwight kevin angela oscar stanley phyllis andy kelly ryan toby creed meredith"
+md_hive() {
+  local h="${HIVE_ROOT:-$(setting munder.hive_root)}"
+  [[ -n $h && -d $h ]] || die "HIVE_ROOT is not set — seats only exist inside Munder Difflin (or set settings.munder.hive_root)"
+  echo "$h"
+}
+md_god() { jq -r '.godId // "god"' "$1/registry.json" 2>/dev/null || echo god; }
+seat_list() { jq -r '.roles[] | select(.agent != "artemis") | . as $r | range(1; (($r.count // 1) + 1)) | "\($r.role)#\(.)"' "$JOBJ"; }
+seat_get() { jq -r --arg s "$1" ".munder.seats[\$s]$2 // empty" "$JOBJ"; }
+# seat_state <seat> <hive> → none | pending (asked for, not on the floor yet) | live | gone (released/reaped) | failed
+seat_state() {
+  local w req; w="$(seat_get "$1" .worker)"; [[ -n $w ]] || { echo none; return; }
+  req=${w#worker-}
+  [[ -f $2/spawn-requests/$req.json ]] && { echo pending; return; }
+  [[ -f $2/spawn-requests/.failed/$req.json ]] && { echo failed; return; }
+  jq -r --arg w "$w" '.agents[$w] as $a | if $a == null then "pending" elif ($a.archived == true or $a.status == "gone") then "gone" else "live" end' \
+    "$2/registry.json" 2>/dev/null || echo pending
+}
+seat_charter() { # seat_charter <seat> <role> <kind>
+  cat <<CH
+You are $1 — the $2 seat ($3) of the /deliver job $JOB in $ROOT. You stay at your desk for the whole job.
+
+Michael (god) is your manager. He sends you work orders in your inbox, one at a time. Each order carries your role card, the
+instructions to follow for that task (an ECC or kit agent definition, and the skills to load) and the task, with the directory
+to work in. How you work:
+- Do exactly the task in the order, only in the directory and files it names. Load the skills it names.
+- Never run state-changing dl commands (phase, gate, qa, review, integrate, card, wt …) — Michael records every result.
+- When the task is finished, write ONE outbox message to god: act "inform", subject "done <task id> $1", body = 3–6 lines
+  (what you did, files, commits, your verdict), in_reply_to = the order's id, conversation = the order's conversation.
+- Blocked or unsure: act "query" to god with the question — do not guess.
+- Your work is finished only when Michael sends you the release message: then, and only then, send act "done" to god.
+  Until then, after each task, wait for the next order. That is what "when finished" means for this seat.
+
+Your first task now: send god an inform with subject "seated $1" and body "ready", then wait for orders.
+CH
+}
+
+cmd_md_hire() {
+  load_job
+  local hive; hive="$(md_hive)"
+  [[ "$(setting dispatch)" == munder ]] || refuse 1 "seats are for dispatch munder (dl jobset '.settings.dispatch=\"munder\"')"
+  mkdir -p "$hive/spawn-requests"
+  local cat used="" s role n st req w n_hire provider model cap cmd ch ac kind obj name
+  cat="$(node "$BIN_DIR/roles.mjs" catalog)"
+  used="$(jq -r '[.munder.seats // {} | .[] | .character // empty] | join(" ")' "$JOBJ")"
+  while read -r s; do
+    st="$(seat_state "$s" "$hive")"
+    case $st in pending|live) printf '%-16s %-8s %s\n' "$s" "$st" "$(seat_get "$s" .worker)"; continue ;; esac
+    role=${s%#*}; n=${s#*#}
+    n_hire=$(( $(seat_get "$s" .hires || true) + 1 )) 2>/dev/null || n_hire=1
+    req="$(printf 'seat-%s-%s-h%s' "${JOB:4:13}" "$s" "$n_hire" | tr -c 'A-Za-z0-9._-' '-')"; w="worker-$req"
+    provider="$(jq -r --arg r "$role" '[.roles[] | select(.role==$r) | .provider // "claude"] | first' "$JOBJ")"
+    model="$(jq -r --arg r "$role" '[.roles[] | select(.role==$r) | .model // empty] | first // empty' "$JOBJ")"; model=${model:-$(setting munder.model)}
+    cap="$(setting munder.token_cap)"
+    [[ " $MD_PROVIDERS " == *" $provider "* ]] || refuse 1 "provider '$provider' is not one Munder Difflin runs ($MD_PROVIDERS)"
+    # One face per person: the role's own character for its first seat, then a cast member nobody on this job has yet.
+    ch="$(seat_get "$s" .character)"
+    if [[ -z $ch ]]; then
+      ch="$(jq -r --arg r "$role" '.roles[$r].floor.character // empty' <<<"$cat")"
+      [[ $role == reviewer* ]] && ch=${ch:-toby}
+      if [[ -z $ch || " $used " == *" $ch "* ]]; then ch=""; for c in $CAST; do [[ " $used " == *" $c "* ]] || { ch=$c; break; }; done; fi
+    fi
+    used+=" $ch"
+    ac="$(jq -r --arg r "$role" '.roles[$r].floor.accent // empty' <<<"$cat")"
+    kind="$(jq -r --arg r "$role" '.roles[$r].kind // (if ($r|startswith("reviewer")) then "review" else "role" end)' <<<"$cat")"
+    cmd=""; [[ $provider == claude ]] && { cmd="$(setting munder.claude_command)"; cmd=${cmd:-claude}; }
+    name="$role $n"; [[ $(jq --arg r "$role" '[.roles[] | select(.role==$r) | (.count // 1)] | first' "$JOBJ") == 1 ]] && name="$role"
+    obj="$(seat_charter "$s" "$role" "$kind")"
+    jq -n --arg id "$req" --arg obj "$obj" --arg cwd "$ROOT" --arg name "$name" --arg cmd "$cmd" --arg prov "$provider" \
+          --arg model "$model" --argjson cap "${cap:-0}" --arg ch "$ch" --arg ac "$ac" \
+      '{id:$id, objective:$obj, cwd:$cwd, name:$name, isolate:false}
+       + (if $cmd != "" then {command:$cmd} else {provider:$prov} end)
+       + (if $model != "" then {model:$model} else {} end) + (if $cap > 0 then {tokenCap:$cap} else {} end)
+       + (if $ch != "" then {character:$ch} else {} end) + (if $ac != "" then {accent:$ac} else {} end)' \
+      > "$hive/spawn-requests/.$req.tmp" && mv "$hive/spawn-requests/.$req.tmp" "$hive/spawn-requests/$req.json"
+    jq_inplace "$JOBJ" --arg s "$s" --arg r "$role" --arg w "$w" --argjson h "$n_hire" --arg ch "$ch" --arg t "$(now)" \
+      '.munder.seats[$s] = {role:$r, worker:$w, hires:$h, character:$ch, hired_at:$t, task:null, orders:(.munder.seats[$s].orders // 0)}'
+    log_event md-hire "$s → $w ($provider${model:+ $model}${ch:+, $ch})$([[ $st == none ]] || echo " — re-seated, was $st")"
+    printf '%-16s %-8s %s\n' "$s" hired "$w"
+  done < <(seat_list)
+}
+
+cmd_md_seats() {
+  load_job
+  local hive s; hive="$(md_hive)"
+  { echo -e "SEAT\tSTATE\tWORKER\tTASK"
+    while read -r s; do
+      printf '%s\t%s\t%s\t%s\n' "$s" "$(seat_state "$s" "$hive")" "$(seat_get "$s" .worker)" "$(seat_get "$s" .task)"
+    done < <(seat_list); } | table
+  local miss; miss="$(while read -r s; do case "$(seat_state "$s" "$hive")" in none|gone|failed) printf '%s ' "$s" ;; esac; done < <(seat_list))"
+  [[ -z $miss ]] || echo "not seated: $miss→ dl md-hire"
+}
+
+# md_order <worker> <hive> <subject> <body> <conversation> — a message from god into the router's queue
+md_order() {
+  local god id; god="$(md_god "$2")"; id="$(date -u +%Y%m%dT%H%M%S)-dl-$RANDOM"
+  mkdir -p "$2/agents/$god/outbox"
+  jq -n --arg to "$1" --arg sub "$3" --arg body "$4" --arg conv "$5" '{to:$to, act:"request", subject:$sub, body:$body, conversation:$conv}' \
+    > "$2/agents/$god/outbox/.$id.tmp" && mv "$2/agents/$god/outbox/.$id.tmp" "$2/agents/$god/outbox/$id.json"
+}
+
+cmd_md_send() {
+  load_job
+  local target=${1:-} task=${2:-} pfile=${3:-} agent=""
+  [[ -n $target && -n $task && -f $pfile ]] || die "usage: dl md-send <seat|role> <task: card id or plan step> <prompt-file> [--agent <agent>]"
+  [[ ${4:-} == --agent ]] && agent=${5:-}
+  local hive; hive="$(md_hive)"
+  local seat role iscard=0 dir="$ROOT" s
+  [[ $task =~ ^T-[0-9]+$ ]] && { card_exists "$task"; iscard=1; }
+  if [[ $target == *#* ]]; then seat=$target; role=${seat%#*}
+  else
+    role=$target
+    if [[ $iscard == 1 && $role == "$(card_get "$task" .role)" && -n "$(card_get "$task" '.seat // empty')" ]]; then seat="$(card_get "$task" .seat)"
+    else
+      seat=""; while read -r s; do
+        [[ ${s%#*} == "$role" && "$(seat_state "$s" "$hive")" == live && -z "$(seat_get "$s" .task)" ]] && { seat=$s; break; }
+      done < <(seat_list)
+      [[ -n $seat ]] || refuse 1 "no free seat for role '$role' — dl md-seats (busy seats are freed by dl md-done)"
+    fi
+  fi
+  seat_list | grep -qxF "$seat" || refuse 1 "'$seat' is not a seat of this job (dl md-seats)"
+  if [[ $iscard == 1 ]]; then
+    local state; state="$(card_get "$task" .state)"
+    if [[ $role == "$(card_get "$task" .role)" ]]; then
+      [[ $state == running ]] || refuse 1 "assign the card first: dl wt add $task (state now: $state)"
+      local cs; cs="$(card_get "$task" '.seat // empty')"
+      [[ -z $cs || $cs == "$seat" ]] || refuse 1 "$task is assigned to seat $cs, not $seat"
+    else
+      [[ $state == review ]] || refuse 1 "$role works on cards in review (state now: $state)"
+    fi
+    dir="$(card_get "$task" .worktree)"
+  fi
+  case "$(seat_state "$seat" "$hive")" in
+    live) ;;
+    pending) refuse 1 "$seat is not on the floor yet — wait for its \"seated\" message (dl md-seats)" ;;
+    *) refuse 1 "$seat has no one at the desk ($(seat_state "$seat" "$hive")) — dl md-hire seats someone" ;;
+  esac
+  local busy; busy="$(seat_get "$seat" .task)"
+  [[ -z $busy ]] || refuse 1 "$seat is busy with $busy — dl md-done $seat \"<summary>\" when it reports"
+  agent=${agent:-$(jq -r --arg r "$role" '[.roles[] | select(.role==$r) | .agent] | first // empty' "$JOBJ")}
+  [[ -n $agent ]] || refuse 1 "role '$role' is not selected for this job"
+  local rolecard="$JOB_DIR/roles/$role.md"; [[ -f $rolecard ]] || cmd_roles >/dev/null
+  mkdir -p "$JOB_DIR/out"
+  local w body; w="$(seat_get "$seat" .worker)"
+  body="$(printf '# Work order %s for %s\n\nWork in: %s\nAnalysis, plans and verdicts (no code) go to files under: %s/out/\nWhen finished: inform to god, subject "done %s %s".\n\n---\n\n## Your role card\n\n' \
+            "$task" "$seat" "$dir" "$JOB_DIR" "$task" "$seat"
+          cat "$rolecard"
+          printf '\n---\n\n## Instructions for this task — %s\n\n' "$(agent_call "$agent")"; agent_body "$agent"
+          printf '\n---\n\n## The task\n\n'; cat "$pfile")"
+  md_order "$w" "$hive" "$task — $role ($seat)" "$body" "deliver-$JOB-$task"
+  jq_inplace "$JOBJ" --arg s "$seat" --arg k "$task" --arg t "$(now)" '.munder.seats[$s] += {task:$k, since:$t, orders:((.munder.seats[$s].orders // 0) + 1)}'
+  [[ $iscard == 1 ]] && card_set "$task" '(.cards[] | select(.id==$id)).md_workers += [{"role":$r,"seat":$s,"worker":$w,"at":$t}]' \
+    --arg r "$role" --arg s "$seat" --arg w "$w" --arg t "$(now)"
+  log_event md-send "$task $seat ($agent) → $w"
+  echo "$task → $seat ($w)"
+}
+
+cmd_md_done() {
+  load_job
+  local seat=${1:-} summary=${2:-}
+  [[ -n $seat && -n $summary ]] || die "usage: dl md-done <seat> \"<the seat's summary>\""
+  local task; task="$(seat_get "$seat" .task)"
+  [[ -n $task ]] || refuse 1 "$seat has no open task"
+  jq_inplace "$JOBJ" --arg s "$seat" --arg t "$(now)" '.munder.seats[$s] += {task:null, since:null, last_done:$t}'
+  log_event md-done "$task $seat: $summary"
+  echo "$seat is free ($task done)"
+}
+
+cmd_md_release() {
+  load_job
+  local hive s w n=0; hive="$(md_hive)"
+  while read -r s; do
+    [[ "$(seat_state "$s" "$hive")" == live ]] || continue
+    w="$(seat_get "$s" .worker)"
+    md_order "$w" "$hive" "release — job $JOB is finished" "The job is finished and your seat is released. Thank you. Send act \"done\" to god now." "deliver-$JOB-release"
+    log_event md-release "$s → $w"; n=$((n + 1))
+  done < <(seat_list)
+  echo "released $n seat(s)"
+}
+
 cmd_cleanup() {
   load_job
   local d
@@ -1071,12 +1261,17 @@ main() {
     approve) cmd_approve "$@" ;;
     reject) cmd_reject "$@" ;;
     md-dispatch) cmd_md_dispatch "$@" ;;
+    md-hire) cmd_md_hire ;;
+    md-seats) cmd_md_seats ;;
+    md-send) cmd_md_send "$@" ;;
+    md-done) cmd_md_done "$@" ;;
+    md-release) cmd_md_release ;;
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,54p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,61p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

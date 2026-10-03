@@ -33,7 +33,9 @@ owns_job() {
 # The session is a card worker when it is a subagent, or a top-level session started inside a card worktree
 # (Munder Difflin workers run `claude --agent <dev>` with cwd = the card worktree).
 in_card_worktree() { [[ "$(hk .cwd)" == */.work/JOB-*/wt/T-* ]]; }
-is_agent() { [[ -n "$(hk .agent_id)" ]] || in_card_worktree; }
+# Munder Difflin sets AGENT_ID in every terminal on the floor; Michael's is "god". Every other id is a seat or a worker.
+is_floor_seat() { [[ -n ${AGENT_ID:-} && $AGENT_ID != god ]]; }
+is_agent() { [[ -n "$(hk .agent_id)" ]] || in_card_worktree || is_floor_seat; }
 
 # owned_job → "<id>\t<root>" of the active job this (orchestrator) session owns, if any
 owned_job() {

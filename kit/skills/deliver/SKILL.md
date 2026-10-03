@@ -49,7 +49,8 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    one reports back, run that card's next step (gate → QA → review → integrate) and assign the cards it unblocks — never wait for
    a "wave". Headless (`DELIVER_HEADLESS=1`): background agents die with the process (measured), so dispatch in the foreground —
    but put **every** actionable item from `dl next` (new assignments, QA, reviews) into the same message, so all stages advance
-   together. A hook enforces the headless rule. On Munder Difflin, devs are floor workers and report through your inbox.
+   together. A hook enforces the headless rule. On Munder Difflin there are no subagents: every role is a person at a seat
+   (`dl md-hire`, `dl md-send`), reporting through your inbox.
 7. Nothing starts on assumptions: every open readiness item is answered by the human before planning. After that, the human is
    asked again only at the PR, for a blocked card, or when `settings.gates.plan` is true. Never answer a question on the human's behalf.
 8. No push to main/master, no force push (a hook enforces this too).
@@ -76,6 +77,8 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    names any that are missing.
 5. `"$DL" phase readiness` — this checks the roles and **generates the project's role cards** (`roles/*.md`: rules + company
    standards + project facts) and `ROLES.md`. If it REFUSES, fix the roles it names.
+   On the Munder Difflin floor (`settings.dispatch: "munder"`): now `"$DL" md-hire` — a person for every seat — and from here
+   on every role works at its seat (see **Munder Difflin** below), never as a subagent.
 
 ## Phase 0.5 — Requirements readiness (`readiness` → `awaiting_clarification`)
 
@@ -298,13 +301,32 @@ OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
 5. Hand over in ≤10 lines: what was delivered, the PR link (or local merge), roles used, cards (attempts), blocked/archived items,
    follow-ups. In `awaiting_pr_merge` you stop here; later `"$DL" pr` syncs the PR state (merged → done) and `"$DL" cleanup`.
 
-## Munder Difflin (`settings.dispatch: "munder"`)
+## Munder Difflin (`settings.dispatch: "munder"`) — every role is a person at a desk
 
-On the office floor the devs (and, if you like, QA) run as **floor workers** instead of subagents, so every role is visible at its desk:
-after `dl wt add`, write the dispatch prompt to `.work/<job>/prompts/T-xx-<role>.md` and run
-`"$DL" md-dispatch T-xx .work/<job>/prompts/T-xx-<role>.md [role]` — it embeds the role card and writes a spawn request.
-The worker's `act:"done"` message arrives in your inbox; then continue with Phase 4 for that card. While only workers are running you
-may stop — the inbox wakes you. Gate questions go to the human as ASK ME cards (`tasks.json` → `humanQA`), not as chat.
+On the office floor **you use no subagents** (the agent-guard hook refuses the Agent tool while a floor job is active). The
+human talks only to you; every role the requirements call for is a person on the floor, hired by you, working at their desk.
+
+1. **Hire the seats** right after `"$DL" phase readiness` (and again whenever the roles change): `"$DL" md-hire`. One person
+   per seat — every selected role, `count` seats each (default 1): ba, the leads, every dev seat, qa, the reviewers, the
+   specialists. No click in the app is needed. Each new person sends you `seated <seat>`; `"$DL" md-seats` shows who sits where.
+   Someone whose desk is empty (released, reaped after a long idle) shows as `not seated`: `"$DL" md-hire` again seats a
+   replacement with the same face.
+2. **Every "call Agent(subagent_type: X)" in this playbook is a work order to X's seat on the floor.** Write the same prompt to
+   `.work/<job>/prompts/<task>-<role>.md`, then `"$DL" md-send <role|seat> <task> <prompt file> --agent X`.
+   `<task>` is the card id for card work (dev, QA, review) or the plan step (`readiness`, `plan`, `cards-<lead role>`,
+   `spec-T-xx`, `closing`). The order carries the role card, X's instructions (an ECC or kit agent definition, the skills to
+   load) and your prompt; you choose X and what to load for each task. Tell analysis roles where to write their answer:
+   `.work/<job>/out/<task>-<role>.md|json` (the BA's readiness JSON, the plan, the Lead's cards, the specs, QA and review
+   verdicts) — then copy, check and record it exactly as you would a subagent's answer. Several Agent calls in one message =
+   several md-send to different seats, all at once.
+3. Each person reports in your inbox with an inform `done <task> <seat>` (or a `query` when blocked: answer it in their
+   conversation). Record it: `"$DL" md-done <seat> "<their summary>"` — the seat is free for the next order — and continue
+   exactly as the phase says (gate, QA, review, integrate …). A seat takes one task at a time; dev cards go to the seat
+   `dl wt add` assigned.
+4. While only people on the floor are working you may stop — the inbox wakes you. Gate questions go to the human as ASK ME
+   cards (`tasks.json` → `humanQA`), not as chat.
+5. After `dl ship` (or when the job is aborted): `"$DL" md-release` — everyone goes home.
+
 Before the first job: `"$DL" knowledge sync-md` puts the company standards into the floor's Knowledge Graph.
 
 ## Resume
