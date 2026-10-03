@@ -82,7 +82,7 @@ execution guards
   ✔ QA failure re-dispatches the dev
   ✔ gate fails when the dev edits a QA test
   ✔ gate fails when the dev deletes a QA test
-On branch job/JOB-20261003-1352-siparis-iptali--T-01
+On branch job/JOB-20261003-2001-siparis-iptali--T-01
 nothing to commit, working tree clean
   ✔ gate runs the QA tests after a QA round
   ✔ gate passes once the dev's fix satisfies the QA tests
@@ -119,6 +119,7 @@ integration + delivery (merge_mode=local)
   ✔ local merge delivered the cards, phase done
 hooks
   ✔ stop-guard blocks the owner with open cards
+  ✔ …but lets a floor seat with the same transcript stop (only Michael is held to the board)
   ✔ stop-guard ignores other sessions
   ✔ stop-guard ignores card worktree sessions
   ✔ stop-guard gives up after stop_guard_max
@@ -171,6 +172,50 @@ munder difflin dispatch
   ✔ codex worker: provider set, no claude --agent
   ✔ the agent definition's instructions travel inside the objective for non-Claude CLIs
   ✔ …without Claude frontmatter
+munder difflin seats: one person per role seat, work orders, no subagents for Michael
+  ✔ md-hire seats every role seat
+  ✔ no hire manifests that would need a click in the app
+  ✔ ROLES.md tells Michael the roles are people he seats
+  ✔ one spawn request per seat (5) — every selected role, count seats each
+  ✔ a seat is a plain claude in the repo, no --agent, no isolation
+  ✔ …its charter: stay for the job, report each task, done only on release
+  ✔ every person on the floor has a face of their own
+  ✔ a seat not on the floor yet is pending
+  ✔ md-hire again does not hire twice
+  ✔ …same requests
+  ✔ md-seats: everyone is at their desk
+  ✔ md-send gives a running card to its role's seat
+  ✔ the order goes from Michael's outbox to that seat's worker
+  ✔ …carrying the role card, the agent's instructions, the task and the card worktree
+  ✔ a busy seat takes no second order
+  ✔ the card records which seat worked on it
+  ✔ md-done records the seat's report
+  ✔ …in the event log
+  ✔ plan steps go to a seat too (BA: readiness)
+  ✔ …working in the repo, writing its analysis to out/
+  ✔ a reaped seat shows as not seated
+  ✔ …and sends no order into the void
+  ✔ md-hire re-seats only that seat, same face
+  ✔ …logged as a re-seat
+  ✔ md-inbox shows a report with the sender as its seat
+  ✔ …and archives exactly what it showed
+  ✔ a report archived without md-done is flagged as unrecorded
+  ✔ …until it is recorded
+  ✔ md-release sends every live seat home
+  ✔ Michael on the floor may not start subagents
+  ✔ …the message names md-send
+  ✔ a seat may use subagents for its own work
+  ✔ outside the floor nothing changes
+  ✔ a seat is not mistaken for Michael: it may write in a card worktree
+  ✔ …where Michael (god) may not
+  ✔ a seat may write its analysis to out/
+  ✔ a seat may not write the main checkout, even with the job in its transcript
+  ✔ a seat may not write board.json
+  ✔ Michael may not move his inbox files (md-inbox reads them)
+  ✔ …reading them is fine
+  ✔ …and a seat still files its own inbox
+  ✔ a seat may not run flow commands
+  ✔ Michael (god) still writes the job's files
 plugin install: the kit's agents are namespaced, job files keep plain names
   ✔ ROLES.md names kit agents with the plugin prefix
   ✔ …and says to call them by those names
@@ -179,6 +224,8 @@ plugin install: the kit's agents are namespaced, job files keep plain names
   ✔ job.json keeps the plain name
   ✔ floor workers start the namespaced agent
   ✔ a copied install (no plugin) keeps plain names
+  ✔ an installed plugin loaded from its source folder is detected
+  ✔ …and not when the plugin is not installed
   ✔ md-brief briefs Michael for Claude, Codex-style (AGENTS.md) and Gemini CLIs
 architecture: mixed stacks, frozen decisions, seats, parallel assignment
   ✔ a Go service reviewed by the Java reviewer is rejected
@@ -189,11 +236,13 @@ architecture: mixed stacks, frozen decisions, seats, parallel assignment
   ✔ database role card lists only the db component
   ✔ the Go reviewer's card lists only the Go service
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/arch/.work/JOB-20261003-1353-micro/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/arch/.work/JOB-20261003-2002-micro/readiness.md
   ✔ cards on three components validate
   ✔ a card reaching outside its component is rejected
   ✔ a component spanning code and test directories accepts cards in all of them
   ✔ …and still rejects a directory it does not list
+  ✔ a component listed as single files accepts cards scoped to exactly those files
+  ✔ …but not a file that merely starts with one of their names
   ✔ a backend dev on the database component is rejected
   ✔ editing the frozen readiness/architecture is refused
   ✔ agents cannot unfreeze
@@ -213,7 +262,7 @@ traceability: card changes, jobset limits, seals
   ✔ jobset cannot move the phase
   ✔ jobset cannot approve a gate
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/trace/.work/JOB-20261003-1353-trace/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/trace/.work/JOB-20261003-2002-trace/readiness.md
   ✔ jobset cannot clear the frozen hash
   ✔ Michael's direct board edit is denied by the write-guard
   ✔ an edit through any other tool breaks the seal: dl stops
@@ -228,7 +277,7 @@ readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.
   ✔ a dev card reaching another card's QA tests is rejected
 tracker: jira (contract stub of Jira REST v3) — statuses, comments, branch links
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/jira-repo/.work/JOB-20261003-1353-jira-flow/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/jira-repo/.work/JOB-20261003-2003-jira-flow/readiness.md
   ✔ executing opens an epic (WL-1) and one issue per card under it
   ✔ T-02 depends_on T-01 becomes a 'Blocks' issue link
   ✔ issues carry job, role and component labels
@@ -256,7 +305,7 @@ ECC specialists: decisions bring their reviewers; every reviewer must approve
   ✔ security is suggested, not forced
   ✔ with ecc:a11y-architect, ecc:performance-optimizer and ecc:doc-updater on the job the readiness passes
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 25 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ecc/.work/JOB-20261003-1353-spec/readiness.md
+readiness: 25 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/ecc/.work/JOB-20261003-2003-spec/readiness.md
   ✔ an unknown reviewer role is rejected
   ✔ next names both reviewers
   ✔ one approval leaves the card pending
@@ -270,7 +319,7 @@ robustness: dl next at full capacity with many ready cards (was SIGPIPE 141)
   ✔ dl next survives a full board (5 runs)
 commit hygiene: no AI attribution, optional role trailer
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/commits/.work/JOB-20261003-1353-commits/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/commits/.work/JOB-20261003-2003-commits/readiness.md
   ✔ role cards state the commit rule
   ✔ a Claude co-author trailer fails the gate
   ✔ a 'Generated with Claude Code' line fails the gate
@@ -281,7 +330,7 @@ tracker factory: a new tracker is one file in bin/trackers/
   ✔ an unknown tracker kind is refused at dl new
   ✔ …and the message lists the registered ones, including the new file
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/tk/.work/JOB-20261003-1353-tk/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/tk/.work/JOB-20261003-2003-tk/readiness.md
   ✔ the new tracker receives open, sync and branch with no other change
 knowledge: standards, memory, Munder Difflin knowledge graph
   ✔ company standard's Must reaches the dev role
@@ -295,7 +344,7 @@ knowledge: standards, memory, Munder Difflin knowledge graph
   ✔ knowledge graph holds 3 docs (2 standards + lessons)
 merge modes: human / semi / auto (fake gh, bare origin)
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ship-human/.work/JOB-20261003-1353-ship-human/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/ship-human/.work/JOB-20261003-2003-ship-human/readiness.md
   ✔ human: PR opened, waits for the human
   ✔ human: job branch pushed
   ✔ human: PR created, never merged by Michael
@@ -305,12 +354,12 @@ readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.
   ✔ human: dl pr sees the merge → done
   ✔ phase done
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ship-semi/.work/JOB-20261003-1353-ship-semi/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/ship-semi/.work/JOB-20261003-2003-ship-semi/readiness.md
   ✔ semi: auto-merge armed
   ✔ semi: gh pr merge --auto
   ✔ semi: still waits for the human approval
 WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
-readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.HTfp9G/ship-auto/.work/JOB-20261003-1354-ship-auto/readiness.md
+readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/deliver-test.OiwnmW/ship-auto/.work/JOB-20261003-2003-ship-auto/readiness.md
   ✔ auto: red CI → not merged
   ✔ auto: no merge on red CI
   ✔ auto: merged on green
@@ -340,5 +389,8 @@ install / uninstall
   ✔ doctor sees the install and the repo
   ✔ doctor finds Munder Difflin and warns about Claude Code's unfinished first run
   ✔ …and is satisfied once it is done
+  ✔ doctor: seats would be reaped after 20 idle minutes
+  ✔ doctor: a team would queue behind 4 workers
+  ✔ doctor: satisfied with the settings init writes
 
-result: 300 passed, 0 failed
+result: 351 passed, 0 failed
