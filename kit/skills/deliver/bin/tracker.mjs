@@ -9,13 +9,11 @@
 //
 // Adding a tool = one class with the four methods below + registerTracker("<kind>", Class). Nothing else changes.
 //
-//   node tracker.mjs open   <job dir>                          create the job (epic) + all cards in the tool
-//   node tracker.mjs sync   <job dir> [card] [--event "<text>"] move card(s) to the column their state implies
-//   node tracker.mjs note   <job dir> <card> <author> "<text>"  comment on a card as a role
-//   node tracker.mjs kanban <job dir> [--html <file>]          print the board as kanban columns (+ HTML view)
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+// The command line is tracker-cli.mjs (kept apart so tracker plugins in trackers/ can import this module safely):
+//   node tracker-cli.mjs open|sync|note|branch|kanban <job dir> …
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
 // ---- the workflow ------------------------------------------------------------------------------------------------
 // Default kanban columns. A stage is derived from the card's state and its recorded gate/QA/review results.
@@ -186,8 +184,16 @@ export class JiraTracker extends Tracker {
 // ---- factory ---------------------------------------------------------------------------------------------------------
 const REGISTRY = new Map([["local", LocalTracker], ["jira", JiraTracker]]);
 export const registerTracker = (kind, cls) => REGISTRY.set(kind, cls);
+// Extra trackers live in bin/trackers/*.mjs and register themselves — adding one changes no existing file.
+let loaded = false;
+export async function loadTrackers() {
+  if (loaded) return; loaded = true;
+  const dir = join(dirname(fileURLToPath(import.meta.url)), "trackers");
+  if (existsSync(dir)) for (const f of readdirSync(dir).filter((x) => x.endsWith(".mjs")).sort()) await import(pathToFileURL(join(dir, f)).href);
+}
 export const trackerKinds = () => [...REGISTRY.keys()];
-export function createTracker(jobDir) {
+export async function createTracker(jobDir) {
+  await loadTrackers();
   const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
   const kind = job.settings?.tracker?.kind ?? "local";
   const Cls = REGISTRY.get(kind);
@@ -247,23 +253,3 @@ a{color:inherit}</style></head><body>
 </body></html>\n`;
 }
 
-// ---- CLI -----------------------------------------------------------------------------------------------------------------
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [cmd, jobDir, ...rest] = process.argv.slice(2);
-  const flag = (n) => { const i = rest.indexOf(n); return i >= 0 ? rest.splice(i, 2)[1] : undefined; };
-  try {
-    if (!cmd || !jobDir) throw new Error("usage: tracker.mjs open|sync|note|kanban <job dir> …");
-    if (cmd === "kanban") {
-      const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8")), board = JSON.parse(readFileSync(join(jobDir, "board.json"), "utf8"));
-      console.log(kanbanText(job, board));
-      const html = flag("--html"); if (html) { writeFileSync(html, kanbanHtml(job, board)); console.log(`html: ${html}`); }
-    } else {
-      const t = createTracker(jobDir);
-      if (cmd === "open") { await t.open(); console.log(t.where()); }
-      else if (cmd === "sync") { const ev = flag("--event"); await t.sync(rest[0], ev); }
-      else if (cmd === "note") { const [card, author, ...text] = rest; await t.note(card, author, text.join(" ")); }
-      else if (cmd === "branch") await t.branch(rest[0]);
-      else throw new Error(`unknown command: ${cmd}`);
-    }
-  } catch (e) { console.error(`tracker: ${e.message}`); process.exit(1); }
-}

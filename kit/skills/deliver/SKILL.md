@@ -76,7 +76,7 @@ Before anything is planned, every requirement and every decision a delivery need
 (monolith/microservice, BFF/core), stacks, contracts, errors, accessibility, i18n, security, privacy, performance,
 observability, tests, delivery… (`readiness.yaml`, plus whatever the request needs beyond it).
 
-1. Call **Agent(subagent_type: "business-analyst")** (every Agent call in a headless run passes `run_in_background: false`):
+1. Call **Agent(subagent_type: "business-analyst")** (headless: foreground — see Phase 3):
 
 ```text
 MODE: READINESS
@@ -187,8 +187,9 @@ With the gate off (default): go straight on. The user sees the plan and the boar
 1. **DISPATCH T-a T-b** → for each card: `WT=$("$DL" wt add T-xx)` (this is the assignment: it records you as assigner and the
    card's agent as assignee, enforces deps/max_parallel/max_attempts). Copy `templates/handoff.md` to
    `.work/<job>/handoffs/T-xx.md` if it does not exist. Dispatch them all **in one message**, `subagent_type` = the card's `agent`
-   (interactive: `run_in_background: true`; headless: `run_in_background: false` — subagents default to the background and
-   would die with the `-p` process; the agent-guard hook enforces it):
+   (interactive: `run_in_background: true`. Headless: agents must finish inside the `-p` process — `scripts/run-headless.sh`
+   disables background tasks, so the Agent tool has no background option; if your Agent tool does offer `run_in_background`,
+   pass `false`. The agent-guard hook enforces it):
 
 ```text
 CARD:

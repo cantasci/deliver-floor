@@ -296,6 +296,8 @@ contains "headless: Michael may not stop while agents run in the foreground flow
 contains "agent-guard: headless background dispatch is denied" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":true,"subagent_type":"backend-dev"}}')" "rc=2"
 contains "agent-guard: headless foreground dispatch is fine" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":false}}')" "rc=0"
 contains "agent-guard: headless dispatch without an explicit false is denied (subagents default to background)" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"subagent_type":"business-analyst"}}')" "rc=2"
+contains "agent-guard: headless with background tasks disabled lets any dispatch through (no background mode exists)" "$(DELIVER_HEADLESS=1 CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":"false"}}')" "rc=0"
+contains "agent-guard: the string \"false\" counts as foreground" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":"false"}}')" "rc=0"
 contains "agent-guard: interactive background dispatch is fine" "$(hook agent-guard.sh '{"tool_input":{"run_in_background":true}}')" "rc=0"
 "$DL" jobset '.settings.dispatch="subagent"'
 
@@ -556,6 +558,32 @@ git -C "$WC" commit -q --amend -m "T-01: one" -m "Role: backend#1"
 expect_ok "…and passes with the trailer" "$DL" gate T-01
 "$DL" jobset '.settings.commit.role_in_message=false'
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+echo "tracker factory: a new tracker is one file in bin/trackers/"
+TK="$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"
+cat > "$TK" <<'JS'
+import { Tracker, registerTracker } from "../tracker.mjs";
+import { appendFileSync } from "node:fs";
+class LogTracker extends Tracker {
+  async open() { appendFileSync(process.env.TK_LOG, "open\n"); }
+  async sync(c) { appendFileSync(process.env.TK_LOG, `sync ${c ?? "*"}\n`); }
+  async note(c, a, t) { appendFileSync(process.env.TK_LOG, `note ${c} ${a}\n`); }
+  async branch(c) { appendFileSync(process.env.TK_LOG, `branch ${c}\n`); }
+}
+registerTracker("testlog", LogTracker);
+JS
+TKR="$TMP/tk"; mkdir -p "$TKR" && cd "$TKR" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","tracker":{"kind":"nope"}}' > .deliver.json && git add -A && git commit -qm i
+out="$("$DL" new "tk" "x" 2>&1)"; contains "an unknown tracker kind is refused at dl new" "$out" "not a known tracker"
+contains "…and the message lists the registered ones, including the new file" "$out" "testlog"
+echo '{"verify_full":"true","merge_mode":"local","tracker":{"kind":"testlog"}}' > .deliver.json
+export TK_LOG="$TMP/tk.log"; "$DL" new "tk" "x" >/dev/null && TJ2="$TKR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$TJ2/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$TJ2/board.json"
+"$DL" phase executing >/dev/null; "$DL" wt add T-01 >/dev/null
+grep -q "^open" "$TK_LOG" && grep -q "^sync T-01" "$TK_LOG" && grep -q "^branch T-01" "$TK_LOG" && ok "the new tracker receives open, sync and branch with no other change" || bad "tracker plugin calls: $(cat "$TK_LOG")"
+rm -f "$TK"; unset TK_LOG; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "knowledge: standards, memory, Munder Difflin knowledge graph"
 K="$HOME/.deliver/knowledge"; mkdir -p "$K" "$TMP/kn/.deliver/knowledge"

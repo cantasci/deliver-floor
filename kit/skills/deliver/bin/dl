@@ -157,7 +157,7 @@ reset_stop_guard() { rm -f "$JOB_DIR/.stop-blocks"; }
 # outage never blocks the flow: the error is logged and shown by dl status, and the next sync catches up.
 tracker() { # tracker sync [card] [--event text] | note <card> <author> <text> | open
   [[ -f $BOARD ]] || return 0
-  local out rc=0; out="$(with_lock board.json node "$BIN_DIR/tracker.mjs" "$1" "$JOB_DIR" "${@:2}" 2>&1)" || rc=$?
+  local out rc=0; out="$(with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "$1" "$JOB_DIR" "${@:2}" 2>&1)" || rc=$?
   seal "$BOARD"; seal "$JOBJ"; [[ $rc -eq 0 ]] && return 0
   printf '%s\t%s\t%s\n' "$(now)" tracker-error "$out" >> "$JOB_DIR/events.log"
   echo "dl: warning — tracker: $out" >&2; return 0
@@ -220,8 +220,8 @@ cmd_new() {
   local mm; mm="$(jq -r .merge_mode <<<"$settings")"
   [[ " $MERGE_MODES " == *" $mm "* ]] || die "merge_mode must be one of: $MERGE_MODES (got '$mm')"
   local tk; tk="$(jq -r '.tracker.kind // "local"' <<<"$settings")"
-  node --input-type=module -e "import {trackerKinds} from '$BIN_DIR/tracker.mjs'; process.exit(trackerKinds().includes('$tk') ? 0 : 1)" \
-    || die "tracker.kind '$tk' is not a known tracker ($(node --input-type=module -e "import {trackerKinds} from '$BIN_DIR/tracker.mjs'; console.log(trackerKinds().join(', '))"))"
+  node --input-type=module -e "import {trackerKinds, loadTrackers} from '$BIN_DIR/tracker.mjs'; await loadTrackers(); process.exit(trackerKinds().includes('$tk') ? 0 : 1)" \
+    || die "tracker.kind '$tk' is not a known tracker ($(node --input-type=module -e "import {trackerKinds, loadTrackers} from '$BIN_DIR/tracker.mjs'; await loadTrackers(); console.log(trackerKinds().join(', '))"))"
   base="$(jq -r .base_branch <<<"$settings")"
   if [[ $base == auto || $base == null ]]; then
     base="$(git -C "$ROOT" symbolic-ref --short HEAD 2>/dev/null)" || die "could not resolve base branch (detached HEAD?) — set base_branch in .deliver.json"
@@ -1002,10 +1002,10 @@ cmd_seats() {
 
 cmd_kanban() {
   load_job
-  node "$BIN_DIR/tracker.mjs" kanban "$JOB_DIR" "$@"
+  node "$BIN_DIR/tracker-cli.mjs" kanban "$JOB_DIR" "$@"
   echo; echo "tracker: $(jq -r '.settings.tracker.kind // "local"' "$JOBJ")$(jq -r '.tracker.url // empty | " · " + .' "$JOBJ")  · html: $JOB_DIR/kanban.html"
 }
-cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
+cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
 cmd_reseal() { # human only (bash-guard): accept the current job.json/board.json after inspecting an outside change
   DL_NO_SEAL_CHECK=1 load_job
   local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl reseal "<what was changed outside dl and why it is accepted>"'
