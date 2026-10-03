@@ -21,6 +21,8 @@ Staffing: two backend developers work in parallel, one per requirement.
 - C4. "Dropdown" is met by the exported option lists (`*_OPTIONS`) that the POC screens, built later by other parts, render.
   No UI in this slice.
 - C5. Matching is exact and case-sensitive after trimming (">3 days" yes, ">3 Days" no → RangeError); a non-string input is a RangeError too.
+  Trimming means `String.prototype.trim()`: leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode
+  spaces such as NBSP) is removed; whitespace inside the value is never changed or collapsed (">3  days" → RangeError).
 - C6. The caller counts the delays in the last 12 months and picks the option; this slice only maps the option to a WL.
 
 ## Contract
