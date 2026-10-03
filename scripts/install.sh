@@ -84,7 +84,9 @@ run chmod +x "$target/skills/deliver/bin/dl" "$target/skills/deliver/bin/"*.mjs 
 
 # Append our hook entries per event, skipping any whose command is already present; add env keys only if unset.
 merged="$(jq --argjson k "$snippet" '
-  .env = (($k.env // {}) + (.env // {}))
+  .env = (($k.env // {}) + ((.env // {}) | with_entries(select(
+      # keep the user'"'"'s own values; replace values an older kit version wrote (they mention .work/)
+      (($k.env[.key] // null) == null) or ((.value | tostring | test("\\.work/")) | not)))))
   | .hooks = ((.hooks // {}) as $h
     | reduce ($k.hooks | keys[]) as $ev ($h;
         .[$ev] = ((.[$ev] // []) + [ $k.hooks[$ev][]

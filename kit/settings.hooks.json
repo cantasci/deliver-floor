@@ -1,12 +1,16 @@
 {
   "env": {
-    "GATEGUARD_EXEMPT_GLOBS": ".work/*/*.md,.work/*/*.json,.work/*/handoffs/**,.work/*/prompts/**"
+    "GATEGUARD_EXEMPT_GLOBS": ".work/*/*.md,.work/*/*.json,.work/*/specs/**,.work/*/roles/**,.work/*/handoffs/**,.work/*/prompts/**,.work/*/munder/**"
   },
   "hooks": {
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "__HOOKS_DIR__/stop-guard.sh", "timeout": 15 }
+          {
+            "type": "command",
+            "command": "__HOOKS_DIR__/stop-guard.sh",
+            "timeout": 15
+          }
         ]
       }
     ],
@@ -14,20 +18,32 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "__HOOKS_DIR__/bash-guard.sh", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "__HOOKS_DIR__/bash-guard.sh",
+            "timeout": 10
+          }
         ]
       },
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [
-          { "type": "command", "command": "__HOOKS_DIR__/write-guard.sh", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "__HOOKS_DIR__/write-guard.sh",
+            "timeout": 10
+          }
         ]
       }
     ],
     "SubagentStop": [
       {
         "hooks": [
-          { "type": "command", "command": "__HOOKS_DIR__/subagent-log.sh", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "__HOOKS_DIR__/subagent-log.sh",
+            "timeout": 10
+          }
         ]
       }
     ]

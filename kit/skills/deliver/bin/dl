@@ -561,7 +561,7 @@ cmd_integrate() {
     || refuse 1 "$card: no Lead review approval on commit ${head:0:9} — review, then: dl review $card approve"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
     || refuse 1 "the integration worktree has uncommitted changes — nothing may be written there by hand (git -C $IWT status)"
-  if ! git -C "$IWT" merge --no-ff -q -m "$card: $title" "$branch" >/dev/null 2>&1; then
+  if ! git -C "$IWT" merge --no-ff -q -m "Merge $card: $title" "$branch" >/dev/null 2>&1; then
     git -C "$IWT" merge --abort 2>/dev/null || true
     log_event integrate "$card CONFLICT"
     echo "CONFLICT: $card conflicts with $JOB_BRANCH. Re-dispatch the dev (dl wt add $card) with: run 'git merge $JOB_BRANCH' in the worktree, resolve, run verify, commit. Then gate + review + integrate again." >&2
