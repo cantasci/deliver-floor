@@ -849,6 +849,14 @@ HOME="$PH" expect_ok "install --plugin (settings only)" "$INST_P" --user --plugi
 HOME="$PH" expect_ok "uninstall --plugin" "$INST_P" --user --plugin --uninstall
 [[ "$(jq -c 'del(.x)' "$PH/.claude/settings.json")" == '{}' ]] && ok "…removes them again" || bad "uninstall --plugin left: $(cat "$PH/.claude/settings.json")"
 
+echo "live tests: the prepared human picks the answer that fits best"
+PA="$HERE/tests/pick-answer.mjs"; HA="$HERE/examples/watchlist-poc/HUMAN_ANSWERS.json"
+q='For an upgrade, what is notchCalculator(previous, current).notches: signed like notchChange (A- -> A+ gives -2) or an absolute count with the sign carried only by `direction`? Downgrades (BBB+ -> BB+ = 3) are the same under both.'
+contains "a sign question quoting the downgrade example gets the sign answer, not the miscount one (seen live)" "$(node "$PA" "$HA" "$q")" "signed exactly like notchChange"
+echo '[{"topic":"a","match":"alpha|beta","answer":"A"},{"topic":"b","match":"beta|gamma","answer":"B"}]' > "$TMP/ha.json"
+node "$PA" "$TMP/ha.json" "beta only" >/dev/null 2>&1; [[ $? == 2 ]] && ok "two answers fitting equally is no answer (a person must decide)" || bad "tie answered"
+node "$PA" "$HA" "What colour is the logo?" >/dev/null 2>&1; [[ $? == 2 ]] && ok "a question no answer fits is left to a person" || bad "unmatched answered"
+
 echo "install / uninstall"
 INST="$HERE/scripts/install.sh"
 expect_ok "install --user" "$INST" --user

@@ -22,10 +22,11 @@ let focusMichael = null; // set once the window is up: selects Michael so the co
 async function answer(win) {
   const id = fs.readFileSync(path.join(repo, '.work/ACTIVE'), 'utf8').trim();
   const r = JSON.parse(fs.readFileSync(path.join(repo, '.work', id, 'readiness.json'), 'utf8'));
-  const answers = JSON.parse(fs.readFileSync(answersFile, 'utf8'));
   let n = 0;
   for (const it of (r.items ?? r).filter((x) => x.status === 'open' && x.owner !== 'pm')) {
-    const a = answers.find((x) => new RegExp(x.match, 'i').test(it.question));
+    // the answer that fits best (tests/pick-answer.mjs) — a first match once answered the wrong question
+    let a = null;
+    try { a = { answer: execFileSync('node', [path.join(__dirname, 'pick-answer.mjs'), answersFile, it.question], { encoding: 'utf8' }) }; } catch { a = null; }
     if (!a) { if (!unanswered.has(it.id)) log(`no prepared answer for ${it.id} — a real person must answer: ${it.question}`); unanswered.add(it.id); continue; }
     execFileSync(dlBin, ['-C', repo, 'clarify', it.id, a.answer], { env: { ...process.env, DELIVER_APPROVER: 'e2e-human' } });
     log(`human answered ${it.id}: ${it.question.slice(0, 90)}`); n++;

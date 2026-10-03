@@ -76,7 +76,7 @@ while (( $(date +%s) < deadline )); do
     grep -q "Enter to select" <<<"$s" && { tm send-keys -t main Escape; sleep 2; log "    the question form was closed to answer in chat"; }
     msg="" miss=""
     while IFS=$'\t' read -r id q; do
-      a="$(jq -r --arg q "$q" 'map(select(.match as $m | $q | test($m; "i"))) | first | .answer // empty' "$EX/HUMAN_ANSWERS.json")"
+      a="$(node "$HERE/tests/pick-answer.mjs" "$EX/HUMAN_ANSWERS.json" "$q" 2>/dev/null)"
       if [[ -n $a ]]; then msg+="$id: $a  "; else miss+="$id ($q) "; fi
     done < <(jq -r '(.items // .)[] | select(.status=="open" and .owner != "pm") | [.id, .question] | @tsv' "$J/readiness.json" 2>/dev/null)
     if [[ -n $miss ]]; then bad "no prepared answer — a real person must answer: $miss"; break; fi

@@ -1,0 +1,15 @@
+2026-10-03T22:02:51Z	new	Rating notch calculator and country indicator
+2026-10-03T22:02:58Z	jobset	stack: .stack=["javascript"]
+2026-10-03T22:02:58Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: domain logic modules src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"builds notch.mjs and countryRating.mjs per the Contract"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"plain Node ESM JavaScript stack"}]
+2026-10-03T22:02:58Z	jobset	assumptions: .assumptions += ["Single component (Node ESM library, src/ratings + src/indicators, tests under test/); no UI, no persistence (C4,C7,C8)"]
+2026-10-03T22:02:58Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:02:58Z	phase	readiness
+2026-10-03T22:06:26Z	agent	business-analyst af5a3c90: I didn't write `/tmp/claude-0/e2e-hi/incomplete/repo/.work/JOB-20261003-2202-rating-notch-calculator-and-coun/out-readiness.json`. My role card and configuratio
+2026-10-03T22:07:02Z	readiness	33 items: 19 decided, 11 n/a, 3 open
+2026-10-03T22:07:06Z	decide	X-rating-scale-shape: Frozen array: Object.freeze([...19 ratings]) — Shared constant imported by other POC parts; freezing prevents accidental mutation and does not change the contract (content/order/name fixed by C1).
+2026-10-03T22:07:06Z	decide	X-error-message: Include argument name and the received value, e.g. Unknown rating for previous: "BB +" — C1 fixes only the RangeError type; a descriptive message aids debugging and tests assert the type only.
+2026-10-03T22:07:06Z	phase	awaiting_clarification
+2026-10-03T22:07:12Z	clarify	CON-interface: C2 stands: the POC example miscounts. BBB+ → BB+ is 3 notches → calculator WL 2; the 2-notch example is BBB+ → BBB- → WL 1.
+2026-10-03T22:07:26Z	freeze	readiness + architecture frozen (685e9521719b)
+2026-10-03T22:07:26Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:07:26Z	phase	planning
