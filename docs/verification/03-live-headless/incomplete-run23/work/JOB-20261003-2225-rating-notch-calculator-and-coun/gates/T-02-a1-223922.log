@@ -1,0 +1,311 @@
+# gate: T-02  attempt: 1  2026-10-03T22:39:22Z
+ok    on job/JOB-20261003-2225-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/*.test.mjs
+TAP version 13
+# Subtest: countryRatingChangeWl: mapping
+    # Subtest: normalises input (AC-3)
+    ok 1 - normalises input (AC-3)
+      ---
+      duration_ms: 0.929427
+      type: 'test'
+      ...
+    # Subtest: 1-notch downgrade gives 1, at both ends of the scale (AC-12)
+    ok 2 - 1-notch downgrade gives 1, at both ends of the scale (AC-12)
+      ---
+      duration_ms: 0.146564
+      type: 'test'
+      ...
+    # Subtest: 2+ notch downgrade gives 2 (AC-13)
+    ok 3 - 2+ notch downgrade gives 2 (AC-13)
+      ---
+      duration_ms: 0.188664
+      type: 'test'
+      ...
+    # Subtest: upgrade gives 0 (AC-14)
+    ok 4 - upgrade gives 0 (AC-14)
+      ---
+      duration_ms: 0.184491
+      type: 'test'
+      ...
+    # Subtest: unchanged gives +0 (AC-14)
+    ok 5 - unchanged gives +0 (AC-14)
+      ---
+      duration_ms: 0.209109
+      type: 'test'
+      ...
+    # Subtest: never returns -0 for any pair
+    ok 6 - never returns -0 for any pair
+      ---
+      duration_ms: 0.426687
+      type: 'test'
+      ...
+    # Subtest: ignores a third argument
+    ok 7 - ignores a third argument
+      ---
+      duration_ms: 0.11131
+      type: 'test'
+      ...
+    1..7
+ok 1 - countryRatingChangeWl: mapping
+  ---
+  duration_ms: 3.303334
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: contract
+    # Subtest: has exactly two declared parameters (AC-15)
+    ok 1 - has exactly two declared parameters (AC-15)
+      ---
+      duration_ms: 1.497035
+      type: 'test'
+      ...
+    # Subtest: is synchronous and returns a primitive number (AC-15)
+    ok 2 - is synchronous and returns a primitive number (AC-15)
+      ---
+      duration_ms: 0.256527
+      type: 'test'
+      ...
+    # Subtest: source imports only ../ratings/notch.mjs and does no I/O (AC-15, AC-17)
+    ok 3 - source imports only ../ratings/notch.mjs and does no I/O (AC-15, AC-17)
+      ---
+      duration_ms: 1.342861
+      type: 'test'
+      ...
+    # Subtest: exports exactly countryRatingChangeWl (AC-17)
+    ok 4 - exports exactly countryRatingChangeWl (AC-17)
+      ---
+      duration_ms: 0.25545
+      type: 'test'
+      ...
+    # Subtest: across src/ the only exported names are the four agreed ones (AC-17)
+    ok 5 - across src/ the only exported names are the four agreed ones (AC-17)
+      ---
+      duration_ms: 0.819606
+      type: 'test'
+      ...
+    # Subtest: package.json has no dependencies and test script is node --test (AC-17)
+    ok 6 - package.json has no dependencies and test script is node --test (AC-17)
+      ---
+      duration_ms: 0.170132
+      type: 'test'
+      ...
+    1..6
+ok 2 - countryRatingChangeWl: contract
+  ---
+  duration_ms: 4.759577
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: invalid input (AC-4)
+    # Subtest: rejects "" as previous
+    ok 1 - rejects "" as previous
+      ---
+      duration_ms: 0.599895
+      type: 'test'
+      ...
+    # Subtest: rejects "" as current
+    ok 2 - rejects "" as current
+      ---
+      duration_ms: 0.115037
+      type: 'test'
+      ...
+    # Subtest: rejects "   " as previous
+    ok 3 - rejects "   " as previous
+      ---
+      duration_ms: 0.069305
+      type: 'test'
+      ...
+    # Subtest: rejects "   " as current
+    ok 4 - rejects "   " as current
+      ---
+      duration_ms: 0.055197
+      type: 'test'
+      ...
+    # Subtest: rejects "D" as previous
+    ok 5 - rejects "D" as previous
+      ---
+      duration_ms: 0.051668
+      type: 'test'
+      ...
+    # Subtest: rejects "D" as current
+    ok 6 - rejects "D" as current
+      ---
+      duration_ms: 0.053322
+      type: 'test'
+      ...
+    # Subtest: rejects "NR" as previous
+    ok 7 - rejects "NR" as previous
+      ---
+      duration_ms: 0.052003
+      type: 'test'
+      ...
+    # Subtest: rejects "NR" as current
+    ok 8 - rejects "NR" as current
+      ---
+      duration_ms: 0.051054
+      type: 'test'
+      ...
+    # Subtest: rejects "Baa1" as previous
+    ok 9 - rejects "Baa1" as previous
+      ---
+      duration_ms: 0.137768
+      type: 'test'
+      ...
+    # Subtest: rejects "Baa1" as current
+    ok 10 - rejects "Baa1" as current
+      ---
+      duration_ms: 0.114471
+      type: 'test'
+      ...
+    # Subtest: rejects "AAA+" as previous
+    ok 11 - rejects "AAA+" as previous
+      ---
+      duration_ms: 0.056173
+      type: 'test'
+      ...
+    # Subtest: rejects "AAA+" as current
+    ok 12 - rejects "AAA+" as current
+      ---
+      duration_ms: 0.050838
+      type: 'test'
+      ...
+    # Subtest: rejects "CCC--" as previous
+    ok 13 - rejects "CCC--" as previous
+      ---
+      duration_ms: 0.049878
+      type: 'test'
+      ...
+    # Subtest: rejects "CCC--" as current
+    ok 14 - rejects "CCC--" as current
+      ---
+      duration_ms: 0.048908
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB +" as previous
+    ok 15 - rejects "BBB +" as previous
+      ---
+      duration_ms: 0.047111
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB +" as current
+    ok 16 - rejects "BBB +" as current
+      ---
+      duration_ms: 0.053386
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB−" as previous
+    ok 17 - rejects "BBB−" as previous
+      ---
+      duration_ms: 0.060975
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB−" as current
+    ok 18 - rejects "BBB−" as current
+      ---
+      duration_ms: 0.052505
+      type: 'test'
+      ...
+    # Subtest: rejects null as previous
+    ok 19 - rejects null as previous
+      ---
+      duration_ms: 0.051549
+      type: 'test'
+      ...
+    # Subtest: rejects null as current
+    ok 20 - rejects null as current
+      ---
+      duration_ms: 0.105065
+      type: 'test'
+      ...
+    # Subtest: rejects undefined as previous
+    ok 21 - rejects undefined as previous
+      ---
+      duration_ms: 0.056464
+      type: 'test'
+      ...
+    # Subtest: rejects undefined as current
+    ok 22 - rejects undefined as current
+      ---
+      duration_ms: 0.154326
+      type: 'test'
+      ...
+    # Subtest: rejects 3 as previous
+    ok 23 - rejects 3 as previous
+      ---
+      duration_ms: 0.072594
+      type: 'test'
+      ...
+    # Subtest: rejects 3 as current
+    ok 24 - rejects 3 as current
+      ---
+      duration_ms: 0.053634
+      type: 'test'
+      ...
+    # Subtest: rejects {} as previous
+    ok 25 - rejects {} as previous
+      ---
+      duration_ms: 0.815725
+      type: 'test'
+      ...
+    # Subtest: rejects {} as current
+    ok 26 - rejects {} as current
+      ---
+      duration_ms: 0.06942
+      type: 'test'
+      ...
+    # Subtest: rejects a missing second argument
+    ok 27 - rejects a missing second argument
+      ---
+      duration_ms: 0.101835
+      type: 'test'
+      ...
+    # Subtest: rejects no arguments
+    ok 28 - rejects no arguments
+      ---
+      duration_ms: 0.079019
+      type: 'test'
+      ...
+    # Subtest: rejects SD and boxed strings through notchChange
+    ok 29 - rejects SD and boxed strings through notchChange
+      ---
+      duration_ms: 0.116753
+      type: 'test'
+      ...
+    1..29
+ok 3 - countryRatingChangeWl: invalid input (AC-4)
+  ---
+  duration_ms: 3.922189
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: exhaustive mapping (AC-16)
+    # Subtest: matches Indicator 12 thresholds for all 361 ordered pairs
+    ok 1 - matches Indicator 12 thresholds for all 361 ordered pairs
+      ---
+      duration_ms: 0.617402
+      type: 'test'
+      ...
+    # Subtest: differs from notchCalculator().wl at the 1- and 2-notch boundaries
+    ok 2 - differs from notchCalculator().wl at the 1- and 2-notch boundaries
+      ---
+      duration_ms: 0.129788
+      type: 'test'
+      ...
+    1..2
+ok 4 - countryRatingChangeWl: exhaustive mapping (AC-16)
+  ---
+  duration_ms: 0.892553
+  type: 'suite'
+  ...
+1..4
+# tests 44
+# suites 4
+# pass 44
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 105.950209
+ok    verify passed

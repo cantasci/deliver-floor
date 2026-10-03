@@ -1,0 +1,47 @@
+# gate: T-01  attempt: 1  2026-10-03T22:36:26Z
+ok    on job/JOB-20261003-2225-rating-notch-calculator-and-coun--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/
+TAP version 13
+# node:internal/modules/cjs/loader:1386
+#   throw err;
+#   ^
+# Error: Cannot find module '/tmp/claude-0/e2e-hi/incomplete/repo/.work/JOB-20261003-2225-rating-notch-calculator-and-coun/wt/T-01/test/ratings'
+#     at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+#     at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+#     at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+#     at Function._load (node:internal/modules/cjs/loader:1192:37)
+#     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+#     at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+#     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+#     at node:internal/main/run_main_module:36:49 {
+#   code: 'MODULE_NOT_FOUND',
+#   requireStack: []
+# }
+# Node.js v22.22.0
+# Subtest: test/ratings
+not ok 1 - test/ratings
+  ---
+  duration_ms: 38.646133
+  type: 'test'
+  location: '/tmp/claude-0/e2e-hi/incomplete/repo/.work/JOB-20261003-2225-rating-notch-calculator-and-coun/wt/T-01/test/ratings:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 47.156557
+FAIL  verify failed (exit 1)
