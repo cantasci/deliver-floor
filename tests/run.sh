@@ -395,7 +395,12 @@ bedit "$AJ/board.json" '.cards += [(.cards[2] | .id="T-04" | .title="T-04")]'; c
 ( "$DL" wt add T-03 >"$TMP/r3" 2>&1; echo $? >> "$TMP/r3" ) & ( "$DL" wt add T-04 >"$TMP/r4" 2>&1; echo $? >> "$TMP/r4" ) & wait
 [[ "$(jq '[.cards[] | select(.role=="database" and .state=="running")] | length' "$AJ/board.json")" == 1 ]] && grep -q "seats are busy" "$TMP/r3" "$TMP/r4" \
   && ok "concurrent assignment: exactly one of two cards gets the single database seat" || bad "race: $(cat "$TMP/r3" "$TMP/r4")"
+out="$("$DL" next)"; contains "an idle seat with work says so (backend#1 → T-01)" "$out" "IDLE    backend#1 — free; take T-01"
+contains "…and so does the second seat" "$out" "IDLE    backend#2 — free; take T-01"
+grep -qE "backend#2 +IDLE +→ assign T-01, T-02" <<<"$("$DL" seats)" && ok "dl seats lists every seat with its next card" || bad "dl seats: $("$DL" seats)"
 "$DL" wt add T-01 >/dev/null && "$DL" wt add T-02 >/dev/null
+! "$DL" next | grep -q "IDLE    backend" && ok "no backend seat idle once both work" || bad "idle after assign: $("$DL" next)"
+grep -q "backend#1 busy (T-01)" "$AJ/kanban.html" && ok "kanban shows seat utilisation" || bad "kanban seats"
 [[ "$(jq -r '[.cards[] | select(.role=="backend") | .seat] | sort | join(",")' "$AJ/board.json")" == "backend#1,backend#2" ]] \
   && ok "two backend devs work in parallel on seats backend#1 and backend#2, each on its own branch" || bad "seats: $(jq -c '[.cards[]|{id,seat,branch}]' "$AJ/board.json")"
 [[ "$(git -C "$AR" branch --list '*--T-01' '*--T-02' | wc -l)" == 2 ]] && ok "…each on its own card branch" || bad "branches"
@@ -486,6 +491,15 @@ contains "…nor a force push of its own branch" "$(pg "git push -f origin $own2
 contains "…and must name the branch" "$(pg "git push")" "rc=2"
 kill $JPID 2>/dev/null; unset JIRA_BASE_URL JIRA_EMAIL JIRA_API_TOKEN
 "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+echo "robustness: dl next at full capacity with many ready cards (was SIGPIPE 141)"
+PF="$TMP/pf"; mkdir -p "$PF" && cd "$PF" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","max_parallel":1}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "pf" "x" >/dev/null; PJ="$PF/.work/$(cat .work/ACTIVE)"; "$DL" phase executing --force >/dev/null
+node -e 'const c=[...Array(6)].map((_,i)=>({id:"T-0"+(i+1),title:"t",role:"backend",agent:"backend-dev",state:i?"ready":"running",depends_on:[],scope:["s/**"],acceptance:["x"],verify:"true",context:"c",attempts:i?0:1,notes:[]}));require("fs").writeFileSync(process.argv[1],JSON.stringify({cards:c}))' "$PJ/board.json"
+"$DL" reseal "fixture" >/dev/null
+rc=0; for i in 1 2 3 4 5; do "$DL" next >/dev/null 2>&1 || rc=$?; done
+[[ $rc -eq 0 ]] && ok "dl next survives a full board (5 runs)" || bad "dl next rc=$rc"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "commit hygiene: no AI attribution, optional role trailer"
 CH="$TMP/commits"; mkdir -p "$CH" && cd "$CH" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i

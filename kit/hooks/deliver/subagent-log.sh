@@ -5,7 +5,7 @@ set -uo pipefail
 input="$(cat)"
 command -v jq >/dev/null || exit 0
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-owned="$(owned_job)" || owned="$(active_jobs | head -1)"
+owned="$(owned_job)" || owned="$(active_jobs | awk 'NR==1')"
 [[ -n $owned ]] || exit 0
 IFS=$'\t' read -r job root <<<"$owned"
 

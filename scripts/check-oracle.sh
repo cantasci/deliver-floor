@@ -5,7 +5,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 repo="$(cd "${1:?usage: check-oracle.sh <repo> [branch] [example] [oracle file]}" && pwd)"; ex="${3:-watchlist-poc}"; of="${4:-watchlist.oracle.test.mjs}"
-branch="${2:-$(git -C "$repo" for-each-ref --sort=-committerdate --format='%(refname:short)' 'refs/heads/job/*' | grep -v -- '--T-' | head -1)}"
+branch="${2:-$(git -C "$repo" for-each-ref --sort=-committerdate --format='%(refname:short)' 'refs/heads/job/*' | grep -v -- '--T-' | awk 'NR==1')}"
 branch="${branch:-HEAD}"
 tmp="$(mktemp -d)"; trap 'git -C "$repo" worktree remove --force "$tmp/wt" >/dev/null 2>&1; rm -rf "$tmp"' EXIT
 git -C "$repo" worktree add -q --detach "$tmp/wt" "$branch"

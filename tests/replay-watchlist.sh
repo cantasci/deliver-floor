@@ -60,7 +60,7 @@ cat "$J/ROLES.md" | sed 's/^/    /'
 echo "    --- excerpt of roles/qa.md:"; sed -n '/## Rules/,/## This project/p' "$J/roles/qa.md" | sed 's/^/    /'
 
 step "1 · READINESS — the BA checks every requirement and decision before anything is planned"
-jq '(.items[] | select(.id=="CON-interface")) |= {id, status:"open",
+jq '(.items[] | select(.id=="CON-interface")) |= {id, status:"open", owner:"business",
      question:"Is notchCalculator().notches signed like notchChange (upgrade negative) or an absolute count?",
      options:["signed, like notchChange","absolute count + direction"], impact:"changes the contract other POC modules import"}' \
    "$EX/reference/readiness.json" > "$J/readiness.json"

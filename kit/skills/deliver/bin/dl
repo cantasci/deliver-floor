@@ -47,6 +47,7 @@
 #   dl md-dispatch <card> <prompt-file>   Munder Difflin: run the card's dev as a worker on the floor
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
 #   dl jobs                        jobs known on this machine (registry)
+#   dl seats                       role seats: busy / IDLE, and the card each idle seat should take
 #   dl kanban [--html <file>]      the board as kanban columns (To Do · In Progress · QA · Code Review · Done)
 #   dl tracker [open|sync]         mirror the cards into settings.tracker.kind (local | jira) — automatic on every step
 #
@@ -334,8 +335,14 @@ cmd_next() {
           else echo "INTEGRATE dl integrate $id"; fi
         done
       cap=$(( max_par - running ))
-      local r; r="$(ready_ids | head -n $(( cap > 0 ? cap : 0 )) | tr '\n' ' ')"
+      # awk reads its whole input: `head` would close the pipe early and, under pipefail, kill dl with SIGPIPE
+      local r; r="$(ready_ids | awk -v n=$(( cap > 0 ? cap : 0 )) 'NR<=n' | tr '\n' ' ')"
       [[ -n ${r// /} ]] && echo "DISPATCH ${r% }"
+      # every idle seat says so — with the work it should take, or what it waits for
+      seats_json | jq -r --arg disp " ${r% } " '.[] | select(.busy == null) |
+        if (.ready|length)>0 then .ready[0] as $c | "IDLE    \(.seat) — free; take \($c)" + (if ($disp|contains(" " + $c + " ")) then " (in DISPATCH above)" else " (dl seats)" end)
+        elif (.waiting|length)>0 then "IDLE    \(.seat) — waiting: \(.waiting|join(", ")) depend on unmerged cards"
+        else "IDLE    \(.seat) — no more work for \(.role)" end' 
       jq -r '.cards[] | select(.state=="running") | "WAIT    \(.id) (agent running)"' "$BOARD"
       jq -r --argjson max "$(setting max_attempts)" '.cards[] | select(.state=="ready" and .attempts >= $max) | "BLOCK   \(.id) (no attempts left: dl card \(.id) state blocked)"' "$BOARD"
       local open; open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$BOARD")"
@@ -646,7 +653,7 @@ cmd_gate() {
     else echo "ok    on $branch"; fi
 
     if [[ -n "$(git -C "$wt" status --porcelain)" ]]; then
-      echo "FAIL  uncommitted or untracked changes:"; git -C "$wt" status --porcelain | head -20 | sed 's/^/        /'; fail=1
+      echo "FAIL  uncommitted or untracked changes:"; git -C "$wt" status --porcelain | awk 'NR<=20' | sed 's/^/        /'; fail=1
     else echo "ok    working tree clean"; fi
 
     local n; n="$(git -C "$wt" rev-list --count "$JOB_BRANCH..HEAD")"
@@ -681,7 +688,7 @@ cmd_gate() {
     # the role trailer is required only when settings.commit.role_in_message is on.
     if [[ "$(setting commit.ai_attribution)" != true ]]; then
       local attr; attr="$(git -C "$wt" log --format='%H%n%an <%ae>%n%cn <%ce>%n%B%n----' "$JOB_BRANCH..HEAD" \
-        | grep -inE 'co-authored-by:.*(claude|anthropic)|generated with \[?claude|🤖 generated|noreply@anthropic\.com|^claude <' | head -3)"
+        | grep -inE 'co-authored-by:.*(claude|anthropic)|generated with \[?claude|🤖 generated|noreply@anthropic\.com|^claude <' | awk 'NR<=3')"
       if [[ -n $attr ]]; then echo "FAIL  AI attribution in the card's commits (settings.commit.ai_attribution=false):"; sed 's/^/        /' <<<"$attr"; fail=1
       else echo "ok    no AI attribution in commits"; fi
     fi
@@ -905,7 +912,7 @@ cmd_md_dispatch() {
   [[ -n $hive && -d $hive ]] || die "HIVE_ROOT is not set — md-dispatch only works inside Munder Difflin (or set settings.munder.hive_root)"
   role=${role:-$(card_get "$card" .role)}
   local state agent; state="$(card_get "$card" .state)"
-  agent="$(jq -r --arg r "$role" '.roles[] | select(.role==$r) | .agent' "$JOBJ" | head -1)"
+  agent="$(jq -r --arg r "$role" '.roles[] | select(.role==$r) | .agent' "$JOBJ" | awk 'NR==1')"
   [[ -n $agent ]] || refuse 1 "role '$role' is not selected for this job"
   if [[ $role == "$(card_get "$card" .role)" ]]; then
     [[ $state == running ]] || refuse 1 "dispatch the dev with dl wt add $card first (state now: $state)"
@@ -959,6 +966,22 @@ cmd_cleanup() {
   rm -f "$REG/$JOB"
   git -C "$ROOT" worktree prune
   log_event cleanup "${1:-}"; echo "cleaned up: $JOB (branches kept)"
+}
+
+# Seat utilisation: which role seats are busy, which are idle — and for each idle one, the work it should take.
+SEATS_JQ='. as $b | ($j.roles | map(select(.count != null) | {role, count})) as $caps
+  | [ $caps[] as $c | range(1; $c.count + 1) as $n | ($c.role + "#" + ($n|tostring)) as $seat
+      | ([$b.cards[] | select(.state=="running" and .seat==$seat) | .id] | first) as $busy
+      | ([$b.cards[] | select(.state=="ready" and .role==$c.role and .attempts < $max
+            and all((.depends_on // [])[]; . as $d | ([$b.cards[] | select(.id==$d) | .state] | first) == "merged")) | .id]) as $ready
+      | ([$b.cards[] | select(.state=="ready" and .role==$c.role) | .id]) as $waiting
+      | {seat:$seat, role:$c.role, busy:$busy, ready:$ready, waiting:$waiting} ]'
+seats_json() { jq --argjson j "$(cat "$JOBJ")" --argjson max "$(setting max_attempts)" "$SEATS_JQ" "$BOARD"; }
+cmd_seats() {
+  load_job
+  seats_json | jq -r '(["SEAT","STATE","CARD / NEXT"] | @tsv), (.[] | [.seat, (if .busy then "busy" else "IDLE" end),
+     (if .busy then .busy elif (.ready|length)>0 then "→ assign " + (.ready|join(", ")) elif (.waiting|length)>0 then "waiting on dependencies of " + (.waiting|join(", ")) else "no work for this role" end)] | @tsv)' | table
+  jq -r '[.roles[] | select(.count == null) | .role] | if length>0 then "(roles without a seat count share max_parallel: " + join(", ") + ")" else empty end' "$JOBJ"
 }
 
 cmd_kanban() {
@@ -1017,8 +1040,9 @@ main() {
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;
+    seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,53p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,54p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

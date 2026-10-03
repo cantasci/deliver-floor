@@ -211,6 +211,14 @@ export function kanbanText(job, board, columns = columnsOf(job)) {
   return out.join("\n");
 }
 
+export function seatsLine(job, board) {
+  const caps = (job.roles ?? []).filter((r) => r.count);
+  if (!caps.length) return "";
+  return "Seats: " + caps.flatMap((r) => Array.from({ length: r.count }, (_, k) => {
+    const seat = `${r.role}#${k + 1}`, c = board.cards.find((x) => x.state === "running" && x.seat === seat);
+    return c ? `${seat} busy (${c.id})` : `${seat} IDLE`;
+  })).join(" · ");
+}
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[m]);
 export function kanbanHtml(job, board, columns = columnsOf(job)) {
   const by = Object.fromEntries(STAGE_ORDER.map((s) => [s, []]));
@@ -234,6 +242,7 @@ article{background:var(--card);border:1px solid var(--line);border-radius:6px;pa
 article h3{font-size:13px;margin:0 0 4px}.meta,.checks,.note{margin:2px 0;color:var(--mute);font-size:12px}
 a{color:inherit}</style></head><body>
 <h1>${esc(job.title)}</h1><p class="sub">${esc(job.id)} · phase ${esc(job.phase)} · refreshes every 10 s</p>
+<p class="sub">${seatsLine(job, board)}</p>
 <div class="board">${shown.map((s) => `<section><h2>${esc(columns[s])} (${by[s].length})</h2>${by[s].map(card).join("")}</section>`).join("")}</div>
 </body></html>\n`;
 }

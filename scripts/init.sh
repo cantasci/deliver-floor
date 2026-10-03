@@ -36,7 +36,7 @@ need() { command -v "$1" >/dev/null || { echo "init: '$1' is required — $2" >&
 
 step "tools"
 need git "install git"; need jq "brew install jq / apt install jq"; need node "Node 18+ (brew install node)"; need claude "Claude Code: https://claude.com/claude-code"
-echo "claude $(claude --version | head -1) · node $(node -v) · git $(git --version | awk '{print $3}')"
+echo "claude $(claude --version | awk 'NR==1') · node $(node -v) · git $(git --version | awk '{print $3}')"
 
 if [[ $ecc -eq 1 ]]; then
   step "ECC plugin"

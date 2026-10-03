@@ -41,7 +41,7 @@ if (( n > max )); then
 fi
 
 cat >&2 <<EOF
-Board not finished: job $job has $open open card(s) (phase: $phase). Do not stop.
+Board not finished: job $job has $open open card(s) (phase: $phase). Do not stop — no role may sit idle while work is waiting.
 - Run 'dl next' and do what it says (DISPATCH → agents, GATE/REVIEW/INTEGRATE → per card).
 - If a human is genuinely needed: 'dl card <id> state blocked' + 'dl card <id> note "<reason>"',
   then ask the user about the blocked cards.
