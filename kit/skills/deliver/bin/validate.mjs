@@ -85,11 +85,13 @@ if (arch?.components?.length) {
     const id = c.id ?? "(no id)", comp = comps.get(c.component);
     if (!comp) { errors.push(`${id}: 'component' must name an architecture component (${[...comps.keys()].join(", ")})`); continue; }
     if (c.role !== comp.owner && c.role !== "qa") errors.push(`${id}: component ${comp.id} is owned by role '${comp.owner}', not '${c.role}'`);
-    // a component may span several directories (e.g. src/orders/ and test/orders/); "." is the whole repo
-    const bases = [].concat(comp.path ?? ".").map((p) => (p === "." || p === "./" ? "" : String(p).replace(/\/?$/, "/")));
-    if (!bases.includes(""))
+    // a component may span several directories or files (e.g. src/orders/, test/orders/, src/app.mjs); "." is the whole repo.
+    // A path is a directory prefix or one exact file — the same rule readiness.mjs states before the freeze.
+    const paths = [].concat(comp.path ?? ".").map((p) => String(p));
+    if (!paths.some((p) => p === "." || p === "./"))
       for (const g of [...(c.scope ?? []), ...(c.qa_scope ?? [])])
-        if (!bases.some((b) => String(g).startsWith(b))) errors.push(`${id}: '${g}' is outside component ${comp.id} (${bases.join(", ")})`);
+        if (!paths.some((p) => String(g) === p.replace(/\/$/, "") || String(g).startsWith(p.replace(/\/?$/, "/"))))
+          errors.push(`${id}: '${g}' is outside component ${comp.id} (${paths.join(", ")})`);
   }
 }
 

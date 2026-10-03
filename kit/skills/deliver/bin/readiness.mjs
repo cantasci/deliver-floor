@@ -60,7 +60,7 @@ export function checkArchitecture(job, arch) {
     if (!Array.isArray(c.stack) || !c.stack.length) errors.push(`component '${id}': stack must list its languages/frameworks (e.g. ["java","spring-boot"])`);
     const ps = Array.isArray(c.path) ? c.path : [c.path];
     if (!ps.length || ps.some((x) => typeof x !== "string" || !x || x.startsWith("/") || x.split("/").includes("..")))
-      errors.push(`component '${id}': path must be a repo-relative directory or a list of them, e.g. ["src/orders/", "test/orders/"] ("." for the root)`);
+      errors.push(`component '${id}': path must be a repo-relative directory or file, or a list of them, e.g. ["src/orders/", "test/orders/"] ("." for the root); a card's scope must lie inside these`);
     const owner = roles.get(c.owner);
     if (!owner) errors.push(`component '${id}': owner '${c.owner}' is not a role on this job`);
     else if (cat.roles?.[c.owner]?.kind !== "dev") errors.push(`component '${id}': owner '${c.owner}' must be a dev role`);

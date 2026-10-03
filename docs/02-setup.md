@@ -55,8 +55,9 @@ agents and `kit/hooks/hooks.json`).
 
 What changes with the plugin:
 
-- The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin (it runs from
-  Claude Code's plugin cache) and writes those names into ROLES.md, the role cards and floor workers' `claude --agent`.
+- The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin (the kit carries
+  its manifest and Claude Code lists the plugin as installed — whether it loads it from its cache or, for a marketplace
+  added from a local folder, from the folder itself) and writes those names into ROLES.md, the role cards and floor workers' `claude --agent`.
   `job.json` and `board.json` keep the plain names. Developing with `claude --plugin-dir kit`? Set `DELIVER_AGENT_NS=deliver`.
 - `/deliver` still works; `/deliver:deliver` is the fully qualified name.
 - `dl` lives in the plugin cache: `ls ~/.claude/plugins/cache/skills-shop/deliver/*/skills/deliver/bin/dl`.

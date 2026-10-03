@@ -68,12 +68,18 @@ CONFIG="$SKILL_DIR/config.json"
 REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
 
 # Installed as a Claude Code plugin, the kit's agents are namespaced (<plugin>:<agent>, e.g. deliver:backend-dev).
-# Job and board files keep the canonical names; agent_call gives the name to invoke. Plugin mode is detected from
-# Claude Code's plugin cache; DELIVER_AGENT_NS overrides it (set it to "deliver" for claude --plugin-dir kit).
+# Job and board files keep the canonical names; agent_call gives the name to invoke. Plugin mode: the kit carries its
+# plugin manifest and Claude Code has that plugin installed — it may load it from its cache or, for a marketplace added
+# from a local folder, straight from the source folder (seen live). DELIVER_AGENT_NS overrides (claude --plugin-dir kit).
 if [[ -z ${DELIVER_AGENT_NS+x} ]]; then
   DELIVER_AGENT_NS=""
-  [[ $SKILL_DIR == */plugins/cache/* && -f $SKILL_DIR/../../.claude-plugin/plugin.json ]] \
-    && DELIVER_AGENT_NS="$(jq -r '.name // empty' "$SKILL_DIR/../../.claude-plugin/plugin.json")"
+  if [[ -f $SKILL_DIR/../../.claude-plugin/plugin.json ]]; then
+    _pn="$(jq -r '.name // empty' "$SKILL_DIR/../../.claude-plugin/plugin.json")"
+    if [[ -n $_pn ]] && { [[ $SKILL_DIR == */plugins/cache/* ]] \
+         || jq -e --arg n "$_pn@" '.plugins // {} | keys | any(startswith($n))' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/installed_plugins.json" >/dev/null 2>&1; }; then
+      DELIVER_AGENT_NS=$_pn
+    fi
+  fi
 fi
 export DELIVER_AGENT_NS
 agent_call() { # agent_call <canonical agent> → the name to invoke (only the kit's own agents get the namespace)

@@ -1,0 +1,79 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "REQ-03-02 Indicator 2 'Days with delay': option list + daysWithDelayWl",
+      "role": "backend",
+      "component": "indicators-days-with-delay",
+      "context": "Why: Indicator 2 (Ind. 2) of the Watchlist POC maps a dropdown option to a Watchlist level (WL 0-4, higher is worse). This slice is the pure mapping only; no UI, no I/O. Read CLAUDE.md first: plain Node 18+ ESM (.mjs), no npm dependencies (do not touch package.json), tests with node:test + node:assert/strict, pure functions, no I/O in src/indicators (no fs/net/process.env/console).\n\nFiles (create; src/indicators and test/indicators do not exist yet): src/indicators/daysWithDelay.mjs and its unit tests test/indicators/daysWithDelay.test.mjs. Work TDD (tests first). Do NOT create or edit anything under test/integration (QA owns test/integration/indicators/daysWithDelay.int.test.mjs). Do NOT touch src/indicators/delayCount.mjs (parallel card B2); the module must not import it or any other module and must share no state.\n\nExact exports (names are contract):\n- `export const DAYS_WITH_DELAY_OPTIONS = Object.freeze(['no delay', '<=3 days', '>3 days', '>60 days', '>90 days'])` - exactly these 5 strings, this order, frozen (X-option-immutability).\n- `export function daysWithDelayWl(option)` -> 0 | 2 | 3 | 4. Mapping: 'no delay' -> 0; '<=3 days' -> 0; '>3 days' -> 2; '>60 days' -> 3; '>90 days' -> 4. Resulting values for the options in order: [0, 0, 2, 3, 4].\n\nInput handling (X-trim-whitespace): if typeof option !== 'string' throw RangeError (no coercion; `new String('>3 days')`, arrays, numbers, null, undefined, and no argument all throw). Otherwise apply String.prototype.trim() and match EXACTLY, case-sensitively, against the five options. Internal spacing is NOT normalised ('> 3 days' throws). Empty / whitespace-only strings trim to '' and throw. Return the WL number only, never the trimmed string.\n\nSecurity (NFR-security): do not look up via a plain object keyed by the input, because 'constructor', 'toString', '__proto__', 'hasOwnProperty', 'length' would hit inherited properties. Use a Map, a switch, or array indexOf on the frozen list; those strings must throw RangeError.\n\nErrors (X-errors-message): throw `new RangeError(...)`. Message text is free (suggested: include the offending value, formatted safely so building the message never throws a non-RangeError for the listed inputs). Tests assert only `assert.throws(fn, RangeError)`, never the message.\n\nUnit tests to write must cover: option list deepStrictEqual + Object.isFrozen; each option -> WL and the in-order [0,0,2,3,4] check over DAYS_WITH_DELAY_OPTIONS; trimming (`'  >3 days '`->2, `'\\t>60 days\\n'`->3, `' no delay'`->0); invalid strings throwing RangeError: '', '   ', '>3 Days', 'No delay', '> 3 days', '>3days', '≤3 days' (Unicode <=), '>30 days', '>=3 days', '3 days', '>120 days', '0', '>1'; non-strings throwing RangeError: undefined, null, 0, 3, true, [], ['>3 days'], {}, new String('>3 days'), and a call with no argument; inherited names 'constructor','toString','__proto__','hasOwnProperty','length' throw RangeError; idempotence (same input -> same output repeatedly) and that the options array is still frozen with the same content after calls.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/daysWithDelay.mjs",
+        "test/indicators/daysWithDelay.test.mjs"
+      ],
+      "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/daysWithDelay.int.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/daysWithDelay.int.test.mjs",
+      "acceptance": [
+        "(AC-1) Given `src/indicators/daysWithDelay.mjs`, when `DAYS_WITH_DELAY_OPTIONS` is imported, then it deep-strictly equals `['no delay', '<=3 days', '>3 days', '>60 days', '>90 days']` and `Object.isFrozen(DAYS_WITH_DELAY_OPTIONS) === true`.",
+        "(AC-2) Given Indicator 2, when `daysWithDelayWl('no delay')` and `daysWithDelayWl('<=3 days')` are called, then both return `0`.",
+        "(AC-3) When `daysWithDelayWl('>3 days')` is called, then it returns `2`.",
+        "(AC-4) When `daysWithDelayWl('>60 days')` is called, then it returns `3`.",
+        "(AC-5) When `daysWithDelayWl('>90 days')` is called, then it returns `4`.",
+        "(AC-6) Given each entry of `DAYS_WITH_DELAY_OPTIONS` in order, when passed to `daysWithDelayWl`, then none throws and the results are `[0, 0, 2, 3, 4]`.",
+        "(AC-12) When called with `'  >3 days '`, `'\\t>60 days\\n'`, `' no delay'`, then it returns `2`, `3`, `0` (WL number only, never the trimmed string).",
+        "(AC-14) When called with any of `''`, `'   '`, `'>3 Days'`, `'No delay'`, `'> 3 days'`, `'>3days'`, `'≤3 days'` (Unicode), `'>30 days'`, `'>=3 days'`, `'3 days'`, `'>120 days'`, `'0'`, `'>1'`, then it throws `RangeError`.",
+        "(AC-16) When called with `undefined`, `null`, `0`, `3`, `true`, `[]`, `['>3 days']`, `{}`, `new String('>3 days')` or no argument, then it throws `RangeError` (no coercion).",
+        "(AC-18) When called with `'constructor'`, `'toString'`, `'__proto__'`, `'hasOwnProperty'`, `'length'`, then it throws `RangeError`.",
+        "(AC-19, this module) Given the module, then it is ESM exporting exactly `DAYS_WITH_DELAY_OPTIONS` and `daysWithDelayWl`; `package.json` is unchanged (no dependencies); the source uses no `fs`/`net`/`process.env`/`console`.",
+        "(AC-20, this module) Given the same input called repeatedly, then the same value is returned; after the calls the options array is still frozen with unchanged content; the module imports no other module and shares no state with `delayCount`."
+      ],
+      "agent": "backend-dev",
+      "reviewers": [
+        "reviewer"
+      ],
+      "state": "ready",
+      "attempts": 0,
+      "notes": []
+    },
+    {
+      "id": "T-02",
+      "title": "REQ-03-03 Indicator 3 'Delays in 12 months': option list + delayCountWl",
+      "role": "backend",
+      "component": "indicators-delay-count",
+      "context": "Why: Indicator 3 (Ind. 3) of the Watchlist POC maps a dropdown option (number of delays in the last 12 months) to a Watchlist level (WL 0-4, higher is worse). This slice is the pure mapping only; the caller picks the option, nothing is counted from dates/amounts; no UI, no I/O. Read CLAUDE.md first: plain Node 18+ ESM (.mjs), no npm dependencies (do not touch package.json), tests with node:test + node:assert/strict, pure functions, no I/O in src/indicators (no fs/net/process.env/console).\n\nFiles (create; src/indicators and test/indicators may not exist yet - the parallel card B1 creates files in the same directories but never the same files): src/indicators/delayCount.mjs and its unit tests test/indicators/delayCount.test.mjs. Work TDD (tests first). Do NOT create or edit anything under test/integration (QA owns test/integration/indicators/delayCount.int.test.mjs). Do NOT touch src/indicators/daysWithDelay.mjs (card B1); the module must not import it or any other module and must share no state.\n\nExact exports (names are contract):\n- `export const DELAY_COUNT_OPTIONS = Object.freeze(['0', '1', '>1'])` - exactly these 3 strings, this order, frozen (X-option-immutability).\n- `export function delayCountWl(option)` -> 0 | 1 | 2. Mapping: '0' -> 0; '1' -> 1; '>1' -> 2. Resulting values for the options in order: [0, 1, 2].\n\nInput handling (X-trim-whitespace): if typeof option !== 'string' throw RangeError (no coercion; the number 1 throws although the string '1' is valid; `new String('1')`, arrays, null, undefined and no argument all throw). Otherwise apply String.prototype.trim() and match EXACTLY, case-sensitively, against the three options. Internal spacing is NOT normalised ('> 1' throws). Empty / whitespace-only strings trim to '' and throw. Return the WL number only, never the trimmed string.\n\nSecurity (NFR-security): do not look up via a plain object keyed by the input, because 'constructor', 'toString', '__proto__', 'hasOwnProperty', 'length' would hit inherited properties. Use a Map, a switch, or array indexOf on the frozen list; those strings must throw RangeError.\n\nErrors (X-errors-message): throw `new RangeError(...)`. Message text is free (suggested: include the offending value, formatted safely so building the message never throws a non-RangeError for the listed inputs). Tests assert only `assert.throws(fn, RangeError)`, never the message.\n\nUnit tests to write must cover: option list deepStrictEqual + Object.isFrozen; each option -> WL and the in-order [0,1,2] check over DELAY_COUNT_OPTIONS; trimming (`' 1 '`->1, `'\\t>1\\n'`->2, `' 0'`->0); invalid strings throwing RangeError: '', '  ', '2', '-1', '>2', '> 1', '>=1', 'one', 'zero', '00', '1.0', 'no delay', '>3 days'; non-strings throwing RangeError: undefined, null, 0, 1, 2, true, [], ['1'], {}, new String('1'), and a call with no argument; inherited names 'constructor','toString','__proto__','hasOwnProperty','length' throw RangeError; idempotence (same input -> same output repeatedly) and that the options array is still frozen with the same content after calls.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/delayCount.mjs",
+        "test/indicators/delayCount.test.mjs"
+      ],
+      "verify": "node --test test/indicators/delayCount.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/delayCount.int.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/delayCount.int.test.mjs",
+      "acceptance": [
+        "(AC-7) Given `src/indicators/delayCount.mjs`, when `DELAY_COUNT_OPTIONS` is imported, then it deep-strictly equals `['0', '1', '>1']` and `Object.isFrozen(DELAY_COUNT_OPTIONS) === true`.",
+        "(AC-8) When `delayCountWl('0')` is called, then it returns `0`.",
+        "(AC-9) When `delayCountWl('1')` is called, then it returns `1`.",
+        "(AC-10) When `delayCountWl('>1')` is called, then it returns `2`.",
+        "(AC-11) Given each entry of `DELAY_COUNT_OPTIONS` in order, when passed to `delayCountWl`, then none throws and the results are `[0, 1, 2]`.",
+        "(AC-13) When called with `' 1 '`, `'\\t>1\\n'`, `' 0'`, then it returns `1`, `2`, `0` (WL number only).",
+        "(AC-15) When called with any of `''`, `'  '`, `'2'`, `'-1'`, `'>2'`, `'> 1'`, `'>=1'`, `'one'`, `'zero'`, `'00'`, `'1.0'`, `'no delay'`, `'>3 days'`, then it throws `RangeError`.",
+        "(AC-17) When called with `undefined`, `null`, `0`, `1`, `2`, `true`, `[]`, `['1']`, `{}`, `new String('1')` or no argument, then it throws `RangeError`; in particular `delayCountWl(1)` throws although `'1'` is valid.",
+        "(AC-18) When called with `'constructor'`, `'toString'`, `'__proto__'`, `'hasOwnProperty'`, `'length'`, then it throws `RangeError`.",
+        "(AC-19, this module) Given the module, then it is ESM exporting exactly `DELAY_COUNT_OPTIONS` and `delayCountWl`; `package.json` is unchanged (no dependencies); the source uses no `fs`/`net`/`process.env`/`console`.",
+        "(AC-20, this module) Given the same input called repeatedly, then the same value is returned; after the calls the options array is still frozen with unchanged content; the module imports no other module and shares no state with `daysWithDelay`."
+      ],
+      "agent": "backend-dev",
+      "reviewers": [
+        "reviewer"
+      ],
+      "state": "ready",
+      "attempts": 0,
+      "notes": []
+    }
+  ]
+}

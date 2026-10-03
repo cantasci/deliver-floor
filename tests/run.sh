@@ -462,6 +462,12 @@ contains "floor workers start the namespaced agent" "$(jq -r .command "$(ls "$HI
 "$DL" roles >/dev/null
 out="$(cat "$R/.work/$JOB/ROLES.md")"
 [[ $out == *'`backend-dev`'* && $out != *deliver:* ]] && ok "a copied install (no plugin) keeps plain names" || bad "plain names: $out"
+# Claude Code may load an installed plugin straight from a local marketplace folder: the kit's manifest + the plugin
+# listed in installed_plugins.json is enough.
+mkdir -p "$HOME/.claude/plugins"; echo '{"version":2,"plugins":{"deliver@skills-shop":[{"scope":"user"}]}}' > "$HOME/.claude/plugins/installed_plugins.json"
+"$DL" roles >/dev/null; contains "an installed plugin loaded from its source folder is detected" "$(cat "$R/.work/$JOB/ROLES.md")" '`deliver:backend-dev`'
+rm -f "$HOME/.claude/plugins/installed_plugins.json"; "$DL" roles >/dev/null
+[[ "$(cat "$R/.work/$JOB/ROLES.md")" != *deliver:* ]] && ok "…and not when the plugin is not installed" || bad "namespace without plugin"
 HV="$TMP/hive2"; DELIVER_SKILL_DIR=/opt/kit/skills/deliver "$HERE/scripts/md-brief.sh" "$HV" "$R" >/dev/null
 [[ -f $HV/CLAUDE.md && -f $HV/AGENTS.md && -f $HV/GEMINI.md ]] && grep -q "/opt/kit/skills/deliver/SKILL.md" "$HV/AGENTS.md" \
   && ok "md-brief briefs Michael for Claude, Codex-style (AGENTS.md) and Gemini CLIs" || bad "md-brief files"
@@ -503,6 +509,12 @@ jq '.cards[0].scope = ["services/orders/src/**", "test/unit/orders/**"] | .cards
 expect_ok "a component spanning code and test directories accepts cards in all of them" node "$HERE/kit/skills/deliver/bin/validate.mjs" "$VC/board.json"
 jq '.cards[0].qa_scope = ["test/e2e/orders/**"]' "$VC/board.json" > "$VC/b2.json" && mv "$VC/b2.json" "$VC/board.json"
 out="$(node "$HERE/kit/skills/deliver/bin/validate.mjs" "$VC/board.json" 2>&1)"; contains "…and still rejects a directory it does not list" "$out" "outside component orders"
+# …or of single files (live run: the BA listed each component's files; readiness took them, validate must too)
+jq '.architecture.components[0].path = ["src/orders/cancel.mjs", "test/orders/cancel.test.mjs"]' "$AJ/readiness.json" > "$VC/readiness.json"
+jq '.cards[0].scope = ["src/orders/cancel.mjs"] | .cards[0].qa_scope = ["test/orders/cancel.test.mjs"]' "$AJ/board.json" > "$VC/board.json"
+expect_ok "a component listed as single files accepts cards scoped to exactly those files" node "$HERE/kit/skills/deliver/bin/validate.mjs" "$VC/board.json"
+jq '.cards[0].scope = ["src/orders/cancel.mjsx"]' "$VC/board.json" > "$VC/b2.json" && mv "$VC/b2.json" "$VC/board.json"
+out="$(node "$HERE/kit/skills/deliver/bin/validate.mjs" "$VC/board.json" 2>&1)"; contains "…but not a file that merely starts with one of their names" "$out" "outside component orders"
 bedit "$AJ/board.json" '.cards[0].scope=["services/orders/src/**"] | .cards[2].role="backend"'
 out="$("$DL" validate 2>&1)"; contains "a backend dev on the database component is rejected" "$out" "owned by role 'database'"
 bedit "$AJ/board.json" '.cards[2].role="database"'
