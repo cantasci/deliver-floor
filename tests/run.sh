@@ -281,6 +281,12 @@ contains "stop-guard gives up after stop_guard_max" "$(hook stop-guard.sh "{\"cw
 "$DL" jobset '.settings.dispatch="munder"'; rm -f "$R/.work/$JOB/.stop-blocks"
 bedit "$B" '.cards[2].state="running"'
 contains "stop-guard lets Michael wait for floor workers (munder)" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
+"$DL" jobset '.settings.dispatch="subagent"'; rm -f "$R/.work/$JOB/.stop-blocks"
+contains "interactive: waiting for background agents is allowed" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
+contains "headless: Michael may not stop while agents run in the foreground flow" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"
+contains "agent-guard: headless background dispatch is denied" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":true,"subagent_type":"backend-dev"}}')" "rc=2"
+contains "agent-guard: headless foreground dispatch is fine" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":false}}')" "rc=0"
+contains "agent-guard: interactive background dispatch is fine" "$(hook agent-guard.sh '{"tool_input":{"run_in_background":true}}')" "rc=0"
 "$DL" jobset '.settings.dispatch="subagent"'
 
 bg() { hook bash-guard.sh "$(jq -n --arg c "$1" --arg cwd "${2:-$R}" --arg a "${3:-}" '{tool_input:{command:$c},cwd:$cwd} + (if $a!="" then {agent_id:$a} else {} end)')"; }
@@ -593,7 +599,7 @@ echo "install / uninstall"
 INST="$HERE/scripts/install.sh"
 expect_ok "install --user" "$INST" --user
 expect_ok "install is idempotent" "$INST" --user
-[[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 4 ]] && ok "4 hooks, no duplicates" || bad "hook count"
+[[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 5 ]] && ok "5 hooks, no duplicates" || bad "hook count"
 [[ -f $HOME/.claude/agents/qa-tester.md ]] && ok "qa-tester agent installed" || bad "qa-tester missing"
 [[ "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$HOME/.claude/settings.json")" == .work/* ]] && ok "GateGuard exemption set" || bad "env"
 [[ "$(jq -c .attribution "$HOME/.claude/settings.json")" == '{"commit":"","pr":""}' ]] && ok "Claude Code commit/PR attribution switched off" || bad "attribution"

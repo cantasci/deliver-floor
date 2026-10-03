@@ -38,7 +38,11 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    No spec → no assignment; no QA pass → no review → no merge.
 4. Every subagent gets a **self-contained** prompt and its **role card** (`.work/<job>/roles/<role>.md`). They don't see this conversation.
 5. Subagents return **short** answers; details live in files (`handoffs/`, `gates/`). Never paste whole diffs or logs into your context — read only the failing lines.
-6. Dispatch agents in the **foreground** (`run_in_background: false`), several in one message when they can run in parallel. Wait for them; the flow is driven by their results.
+6. **Never let one slow card hold the others.** Interactive sessions: dispatch agents with `run_in_background: true`; the moment
+   one reports back, run that card's next step (gate → QA → review → integrate) and assign the cards it unblocks — never wait for
+   a "wave". Headless (`DELIVER_HEADLESS=1`): background agents die with the process (measured), so dispatch in the foreground —
+   but put **every** actionable item from `dl next` (new assignments, QA, reviews) into the same message, so all stages advance
+   together. A hook enforces the headless rule. On Munder Difflin, devs are floor workers and report through your inbox.
 7. Nothing starts on assumptions: every open readiness item is answered by the human before planning. After that, the human is
    asked again only at the PR, for a blocked card, or when `settings.gates.plan` is true. Never answer a question on the human's behalf.
 8. No push to main/master, no force push (a hook enforces this too).
@@ -186,8 +190,9 @@ PREVIOUS FEEDBACK: <none | the failing gate lines | the QA failures (failing tes
 Work test-first (unit tests). When done: run the verify command in the worktree, commit, fill the handoff, and return your summary.
 ```
 
-2. As each dev returns → **Phase 4** for that card (`dl gate` moves it to `review`).
-3. **WAIT** → only when nothing else is actionable. **BLOCK / ASK** → see **Blocked**. **PHASE dl phase integrating** → Phase 5.
+2. As each dev returns → **Phase 4** for that card (`dl gate` moves it to `review`), and in the same breath assign whatever
+   `dl next` now lists as DISPATCH.
+3. **WAIT** → only when nothing else is actionable (interactive: end your turn; the next agent notification wakes you). **BLOCK / ASK** → see **Blocked**. **PHASE dl phase integrating** → Phase 5.
 
 ## Phase 4 — Gate → QA → Lead review → integrate (per card)
 

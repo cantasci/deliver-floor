@@ -23,9 +23,13 @@ case $phase in executing|integrating) ;; *) exit 0 ;; esac
 open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$bf")"
 [[ $open -gt 0 ]] || exit 0
 
-if [[ "$(jq -r '.settings.dispatch // "subagent"' "$jf")" == munder ]]; then
-  actionable="$(jq '[.cards[] | select(.state=="review" or .state=="ready")] | length' "$bf")"
-  [[ $actionable -eq 0 ]] && exit 0   # only floor workers running: wait for their done messages
+# Waiting for running agents is fine where they report back on their own: Munder Difflin floor workers (inbox) and
+# background agents of an interactive session (task notifications). Headless runs dispatch in the foreground.
+if [[ "$(jq -r '.settings.dispatch // "subagent"' "$jf")" == munder || ${DELIVER_HEADLESS:-} != 1 ]]; then
+  # actionable = a card in review, or a ready card whose dependencies are all merged
+  actionable="$(jq '. as $b | [.cards[] | select(.state=="review" or (.state=="ready" and
+      all((.depends_on // [])[]; . as $d | ([$b.cards[] | select(.id==$d) | .state] | first) == "merged")))] | length' "$bf")"
+  [[ $actionable -eq 0 ]] && exit 0   # only running agents/workers left: they report back on their own
 fi
 
 counter="$root/.work/$job/.stop-blocks"

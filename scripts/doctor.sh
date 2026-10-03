@@ -65,7 +65,7 @@ check_install() { # check_install <claude dir> <label>
   done
   [[ -x $d/skills/deliver/bin/dl ]] && pass "$label: dl executable" || fail "$label: dl not executable (chmod +x)"
   s=$d/settings.json
-  for h in stop-guard bash-guard write-guard subagent-log; do
+  for h in stop-guard bash-guard write-guard agent-guard subagent-log; do
     grep -q "$h.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
   done
   for h in "$d"/skills/deliver*.bak* "$d"/skills/deliver.bak*; do
