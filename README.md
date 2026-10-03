@@ -95,6 +95,8 @@ Full guide: [docs/02-setup.md](docs/02-setup.md).
 | [08-knowledge](docs/08-knowledge.md) | company standards, memory (lessons), graphify, feeding the Knowledge Graph and MemPalace |
 | [09-testing](docs/09-testing.md) | the four test layers and how to run them |
 | [10-trackers](docs/10-trackers.md) | local kanban, Jira (credentials, workflow, branches on issues), adding a tracker |
+| [11-multiple-projects](docs/11-multiple-projects.md) | removing people from the floor; several projects at once — what works, what must be fixed first |
+| [OPEN](docs/OPEN.md) | ★ everything not done or not verified yet — the one list |
 | [verification/](docs/verification/) | ★ every test run's raw output, and every requirement → decision → implementation → evidence |
 | [council/](docs/council/) | the end-to-end review by a council of roles, and what was changed because of it |
 

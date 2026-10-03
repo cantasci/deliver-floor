@@ -62,6 +62,8 @@ Evidence names are check names in [`01-deterministic/run.sh.txt`](01-determinist
 
 ## Known limits (stated, not hidden)
 
+Everything still open or unverified is listed in one place: [../OPEN.md](../OPEN.md).
+
 - **Jira** is verified against a contract stub of the REST API (auth, fields, transitions, comments, links, remote links, a
   workflow missing a status), not against a live Jira site — no credentials were available. Nothing else changes with a
   real site; see [docs/10](../10-trackers.md).
