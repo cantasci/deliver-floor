@@ -18,6 +18,9 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 
 - `DL` = `${CLAUDE_SKILL_DIR}/bin/dl`. If that placeholder was not replaced, use the "Base directory for this skill"
   shown above + `/bin/dl`. Use the absolute path in every call. `"$DL" help` lists the commands.
+- **Target repo.** Normally the current directory's git repo. If you run elsewhere (e.g. Munder Difflin, where Michael's
+  folder is the hive), the request names the repo (`REPO: /path`) or there is exactly one in `registeredRepos`; then call
+  every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.
 - By argument:
   - `status` → `"$DL" status`, summarise in 5 lines, stop.

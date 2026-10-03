@@ -40,6 +40,8 @@
 #   dl md-dispatch <card> <prompt-file>   Munder Difflin: run the card's dev as a worker on the floor
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
 #   dl jobs                        jobs known on this machine (registry)
+#   dl kanban [--html <file>]      the board as kanban columns (To Do · In Progress · QA · Code Review · Done)
+#   dl tracker [open|sync]         mirror the cards into settings.tracker.kind (local | jira) — automatic on every step
 #
 # Env: DELIVER_JOB=<id> targets that job instead of .work/ACTIVE · DELIVER_HOME (default ~/.deliver) holds the
 #      job registry the hooks use · HIVE_ROOT is set by Munder Difflin (md-dispatch).
@@ -72,11 +74,25 @@ MERGE_MODES="human semi auto local"
 GH="${DELIVER_GH:-gh}"
 now() { date -u +%FT%TZ; }
 
-jq_inplace() { # jq_inplace <file> <jq args...>
+# Parallel dl calls (Michael gating two cards at once, two floor workers finishing together) must not lose
+# updates: every read-modify-write of a job file and every git ref/worktree change runs under a lock.
+with_lock() { # with_lock <name> <command…>
+  local d="${WORK:-/tmp}/.lock-$1" n=0 rc=0
+  mkdir -p "$(dirname "$d")"
+  until mkdir "$d" 2>/dev/null; do
+    if [[ -n "$(find "$d" -maxdepth 0 -mmin +2 2>/dev/null)" ]]; then rmdir "$d" 2>/dev/null; continue; fi  # stale (>2 min)
+    sleep 0.1; n=$((n+1)); (( n < 1200 )) || die "lock $1 busy for 2 minutes ($d)"
+  done
+  "${@:2}" || rc=$?
+  rmdir "$d" 2>/dev/null; return $rc
+}
+_jq_inplace() {
   local f=$1; shift
   local tmp; tmp="$(mktemp "$f.XXXXXX")"
   if jq "$@" "$f" > "$tmp"; then mv "$tmp" "$f"; else rm -f "$tmp"; die "jq update failed on $f"; fi
 }
+jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
+git_locked() { with_lock git git "$@"; }
 
 load_job() {
   resolve_root
@@ -115,6 +131,15 @@ gate_holds() { # gate_holds <card> <head>
 
 log_event() { printf '%s\t%s\t%s\n' "$(now)" "$1" "$2" >> "$JOB_DIR/events.log"; }
 reset_stop_guard() { rm -f "$JOB_DIR/.stop-blocks"; }
+
+# Mirror a change into the tracker (local kanban / Jira / …). board.json stays the source of truth, so a tracker
+# outage never blocks the flow: the error is logged and shown by dl status, and the next sync catches up.
+tracker() { # tracker sync [card] [--event text] | note <card> <author> <text> | open
+  [[ -f $BOARD ]] || return 0
+  local out; out="$(node "$BIN_DIR/tracker.mjs" "$1" "$JOB_DIR" "${@:2}" 2>&1)" && return 0
+  printf '%s\t%s\t%s\n' "$(now)" tracker-error "$out" >> "$JOB_DIR/events.log"
+  echo "dl: warning — tracker: $out" >&2; return 0
+}
 
 run_setup() { # per-worktree setup command (node_modules, etc.)
   local dir=$1 cmd; cmd="$(setting worktree_setup)"
@@ -204,6 +229,8 @@ cmd_status() {
   jq -r '"job:      \(.id)\ntitle:    \(.title)\nrepo:     \(.repo // "-")\nphase:    \(.phase)\nbranch:   \(.branch)  (base: \(.base_branch))\nplan gate: \(if .settings.gates.plan then (.gates.plan.status // "pending") else "off" end)\nmerge:    \(.settings.merge_mode)\(if .pr.url then "  PR: \(.pr.url) (\(.pr.state // "?"))" else "" end)\ndispatch: \(.settings.dispatch // "subagent")"' "$JOBJ"
   echo
   cmd_board
+  local te; te="$(grep -c $'\ttracker-error\t' "$JOB_DIR/events.log" 2>/dev/null || true)"
+  [[ ${te:-0} -gt 0 ]] && echo "tracker: $te sync error(s) — last: $(grep $'\ttracker-error\t' "$JOB_DIR/events.log" | tail -1 | cut -f3 | cut -c1-160) (dl tracker sync retries)"
   echo
   echo "next:"; cmd_next | sed 's/^/  /'
 }
@@ -321,6 +348,7 @@ cmd_phase() {
     awaiting_plan_approval) jq_inplace "$JOBJ" '.gates.plan = null' ;;
   esac
   jq_inplace "$JOBJ" --arg p "$p" '.phase=$p'
+  [[ $p == executing ]] && tracker open
   [[ $p == planning ]] && { node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
   reset_stop_guard; log_event phase "$p$([[ $force -eq 1 ]] && echo ' (forced)')"; echo "phase: $p"
 }
@@ -345,6 +373,42 @@ cmd_knowledge() {
 
 cmd_roles() { load_job; node "$BIN_DIR/roles.mjs" render "$JOB_DIR" && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
 
+_wt_reserve() { with_lock assign _wt_reserve_sub "$@"; }
+_wt_reserve_sub() { ( _wt_reserve_locked "$@" ); }   # refuse/exit leaves only the subshell, so the lock is always released
+_wt_reserve_locked() { # runs in a subshell under the "assign" lock; exits non-zero with the reason when refused
+  local card=$1 flag=$2
+  [[ "$(phase_now)" == executing ]] || refuse 1 "cards are dispatched only in phase executing (now: $(phase_now))"
+  local state attempts max running deps_open
+  state="$(card_get "$card" .state)"; attempts="$(card_get "$card" .attempts)"; max="$(setting max_attempts)"
+  deps_open="$(jq -r --arg id "$card" '. as $b | .cards[] | select(.id==$id) | [(.depends_on//[])[] as $d
+               | select(([$b.cards[] | select(.id==$d) | .state] | first) != "merged") | $d] | join(" ")' "$BOARD")"
+  [[ -z $deps_open ]] || refuse 1 "$card depends on unmerged card(s): $deps_open"
+  if [[ $flag == --resume ]]; then
+    [[ $state == running ]] || refuse 1 "--resume is for cards in state running (now: $state)"
+    return 0
+  fi
+  [[ $state == ready || $state == review ]] || refuse 1 "$card is $state — only ready cards (or review cards being retried) are dispatched"
+  if jq -e '.roles[] | select(.role=="ba")' "$JOBJ" >/dev/null && [[ ! -f $JOB_DIR/specs/$card.md ]]; then
+    refuse 1 "$card has no BA spec (.work/$JOB/specs/$card.md) — the Business Analyst writes it before the card is assigned"
+  fi
+  (( attempts < max )) || refuse 4 "$card used $attempts/$max attempts. Mark it: dl card $card state blocked + note; only the human can grant more (dl card $card retry)"
+  running="$(jq --arg id "$card" '[.cards[] | select(.state=="running" and .id!=$id)] | length' "$BOARD")"
+  (( running < $(setting max_parallel) )) || refuse 5 "max_parallel=$(setting max_parallel) cards are already running"
+  # Role capacity: a role with "count": N has N seats (e.g. mobile#1, mobile#2) working in parallel.
+  local role cnt used seat
+  role="$(card_get "$card" .role)"
+  cnt="$(jq -r --arg r "$role" '[.roles[] | select(.role==$r) | (.count // 0)] | first // 0' "$JOBJ")"
+  used="$(jq --arg r "$role" --arg id "$card" '[.cards[] | select(.state=="running" and .role==$r and .id!=$id)] | length' "$BOARD")"
+  if (( cnt > 0 && used >= cnt )); then refuse 5 "all $cnt '$role' seats are busy — another card of this role finishes first"; fi
+  # the lowest free seat of the role: <role>#1, <role>#2, …
+  seat="$(jq -r --arg r "$role" --arg id "$card" '
+    [.cards[] | select(.state=="running" and .role==$r and .id!=$id) | .seat // empty] as $busy
+    | first(range(1; 1000) | "\($r)#\(.)" | select(. as $s | $busy | index($s) | not))' "$BOARD")"
+  card_set "$card" '(.cards[] | select(.id==$id)) |= (.state="running" | .attempts+=1 | .seat=$s
+      | .assignments = ((.assignments // []) + [{"attempt":(.attempts),"agent":.agent,"seat":$s,"by":"michael","at":$t}]))' \
+    --arg s "$seat" --arg t "$(now)"
+}
+
 cmd_wt() {
   load_job
   local sub=${1:-} card=${2:-} flag=${3:-}; [[ -n $card ]] || die "usage: dl wt add|rm <card> [--resume]"
@@ -352,44 +416,26 @@ cmd_wt() {
   local path="$JOB_DIR/wt/$card" branch="$JOB_BRANCH--$card"
   case $sub in
     add)
-      [[ "$(phase_now)" == executing ]] || refuse 1 "cards are dispatched only in phase executing (now: $(phase_now))"
-      local state attempts max running deps_open
-      state="$(card_get "$card" .state)"; attempts="$(card_get "$card" .attempts)"; max="$(setting max_attempts)"
-      deps_open="$(jq -r --arg id "$card" '. as $b | .cards[] | select(.id==$id) | [(.depends_on//[])[] as $d
-                   | select(([$b.cards[] | select(.id==$d) | .state] | first) != "merged") | $d] | join(" ")' "$BOARD")"
-      [[ -z $deps_open ]] || refuse 1 "$card depends on unmerged card(s): $deps_open"
-      if [[ $flag == --resume ]]; then
-        [[ $state == running ]] || refuse 1 "--resume is for cards in state running (now: $state)"
-      else
-        [[ $state == ready || $state == review ]] || refuse 1 "$card is $state — only ready cards (or review cards being retried) are dispatched"
-        if jq -e '.roles[] | select(.role=="ba")' "$JOBJ" >/dev/null && [[ ! -f $JOB_DIR/specs/$card.md ]]; then
-          refuse 1 "$card has no BA spec (.work/$JOB/specs/$card.md) — the Business Analyst writes it before the card is assigned"
-        fi
-        (( attempts < max )) || refuse 4 "$card used $attempts/$max attempts. Mark it: dl card $card state blocked + note; only the human can grant more (dl card $card retry)"
-        running="$(jq --arg id "$card" '[.cards[] | select(.state=="running" and .id!=$id)] | length' "$BOARD")"
-        (( running < $(setting max_parallel) )) || refuse 5 "max_parallel=$(setting max_parallel) cards are already running"
-      fi
+      # 1. checks + reservation, atomically (two parallel assignments can't take the same seat or exceed a limit);
+      # 2. worktree + setup outside the lock, so a slow setup never holds up other assignments.
+      local prev; prev="$(card_get "$card" '{state, attempts, seat}')"
+      _wt_reserve "$card" "$flag" || exit $?
       if [[ ! -d $path ]]; then
-        if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$branch"; then
-          git -C "$ROOT" worktree add -q "$path" "$branch"
-        else
-          git -C "$ROOT" worktree add -q -b "$branch" "$path" "$JOB_BRANCH"
+        if ! { if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$branch"; then git_locked -C "$ROOT" worktree add -q "$path" "$branch"
+               else git_locked -C "$ROOT" worktree add -q -b "$branch" "$path" "$JOB_BRANCH"; fi; }; then
+          [[ $flag == --resume ]] || card_set "$card" '(.cards[] | select(.id==$id)) |= (. + $p | .assignments |= .[:-1])' --argjson p "$prev"
+          die "could not create the worktree for $card — assignment rolled back"
         fi
         run_setup "$path"
       fi
-      if [[ $flag == --resume ]]; then
-        card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b)' --arg p "$path" --arg b "$branch"
-      else
-        card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b | .state="running" | .attempts+=1
-            | .assignments = ((.assignments // []) + [{"attempt":(.attempts),"agent":.agent,"by":"michael","at":$t}]))' \
-          --arg p "$path" --arg b "$branch" --arg t "$(now)"
-      fi
+      card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b)' --arg p "$path" --arg b "$branch"
       reset_stop_guard
-      log_event "assign" "$card → $(card_get "$card" .agent) attempt=$(card_get "$card" .attempts)${flag:+ $flag}"
+      log_event "assign" "$card → $(card_get "$card" .agent)$(card_get "$card" '(.seat // "") | if . != "" then " (" + . + ")" else "" end') attempt=$(card_get "$card" .attempts)${flag:+ $flag}"
+      tracker sync "$card" --event "assigned by michael to $(card_get "$card" '.seat // .agent') (attempt $(card_get "$card" .attempts))"
       echo "$path"
       ;;
     rm)
-      [[ -d $path ]] && git -C "$ROOT" worktree remove --force "$path"
+      [[ -d $path ]] && git_locked -C "$ROOT" worktree remove --force "$path"
       log_event "wt-rm" "$card"; echo "removed: $path (branch kept: $branch)"
       ;;
     *) die "usage: dl wt add|rm <card> [--resume]" ;;
@@ -412,7 +458,7 @@ cmd_card() {
         *) refuse 1 "$card: $cur → $val is not a valid transition" ;;
       esac
       card_set "$card" '(.cards[] | select(.id==$id)).state=$s' --arg s "$val"
-      reset_stop_guard; log_event state "$card=$val"; echo "$card → $val" ;;
+      reset_stop_guard; log_event state "$card=$val"; tracker sync "$card" --event "state → $val"; echo "$card → $val" ;;
     note)
       [[ -n $val ]] || die "usage: dl card $card note \"<text>\""
       card_set "$card" '(.cards[] | select(.id==$id)).notes += [{"at":$t,"note":$n}]' --arg n "$val" --arg t "$(now)"
@@ -420,7 +466,7 @@ cmd_card() {
     retry)
       [[ $cur == blocked || $cur == ready ]] || refuse 1 "retry is for blocked cards (now: $cur)"
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.attempts=0 | .state="ready")'
-      reset_stop_guard; log_event retry "$card (human-granted)"; echo "$card → ready, attempts reset" ;;
+      reset_stop_guard; log_event retry "$card (human-granted)"; tracker sync "$card" --event "retry granted by the human"; echo "$card → ready, attempts reset" ;;
     *) die "unknown field: $what" ;;
   esac
 }
@@ -492,6 +538,7 @@ cmd_gate() {
   # Review the card only after the dev has returned: if it is still running, move it to review.
   [[ "$(card_get "$card" .state)" == running ]] && card_set "$card" '(.cards[] | select(.id==$id)).state="review"'
   reset_stop_guard
+  tracker sync "$card"; tracker note "$card" gate "$result — $(grep -c '^ok' "$log") checks ok, $(grep -c '^FAIL' "$log") failed ($(basename "$log"))"
   if [[ $fail -eq 0 ]]; then
     log_event gate "$card PASS"; echo "GATE PASSED: $card  (log: $log)"
   else
@@ -527,7 +574,9 @@ cmd_qa() {
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"log":$l,"summary":$s,"at":$t}
       | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"qa_verify":$r,"summary":$s,"at":$t}]))' \
     --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)"
-  reset_stop_guard; log_event qa "$card $verdict (qa_verify $qres) — $summary"; echo "qa: $card $verdict  (qa_verify: $qres)"
+  reset_stop_guard; log_event qa "$card $verdict (qa_verify $qres) — $summary"
+  tracker sync "$card"; tracker note "$card" qa-tester "$verdict (qa_verify $qres): $summary"
+  echo "qa: $card $verdict  (qa_verify: $qres)"
 }
 
 cmd_review() {
@@ -542,7 +591,9 @@ cmd_review() {
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.review = {"verdict":$v,"head":$h,"summary":$s,"at":$t}
       | .reviews = ((.reviews // []) + [{"verdict":$v,"head":$h,"summary":$s,"at":$t}]))' \
     --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)"
-  reset_stop_guard; log_event review "$card $verdict${summary:+ — $summary}"; echo "review: $card $verdict"
+  reset_stop_guard; log_event review "$card $verdict${summary:+ — $summary}"
+  tracker sync "$card"; tracker note "$card" reviewer "$verdict${summary:+ — $summary}"
+  echo "review: $card $verdict"
 }
 
 cmd_integrate() {
@@ -561,15 +612,16 @@ cmd_integrate() {
     || refuse 1 "$card: no Lead review approval on commit ${head:0:9} — review, then: dl review $card approve"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
     || refuse 1 "the integration worktree has uncommitted changes — nothing may be written there by hand (git -C $IWT status)"
-  if ! git -C "$IWT" merge --no-ff -q -m "Merge $card: $title" "$branch" >/dev/null 2>&1; then
-    git -C "$IWT" merge --abort 2>/dev/null || true
+  if ! git_locked -C "$IWT" merge --no-ff -q -m "Merge $card: $title" "$branch" >/dev/null 2>&1; then
+    git_locked -C "$IWT" merge --abort 2>/dev/null || true
     log_event integrate "$card CONFLICT"
     echo "CONFLICT: $card conflicts with $JOB_BRANCH. Re-dispatch the dev (dl wt add $card) with: run 'git merge $JOB_BRANCH' in the worktree, resolve, run verify, commit. Then gate + review + integrate again." >&2
     exit 3
   fi
   card_set "$card" '(.cards[] | select(.id==$id)).state="merged"'
-  local path="$JOB_DIR/wt/$card"; [[ -d $path ]] && git -C "$ROOT" worktree remove --force "$path"
+  local path="$JOB_DIR/wt/$card"; [[ -d $path ]] && git_locked -C "$ROOT" worktree remove --force "$path"
   reset_stop_guard; log_event integrate "$card merged"
+  tracker sync "$card" --event "merged into $JOB_BRANCH"
   echo "MERGED: $card → $JOB_BRANCH"
 }
 
@@ -711,6 +763,13 @@ cmd_cleanup() {
   log_event cleanup "${1:-}"; echo "cleaned up: $JOB (branches kept)"
 }
 
+cmd_kanban() {
+  load_job
+  node "$BIN_DIR/tracker.mjs" kanban "$JOB_DIR" "$@"
+  echo; echo "tracker: $(jq -r '.settings.tracker.kind // "local"' "$JOBJ")$(jq -r '.tracker.url // empty | " · " + .' "$JOBJ")  · html: $JOB_DIR/kanban.html"
+}
+cmd_tracker() { load_job; case ${1:-sync} in open|sync) node "$BIN_DIR/tracker.mjs" "${1:-sync}" "$JOB_DIR" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
+
 cmd_jobs() {
   [[ -d $REG ]] || { echo "no jobs registered"; return 0; }
   local f id root
@@ -749,7 +808,9 @@ main() {
     md-dispatch) cmd_md_dispatch "$@" ;;
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
-    help|-h|--help) sed -n '2,44p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    kanban) cmd_kanban "$@" ;;
+    tracker) cmd_tracker "$@" ;;
+    help|-h|--help) sed -n '2,46p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }
