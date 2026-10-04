@@ -27,10 +27,12 @@ bedit() { # bedit <board.json> '<jq>' — a fixture edit made outside dl, accept
 ready_all() { # ready_all [<id> open] — the BA's readiness review: every applicable item decided (one left open if asked)
   local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"
   [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
-  node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$jd" | jq --arg o "${1:-}" --arg spec "${SPECIALISTS:-}" --argjson arch "${ARCH:-null}" '{items: [.[] | if .id == $o
+  # a decision quotes the request words that state it (R1): the fixture quotes the start of its job's request
+  local q; q="$(jq -r '.request | gsub("\\s+"; " ") | .[0:24]' "$jd/job.json")"
+  node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$jd" | jq --arg o "${1:-}" --arg spec "${SPECIALISTS:-}" --arg q "$q" --argjson arch "${ARCH:-null}" '{items: [.[] | if .id == $o
      then {id, status:"open", owner:"business", question:("Which option for " + .id + "?"), options:["a","b"]}
      elif ($spec != "1" and (.id == "UX-a11y" or .id == "NFR-performance" or .id == "DEL-docs")) then {id, status:"n_a", answer:"not part of this fixture", source:"test fixture"}
-     else {id, status:"decided", answer:"test decision", source:"test fixture"} end],
+     else {id, status:"decided", answer:"test decision", source:"the request", quote:$q} end],
      architecture: ($arch // {style:"library", components:[{id:"app", kind:"library", stack:["generic"], path:".", owner:"backend", reviewer:"reviewer"}]})}' > "$jd/readiness.json"
 }
 SDIR="$HERE/kit/skills/deliver"
@@ -83,6 +85,17 @@ jq -e 'map(.id) | (index("ARC-style") and index("ARC-layer") and index("NFR-priv
 jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"y"}] | .[0].source = null | del(.[1]))}' "$TMP/appl.json" > "$RJ/readiness.json"
 out="$("$DL" readiness 2>&1)"; contains "a missing item and a decision without source are errors" "$out" "is not answered"
 contains "…both reported" "$out" "decided needs an answer and its source"
+# R1: a decision taken from the request must quote the words that state it — an interpretation is an open business item
+jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])}' "$TMP/appl.json" > "$RJ/readiness.json"
+jq '.items[0].quote = "orders may be cancelled within 24 hours" | .items[1] |= del(.quote) | .items[2].source = "human: ana 2026-10-03" | .items[2] |= del(.quote)' "$RJ/readiness.json" > "$RJ/r.json" && mv "$RJ/r.json" "$RJ/readiness.json"
+out="$("$DL" readiness 2>&1)"
+contains "a quote that is not in the request is an error (an interpretation, not a decision)" "$out" "quote not found in the request"
+contains "a decision from the request without its quote is an error" "$out" "decided from a source needs \`quote\`"
+[[ $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): decided from a source"* && $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): quote"* ]] && ok "an answer from the human needs no quote" || bad "human source asked for a quote"
+printf 'Orders are kept for 90 days.\n' > "$R/RETENTION.md"
+jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])} | .items[0].source = "RETENTION.md" | .items[0].quote = "kept for 90   days"' "$TMP/appl.json" > "$RJ/readiness.json"
+out="$("$DL" readiness 2>&1)"; [[ $out != *"quote not found"* ]] && ok "a quote from the repo file named in the source counts (whitespace-insensitive)" || bad "repo-file quote: $out"
+rm -f "$R/RETENTION.md"
 contains "a missing architecture is an error" "$out" "architecture: architecture is missing"
 ready_all CON-interface
 out="$("$DL" readiness 2>&1)"; contains "an open item is reported as a question" "$out" "OPEN  CON-interface"

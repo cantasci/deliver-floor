@@ -4,49 +4,56 @@
       "id": "PRD-goal",
       "status": "decided",
       "answer": "Analysts get notch changes and the Ind. 12 WL computed instead of counting by hand (POC goal: consistency, less manual work).",
-      "source": "POC_Requirements_v0.2_EN.md §1; JOB.md intro"
+      "source": "JOB.md REQ-06-02",
+      "quote": "analyst selects previous rating and current rating → system outputs notch change and resultant WL"
     },
     {
       "id": "PRD-users",
       "status": "decided",
       "answer": "Credit analysts (single user, no auth in the POC); other POC modules import the functions.",
-      "source": "POC_Requirements_v0.2_EN.md §7 A1; JOB.md Contract"
+      "source": "JOB.md REQ-06-02, Contract",
+      "quote": "analyst selects previous rating … other parts of the POC will import exactly these"
     },
     {
       "id": "PRD-scope",
       "status": "decided",
       "answer": "In: REQ-06-02 notch calculator, REQ-03-12 Ind. 12 WL. Out: fetching ratings (C4), UI, other indicators.",
-      "source": "JOB.md C4, 'Build only these two requirements'"
+      "source": "JOB.md intro, C4, C8",
+      "quote": "Build only these two requirements … Fetching the rating from a public source is OUT of scope for this slice … No UI, CLI or printed output in this slice"
     },
     {
       "id": "PRD-acceptance",
       "status": "decided",
       "answer": "Each requirement has AC with concrete examples (REQ table + C1–C3).",
-      "source": "JOB.md Requirements, C1–C3"
+      "source": "JOB.md Requirements, C2, C3",
+      "quote": "1 notch → WL=1; 2+ notches → WL=2 … so BBB+ → BB+ = 3-notch downgrade → WL=2 … Upgrades and unchanged ratings → WL=0 for both indicators"
     },
     {
       "id": "PRD-conflicts",
       "status": "decided",
       "answer": "REQ-06-02's example (BBB+→BB+ = 2 notches) contradicts the scale; resolved by C2: 3 notches → WL 2.",
-      "source": "JOB.md C2"
+      "source": "JOB.md C2",
+      "quote": "The POC example for REQ-06-02 miscounts: BBB+ → BB+ is 3 notches"
     },
     {
       "id": "PRD-priority",
       "status": "decided",
-      "answer": "Both are Must (EPIC-03 / EPIC-06); one delivery.",
-      "source": "POC_Requirements_v0.2_EN.md §5"
+      "answer": "REQ-06-02 comes first (Must); REQ-03-12 follows (Should).",
+      "source": "human: user 2026-10-03"
     },
     {
       "id": "CON-interface",
       "status": "decided",
       "answer": "Exports and signatures fixed; notchChange signed (+down/−up); notchCalculator returns {notches (signed, same as notchChange), direction, wl}.",
-      "source": "JOB.md Contract + C5"
+      "source": "JOB.md Contract, C5",
+      "quote": "is signed exactly like … positive = downgrade, negative = upgrade, 0 = unchanged"
     },
     {
       "id": "CON-errors",
       "status": "decided",
       "answer": "Unknown/empty rating → RangeError; propagates from countryRatingChangeWl.",
-      "source": "JOB.md C1, Contract"
+      "source": "JOB.md C1",
+      "quote": "anything else is rejected with a RangeError"
     },
     {
       "id": "CON-compat",
@@ -58,25 +65,29 @@
       "id": "ARC-style",
       "status": "decided",
       "answer": "Library code inside the single POC repository (no services in this slice).",
-      "source": "JOB.md Contract; CLAUDE.md"
+      "source": "JOB.md Contract; CLAUDE.md",
+      "quote": "other parts of the POC will import exactly these … Plain Node ESM, no dependencies"
     },
     {
       "id": "ARC-components",
       "status": "decided",
       "answer": "One component: watchlist-core (Node ESM library code in this repo: src/ratings, src/indicators, tests).",
-      "source": "JOB.md Contract; CLAUDE.md; package.json"
+      "source": "JOB.md Contract",
+      "quote": "src/ratings/notch.mjs … src/indicators/countryRating.mjs"
     },
     {
       "id": "ARC-layer",
       "status": "decided",
       "answer": "Core/domain logic; no BFF/API in this slice.",
-      "source": "JOB.md C4; CLAUDE.md 'pure functions, no I/O'"
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O"
     },
     {
       "id": "ARC-stack",
       "status": "decided",
       "answer": "Node 18+ ESM (.mjs), no npm dependencies.",
-      "source": "CLAUDE.md; package.json"
+      "source": "JOB.md Contract; CLAUDE.md",
+      "quote": "Plain Node ESM, no dependencies … No npm dependencies"
     },
     {
       "id": "ARC-data",
@@ -112,7 +123,8 @@
       "id": "NFR-security",
       "status": "decided",
       "answer": "Input is validated (unknown → RangeError); no auth, no secrets.",
-      "source": "POC_Requirements_v0.2_EN.md §7 A1; JOB.md C1"
+      "source": "JOB.md C1",
+      "quote": "anything else is rejected with a RangeError"
     },
     {
       "id": "NFR-privacy",
@@ -134,27 +146,30 @@
     },
     {
       "id": "NFR-compliance",
-      "status": "decided",
-      "answer": "Scoring mirrors the Excel logic exactly (A4); no other constraint here.",
-      "source": "POC_Requirements_v0.2_EN.md §7 A4"
+      "status": "n_a",
+      "answer": "No regulation or policy constraint is named for this slice; the request is the confirmed scope.",
+      "source": "JOB.md (no constraint named)"
     },
     {
       "id": "TST-strategy",
       "status": "decided",
       "answer": "Dev: unit tests (node:test, TDD). QA: integration tests through the public exports. Full suite: node --test.",
-      "source": "CLAUDE.md; .deliver.json"
+      "source": "JOB.md Contract; CLAUDE.md",
+      "quote": "tests with … next to the code under … `node:test` + `node:assert/strict`"
     },
     {
       "id": "DEL-ci",
       "status": "decided",
       "answer": "node --test must pass (verify_full).",
-      "source": ".deliver.json"
+      "source": ".deliver.json",
+      "quote": "\"verify_full\": \"node --test\""
     },
     {
       "id": "DEL-deploy",
       "status": "decided",
       "answer": "Merged into main of the POC repo (merge_mode local); no deployment.",
-      "source": ".deliver.json"
+      "source": ".deliver.json",
+      "quote": "\"merge_mode\": \"local\""
     },
     {
       "id": "DEL-docs",

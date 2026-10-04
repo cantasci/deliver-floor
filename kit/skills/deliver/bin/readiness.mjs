@@ -9,7 +9,8 @@
 //          "owner": "backend", "reviewer": "reviewer-java", "notes": "…" } … ] } }
 // architecture is the frozen technical frame: every card belongs to one component; its stack decides the dev's
 // skills and the reviewer. Once the job is planned, readiness.json is frozen (dl checks its hash on every step).
-//   decided → answer + source (a quote/section of the request, a repo file, or "human: <name> <date>")
+//   decided → answer + source (a section of the request, a repo file, or "human: <name> <date>"); a decision taken from
+//             the request or a repo file also carries `quote`: the words that state it, verbatim ("a … b" for fragments)
 //   n_a     → answer says why it does not apply + source
 //   open    → a question (+ options, impact) and its owner:
 //             "business" — the answer changes scope, observable behaviour, a contract or a business rule → the human answers
@@ -72,6 +73,22 @@ export function checkArchitecture(job, arch) {
   return errors;
 }
 
+// A decision is only as good as its source: one taken from the request (or a repo file) must quote the words that state
+// it. An interpretation of a term the request uses but does not define is not a decision — it is an open business item.
+// (Seen live: "Input is trimmed" was decided as String.prototype.trim(), citing a clause that never defined trimming.)
+const norm = (t) => String(t).toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim();
+function quoteError(i, job) {
+  const src = String(i.source);
+  if (/^\s*(human|pm):/i.test(src)) return null;                 // answered by the business / decided by Michael (dl clarify / dl decide)
+  if (!i.quote || !String(i.quote).trim()) return 'decided from a source needs `quote`: the words of the request (or repo file) that state this decision, verbatim. If the source only uses the term without stating the decision, the item is open (owner "business")';
+  let hay = norm(job.request ?? "");
+  for (const m of src.matchAll(/[\w./-]+\.(md|json|ya?ml|txt|mjs|js|ts|java|go|py|kt|swift)\b/g)) {
+    try { hay += " " + norm(readFileSync(join(job.repo ?? ".", m[0]), "utf8")); } catch { /* not a repo file (e.g. the request's own name) */ }
+  }
+  const miss = String(i.quote).split(/\s*(?:…|\.\.\.)\s*/).map(norm).filter(Boolean).filter((f) => !hay.includes(f));
+  return miss.length ? `quote not found in the request${/\.\w+\b/.test(src) ? " or the named file" : ""}: "${miss[0].slice(0, 80)}" — quote the exact words, or make the item open` : null;
+}
+
 export function check(jobDir) {
   const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
   const file = join(jobDir, "readiness.json");
@@ -88,6 +105,7 @@ export function check(jobDir) {
     if (!known.has(i.id) && !String(i.id).startsWith("X-")) errors.push(`${i.id}: unknown id (extra items start with "X-")`);
     if (!["decided", "n_a", "open"].includes(i.status)) errors.push(`${i.id}: status must be decided | n_a | open`);
     if (i.status === "decided" && (!i.answer || !i.source)) errors.push(`${i.id}: decided needs an answer and its source`);
+    if (i.status === "decided" && i.source) { const e = quoteError(i, job); if (e) errors.push(`${i.id}: ${e}`); }
     if (i.status === "n_a" && (!i.answer || !i.source)) errors.push(`${i.id}: n_a needs the reason (answer) and its source`);
     if (i.status === "open" && !i.question) errors.push(`${i.id}: open needs a question`);
     if (i.status === "open" && !["business", "pm"].includes(i.owner)) errors.push(`${i.id}: open needs owner "business" (scope/behaviour/contract/business rule) or "pm" (implementation detail)`);

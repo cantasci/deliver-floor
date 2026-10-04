@@ -156,7 +156,9 @@ job/JOB-…  ●──────────●(T-01)────────�
 └── JOB-20261003-0759-notch-calculator/
     ├── job.json                      phase, stack, roles (+why, provider, model, count), frozen hashes, PR, settings
     ├── ROLES.md · roles/<role>.md    the role cards each agent reads first
-    ├── readiness.json · .md          every readiness item: decided / n_a / open, with its source; the architecture
+    ├── readiness.json · .md          every readiness item: decided / n_a / open, with its source — a decision taken from the
+    │                                 request quotes the words that state it (`quote`, checked by dl); an undefined term is open;
+    │                                 the architecture
     ├── QUESTIONS.md                  the open business questions for the human (awaiting_clarification)
     ├── kanban.html                   local tracker view (refreshes every 10 s)
     ├── plan.md                       BA plan — goal, scope, AC-1..n traced to requirement ids

@@ -30,8 +30,11 @@ You may use Bash only to read (e.g. `git log`, `ls`, running existing tests to s
 
 ### READINESS — before anything is planned
 You get the request, repository facts and a list of readiness items (`id`, `q`). Go through **every** item, one by one:
-- `decided` — the request or the repository answers it: give the answer and the **source** (quote the request's section /
-  requirement id, or name the repo file). A sensible convention you infer from the repo is a decision only when the repo
+- `decided` — the request or the repository answers it: give the answer, the **source** (the request's section /
+  requirement id, or the repo file) and the **quote**: the words that state the decision, copied verbatim ("a … b" joins
+  fragments). `dl readiness` checks the quote against the request and the named file. If the source only *uses* a term
+  without stating what it means (e.g. "input is trimmed" without saying which whitespace), that is not a decision: make the
+  item `open`, owner `"business"`. A sensible convention you infer from the repo is a decision only when the repo
   shows it (e.g. "plain Node ESM, no deps — CLAUDE.md").
 - `n_a` — it truly does not apply to this delivery: say why, with the source that shows it.
 - `open` — nobody can answer it from the request or the repo, **or the request is ambiguous or contradicts itself**: write
@@ -54,7 +57,7 @@ owns it (`backend`, `frontend`, `mobile`, `database`) and its reviewer role (`re
 whether the database is owned separately, that is an `open` item — do not pick.
 
 Return **only** this JSON:
-`{"items":[{"id":"…","status":"decided|n_a|open","answer":"…","source":"…","question":"…","options":["…"],"impact":"…","owner":"business|pm"}],
+`{"items":[{"id":"…","status":"decided|n_a|open","answer":"…","source":"…","quote":"…","question":"…","options":["…"],"impact":"…","owner":"business|pm"}],
   "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":["services/orders/src/","services/orders/test/"],"owner":"backend","reviewer":"reviewer-java","notes":"…"}]}}`
 
 ### PLAN — from the request to plan.md
