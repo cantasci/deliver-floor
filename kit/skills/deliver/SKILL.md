@@ -51,8 +51,12 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    but put **every** actionable item from `dl next` (new assignments, QA, reviews) into the same message, so all stages advance
    together. A hook enforces the headless rule. On Munder Difflin there are no subagents: every role is a person at a seat
    (`dl md-hire`, `dl md-send`), reporting through your inbox.
-7. Nothing starts on assumptions: every open readiness item is answered by the human before planning. After that, the human is
-   asked again only at the PR, for a blocked card, or when `settings.gates.plan` is true. Never answer a question on the human's behalf.
+7. **The human is asked only at the start** — when the project or task is given (intake, readiness, `awaiting_clarification`):
+   every open readiness item is answered by the human before planning, never on assumptions, never on the human's behalf.
+   **After that you do not ask.** Whatever only a person could have decided is your decision as PM: take it, record it with its
+   reason (`"$DL" pm-decide "<what>" "<why>" [card]`, or `"$DL" card T-xx state archived "<why>"`), and keep going — `dl ship`
+   lists every such decision in the PR. (Only a plan gate the human switched on themselves — `settings.gates.plan` — asks once
+   more, before execution.) The human takes over at the PR.
 8. No push to main/master, no force push (a hook enforces this too).
 
 ## Phase 0 — Intake (`intake`)
@@ -115,7 +119,8 @@ READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.m
    Never answer a business item yourself, never pick a default. Headless: `QUESTIONS.md` is the question; stop.
    On resume, answers already recorded with `dl clarify` (source `human: …`) **are the human's**: hooks stop every agent and every
    headless session from running `dl clarify`, so only a person at a terminal can have recorded them. Read each answer; if one
-   does not actually answer its question, ask again (re-open is `dl unfreeze` only after planning) — otherwise continue.
+   does not actually answer its question, ask again — this is still the start. Check every answer **before** `dl phase planning`:
+   after the freeze you no longer ask (invariant 7), so a gap found later is decided by you within the frozen decisions.
 4. `"$DL" phase planning` — refused until nothing is open. It **freezes** `readiness.json` (decisions + architecture): from now
    on they do not change, and `dl` refuses every step if the file is edited. Only the human can reopen them (`dl unfreeze`).
    `readiness.md` goes to every later BA, Lead and dev prompt as binding context.
@@ -266,11 +271,14 @@ Use "changes" only when there is at least one blocking item.
 
 ## Blocked
 
-A card is blocked when `dl` refuses another attempt or a dev returns `stuck` for a reason only a human can fix:
+A card is blocked when `dl` refuses another attempt or a dev returns `stuck`:
 `"$DL" card T-xx state blocked` + `"$DL" card T-xx note "<one-line reason>"`. Keep every other card moving.
-When `dl next` says ASK, ask the user per blocked card: **give guidance** (→ `"$DL" card T-xx retry`, re-dispatch with their
-guidance) / **archive** (→ `"$DL" card T-xx state archived`; archive or re-plan its dependents) / **abort the job**.
-Headless: write the question into `.work/<job>/APPROVAL.md` and stop.
+You do **not** ask the human (invariant 7). When `dl next` says DECIDE, decide each blocked card yourself:
+- **split / re-plan** it: the Lead cuts smaller or different card(s) → `"$DL" card add <card.json> "<why>"`, then retire the old
+  one → `"$DL" card T-xx state archived "<why it was replaced>"`;
+- **drop** it: `"$DL" card T-xx state archived "<why it is not delivered>"`, and re-plan or drop its dependents the same way.
+Each is recorded with its reason and listed in the PR. Frozen readiness is never edited by you; if a frozen decision makes a
+card impossible, that card is dropped or re-planned inside the decision — and the PR says so.
 
 ## Phase 5 — Integration + job QA (`integrating`)
 
@@ -328,8 +336,8 @@ human talks only to you; every role the requirements call for is a person on the
    arrived a second earlier unread, and you wait for it forever. Record each report: `"$DL" md-done <seat> "<their summary>"` — the seat is free for the next order — and continue
    exactly as the phase says (gate, QA, review, integrate …). A seat takes one task at a time; dev cards go to the seat
    `dl wt add` assigned.
-4. While only people on the floor are working you may stop — the inbox wakes you. Gate questions go to the human as ASK ME
-   cards (`tasks.json` → `humanQA`), not as chat.
+4. While only people on the floor are working you may stop — the inbox wakes you. Questions for the human exist only at the
+   start (an ASK ME card, `tasks.json` → `humanQA`, for the readiness questions); after that you decide (invariant 7).
 5. After `dl ship` (or when the job is aborted): `"$DL" md-release` — everyone goes home.
 
 Before the first job: `"$DL" knowledge sync-md` puts the company standards into the floor's Knowledge Graph.

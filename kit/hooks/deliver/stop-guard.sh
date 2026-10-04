@@ -43,7 +43,8 @@ fi
 cat >&2 <<EOF
 Board not finished: job $job has $open open card(s) (phase: $phase). Do not stop — no role may sit idle while work is waiting.
 - Run 'dl next' and do what it says (DISPATCH → agents, GATE/REVIEW/INTEGRATE → per card).
-- If a human is genuinely needed: 'dl card <id> state blocked' + 'dl card <id> note "<reason>"',
-  then ask the user about the blocked cards.
+- The human is not asked after the start. A card that cannot be finished: 'dl card <id> state blocked' + a note,
+  then decide it yourself — split it (dl card add) or drop it (dl card <id> state archived "<reason>"). Other
+  decisions: dl pm-decide "<what>" "<why>". Every such decision is listed in the PR.
 EOF
 exit 2

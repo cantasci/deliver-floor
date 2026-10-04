@@ -48,7 +48,8 @@ bookkeeping and refuses anything out of order, hooks enforce isolation.
  │       │        dl ship ── merge_mode: human → PR, you merge · semi → PR + auto-merge on your     │
  │       │                    approval · auto → merge on green CI · local → merge into base         │
  └───────┴──────────────────────────────────────────────────────────────────────────────────────────┘
-          ⛔ YOU: open business questions at readiness · blocked cards · the PR (human / semi).
+          ⛔ YOU: only at the start (the readiness questions) and at the PR (human / semi). In between Michael decides —
+             a blocked card is split or dropped by him with its reason — and the PR lists every such decision.
 
  Hooks (always on): Stop → Michael can't quit mid-board (and is told about idle seats) · PreToolUse(Bash) → no push to
  main, no force push, agents push only their own card branch, agents can't change flow state, approve or answer for the human · PreToolUse(Edit|Write) →

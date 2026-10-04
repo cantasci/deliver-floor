@@ -47,9 +47,10 @@ scripts/run-headless.sh /path/to/repo                                          #
   inside the process (background agents die with `-p` — measured, see [09](09-testing.md)), so Michael puts every due
   action (assignments, QA, reviews) into one message and they run together.
 - Logs: `.work/runs/*.jsonl`; the script prints each round's result and cost.
-- When the flow needs a person it stops and writes the question: `QUESTIONS.md` (open business items — answer with
-  `dl clarify <id> "<answer>"`), `APPROVAL.md` (a blocked card → `dl card T-xx retry` with guidance, or the optional plan
-  gate → `dl approve plan`). Then run the script again. The hooks refuse these commands from the model itself.
+- The flow needs a person only at the start: it stops and writes `QUESTIONS.md` (open business items — answer with
+  `dl clarify <id> "<answer>"`), or `APPROVAL.md` when you switched the optional plan gate on (`dl approve plan`). Then run
+  the script again. The hooks refuse these commands from the model itself. After the start Michael asks nothing: a blocked
+  card is split or dropped by him with its reason (`dl pm-decide`, `dl card … state archived "<why>"`), listed in the PR.
 - Permission mode is `auto` by default; otherwise `PERMISSION_MODE=acceptEdits` plus an allowlist ([02 § 4.5](02-setup.md#45-permissions)).
 
 ## 4. Agent SDK

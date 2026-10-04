@@ -20,7 +20,7 @@ instructions and skills for the task.
           │ qa         integration/e2e tests per card            (kit qa-tester)                  │
           │ reviewer   review per card                           (ecc:typescript-reviewer …)      │
           └── inform "done <task> <seat>" → Michael's inbox → dl md-done → gate → QA → review ─────┘
-   ASK ME cards ◄── open business questions / blocked cards (hive/tasks.json → humanQA)
+   ASK ME cards ◄── the readiness questions, only at the start (hive/tasks.json → humanQA)
    Knowledge Graph ◄── dl knowledge sync-md (company standards + lessons)
    MemPalace ◄── Michael's memory.md (dl learn writes lessons there too)
 ```
@@ -62,7 +62,7 @@ Start it: `cd ~/.local/share/munder-difflin && npm run preview` (Linux as root /
 | who did what | `events.log`: `md-hire`, `md-send <task> <seat> (<agent>) → <worker>`, `md-done <task> <seat>: <summary>`; on the card: `md_workers` (role, seat, worker) |
 | empty desk | a seat released or reaped shows as `not seated` in `dl md-seats`; `dl md-hire` seats a replacement with the same face |
 | end of job | `dl md-release`: every seat gets the release order and goes home |
-| human questions | ASK ME cards (`hive/tasks.json → humanQA`) — or the composer; answers recorded with `dl clarify` |
+| human questions | only at the start: the readiness questions on ASK ME cards (`hive/tasks.json → humanQA`) — or the composer; answers recorded with `dl clarify`. After that Michael decides (`dl pm-decide`), and the PR lists it |
 | role → face | `roles.yaml → floor` (character + accent) for a role's first seat; further seats get a cast member nobody on the job has |
 
 A seat is a plain `claude` (or the role's provider) in the repo with `isolate: false`: its instructions come with every order,

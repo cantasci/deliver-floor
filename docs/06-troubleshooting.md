@@ -60,7 +60,8 @@ Start with `scripts/doctor.sh <repo>`, then `dl status`, then `tail -50 .work/<j
 dl status                          # where are we
 dl kanban                          # the board as columns, seats busy/idle
 dl card T-04 note "use the v2 API" # guidance Michael passes to the dev
-dl card T-04 retry                 # give a blocked card new attempts
+dl card T-04 retry                 # you, at a terminal: give a blocked card new attempts (Michael never asks for it)
+dl pm-decide "<what>" "<why>"      # Michael: a decision after the start, listed in the PR
 cd "$(dl wt add T-04)"             # work on a card yourself (commit in the worktree), then:
 dl gate T-04 && dl qa T-04 pass "…" && dl review T-04 approve "…" && dl integrate T-04
 dl phase aborted && dl cleanup --all       # give up on the job (branches stay)

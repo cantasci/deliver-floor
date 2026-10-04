@@ -241,7 +241,11 @@ qa_tests "$W2" T-02; "$DL" qa T-02 pass "AC-2 pass" >/dev/null
 contains "last attempt with changes → BLOCK" "$("$DL" next)" "BLOCK   T-02"
 expect_fail 4 "max_attempts enforced" "$DL" wt add T-02
 "$DL" card T-02 state blocked >/dev/null; "$DL" card T-02 note "reviewer wants negative test" >/dev/null
-contains "blocked card asks the human" "$("$DL" next)" "ASK     human about blocked T-02"
+contains "a blocked card is Michael's to decide — the human is not asked after the start" "$("$DL" next)" "DECIDE  (PM) blocked T-02"
+contains "…dropping it needs the reason" "$("$DL" card T-02 state archived 2>&1)" "give the reason"
+contains "no questions for the human after the start" "$("$DL" phase awaiting_clarification 2>&1)" "asked only at the start"
+expect_ok "Michael records a decision of his own" "$DL" pm-decide "keep T-02 and give it one more round with a negative test" "the reviewer's finding is small and in scope" T-02
+contains "…in the event log" "$(tail -1 "$R/.work/$JOB/events.log")" "pm-decision	T-02: keep T-02"
 "$DL" card T-02 retry >/dev/null
 "$DL" wt add T-02 >/dev/null
 printf 'import {test} from "node:test"; test("sub", () => {}); test("neg", () => {});\n' > "$W2/test/sub/sub.test.mjs"
@@ -278,6 +282,8 @@ contains "next asks for the report" "$("$DL" next)" "REPORT"
 echo "# Delivery report — all ACs met" > "$R/.work/$JOB/report.md"
 expect_fail 1 "done refused before shipping" "$DL" phase done
 expect_ok "ship (local) merges into the base" "$DL" ship
+contains "the PR body lists Michael's decisions after the start" "$(cat "$R/.work/$JOB/report.md")" "## Decisions Michael took after the start"
+contains "…with the reason" "$(cat "$R/.work/$JOB/report.md")" "the reviewer's finding is small and in scope"
 [[ -f $R/src/add/add.mjs && -f $R/src/sub/sub.mjs && "$(jq -r .phase "$R/.work/$JOB/job.json")" == done ]] && ok "local merge delivered the cards, phase done" || bad "local ship"
 
 echo "hooks"
@@ -443,6 +449,8 @@ contains "a seat may not write board.json" "$(AGENT_ID=worker-seat-x wg "$R/.wor
 contains "Michael may not move his inbox files (md-inbox reads them)" "$(AGENT_ID=god bg 'H=/h; mv $H/agents/god/inbox/*.json $H/agents/god/inbox/.done/')" "rc=2"
 contains "…reading them is fine" "$(AGENT_ID=god bg 'cat /h/agents/god/inbox/*.json')" "rc=0"
 contains "…and a seat still files its own inbox" "$(AGENT_ID=worker-seat-x bg 'mv inbox/m1.json inbox/.done/')" "rc=0"
+contains "a seat may not hand out work orders" "$(AGENT_ID=worker-seat-x bg '"$DL" md-send backend T-03 o.md')" "rc=2"
+contains "…nor record decisions" "$(AGENT_ID=worker-seat-x bg '"$DL" pm-decide x y')" "rc=2"
 contains "a seat may not run flow commands" "$(AGENT_ID=worker-seat-x bg "\"\$DL\" qa T-03 pass")" "rc=2"
 contains "Michael (god) still writes the job's files" "$(AGENT_ID=god wg "$R/.work/$JOB/plan.md" "$R" "" "$TR")" "rc=0"
 "$DL" jobset '.settings.dispatch="subagent"' >/dev/null; unset HIVE_ROOT
@@ -856,6 +864,9 @@ contains "a sign question quoting the downgrade example gets the sign answer, no
 echo '[{"topic":"a","match":"alpha|beta","answer":"A"},{"topic":"b","match":"beta|gamma","answer":"B"}]' > "$TMP/ha.json"
 node "$PA" "$TMP/ha.json" "beta only" >/dev/null 2>&1; [[ $? == 2 ]] && ok "two answers fitting equally is no answer (a person must decide)" || bad "tie answered"
 node "$PA" "$HA" "What colour is the logo?" >/dev/null 2>&1; [[ $? == 2 ]] && ok "a question no answer fits is left to a person" || bad "unmatched answered"
+q='Is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off) a constraint on this slice beyond C1-C8?'
+node "$PA" "$HA" "$q" >/dev/null 2>&1; [[ $? == 2 ]] && ok "one shared word is no answer: the compliance question is not answered with the thresholds answer (seen live)" || bad "compliance question got: $(node "$PA" "$HA" "$q")"
+contains "a readiness item id names its answer" "$(node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
 
 echo "install / uninstall"
 INST="$HERE/scripts/install.sh"

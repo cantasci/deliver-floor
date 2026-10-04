@@ -27,8 +27,9 @@
 #   dl ready                       ids of cards that may be dispatched now (deps merged, attempts left)
 #   dl wt add <card> [--resume]    card worktree + state=running + attempts+1 (--resume: no bump, after a restart)
 #   dl wt rm <card>                remove the card worktree (branch is kept)
-#   dl card <card> state <state>   review | blocked | ready (from blocked) | archived
+#   dl card <card> state <state>   review | blocked | ready (from blocked) | archived ["<reason>" — required after the start]
 #   dl card <card> note "<text>"   attach a note to a card (blocked reason, guidance, …)
+#   dl pm-decide "<what>" "<why>" [card]   after the start the human is not asked: your decision, logged, listed in the PR
 #   dl card <card> retry           human-granted: attempts=0 and state=ready (after guidance)
 #   dl card <card> set <field> <value> "<reason>"   change a ready/blocked card's contract (validated, logged, history)
 #   dl card add <card.json> "<reason>"              add a card (e.g. a fix card) — gets the next id, validated, logged
@@ -381,10 +382,10 @@ cmd_next() {
       if [[ $open -eq 0 ]] && ! jq -e '.cards[] | select(.state=="blocked")' "$BOARD" >/dev/null; then
         echo "PHASE   dl phase integrating"
       elif [[ $busy -eq 0 ]]; then
-        # Nothing can move on its own: the human decides about every blocked card.
-        jq -r '.cards[] | select(.state=="blocked") | "ASK     human about blocked \(.id): \((.notes[-1].note) // "no note") (guidance → dl card \(.id) retry | archive → dl card \(.id) state archived)"' "$BOARD"
+        # Nothing moves on its own: Michael decides about every blocked card — the human is not asked after the start.
+        jq -r '.cards[] | select(.state=="blocked") | "DECIDE  (PM) blocked \(.id): \((.notes[-1].note) // "no note") (split → dl card add <card.json> \"<why>\" then dl card \(.id) state archived \"<why>\" | drop → dl card \(.id) state archived \"<why it is not delivered>\") — goes into the PR"' "$BOARD"
         jq -r '.cards[] | select(.state=="ready") | "STUCK   \(.id) waits on unmerged dependencies: \(.depends_on|join(","))"' "$BOARD"
-        [[ $open -eq 0 ]] && echo "PHASE   dl phase integrating  (once the blocked cards are retried or archived)"
+        [[ $open -eq 0 ]] && echo "PHASE   dl phase integrating  (once you have split or dropped the blocked cards)"
         true
       fi ;;
     integrating)
@@ -417,6 +418,7 @@ cmd_phase() {
         [[ $cur == intake || $cur == awaiting_clarification || $cur == readiness ]] || refuse 1 "readiness comes after intake (now: $cur)"
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml" ;;
       awaiting_clarification)
+        [[ $cur == readiness || $cur == awaiting_clarification ]] || refuse 1 "the human is asked only at the start (readiness). Now ($cur) it is your decision: dl pm-decide \"<what>\" \"<why>\" — it goes into the PR"
         local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
         [[ $rc -eq 3 ]] || refuse 1 "there are no open questions for the human (dl readiness)" ;;
       planning)
@@ -433,7 +435,7 @@ cmd_phase() {
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       integrating)
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
-          || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — blocked cards need the human (retry or archive)" ;;
+          || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl card add …) or drop it (dl card <id> state archived \"<reason>\")" ;;
       closing)
         [[ $cur == integrating ]] || refuse 1 "only from integrating (now: $cur)"
         [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS && "$(jq -r '.verify_all.head // ""' "$JOBJ")" == "$(branch_head "$JOB_BRANCH")" ]] \
@@ -500,6 +502,31 @@ cmd_readiness() {
   log_event readiness "$(jq -r '(.items // .) | "\(length) items: \(map(select(.status=="decided"))|length) decided, \(map(select(.status=="n_a"))|length) n/a, \(map(select(.status=="open"))|length) open"' "$JOB_DIR/readiness.json")"
   return 0
 }
+# The human is asked only at the start (intake → readiness → awaiting_clarification). From planning on, whatever only a
+# person could have decided is Michael's decision: recorded here with its reason and listed in the PR body (report.md).
+after_start() { case "$(phase_now)" in intake|readiness|awaiting_clarification) return 1 ;; *) return 0 ;; esac; }
+pm_decision() { # pm_decision "<what>" "<why>" [card]
+  jq_inplace "$JOBJ" --arg w "$1" --arg y "$2" --arg c "${3:-}" --arg t "$(now)" '.pm_decisions = ((.pm_decisions // []) + [{at:$t, what:$w, why:$y} + (if $c != "" then {card:$c} else {} end)])'
+  log_event pm-decision "${3:+$3: }$1 — $2"
+}
+cmd_pm_decide() {
+  load_job
+  local what=${1:-} why=${2:-} card=${3:-}
+  [[ -n $what && -n $why ]] || die 'usage: dl pm-decide "<what you decided>" "<why>" [card]'
+  after_start || refuse 1 "before planning, questions go to the human (dl phase awaiting_clarification); decisions on implementation details: dl decide"
+  [[ -z $card ]] || card_exists "$card"
+  pm_decision "$what" "$why" "$card"; reset_stop_guard; echo "recorded: $what"
+}
+# report.md is the PR body: Michael's decisions after the start are appended once, at ship time
+report_decisions() {
+  local n; n="$(jq '(.pm_decisions // []) | length' "$JOBJ")"
+  grep -q '<!-- deliver:pm-decisions -->' "$JOB_DIR/report.md" && return 0
+  { printf '\n<!-- deliver:pm-decisions -->\n## Decisions Michael took after the start\n\n'
+    if [[ $n -eq 0 ]]; then echo "None: every decision was taken with the human before planning."
+    else jq -r '.pm_decisions[] | "- " + (if .card then "**\(.card)** — " else "" end) + "\(.what) — _\(.why)_ (\(.at))"' "$JOBJ"; fi
+  } >> "$JOB_DIR/report.md"
+}
+
 cmd_decide() {
   load_job
   local id=${1:-} decision=${2:-} why=${3:-}; [[ -n $id && -n $decision && -n $why ]] || die 'usage: dl decide <id> "<decision>" "<rationale>"'
@@ -627,7 +654,7 @@ cmd_card() {
   load_job
   [[ ${1:-} == add ]] && { cmd_card_add "${@:2}"; return; }
   local card=${1:-} what=${2:-} val=${3:-}
-  [[ -n $card && -n $what ]] || die "usage: dl card <card> state <state> | note \"<text>\" | retry"
+  [[ -n $card && -n $what ]] || die "usage: dl card <card> state <state> [\"<reason>\"] | note \"<text>\" | retry"
   card_exists "$card"
   local cur; cur="$(card_get "$card" .state)"
   case $what in
@@ -639,8 +666,14 @@ cmd_card() {
         *\>running) refuse 1 "running is set only by: dl wt add $card" ;;
         *) refuse 1 "$card: $cur → $val is not a valid transition" ;;
       esac
+      # After the start the human is not asked again: dropping a card is Michael's decision, with its reason, in the PR.
+      if [[ $val == archived ]] && after_start; then
+        [[ -n ${4:-} ]] || refuse 1 "archiving $card is your decision as PM — give the reason: dl card $card state archived \"<why it is not delivered>\""
+      fi
       card_set "$card" '(.cards[] | select(.id==$id)).state=$s' --arg s "$val"
-      reset_stop_guard; log_event state "$card=$val"; tracker sync "$card" --event "state → $val"; echo "$card → $val" ;;
+      reset_stop_guard; log_event state "$card=$val"; tracker sync "$card" --event "state → $val"
+      [[ $val == archived ]] && after_start && pm_decision "$card is not delivered (archived)" "$4" "$card"
+      echo "$card → $val" ;;
     note)
       [[ -n $val ]] || die "usage: dl card $card note \"<text>\""
       card_set "$card" '(.cards[] | select(.id==$id)).notes += [{"at":$t,"note":$n}]' --arg n "$val" --arg t "$(now)"
@@ -888,6 +921,7 @@ cmd_ship() {
   [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS && "$(jq -r '.verify_all.head // ""' "$JOBJ")" == "$head" ]] \
     || refuse 1 "verify-all has not passed on the current job branch — dl verify-all"
   ! cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md" || refuse 1 "report.md is still the template — the PM closing check writes it first (it is also the PR body)"
+  report_decisions
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
     [[ $on == "$base" ]] || refuse 1 "merge_mode=local merges into '$base' in the main checkout, which is on '${on:-detached}'. Switch it to $base (or merge yourself: git merge --no-ff $JOB_BRANCH)"
@@ -1277,6 +1311,7 @@ main() {
     readiness) cmd_readiness ;;
     clarify) cmd_clarify "$@" ;;
     decide) cmd_decide "$@" ;;
+    pm-decide) cmd_pm_decide "$@" ;;
     unfreeze) cmd_unfreeze "$@" ;;
     reseal) cmd_reseal "$@" ;;
     learn) cmd_learn "$@" ;;
@@ -1305,7 +1340,7 @@ main() {
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,62p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,63p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }
