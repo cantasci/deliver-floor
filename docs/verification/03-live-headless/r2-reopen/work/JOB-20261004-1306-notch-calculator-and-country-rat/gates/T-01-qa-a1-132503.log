@@ -1,0 +1,179 @@
+# qa_verify: node --test test/integration/ratings/*.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE is the frozen 19-rating C1 array, best first
+ok 1 - AC-1: RATING_SCALE is the frozen 19-rating C1 array, best first
+  ---
+  duration_ms: 2.584718
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE cannot be mutated (push / index assignment throw TypeError)
+ok 2 - AC-1: RATING_SCALE cannot be mutated (push / index assignment throw TypeError)
+  ---
+  duration_ms: 0.864435
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange on a downgrade is positive
+ok 3 - AC-2: notchChange on a downgrade is positive
+  ---
+  duration_ms: 0.439025
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange on an upgrade is negative
+ok 4 - AC-3: notchChange on an upgrade is negative
+  ---
+  duration_ms: 0.203638
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange of the same rating is +0, never -0
+ok 5 - AC-4: notchChange of the same rating is +0, never -0
+  ---
+  duration_ms: 0.242324
+  type: 'test'
+  ...
+# Subtest: AC-2/AC-3: argument order matters (BBB->BB = 3, BB->BBB = -3)
+ok 6 - AC-2/AC-3: argument order matters (BBB->BB = 3, BB->BBB = -3)
+  ---
+  duration_ms: 0.260781
+  type: 'test'
+  ...
+# Subtest: AC-5: notchChange trims whitespace and folds case
+ok 7 - AC-5: notchChange trims whitespace and folds case
+  ---
+  duration_ms: 0.24982
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator trims whitespace and folds case
+ok 8 - AC-5: notchCalculator trims whitespace and folds case
+  ---
+  duration_ms: 0.271422
+  type: 'test'
+  ...
+# Subtest: AC-6: notchChange throws RangeError for every invalid value in either position
+ok 9 - AC-6: notchChange throws RangeError for every invalid value in either position
+  ---
+  duration_ms: 1.0009
+  type: 'test'
+  ...
+# Subtest: AC-6: notchCalculator throws RangeError for every invalid value in either position
+ok 10 - AC-6: notchCalculator throws RangeError for every invalid value in either position
+  ---
+  duration_ms: 2.311064
+  type: 'test'
+  ...
+# Subtest: AC-6: missing or doubly invalid arguments throw RangeError
+ok 11 - AC-6: missing or doubly invalid arguments throw RangeError
+  ---
+  duration_ms: 0.38073
+  type: 'test'
+  ...
+# Subtest: AC-6: non-breaking space is trimmed (trim strips U+00A0), still valid
+ok 12 - AC-6: non-breaking space is trimmed (trim strips U+00A0), still valid
+  ---
+  duration_ms: 0.167916
+  type: 'test'
+  ...
+# Subtest: AC-7: downgrade of 3+ notches gives WL 2
+ok 13 - AC-7: downgrade of 3+ notches gives WL 2
+  ---
+  duration_ms: 0.129267
+  type: 'test'
+  ...
+# Subtest: AC-8: downgrade of exactly 2 notches gives WL 1
+ok 14 - AC-8: downgrade of exactly 2 notches gives WL 1
+  ---
+  duration_ms: 0.082205
+  type: 'test'
+  ...
+# Subtest: AC-9: downgrade of exactly 1 notch gives WL 0
+ok 15 - AC-9: downgrade of exactly 1 notch gives WL 0
+  ---
+  duration_ms: 0.159403
+  type: 'test'
+  ...
+# Subtest: AC-10: upgrades give negative notches, direction upgrade and WL 0 (no Math.abs)
+ok 16 - AC-10: upgrades give negative notches, direction upgrade and WL 0 (no Math.abs)
+  ---
+  duration_ms: 0.114776
+  type: 'test'
+  ...
+# Subtest: AC-11: unchanged rating gives notches +0, direction unchanged, WL 0
+ok 17 - AC-11: unchanged rating gives notches +0, direction unchanged, WL 0
+  ---
+  duration_ms: 0.117343
+  type: 'test'
+  ...
+# Subtest: AC-12: notchCalculator(['BBB+','BB+']) returns exactly the keys direction, notches, wl
+ok 18 - AC-12: notchCalculator(['BBB+','BB+']) returns exactly the keys direction, notches, wl
+  ---
+  duration_ms: 0.09857
+  type: 'test'
+  ...
+# Subtest: AC-12: all 361 ordered pairs satisfy the notchCalculator contract
+ok 19 - AC-12: all 361 ordered pairs satisfy the notchCalculator contract
+  ---
+  duration_ms: 2.701263
+  type: 'test'
+  ...
+# Subtest: AC-12: all-pairs counts: downgrade 171 / upgrade 171 / unchanged 19; wl2 136 / wl1 17 / wl0 208
+ok 20 - AC-12: all-pairs counts: downgrade 171 / upgrade 171 / unchanged 19; wl2 136 / wl1 17 / wl0 208
+  ---
+  duration_ms: 0.751827
+  type: 'test'
+  ...
+# Subtest: AC-5: all 361 pairs given lower-case and padded equal the canonical result
+ok 21 - AC-5: all 361 pairs given lower-case and padded equal the canonical result
+  ---
+  duration_ms: 1.543889
+  type: 'test'
+  ...
+# Subtest: AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+ok 22 - AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+  ---
+  duration_ms: 4.960278
+  type: 'test'
+  ...
+# Subtest: AC-18: importing and calling both functions in a child process prints nothing and exits 0
+ok 23 - AC-18: importing and calling both functions in a child process prints nothing and exits 0
+  ---
+  duration_ms: 38.343866
+  type: 'test'
+  ...
+# Subtest: AC-19: module surface is named exports only, source has .mjs extension
+ok 24 - AC-19: module surface is named exports only, source has .mjs extension
+  ---
+  duration_ms: 0.244021
+  type: 'test'
+  ...
+# Subtest: AC-19: dev unit tests pass (node --test test/ratings/notch.test.mjs exits 0, \# fail 0)
+ok 25 - AC-19: dev unit tests pass (node --test test/ratings/notch.test.mjs exits 0, \# fail 0)
+  ---
+  duration_ms: 144.442401
+  type: 'test'
+  ...
+# Subtest: AC-19: package.json is unchanged versus main and has no dependencies
+ok 26 - AC-19: package.json is unchanged versus main and has no dependencies
+  ---
+  duration_ms: 3.979402
+  type: 'test'
+  ...
+# Subtest: AC-19: no package-lock.json and no node_modules/ exist
+ok 27 - AC-19: no package-lock.json and no node_modules/ exist
+  ---
+  duration_ms: 0.299157
+  type: 'test'
+  ...
+# Subtest: AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+ok 28 - AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+  ---
+  duration_ms: 2.577368
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 305.035862

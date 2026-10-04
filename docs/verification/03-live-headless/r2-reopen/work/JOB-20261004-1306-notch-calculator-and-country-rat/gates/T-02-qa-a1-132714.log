@@ -1,0 +1,143 @@
+# qa_verify: node --test test/integration/indicators/*.test.mjs
+TAP version 13
+# Subtest: AC-13: one-notch downgrades give WL 1 (BBB>BBB-, AAA>AA+, CCC>CCC-)
+ok 1 - AC-13: one-notch downgrades give WL 1 (BBB>BBB-, AAA>AA+, CCC>CCC-)
+  ---
+  duration_ms: 1.923463
+  type: 'test'
+  ...
+# Subtest: AC-14: downgrades of 2+ notches give WL 2
+ok 2 - AC-14: downgrades of 2+ notches give WL 2
+  ---
+  duration_ms: 0.446088
+  type: 'test'
+  ...
+# Subtest: AC-15: upgrades and unchanged ratings give the number 0 (not -0, false, null)
+ok 3 - AC-15: upgrades and unchanged ratings give the number 0 (not -0, false, null)
+  ---
+  duration_ms: 0.353898
+  type: 'test'
+  ...
+# Subtest: AC-5: case and surrounding whitespace do not change the result
+ok 4 - AC-5: case and surrounding whitespace do not change the result
+  ---
+  duration_ms: 0.320287
+  type: 'test'
+  ...
+# Subtest: AC-6: every invalid value in either position throws RangeError
+ok 5 - AC-6: every invalid value in either position throws RangeError
+  ---
+  duration_ms: 1.27397
+  type: 'test'
+  ...
+# Subtest: AC-6: missing and doubly invalid arguments throw RangeError
+ok 6 - AC-6: missing and doubly invalid arguments throw RangeError
+  ---
+  duration_ms: 0.293608
+  type: 'test'
+  ...
+# Subtest: AC-17: analyst-edited rating is just the current argument; arity 2, extra args ignored, no state
+ok 7 - AC-17: analyst-edited rating is just the current argument; arity 2, extra args ignored, no state
+  ---
+  duration_ms: 1.27281
+  type: 'test'
+  ...
+# Subtest: AC-16: source imports notchChange from ../ratings/notch.mjs
+ok 8 - AC-16: source imports notchChange from ../ratings/notch.mjs
+  ---
+  duration_ms: 5.107118
+  type: 'test'
+  ...
+# Subtest: AC-16: source never mentions notchCalculator
+ok 9 - AC-16: source never mentions notchCalculator
+  ---
+  duration_ms: 3.356174
+  type: 'test'
+  ...
+# Subtest: AC-16: source has no rating literals anywhere (comments and JSDoc included)
+ok 10 - AC-16: source has no rating literals anywhere (comments and JSDoc included)
+  ---
+  duration_ms: 4.687496
+  type: 'test'
+  ...
+# Subtest: AC-16: source has no try/catch
+ok 11 - AC-16: source has no try/catch
+  ---
+  duration_ms: 2.824655
+  type: 'test'
+  ...
+# Subtest: AC-16: all 361 pairs return an integer in {0,1,2} equal to the notchChange threshold rule
+ok 12 - AC-16: all 361 pairs return an integer in {0,1,2} equal to the notchChange threshold rule
+  ---
+  duration_ms: 0.963746
+  type: 'test'
+  ...
+# Subtest: AC-16: over 361 pairs WL 2 = 153, WL 1 = 18, WL 0 = 190
+ok 13 - AC-16: over 361 pairs WL 2 = 153, WL 1 = 18, WL 0 = 190
+  ---
+  duration_ms: 0.368094
+  type: 'test'
+  ...
+# Subtest: AC-16 (C6): differs from notchCalculator().wl on exactly 35 pairs (18 one-notch, 17 two-notch), equal on 326
+ok 14 - AC-16 (C6): differs from notchCalculator().wl on exactly 35 pairs (18 one-notch, 17 two-notch), equal on 326
+  ---
+  duration_ms: 0.979084
+  type: 'test'
+  ...
+# Subtest: AC-5: all 361 pairs with lowercase and padded input equal the canonical result
+ok 15 - AC-5: all 361 pairs with lowercase and padded input equal the canonical result
+  ---
+  duration_ms: 1.232067
+  type: 'test'
+  ...
+# Subtest: AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+ok 16 - AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+  ---
+  duration_ms: 2.734798
+  type: 'test'
+  ...
+# Subtest: AC-18: importing and calling in a child process prints nothing and exits 0
+ok 17 - AC-18: importing and calling in a child process prints nothing and exits 0
+  ---
+  duration_ms: 35.110953
+  type: 'test'
+  ...
+# Subtest: AC-19: module exposes the named function and no default export
+ok 18 - AC-19: module exposes the named function and no default export
+  ---
+  duration_ms: 0.341899
+  type: 'test'
+  ...
+# Subtest: AC-19: dev unit tests and T-01 tests pass, and bare `node --test` passes with a count >= their sum
+ok 19 - AC-19: dev unit tests and T-01 tests pass, and bare `node --test` passes with a count >= their sum
+  ---
+  duration_ms: 697.088104
+  type: 'test'
+  ...
+# Subtest: AC-19: package.json is unchanged versus main and has no dependencies
+ok 20 - AC-19: package.json is unchanged versus main and has no dependencies
+  ---
+  duration_ms: 3.650366
+  type: 'test'
+  ...
+# Subtest: AC-19: no package-lock.json and no node_modules/ exist
+ok 21 - AC-19: no package-lock.json and no node_modules/ exist
+  ---
+  duration_ms: 0.436539
+  type: 'test'
+  ...
+# Subtest: AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+ok 22 - AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+  ---
+  duration_ms: 2.730293
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 863.230068

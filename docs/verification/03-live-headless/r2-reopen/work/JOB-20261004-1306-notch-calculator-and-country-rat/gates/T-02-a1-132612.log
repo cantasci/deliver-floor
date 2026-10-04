@@ -1,0 +1,73 @@
+# gate: T-02  attempt: 1  2026-10-04T13:26:12Z
+ok    on job/JOB-20261004-1306-notch-calculator-and-country-rat--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/**","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: AC-13: a 1-notch downgrade gives WL 1
+ok 1 - AC-13: a 1-notch downgrade gives WL 1
+  ---
+  duration_ms: 1.521089
+  type: 'test'
+  ...
+# Subtest: AC-13 (C6): differs from notchCalculator on a 1-notch downgrade
+ok 2 - AC-13 (C6): differs from notchCalculator on a 1-notch downgrade
+  ---
+  duration_ms: 1.774894
+  type: 'test'
+  ...
+# Subtest: AC-14: a downgrade of 2 or more notches gives WL 2
+ok 3 - AC-14: a downgrade of 2 or more notches gives WL 2
+  ---
+  duration_ms: 0.207467
+  type: 'test'
+  ...
+# Subtest: AC-15: upgrade or unchanged gives the number 0
+ok 4 - AC-15: upgrade or unchanged gives the number 0
+  ---
+  duration_ms: 0.289764
+  type: 'test'
+  ...
+# Subtest: AC-5: case and surrounding whitespace are ignored
+ok 5 - AC-5: case and surrounding whitespace are ignored
+  ---
+  duration_ms: 0.205387
+  type: 'test'
+  ...
+# Subtest: AC-6: any invalid value in either position throws RangeError
+ok 6 - AC-6: any invalid value in either position throws RangeError
+  ---
+  duration_ms: 0.827888
+  type: 'test'
+  ...
+# Subtest: AC-6: missing or doubly invalid arguments throw RangeError
+ok 7 - AC-6: missing or doubly invalid arguments throw RangeError
+  ---
+  duration_ms: 0.211581
+  type: 'test'
+  ...
+# Subtest: AC-17: analyst-edited ratings are graded from the caller's values
+ok 8 - AC-17: analyst-edited ratings are graded from the caller's values
+  ---
+  duration_ms: 0.093126
+  type: 'test'
+  ...
+# Subtest: AC-17: arity is 2, extra arguments are ignored, no state
+ok 9 - AC-17: arity is 2, extra arguments are ignored, no state
+  ---
+  duration_ms: 1.011233
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 89.865234
+ok    verify passed
