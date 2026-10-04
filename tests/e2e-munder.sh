@@ -9,17 +9,22 @@
 #
 #   tests/e2e-munder.sh [work dir] [munder-difflin checkout]   (default: a fresh clone into the work dir)
 #   E2E_JOB=JOB-parallel.md → two backend seats: several floor workers at their desks at the same time
+#   E2E_MODEL=<model>     the floor default for every seat (.deliver.json munder.model; default claude-sonnet-5-5)
+#   E2E_SAY="<text>"      added to Michael's /deliver message (e.g. which model a role works on)
+#   E2E_SEAT_MODEL=<role>:<seat name regex>:<m>   judge from the transcripts: that seat on <m>, every other seat on
+#                         E2E_MODEL, Michael on neither
 #   Needs: xvfb-run, Playwright (node), network to GitHub/npm. Costs real tokens.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="${1:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-md.XXXXXX")}"; mkdir -p "$W/munder"; W="$(cd "$W/munder" && pwd)"
 MD="${2:-$W/munder-difflin}"
 EX="$HERE/examples/watchlist-poc"
-JOBF="${E2E_JOB:-JOB.md}"; ORACLE=watchlist.oracle.test.mjs; [[ $JOBF == JOB-parallel.md ]] && ORACLE=parallel.oracle.test.mjs
+JOBF="${E2E_JOB:-JOB.md}"; ORACLE=watchlist.oracle.test.mjs; [[ $JOBF == JOB-parallel.md ]] && ORACLE=parallel.oracle.test.mjs; [[ $JOBF == JOB-models* ]] && ORACLE=models.oracle.test.mjs
 export ISO_HOME="$W/home"; mkdir -p "$ISO_HOME"
 . "$HERE/tests/lib-isolated-claude.sh"
 export GIT_AUTHOR_NAME=e2e GIT_AUTHOR_EMAIL=e2e@example.com GIT_COMMITTER_NAME=e2e GIT_COMMITTER_EMAIL=e2e@example.com IS_SANDBOX=1
 REP="$W/report.md"; printf '# Live E2E — scenario `munder` (Munder Difflin office floor)\n\nRequest: `examples/watchlist-poc/$JOBF` · started %s\n' "$(date -u +%FT%TZ)" > "$REP"
+log()  { printf '%s\n' "$*" | tee -a "$REP"; }
 step() { printf '\n\033[1;36m━━ %s\033[0m\n' "$*"; printf '\n## %s\n\n' "$*" >> "$REP"; }
 ok()  { printf '  \033[32m✔\033[0m %s\n' "$1"; printf -- '- ✅ %s\n' "$1" >> "$REP"; }
 bad() { printf '  \033[31m✘\033[0m %s\n' "$1"; printf -- '- ❌ %s\n' "$1" >> "$REP"; FAILED=1; }
@@ -70,7 +75,7 @@ fi
 
 step "2 · the floor: open the app, brief Michael with one message, watch"
 iso_env NODE_PATH="${NODE_PATH:-/usr/local/lib/node_modules_global}" xvfb-run -a node "$HERE/tests/md-drive.cjs" "$MD" "$ISO_HOME" "$W/shots" "$SB" \
-  "/deliver $EX/$JOBF" "${E2E_MINUTES:-75}" "$EX/HUMAN_ANSWERS.json" "$SKD/bin/dl" 2>&1 | grep --line-buffered -v -E 'bus\.cc|viz_main|dbus|Fontconfig' | tee "$W/drive.log" | sed 's/^/    /'
+  "/deliver $EX/$JOBF${E2E_SAY:+ — $E2E_SAY}" "${E2E_MINUTES:-75}" "$EX/HUMAN_ANSWERS.json" "$SKD/bin/dl" 2>&1 | grep --line-buffered -v -E 'bus\.cc|viz_main|dbus|Fontconfig' | tee "$W/drive.log" | sed 's/^/    /'
 [[ ${PIPESTATUS[0]} -eq 0 ]] && ok "the job finished on the floor" || bad "the job did not finish on the floor (drive.log)"
 ok "screenshots of the floor: $(ls "$W/shots" 2>/dev/null | wc -l) (shots/)"
 
@@ -112,6 +117,13 @@ if [[ -n $J ]]; then
   if [[ ${E2E_PLUGIN:-0} == 1 ]]; then
     grep -q '`deliver:backend-dev`' "$J/ROLES.md" && ok "plugin: ROLES.md names the kit's agents deliver:<agent>" || bad "plugin: ROLES.md without the deliver: prefix"
   fi
+fi
+
+if [[ -n ${E2E_SEAT_MODEL:-} && -n $J ]]; then
+  step "models per role: floor default ${E2E_MODEL:-claude-sonnet-5-5}; Michael was told \"${E2E_SAY:-}\""
+  . "$HERE/tests/lib-models.sh"; IFS=: read -r mr ms mm <<<"$E2E_SEAT_MODEL"
+  dm="${E2E_MODEL:-claude-sonnet-5-5}"; dm="$(sed -E 's/^claude-//; s/-[0-9].*$//' <<<"$dm")"
+  models_floor "$W/hive/hive/registry.json" "$ISO_HOME/.claude/projects" "$J/job.json" "$dm" "$mr" "$ms" "$mm"
 fi
 
 step "4 · verify the delivered job"

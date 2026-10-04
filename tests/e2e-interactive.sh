@@ -7,13 +7,15 @@
 #           Michael ends his turn with the job unfinished and nothing running, the person says "continue" (counted).
 #   verify  tests/verify-job.sh on the delivered repo + interactive-only checks; screen snapshots in <work>/screens/
 #
-#   tests/e2e-interactive.sh [work dir]        E2E_JOB=JOB.md (default) | JOB-parallel.md · E2E_MINUTES (60)
+#   tests/e2e-interactive.sh [work dir]        E2E_JOB=JOB.md (default) | JOB-parallel.md | JOB-models-plain.md · E2E_MINUTES (60)
+#   E2E_SAY="<text>"                  the person adds this to the /deliver line (e.g. which model a role works on)
+#   E2E_ROLE_MODEL=<role>:<agent>:<m>  then judge from the transcripts that the role ran on model <m>, Michael did not
 #   Costs real tokens (≈ 3–6 USD, 15–30 min).
 set -uo pipefail
 gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EXN=watchlist-poc; EX="$HERE/examples/$EXN"
-JOBF="${E2E_JOB:-JOB.md}"; REQ="$EX/$JOBF"; ORACLE=watchlist.oracle.test.mjs; [[ $JOBF == JOB-parallel.md ]] && ORACLE=parallel.oracle.test.mjs
+JOBF="${E2E_JOB:-JOB.md}"; REQ="$EX/$JOBF"; ORACLE=watchlist.oracle.test.mjs; [[ $JOBF == JOB-parallel.md ]] && ORACLE=parallel.oracle.test.mjs; [[ $JOBF == JOB-models* ]] && ORACLE=models.oracle.test.mjs
 W="${1:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-ia.XXXXXX")}"; mkdir -p "$W/interactive"; W="$(cd "$W/interactive" && pwd)"
 export ISO_HOME="$W/home"; mkdir -p "$ISO_HOME" "$W/screens"
 . "$HERE/tests/lib-isolated-claude.sh"
@@ -59,7 +61,7 @@ for i in $(seq 1 60); do
 done
 snap ready
 grep -qE "for shortcuts|bypass permissions on" <<<"$(screen)" && ok "Claude Code's prompt is up (interactive session)" || { bad "the prompt did not come up (screens/)"; exit 1; }
-say "/deliver $REQ"
+say "/deliver $REQ${E2E_SAY:+ — $E2E_SAY}"
 
 idle_since=0 nudges=0 answered=0 last_phase="" last_snap=0 deadline=$(( t0 + ${E2E_MINUTES:-60} * 60 ))
 busy() { grep -qE "esc to interrupt|Running…|thinking" <<<"$1"; }
@@ -107,5 +109,10 @@ nclar="$(grep -c $'\tclarify\t' "$J/events.log")"; log "    clarifications recor
 
 step "4 · verify the delivered job"
 "$HERE/tests/verify-job.sh" "$SB" "$ORACLE" "$REP" "$ISO_HOME/.claude/skills/deliver" || FAILED=1
+if [[ -n ${E2E_ROLE_MODEL:-} ]]; then
+  step "models per role: the person told Michael \"${E2E_SAY:-}\""
+  . "$HERE/tests/lib-models.sh"; IFS=: read -r mr ma mm <<<"$E2E_ROLE_MODEL"
+  models_subagents "$ISO_HOME/.claude/projects" "$J/job.json" "$mr" "$ma" "$mm"
+fi
 printf '\n**%s**\n' "$([[ $FAILED -eq 0 ]] && echo PASSED || echo FAILED)" >> "$REP"
 exit $FAILED

@@ -11,6 +11,7 @@
 #                 question from HUMAN_ANSWERS.json (matched by topic, recorded with dl clarify); the run resumes →
 #                 delivered, oracle passes. A question no prepared answer matches fails the scenario: a real person must answer.
 #     parallel    two independent requirements, "two backend developers in parallel" → two seats work at the same time
+#     models      one task; the request's Staffing says "the backend developer works on haiku" → judged from the transcripts
 #   Each writes <work dir>/<scenario>/report.md (the scenario, step by step) and keeps every artifact.
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
 #   E2E_MISMATCH=<readiness id>  the human first answers that item with an unrelated answer: Michael must not build on it,
@@ -21,12 +22,13 @@ set -uo pipefail
 # grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
 gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SC="${1:?usage: e2e-live.sh complete|incomplete|parallel [work dir]}"
+SC="${1:?usage: e2e-live.sh complete|incomplete|parallel|models [work dir]}"
 EXN=watchlist-poc; EX="$HERE/examples/$EXN"
 case $SC in
   complete)   REQ="$EX/JOB.md";            ORACLE=watchlist.oracle.test.mjs ;;
   incomplete) REQ="$EX/JOB-incomplete.md"; ORACLE=watchlist.oracle.test.mjs ;;
   parallel)   REQ="$EX/JOB-parallel.md";   ORACLE=parallel.oracle.test.mjs ;;
+  models)     REQ="$EX/JOB-models.md";     ORACLE=models.oracle.test.mjs ;;
   *) echo "unknown scenario: $SC" >&2; exit 2 ;;
 esac
 W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; W="$(cd "$W/$SC" && pwd)"
@@ -146,6 +148,11 @@ if [[ $SC == parallel ]]; then
   first_merge="$(grep -n $'\tintegrate\t' "$J/events.log" | head -1 | cut -d: -f1)"
   assigns_before="$(head -n "${first_merge:-0}" "$J/events.log" | grep -c $'\tassign\t')"
   [[ ${assigns_before:-0} -ge 2 ]] && ok "two cards were assigned before the first merge (they ran in parallel)" || bad "cards ran one after another"
+fi
+if [[ $SC == models ]]; then
+  step "6 · models per role: the request's Staffing — the backend developer works on haiku"
+  . "$HERE/tests/lib-models.sh"
+  models_subagents "$ISO_HOME/.claude/projects" "$JJ" backend backend-dev haiku
 fi
 if [[ -n ${E2E_MISMATCH:-} ]]; then
   step "R2 · Michael does not build on an answer that does not answer its question"
