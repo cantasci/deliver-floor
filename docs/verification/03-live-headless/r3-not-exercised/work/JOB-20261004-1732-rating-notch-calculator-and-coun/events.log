@@ -1,0 +1,42 @@
+2026-10-04T17:32:53Z	new	Rating notch calculator and country indicator
+2026-10-04T17:32:55Z	jobset	stack: .stack=["javascript"]
+2026-10-04T17:33:02Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: pure domain logic modules in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02 notchCalculator and REQ-03-12 countryRatingChangeWl implementation"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer"}]
+2026-10-04T17:33:02Z	jobset	assumptions: .assumptions += ["Slice is pure Node ESM functions; no UI/CLI/persistence (C4,C7,C8)","BBB+ -> BB+ is 3 notches (WL=2) per C2, not the POC 2-notch example"]
+2026-10-04T17:33:03Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T17:33:03Z	phase	readiness
+2026-10-04T17:36:18Z	agent	business-analyst a16acfda: {"items":[ {"id":"PRD-goal","status":"decided","answer":"Deliver two pure library functions that other parts of the Watchlist POC import: (1) a notch calculator
+2026-10-04T17:36:57Z	readiness	32 items: 19 decided, 10 n/a, 3 open
+2026-10-04T17:36:57Z	decide	X-scale-immutability: A: freeze RATING_SCALE only — internal robustness; no contract change; stops an importer corrupting the shared scale
+2026-10-04T17:36:57Z	decide	X-error-message: A: message names the argument and bad value; previous checked first; tests assert RangeError type only — C1 fixes only the type; clearer diagnosis
+2026-10-04T17:36:57Z	readiness	32 items: 21 decided, 10 n/a, 1 open
+2026-10-04T17:37:00Z	phase	awaiting_clarification
+2026-10-04T17:37:06Z	clarify	X-input-whitespace: Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.
+2026-10-04T17:37:20Z	freeze	readiness + architecture frozen (53cafc3e5cdb)
+2026-10-04T17:37:20Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T17:37:20Z	phase	planning
+2026-10-04T17:38:58Z	agent	business-analyst a21e5a9f: ## Goal Build two pure library functions that other parts of the Watchlist POC will import, exactly as the request's Contract section describes: 1. **Notch calc
+2026-10-04T17:40:19Z	agent	ecc:architect ae5aa248: ```json [ { "tmp_id": "B1", "title": "Rating scale, notchChange and notchCalculator (REQ-06-02)", "role": "backend", "component": "ratings-lib", "context": "WHY
+2026-10-04T17:42:30Z	agent	business-analyst adce806f: === T-01 === # T-01: Rating scale, notchChange and notchCalculator (REQ-06-02) ## User story As a credit analyst (through the POC modules that import this libra
+2026-10-04T17:43:16Z	phase	executing
+2026-10-04T17:43:19Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T17:44:49Z	agent	backend-dev aa0cc93c: status: done (local commit only; branch not pushed, see open issues) commit: 20a491c verify: passed (`node --test test/ratings/notch.test.mjs`: 141 tests pass, 
+2026-10-04T17:44:52Z	gate	T-01 PASS
+2026-10-04T17:46:05Z	agent	qa-tester a4ebe7e0: The tests pass against the current product code, but I could not push the branch. The `bash-guard.sh` hook rejected every `git push` I tried, with "this directo
+2026-10-04T17:46:08Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-6,8,9,11,12 pass: 132 integration tests green
+2026-10-04T17:46:24Z	agent	ecc:typescript-reviewer a72d271d: {"verdict":"approve","blocking":[],"nits":["The integration test file test/integration/ratings/notch.int.test.mjs is in the T-01 diff. The spec says integration
+2026-10-04T17:46:26Z	review	T-01 reviewer approve — no blocking items; nits only
+2026-10-04T17:46:26Z	integrate	T-01 merged
+2026-10-04T17:46:29Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-04T17:47:17Z	agent	backend-dev a3500128: status: done commit: f75f8ad verify: passed (`node --test test/indicators/countryRating.test.mjs` gives 72 of 72 passing; a full `node --test` gives 345 of 345 
+2026-10-04T17:47:21Z	gate	T-02 PASS
+2026-10-04T17:48:29Z	agent	qa-tester a1e3aaad: All 81 integration tests pass, and the full `node --test` run passes too (426 tests, 0 fail). The tests are committed locally as `90029b2` ("T-02 QA: integratio
+2026-10-04T17:48:32Z	qa	T-02 pass (qa_verify PASS) — AC-3,4,7,8,9,10,11,12 pass: 81 integration tests green
+2026-10-04T17:48:46Z	agent	ecc:typescript-reviewer add04195: {"verdict":"approve","blocking":[],"nits":["src/indicators/countryRating.mjs: `countryRatingChangeWl` matches the spec. It has one import, uses no rating litera
+2026-10-04T17:48:48Z	review	T-02 reviewer approve — no blocking items; nits only
+2026-10-04T17:48:48Z	integrate	T-02 merged
+2026-10-04T17:48:51Z	phase	integrating
+2026-10-04T17:48:52Z	verify-all	PASS
+2026-10-04T17:48:54Z	phase	closing
+2026-10-04T17:49:49Z	agent	business-analyst a6ca588f: ## Closing check: JOB-20261004-1732, rating notch calculator and country indicator All 12 ACs are met. I re-checked them myself on the integration worktree at `
+2026-10-04T17:50:00Z	learn	backend: Test message wording only via type (RangeError); don't assert on error-message text when the spec says wording is not contract.
+2026-10-04T17:50:01Z	ship	local merge into main

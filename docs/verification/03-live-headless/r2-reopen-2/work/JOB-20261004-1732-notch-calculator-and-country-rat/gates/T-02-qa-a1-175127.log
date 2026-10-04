@@ -1,0 +1,473 @@
+# qa_verify: node --test test/integration/indicators/*.test.mjs
+TAP version 13
+# Subtest: AC-10: thresholds
+    # Subtest: AC-10: ('BBB+','BBB') -> 1
+    ok 1 - AC-10: ('BBB+','BBB') -> 1
+      ---
+      duration_ms: 1.05416
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('CCC','CCC-') -> 1
+    ok 2 - AC-10: ('CCC','CCC-') -> 1
+      ---
+      duration_ms: 0.183057
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('BBB+','BBB-') -> 2
+    ok 3 - AC-10: ('BBB+','BBB-') -> 2
+      ---
+      duration_ms: 0.100115
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('BBB+','BB+') -> 2
+    ok 4 - AC-10: ('BBB+','BB+') -> 2
+      ---
+      duration_ms: 0.137122
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('AAA','CCC-') -> 2
+    ok 5 - AC-10: ('AAA','CCC-') -> 2
+      ---
+      duration_ms: 0.264721
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('BBB','BBB') -> 0
+    ok 6 - AC-10: ('BBB','BBB') -> 0
+      ---
+      duration_ms: 0.103687
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('BBB','A') -> 0
+    ok 7 - AC-10: ('BBB','A') -> 0
+      ---
+      duration_ms: 0.219154
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('AA+','AAA') -> 0
+    ok 8 - AC-10: ('AA+','AAA') -> 0
+      ---
+      duration_ms: 0.183077
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('A','A-') -> 1
+    ok 9 - AC-10: ('A','A-') -> 1
+      ---
+      duration_ms: 0.210032
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('AAA','AAA') -> 0
+    ok 10 - AC-10: ('AAA','AAA') -> 0
+      ---
+      duration_ms: 0.408897
+      type: 'test'
+      ...
+    # Subtest: AC-10: ('CCC-','AAA') -> 0
+    ok 11 - AC-10: ('CCC-','AAA') -> 0
+      ---
+      duration_ms: 0.077851
+      type: 'test'
+      ...
+    # Subtest: AC-10: upgrades and unchanged return +0, never -0
+    ok 12 - AC-10: upgrades and unchanged return +0, never -0
+      ---
+      duration_ms: 0.160628
+      type: 'test'
+      ...
+    1..12
+ok 1 - AC-10: thresholds
+  ---
+  duration_ms: 5.769463
+  type: 'suite'
+  ...
+# Subtest: AC-11: all 361 ordered pairs
+    # Subtest: AC-11: result is a number matching d thresholds; totals 190/18/153; values exactly {0,1,2}
+    ok 1 - AC-11: result is a number matching d thresholds; totals 190/18/153; values exactly {0,1,2}
+      ---
+      duration_ms: 1.460615
+      type: 'test'
+      ...
+    # Subtest: AC-11: boundaries of d (-18, -1, 0 -> 0; 1 -> 1; 2, 3, 18 -> 2)
+    ok 2 - AC-11: boundaries of d (-18, -1, 0 -> 0; 1 -> 1; 2, 3, 18 -> 2)
+      ---
+      duration_ms: 0.104996
+      type: 'test'
+      ...
+    1..2
+ok 2 - AC-11: all 361 ordered pairs
+  ---
+  duration_ms: 1.736203
+  type: 'suite'
+  ...
+# Subtest: AC-12: intended 1-notch difference between the modules (C6)
+    # Subtest: AC-12 (C6): BBB+ -> BBB: calculator wl 0, Indicator 12 returns 1
+    ok 1 - AC-12 (C6): BBB+ -> BBB: calculator wl 0, Indicator 12 returns 1
+      ---
+      duration_ms: 0.232806
+      type: 'test'
+      ...
+    # Subtest: AC-12 (C6): A -> A-: calculator wl 0, Indicator 12 returns 1
+    ok 2 - AC-12 (C6): A -> A-: calculator wl 0, Indicator 12 returns 1
+      ---
+      duration_ms: 0.076967
+      type: 'test'
+      ...
+    # Subtest: AC-12 (C6): over all 361 pairs the two WLs agree for d <= 0 and d >= 3, and differ (calculator lower by exactly 1) only for d in {1, 2}
+    ok 3 - AC-12 (C6): over all 361 pairs the two WLs agree for d <= 0 and d >= 3, and differ (calculator lower by exactly 1) only for d in {1, 2}
+      ---
+      duration_ms: 0.731567
+      type: 'test'
+      ...
+    1..3
+ok 3 - AC-12: intended 1-notch difference between the modules (C6)
+  ---
+  duration_ms: 1.931335
+  type: 'suite'
+  ...
+# Subtest: AC-5: normalisation
+    # Subtest: AC-5: ('bbb+','  bbb ') -> 1
+    ok 1 - AC-5: ('bbb+','  bbb ') -> 1
+      ---
+      duration_ms: 0.1403
+      type: 'test'
+      ...
+    # Subtest: AC-5: (' bbb+ ','Bb+') -> 2 and ('\\tA\\n','a-') -> 1
+    ok 2 - AC-5: (' bbb+ ','Bb+') -> 2 and ('\\tA\\n','a-') -> 1
+      ---
+      duration_ms: 0.067612
+      type: 'test'
+      ...
+    # Subtest: AC-5: NBSP around the value is trimmed
+    ok 3 - AC-5: NBSP around the value is trimmed
+      ---
+      duration_ms: 0.052757
+      type: 'test'
+      ...
+    1..3
+ok 4 - AC-5: normalisation
+  ---
+  duration_ms: 0.357999
+  type: 'suite'
+  ...
+# Subtest: AC-6: invalid input throws RangeError
+    # Subtest: AC-6: empty string as previous throws RangeError
+    ok 1 - AC-6: empty string as previous throws RangeError
+      ---
+      duration_ms: 0.954861
+      type: 'test'
+      ...
+    # Subtest: AC-6: empty string as current throws RangeError
+    ok 2 - AC-6: empty string as current throws RangeError
+      ---
+      duration_ms: 0.178182
+      type: 'test'
+      ...
+    # Subtest: AC-6: spaces only as previous throws RangeError
+    ok 3 - AC-6: spaces only as previous throws RangeError
+      ---
+      duration_ms: 0.061908
+      type: 'test'
+      ...
+    # Subtest: AC-6: spaces only as current throws RangeError
+    ok 4 - AC-6: spaces only as current throws RangeError
+      ---
+      duration_ms: 0.070741
+      type: 'test'
+      ...
+    # Subtest: AC-6: tab/newline only as previous throws RangeError
+    ok 5 - AC-6: tab/newline only as previous throws RangeError
+      ---
+      duration_ms: 0.048556
+      type: 'test'
+      ...
+    # Subtest: AC-6: tab/newline only as current throws RangeError
+    ok 6 - AC-6: tab/newline only as current throws RangeError
+      ---
+      duration_ms: 0.095023
+      type: 'test'
+      ...
+    # Subtest: AC-6: D as previous throws RangeError
+    ok 7 - AC-6: D as previous throws RangeError
+      ---
+      duration_ms: 0.051641
+      type: 'test'
+      ...
+    # Subtest: AC-6: D as current throws RangeError
+    ok 8 - AC-6: D as current throws RangeError
+      ---
+      duration_ms: 0.045384
+      type: 'test'
+      ...
+    # Subtest: AC-6: SD as previous throws RangeError
+    ok 9 - AC-6: SD as previous throws RangeError
+      ---
+      duration_ms: 0.106304
+      type: 'test'
+      ...
+    # Subtest: AC-6: SD as current throws RangeError
+    ok 10 - AC-6: SD as current throws RangeError
+      ---
+      duration_ms: 0.053057
+      type: 'test'
+      ...
+    # Subtest: AC-6: NR as previous throws RangeError
+    ok 11 - AC-6: NR as previous throws RangeError
+      ---
+      duration_ms: 0.043423
+      type: 'test'
+      ...
+    # Subtest: AC-6: NR as current throws RangeError
+    ok 12 - AC-6: NR as current throws RangeError
+      ---
+      duration_ms: 0.087776
+      type: 'test'
+      ...
+    # Subtest: AC-6: C as previous throws RangeError
+    ok 13 - AC-6: C as previous throws RangeError
+      ---
+      duration_ms: 0.057962
+      type: 'test'
+      ...
+    # Subtest: AC-6: C as current throws RangeError
+    ok 14 - AC-6: C as current throws RangeError
+      ---
+      duration_ms: 0.046752
+      type: 'test'
+      ...
+    # Subtest: AC-6: AAA+ as previous throws RangeError
+    ok 15 - AC-6: AAA+ as previous throws RangeError
+      ---
+      duration_ms: 0.142535
+      type: 'test'
+      ...
+    # Subtest: AC-6: AAA+ as current throws RangeError
+    ok 16 - AC-6: AAA+ as current throws RangeError
+      ---
+      duration_ms: 0.057737
+      type: 'test'
+      ...
+    # Subtest: AC-6: CCC-- as previous throws RangeError
+    ok 17 - AC-6: CCC-- as previous throws RangeError
+      ---
+      duration_ms: 0.082927
+      type: 'test'
+      ...
+    # Subtest: AC-6: CCC-- as current throws RangeError
+    ok 18 - AC-6: CCC-- as current throws RangeError
+      ---
+      duration_ms: 0.045185
+      type: 'test'
+      ...
+    # Subtest: AC-6: BBB++ as previous throws RangeError
+    ok 19 - AC-6: BBB++ as previous throws RangeError
+      ---
+      duration_ms: 0.046801
+      type: 'test'
+      ...
+    # Subtest: AC-6: BBB++ as current throws RangeError
+    ok 20 - AC-6: BBB++ as current throws RangeError
+      ---
+      duration_ms: 0.094261
+      type: 'test'
+      ...
+    # Subtest: AC-6: Baa1 as previous throws RangeError
+    ok 21 - AC-6: Baa1 as previous throws RangeError
+      ---
+      duration_ms: 0.048763
+      type: 'test'
+      ...
+    # Subtest: AC-6: Baa1 as current throws RangeError
+    ok 22 - AC-6: Baa1 as current throws RangeError
+      ---
+      duration_ms: 0.047413
+      type: 'test'
+      ...
+    # Subtest: AC-6: B B B+ as previous throws RangeError
+    ok 23 - AC-6: B B B+ as previous throws RangeError
+      ---
+      duration_ms: 0.041322
+      type: 'test'
+      ...
+    # Subtest: AC-6: B B B+ as current throws RangeError
+    ok 24 - AC-6: B B B+ as current throws RangeError
+      ---
+      duration_ms: 0.044679
+      type: 'test'
+      ...
+    # Subtest: AC-6: BBB + as previous throws RangeError
+    ok 25 - AC-6: BBB + as previous throws RangeError
+      ---
+      duration_ms: 0.069875
+      type: 'test'
+      ...
+    # Subtest: AC-6: BBB + as current throws RangeError
+    ok 26 - AC-6: BBB + as current throws RangeError
+      ---
+      duration_ms: 0.04732
+      type: 'test'
+      ...
+    # Subtest: AC-6: undefined as previous throws RangeError
+    ok 27 - AC-6: undefined as previous throws RangeError
+      ---
+      duration_ms: 0.09007
+      type: 'test'
+      ...
+    # Subtest: AC-6: undefined as current throws RangeError
+    ok 28 - AC-6: undefined as current throws RangeError
+      ---
+      duration_ms: 0.042766
+      type: 'test'
+      ...
+    # Subtest: AC-6: null as previous throws RangeError
+    ok 29 - AC-6: null as previous throws RangeError
+      ---
+      duration_ms: 0.089469
+      type: 'test'
+      ...
+    # Subtest: AC-6: null as current throws RangeError
+    ok 30 - AC-6: null as current throws RangeError
+      ---
+      duration_ms: 0.052116
+      type: 'test'
+      ...
+    # Subtest: AC-6: number 8 as previous throws RangeError
+    ok 31 - AC-6: number 8 as previous throws RangeError
+      ---
+      duration_ms: 0.048517
+      type: 'test'
+      ...
+    # Subtest: AC-6: number 8 as current throws RangeError
+    ok 32 - AC-6: number 8 as current throws RangeError
+      ---
+      duration_ms: 0.048816
+      type: 'test'
+      ...
+    # Subtest: AC-6: boolean true as previous throws RangeError
+    ok 33 - AC-6: boolean true as previous throws RangeError
+      ---
+      duration_ms: 0.048591
+      type: 'test'
+      ...
+    # Subtest: AC-6: boolean true as current throws RangeError
+    ok 34 - AC-6: boolean true as current throws RangeError
+      ---
+      duration_ms: 0.047042
+      type: 'test'
+      ...
+    # Subtest: AC-6: object {} as previous throws RangeError
+    ok 35 - AC-6: object {} as previous throws RangeError
+      ---
+      duration_ms: 0.049972
+      type: 'test'
+      ...
+    # Subtest: AC-6: object {} as current throws RangeError
+    ok 36 - AC-6: object {} as current throws RangeError
+      ---
+      duration_ms: 0.05041
+      type: 'test'
+      ...
+    # Subtest: AC-6: array ['BBB'] as previous throws RangeError
+    ok 37 - AC-6: array ['BBB'] as previous throws RangeError
+      ---
+      duration_ms: 0.07496
+      type: 'test'
+      ...
+    # Subtest: AC-6: array ['BBB'] as current throws RangeError
+    ok 38 - AC-6: array ['BBB'] as current throws RangeError
+      ---
+      duration_ms: 0.049036
+      type: 'test'
+      ...
+    # Subtest: AC-6: missing arguments throw RangeError
+    ok 39 - AC-6: missing arguments throw RangeError
+      ---
+      duration_ms: 0.134321
+      type: 'test'
+      ...
+    # Subtest: AC-6: both arguments invalid throws RangeError
+    ok 40 - AC-6: both arguments invalid throws RangeError
+      ---
+      duration_ms: 0.087528
+      type: 'test'
+      ...
+    # Subtest: AC-6 (edge): String wrapper object in either position throws RangeError
+    ok 41 - AC-6 (edge): String wrapper object in either position throws RangeError
+      ---
+      duration_ms: 0.139374
+      type: 'test'
+      ...
+    # Subtest: AC-6 (edge): zero-width space prefix in either position throws RangeError
+    ok 42 - AC-6 (edge): zero-width space prefix in either position throws RangeError
+      ---
+      duration_ms: 0.084532
+      type: 'test'
+      ...
+    # Subtest: AC-6 (edge): constructor in either position throws RangeError
+    ok 43 - AC-6 (edge): constructor in either position throws RangeError
+      ---
+      duration_ms: 0.057186
+      type: 'test'
+      ...
+    # Subtest: AC-6 (edge): __proto__ in either position throws RangeError
+    ok 44 - AC-6 (edge): __proto__ in either position throws RangeError
+      ---
+      duration_ms: 0.056844
+      type: 'test'
+      ...
+    # Subtest: AC-6: the error is the same kind as notchChange throws and names the argument (pass-through)
+    ok 45 - AC-6: the error is the same kind as notchChange throws and names the argument (pass-through)
+      ---
+      duration_ms: 0.900383
+      type: 'test'
+      ...
+    # Subtest: AC-6: no value is returned on invalid input (does not coerce to a WL)
+    ok 46 - AC-6: no value is returned on invalid input (does not coerce to a WL)
+      ---
+      duration_ms: 0.11131
+      type: 'test'
+      ...
+    1..46
+ok 5 - AC-6: invalid input throws RangeError
+  ---
+  duration_ms: 5.753654
+  type: 'suite'
+  ...
+# Subtest: AC-14: public surface and import
+    # Subtest: AC-14: countryRatingChangeWl is a function and is the only export
+    ok 1 - AC-14: countryRatingChangeWl is a function and is the only export
+      ---
+      duration_ms: 0.138024
+      type: 'test'
+      ...
+    # Subtest: AC-14: is synchronous (returns a number, not a thenable)
+    ok 2 - AC-14: is synchronous (returns a number, not a thenable)
+      ---
+      duration_ms: 0.108483
+      type: 'test'
+      ...
+    # Subtest: AC-14: node -e import().then(typeof) prints exactly "function"
+    ok 3 - AC-14: node -e import().then(typeof) prints exactly "function"
+      ---
+      duration_ms: 41.23707
+      type: 'test'
+      ...
+    # Subtest: AC-14: bare import prints nothing and exits 0
+    ok 4 - AC-14: bare import prints nothing and exits 0
+      ---
+      duration_ms: 40.167644
+      type: 'test'
+      ...
+    1..4
+ok 6 - AC-14: public surface and import
+  ---
+  duration_ms: 81.904511
+  type: 'suite'
+  ...
+1..6
+# tests 70
+# suites 6
+# pass 70
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 222.123828

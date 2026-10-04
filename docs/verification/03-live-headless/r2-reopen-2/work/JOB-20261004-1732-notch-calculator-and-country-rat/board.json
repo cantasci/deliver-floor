@@ -1,0 +1,215 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs (with unit tests and JSDoc)",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "watchlist-domain-lib",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "context": "WHY: REQ-06-02 notch calculator. Other POC parts import these exports under fixed names; card T-02 builds on notchChange. Repo is new (src/ and test/ hold only .gitkeep; package.json already has type=module and test=node --test). FILES: create src/ratings/notch.mjs and test/ratings/notch.test.mjs only; no README, package.json, .d.ts. RULES (CLAUDE.md): plain Node 18+ ESM, no deps, pure, no I/O (no console/fs/process/network/node: imports), notch.mjs imports nothing, all exports synchronous, no API newer than Node 18, no side effects on import. CONTRACT: (1) export const RATING_SCALE = Object.freeze(['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-']) — 19 entries, best first, frozen so push/assign throws TypeError in strict mode. (2) export function notchChange(previous, current) -> integer = position(current) - position(previous); positive = downgrade, negative = upgrade, 0 = unchanged, never -0. ('BBB+','BB+')->3, ('BBB','A')->-3. (3) export function notchCalculator(previous, current) -> plain object with exactly the keys { notches, direction, wl }; notches === notchChange(...) (signed: upgrade negative, decided by the human, CON-interface); direction 'downgrade' if >0, 'upgrade' if <0, 'unchanged' if 0; wl (Indicator 13 thresholds) = 0 if notches<=1, 1 if ===2, 2 if >=3. No separate Indicator 13 export. C2: the raw POC example 'BBB+ -> BB+ = 2 notch' is wrong; correct is 3 notches -> WL 2 (test name cites C2). NORMALISATION: non-string -> RangeError; else String.prototype.trim() then case-insensitive match against the scale; inner whitespace is not removed ('B B B+', 'BBB +' invalid). VALIDATION: anything not one of the 19 ratings (incl. '', whitespace-only, 'D','SD','NR','C','AAA+','CCC--','BBB++','Baa1', undefined, null, 8, true, {}, ['BBB'], missing argument, String wrapper objects) throws RangeError, no fallback. Message names the argument ('previous'/'current') and the bad value; tests assert only the type. One internal helper does the validation so T-02 can rely on notchChange. JSDOC above each of the three exports: params (rating string, trimmed, case-insensitive), return type, sign convention (positive=downgrade, negative=upgrade), WL thresholds for notchCalculator, @throws {RangeError}. Commits carry no AI attribution.",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/**",
+        "test/ratings/**"
+      ],
+      "verify": "node --test test/ratings/*.test.mjs",
+      "qa_scope": [
+        "test/integration/ratings/**"
+      ],
+      "qa_verify": "node --test test/integration/ratings/*.test.mjs",
+      "acceptance": [
+        "AC-1: RATING_SCALE deep-equals the 19 C1 ratings, frozen; push/assign throw TypeError",
+        "AC-2: notchChange downgrades positive (BBB+→BB+ = 3, BBB+→BBB- = 2, AAA→CCC- = 18)",
+        "AC-3: notchChange upgrades negative (BBB→A = -3, CCC-→AAA = -18)",
+        "AC-4: notchChange same rating → +0 (not -0)",
+        "AC-5: input trimmed (String.prototype.trim) and case-insensitive: (\"  BBB+ \",\"\\tBB+\\n\") → 3; notchCalculator(\" bbb+\",\"BB+ \") → {3,downgrade,2}",
+        "AC-6: any invalid value (19 listed, non-strings, missing arg, inner whitespace) as previous or current → RangeError, both functions",
+        "AC-7: notchCalculator downgrades: BBB+→BB+ = {3,downgrade,2} (C2), BBB+→BBB- = {2,downgrade,1}, BBB+→BBB = {1,downgrade,0} (C6)",
+        "AC-8: notchCalculator upgrades/unchanged: BBB→A = {-3,upgrade,0}, BBB→BBB = {0,unchanged,0}",
+        "AC-9: over all 361 pairs: exactly keys notches/direction/wl, notches===notchChange, direction by sign, wl 0/1/2 by <=1/2/>=3",
+        "AC-14: import of notch.mjs prints nothing; typeof checks function function true",
+        "AC-15: notch.mjs has no imports, no I/O, no async, no new deps, nothing newer than Node 18",
+        "AC-16: JSDoc above RATING_SCALE, notchChange, notchCalculator (params, returns, sign, WL thresholds, @throws)",
+        "AC-17: node --test test/ratings/*.test.mjs exits 0"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-04T17:46:46Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-r2b/incomplete/repo/.work/JOB-20261004-1732-notch-calculator-and-country-rat/wt/T-01",
+      "branch": "job/JOB-20261004-1732-notch-calculator-and-country-rat--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "dbdad568bf96b298ffbad6e12c7c835548645eec",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-r2b/incomplete/repo/.work/JOB-20261004-1732-notch-calculator-and-country-rat/gates/T-01-a1-174805.log",
+        "at": "2026-10-04T17:48:05Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-04T17:48:05.636Z",
+          "author": "gate",
+          "text": "PASS — 10 checks ok, 0 failed (T-01-a1-174805.log)"
+        },
+        {
+          "at": "2026-10-04T17:49:15.368Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-9 pass, AC-14 import checks pass; 132 tests"
+        },
+        {
+          "at": "2026-10-04T17:49:36.221Z",
+          "author": "reviewer",
+          "text": "approve — approve; nits only (second private helper, redundant +0)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "64352b39a86697d1540ef9a65edd2f3381e6ae28",
+        "gate_head": "dbdad568bf96b298ffbad6e12c7c835548645eec",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-r2b/incomplete/repo/.work/JOB-20261004-1732-notch-calculator-and-country-rat/gates/T-01-qa-a1-174914.log",
+        "summary": "AC-1..AC-9 pass, AC-14 import checks pass; 132 tests",
+        "at": "2026-10-04T17:49:15Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "64352b39a86697d1540ef9a65edd2f3381e6ae28",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-9 pass, AC-14 import checks pass; 132 tests",
+          "at": "2026-10-04T17:49:15Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "64352b39a86697d1540ef9a65edd2f3381e6ae28",
+          "summary": "approve; nits only (second private helper, redundant +0)",
+          "at": "2026-10-04T17:49:35Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "64352b39a86697d1540ef9a65edd2f3381e6ae28",
+        "summary": "reviewer: approve — approve; nits only (second private helper, redundant +0)",
+        "pending": [],
+        "at": "2026-10-04T17:49:35Z"
+      }
+    },
+    {
+      "id": "T-02",
+      "title": "Indicator 12 countryRatingChangeWl in src/indicators/countryRating.mjs, built on notchChange (with unit tests and JSDoc)",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "watchlist-domain-lib",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "context": "WHY: REQ-03-12 Indicator 12 (country rating change) gives a WL from the notch change between a previous and a current country rating. Builds on T-01, which delivers src/ratings/notch.mjs with RATING_SCALE (frozen, 19 ratings), notchChange(previous, current) (integer, positive=downgrade, negative=upgrade, never -0; trims, case-insensitive, throws RangeError on invalid input) and notchCalculator. Do NOT modify src/ratings/** or test/ratings/**. FILES: create src/indicators/countryRating.mjs and test/indicators/countryRating.test.mjs only. RULES (CLAUDE.md): plain Node 18+ ESM, no deps, pure, no I/O; the only import is the relative `import { notchChange } from '../ratings/notch.mjs'`; synchronous; no API newer than Node 18; no side effects on import; commits carry no AI attribution. CONTRACT: export function countryRatingChangeWl(previous, current) -> 0|1|2: d = notchChange(previous, current); 0 if d<=0, 1 if d===1, 2 if d>=2. DECISIONS: (a) no own rating list, normalisation or validation — rely on notchChange so invalid input gives the same RangeError; do not catch or re-wrap; `grep -n notchChange` must show import and call. (b) C6: at a 1-notch downgrade the result intentionally differs from the calculator: countryRatingChangeWl('BBB+','BBB') = 1 while notchCalculator(...).wl = 0 — test it explicitly. JSDOC above the export: params (rating string, trimmed, case-insensitive), return 0|1|2, thresholds (<=0 ->0, 1 ->1, >=2 ->2), @throws {RangeError}. Run node --test from the worktree root at the end (not the main checkout, which holds .work/ copies).",
+      "depends_on": [
+        "T-01"
+      ],
+      "scope": [
+        "src/indicators/**",
+        "test/indicators/**"
+      ],
+      "verify": "node --test test/indicators/*.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/**"
+      ],
+      "qa_verify": "node --test test/integration/indicators/*.test.mjs",
+      "acceptance": [
+        "AC-10: countryRatingChangeWl BBB+→BBB = 1, BBB+→BBB- = 2, BBB+→BB+ = 2, BBB→BBB = 0, BBB→A = 0",
+        "AC-11: over all 361 pairs: 0 if d<=0, 1 if d===1, 2 if d>=2 (totals 190/18/153)",
+        "AC-5: (\"bbb+\",\"  bbb \") → 1; trimmed and case-insensitive via notchChange",
+        "AC-6: any invalid value or missing argument → RangeError (passed through from notchChange)",
+        "AC-12: BBB+→BBB and A→A-: calculator wl 0, countryRatingChangeWl 1 (C6)",
+        "AC-13: imports and calls notchChange from ../ratings/notch.mjs; no own list or validation",
+        "AC-14: import of countryRating.mjs prints nothing; typeof countryRatingChangeWl is function",
+        "AC-15: only relative import, no I/O, no async, no new deps, nothing newer than Node 18",
+        "AC-16: JSDoc above countryRatingChangeWl (params, returns 0|1|2, thresholds, @throws)",
+        "AC-17: node --test test/indicators/*.test.mjs exits 0; full node --test exits 0 after both cards"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-04T17:49:39Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-r2b/incomplete/repo/.work/JOB-20261004-1732-notch-calculator-and-country-rat/wt/T-02",
+      "branch": "job/JOB-20261004-1732-notch-calculator-and-country-rat--T-02",
+      "gate": {
+        "result": "PASS",
+        "head": "0f7d2e5604416344c5ba090d447d7b32048276c3",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-r2b/incomplete/repo/.work/JOB-20261004-1732-notch-calculator-and-country-rat/gates/T-02-a1-175029.log",
+        "at": "2026-10-04T17:50:29Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-04T17:50:29.855Z",
+          "author": "gate",
+          "text": "PASS — 8 checks ok, 0 failed (T-02-a1-175029.log)"
+        },
+        {
+          "at": "2026-10-04T17:51:28.475Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-5,6,10,11,12,14 pass; 70 tests"
+        },
+        {
+          "at": "2026-10-04T17:51:54.858Z",
+          "author": "reviewer",
+          "text": "approve — approve; nits only (literal invisible chars in QA test, redundancy)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "20c8a59b374e4bfa7a935557b5f47e52256016d4",
+        "gate_head": "0f7d2e5604416344c5ba090d447d7b32048276c3",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-r2b/incomplete/repo/.work/JOB-20261004-1732-notch-calculator-and-country-rat/gates/T-02-qa-a1-175127.log",
+        "summary": "AC-5,6,10,11,12,14 pass; 70 tests",
+        "at": "2026-10-04T17:51:28Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "20c8a59b374e4bfa7a935557b5f47e52256016d4",
+          "qa_verify": "PASS",
+          "summary": "AC-5,6,10,11,12,14 pass; 70 tests",
+          "at": "2026-10-04T17:51:28Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "20c8a59b374e4bfa7a935557b5f47e52256016d4",
+          "summary": "approve; nits only (literal invisible chars in QA test, redundancy)",
+          "at": "2026-10-04T17:51:54Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "20c8a59b374e4bfa7a935557b5f47e52256016d4",
+        "summary": "reviewer: approve — approve; nits only (literal invisible chars in QA test, redundancy)",
+        "pending": [],
+        "at": "2026-10-04T17:51:54Z"
+      }
+    }
+  ]
+}

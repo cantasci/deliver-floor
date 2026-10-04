@@ -1,0 +1,991 @@
+# gate: T-01  attempt: 1  2026-10-04T17:48:05Z
+ok    on job/JOB-20261004-1732-notch-calculator-and-country-rat--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/**","test/ratings/**"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/*.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE (AC-1)
+    # Subtest: deep-equals the 19 C1 ratings, best first
+    ok 1 - deep-equals the 19 C1 ratings, best first
+      ---
+      duration_ms: 1.334728
+      type: 'test'
+      ...
+    # Subtest: is a frozen real array
+    ok 2 - is a frozen real array
+      ---
+      duration_ms: 0.21661
+      type: 'test'
+      ...
+    # Subtest: push and index assignment throw TypeError and leave the scale intact
+    ok 3 - push and index assignment throw TypeError and leave the scale intact
+      ---
+      duration_ms: 0.637246
+      type: 'test'
+      ...
+    1..3
+ok 1 - RATING_SCALE (AC-1)
+  ---
+  duration_ms: 3.210522
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: AC-2 downgrade BBB+ -> BB+ is 3
+    ok 1 - AC-2 downgrade BBB+ -> BB+ is 3
+      ---
+      duration_ms: 0.357535
+      type: 'test'
+      ...
+    # Subtest: AC-2 downgrade BBB+ -> BBB- is 2
+    ok 2 - AC-2 downgrade BBB+ -> BBB- is 2
+      ---
+      duration_ms: 0.077221
+      type: 'test'
+      ...
+    # Subtest: AC-2 downgrade BBB+ -> BBB is 1
+    ok 3 - AC-2 downgrade BBB+ -> BBB is 1
+      ---
+      duration_ms: 0.075522
+      type: 'test'
+      ...
+    # Subtest: AC-2 downgrade BBB+ -> BB is 4
+    ok 4 - AC-2 downgrade BBB+ -> BB is 4
+      ---
+      duration_ms: 0.149938
+      type: 'test'
+      ...
+    # Subtest: AC-2 downgrade AAA -> CCC- is 18
+    ok 5 - AC-2 downgrade AAA -> CCC- is 18
+      ---
+      duration_ms: 0.213415
+      type: 'test'
+      ...
+    # Subtest: AC-2 downgrade CCC -> CCC- is 1
+    ok 6 - AC-2 downgrade CCC -> CCC- is 1
+      ---
+      duration_ms: 0.177904
+      type: 'test'
+      ...
+    # Subtest: AC-3 upgrade BBB -> A is -3
+    ok 7 - AC-3 upgrade BBB -> A is -3
+      ---
+      duration_ms: 0.247316
+      type: 'test'
+      ...
+    # Subtest: AC-3 upgrade BB+ -> BBB+ is -3
+    ok 8 - AC-3 upgrade BB+ -> BBB+ is -3
+      ---
+      duration_ms: 0.07878
+      type: 'test'
+      ...
+    # Subtest: AC-3 upgrade BB -> BBB is -3
+    ok 9 - AC-3 upgrade BB -> BBB is -3
+      ---
+      duration_ms: 0.045689
+      type: 'test'
+      ...
+    # Subtest: AC-3 upgrade AA+ -> AAA is -1
+    ok 10 - AC-3 upgrade AA+ -> AAA is -1
+      ---
+      duration_ms: 0.036569
+      type: 'test'
+      ...
+    # Subtest: AC-3 upgrade CCC- -> AAA is -18
+    ok 11 - AC-3 upgrade CCC- -> AAA is -18
+      ---
+      duration_ms: 0.036231
+      type: 'test'
+      ...
+    # Subtest: AC-4 unchanged BBB -> BBB is +0, not -0
+    ok 12 - AC-4 unchanged BBB -> BBB is +0, not -0
+      ---
+      duration_ms: 0.064437
+      type: 'test'
+      ...
+    # Subtest: AC-4 unchanged AAA -> AAA is +0, not -0
+    ok 13 - AC-4 unchanged AAA -> AAA is +0, not -0
+      ---
+      duration_ms: 0.034605
+      type: 'test'
+      ...
+    # Subtest: AC-4 unchanged CCC- -> CCC- is +0, not -0
+    ok 14 - AC-4 unchanged CCC- -> CCC- is +0, not -0
+      ---
+      duration_ms: 0.032846
+      type: 'test'
+      ...
+    # Subtest: AC-4 never returns -0 for any equal pair
+    ok 15 - AC-4 never returns -0 for any equal pair
+      ---
+      duration_ms: 0.075736
+      type: 'test'
+      ...
+    # Subtest: AC-5 normalisation
+        # Subtest: is case-insensitive
+        ok 1 - is case-insensitive
+          ---
+          duration_ms: 1.082764
+          type: 'test'
+          ...
+        # Subtest: trims surrounding whitespace
+        ok 2 - trims surrounding whitespace
+          ---
+          duration_ms: 0.109683
+          type: 'test'
+          ...
+        # Subtest: trims and ignores case together
+        ok 3 - trims and ignores case together
+          ---
+          duration_ms: 0.062748
+          type: 'test'
+          ...
+        # Subtest: accepts whitespace that String.prototype.trim removes
+        ok 4 - accepts whitespace that String.prototype.trim removes
+          ---
+          duration_ms: 0.112802
+          type: 'test'
+          ...
+        1..4
+    ok 16 - AC-5 normalisation
+      ---
+      duration_ms: 1.508014
+      type: 'suite'
+      ...
+    # Subtest: AC-6 validation
+        # Subtest: throws RangeError for empty string as previous
+        ok 1 - throws RangeError for empty string as previous
+          ---
+          duration_ms: 0.523217
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty string as current
+        ok 2 - throws RangeError for empty string as current
+          ---
+          duration_ms: 0.084985
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for spaces only as previous
+        ok 3 - throws RangeError for spaces only as previous
+          ---
+          duration_ms: 0.046558
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for spaces only as current
+        ok 4 - throws RangeError for spaces only as current
+          ---
+          duration_ms: 0.057476
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for tab and newline only as previous
+        ok 5 - throws RangeError for tab and newline only as previous
+          ---
+          duration_ms: 0.087126
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for tab and newline only as current
+        ok 6 - throws RangeError for tab and newline only as current
+          ---
+          duration_ms: 0.052734
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for D as previous
+        ok 7 - throws RangeError for D as previous
+          ---
+          duration_ms: 0.142056
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for D as current
+        ok 8 - throws RangeError for D as current
+          ---
+          duration_ms: 0.054693
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for SD as previous
+        ok 9 - throws RangeError for SD as previous
+          ---
+          duration_ms: 0.047692
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for SD as current
+        ok 10 - throws RangeError for SD as current
+          ---
+          duration_ms: 0.101776
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for NR as previous
+        ok 11 - throws RangeError for NR as previous
+          ---
+          duration_ms: 0.053115
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for NR as current
+        ok 12 - throws RangeError for NR as current
+          ---
+          duration_ms: 0.047401
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for C as previous
+        ok 13 - throws RangeError for C as previous
+          ---
+          duration_ms: 0.11834
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for C as current
+        ok 14 - throws RangeError for C as current
+          ---
+          duration_ms: 0.055931
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for AAA+ as previous
+        ok 15 - throws RangeError for AAA+ as previous
+          ---
+          duration_ms: 0.04814
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for AAA+ as current
+        ok 16 - throws RangeError for AAA+ as current
+          ---
+          duration_ms: 0.046975
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for CCC-- as previous
+        ok 17 - throws RangeError for CCC-- as previous
+          ---
+          duration_ms: 0.168409
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for CCC-- as current
+        ok 18 - throws RangeError for CCC-- as current
+          ---
+          duration_ms: 0.073963
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for BBB++ as previous
+        ok 19 - throws RangeError for BBB++ as previous
+          ---
+          duration_ms: 0.05335
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for BBB++ as current
+        ok 20 - throws RangeError for BBB++ as current
+          ---
+          duration_ms: 0.044886
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for Baa1 as previous
+        ok 21 - throws RangeError for Baa1 as previous
+          ---
+          duration_ms: 0.043679
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for Baa1 as current
+        ok 22 - throws RangeError for Baa1 as current
+          ---
+          duration_ms: 0.048961
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for inner spaces B B B+ as previous
+        ok 23 - throws RangeError for inner spaces B B B+ as previous
+          ---
+          duration_ms: 0.095064
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for inner spaces B B B+ as current
+        ok 24 - throws RangeError for inner spaces B B B+ as current
+          ---
+          duration_ms: 0.06311
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for space before sign BBB + as previous
+        ok 25 - throws RangeError for space before sign BBB + as previous
+          ---
+          duration_ms: 0.053589
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for space before sign BBB + as current
+        ok 26 - throws RangeError for space before sign BBB + as current
+          ---
+          duration_ms: 0.051482
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for undefined as previous
+        ok 27 - throws RangeError for undefined as previous
+          ---
+          duration_ms: 0.096435
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for undefined as current
+        ok 28 - throws RangeError for undefined as current
+          ---
+          duration_ms: 0.104477
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for null as previous
+        ok 29 - throws RangeError for null as previous
+          ---
+          duration_ms: 0.066496
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for null as current
+        ok 30 - throws RangeError for null as current
+          ---
+          duration_ms: 0.059135
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for number 8 as previous
+        ok 31 - throws RangeError for number 8 as previous
+          ---
+          duration_ms: 0.054244
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for number 8 as current
+        ok 32 - throws RangeError for number 8 as current
+          ---
+          duration_ms: 0.055309
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for boolean true as previous
+        ok 33 - throws RangeError for boolean true as previous
+          ---
+          duration_ms: 0.051101
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for boolean true as current
+        ok 34 - throws RangeError for boolean true as current
+          ---
+          duration_ms: 0.051972
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty object as previous
+        ok 35 - throws RangeError for empty object as previous
+          ---
+          duration_ms: 0.052215
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty object as current
+        ok 36 - throws RangeError for empty object as current
+          ---
+          duration_ms: 0.054808
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for array [BBB] as previous
+        ok 37 - throws RangeError for array [BBB] as previous
+          ---
+          duration_ms: 0.055046
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for array [BBB] as current
+        ok 38 - throws RangeError for array [BBB] as current
+          ---
+          duration_ms: 0.050067
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for String wrapper object as previous
+        ok 39 - throws RangeError for String wrapper object as previous
+          ---
+          duration_ms: 0.053042
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for String wrapper object as current
+        ok 40 - throws RangeError for String wrapper object as current
+          ---
+          duration_ms: 0.056603
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for object with toString as previous
+        ok 41 - throws RangeError for object with toString as previous
+          ---
+          duration_ms: 0.06296
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for object with toString as current
+        ok 42 - throws RangeError for object with toString as current
+          ---
+          duration_ms: 0.08053
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for zero-width space prefix as previous
+        ok 43 - throws RangeError for zero-width space prefix as previous
+          ---
+          duration_ms: 0.067272
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for zero-width space prefix as current
+        ok 44 - throws RangeError for zero-width space prefix as current
+          ---
+          duration_ms: 0.060323
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for constructor as previous
+        ok 45 - throws RangeError for constructor as previous
+          ---
+          duration_ms: 0.089113
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for constructor as current
+        ok 46 - throws RangeError for constructor as current
+          ---
+          duration_ms: 0.069737
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for __proto__ as previous
+        ok 47 - throws RangeError for __proto__ as previous
+          ---
+          duration_ms: 0.056236
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for __proto__ as current
+        ok 48 - throws RangeError for __proto__ as current
+          ---
+          duration_ms: 0.05769
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for toString as previous
+        ok 49 - throws RangeError for toString as previous
+          ---
+          duration_ms: 0.05251
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for toString as current
+        ok 50 - throws RangeError for toString as current
+          ---
+          duration_ms: 0.055994
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for length as previous
+        ok 51 - throws RangeError for length as previous
+          ---
+          duration_ms: 0.061362
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for length as current
+        ok 52 - throws RangeError for length as current
+          ---
+          duration_ms: 0.054409
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 0 as previous
+        ok 53 - throws RangeError for index 0 as previous
+          ---
+          duration_ms: 0.060337
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 0 as current
+        ok 54 - throws RangeError for index 0 as current
+          ---
+          duration_ms: 0.082119
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 7 as previous
+        ok 55 - throws RangeError for index 7 as previous
+          ---
+          duration_ms: 0.060688
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 7 as current
+        ok 56 - throws RangeError for index 7 as current
+          ---
+          duration_ms: 0.053983
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for missing arguments
+        ok 57 - throws RangeError for missing arguments
+          ---
+          duration_ms: 0.141012
+          type: 'test'
+          ...
+        # Subtest: throws RangeError when both arguments are invalid
+        ok 58 - throws RangeError when both arguments are invalid
+          ---
+          duration_ms: 0.076803
+          type: 'test'
+          ...
+        # Subtest: error message names the argument and the bad value
+        ok 59 - error message names the argument and the bad value
+          ---
+          duration_ms: 0.176522
+          type: 'test'
+          ...
+        1..59
+    ok 17 - AC-6 validation
+      ---
+      duration_ms: 5.508337
+      type: 'suite'
+      ...
+    # Subtest: has no side effects on the scale
+    ok 18 - has no side effects on the scale
+      ---
+      duration_ms: 0.09588
+      type: 'test'
+      ...
+    1..18
+ok 2 - notchChange
+  ---
+  duration_ms: 9.672314
+  type: 'suite'
+  ...
+# Subtest: notchCalculator
+    # Subtest: AC-7 BBB+ -> BB+ (C2: 3 notches, not 2)
+    ok 1 - AC-7 BBB+ -> BB+ (C2: 3 notches, not 2)
+      ---
+      duration_ms: 0.340432
+      type: 'test'
+      ...
+    # Subtest: AC-7 BBB+ -> BBB-
+    ok 2 - AC-7 BBB+ -> BBB-
+      ---
+      duration_ms: 0.059254
+      type: 'test'
+      ...
+    # Subtest: AC-7 BBB+ -> BBB (C6)
+    ok 3 - AC-7 BBB+ -> BBB (C6)
+      ---
+      duration_ms: 0.065871
+      type: 'test'
+      ...
+    # Subtest: AC-7 BBB+ -> BB
+    ok 4 - AC-7 BBB+ -> BB
+      ---
+      duration_ms: 1.032587
+      type: 'test'
+      ...
+    # Subtest: AC-7 AAA -> CCC-
+    ok 5 - AC-7 AAA -> CCC-
+      ---
+      duration_ms: 0.089078
+      type: 'test'
+      ...
+    # Subtest: AC-7 CCC -> CCC-
+    ok 6 - AC-7 CCC -> CCC-
+      ---
+      duration_ms: 0.165523
+      type: 'test'
+      ...
+    # Subtest: AC-8 BBB -> A
+    ok 7 - AC-8 BBB -> A
+      ---
+      duration_ms: 0.056582
+      type: 'test'
+      ...
+    # Subtest: AC-8 BB+ -> BBB+
+    ok 8 - AC-8 BB+ -> BBB+
+      ---
+      duration_ms: 0.03953
+      type: 'test'
+      ...
+    # Subtest: AC-8 BB -> BBB
+    ok 9 - AC-8 BB -> BBB
+      ---
+      duration_ms: 0.036832
+      type: 'test'
+      ...
+    # Subtest: AC-8 AA+ -> AAA
+    ok 10 - AC-8 AA+ -> AAA
+      ---
+      duration_ms: 0.037133
+      type: 'test'
+      ...
+    # Subtest: AC-8 CCC- -> AAA
+    ok 11 - AC-8 CCC- -> AAA
+      ---
+      duration_ms: 0.036019
+      type: 'test'
+      ...
+    # Subtest: AC-8 BBB -> BBB
+    ok 12 - AC-8 BBB -> BBB
+      ---
+      duration_ms: 0.031182
+      type: 'test'
+      ...
+    # Subtest: AC-8 unchanged AAA and CCC- give +0 notches
+    ok 13 - AC-8 unchanged AAA and CCC- give +0 notches
+      ---
+      duration_ms: 0.080233
+      type: 'test'
+      ...
+    # Subtest: AC-5 trims and ignores case
+    ok 14 - AC-5 trims and ignores case
+      ---
+      duration_ms: 0.046895
+      type: 'test'
+      ...
+    # Subtest: AC-6 validation
+        # Subtest: throws RangeError for empty string as previous
+        ok 1 - throws RangeError for empty string as previous
+          ---
+          duration_ms: 0.520592
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty string as current
+        ok 2 - throws RangeError for empty string as current
+          ---
+          duration_ms: 0.079574
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for spaces only as previous
+        ok 3 - throws RangeError for spaces only as previous
+          ---
+          duration_ms: 0.040505
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for spaces only as current
+        ok 4 - throws RangeError for spaces only as current
+          ---
+          duration_ms: 0.112974
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for tab and newline only as previous
+        ok 5 - throws RangeError for tab and newline only as previous
+          ---
+          duration_ms: 0.079777
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for tab and newline only as current
+        ok 6 - throws RangeError for tab and newline only as current
+          ---
+          duration_ms: 0.038404
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for D as previous
+        ok 7 - throws RangeError for D as previous
+          ---
+          duration_ms: 0.036696
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for D as current
+        ok 8 - throws RangeError for D as current
+          ---
+          duration_ms: 0.035554
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for SD as previous
+        ok 9 - throws RangeError for SD as previous
+          ---
+          duration_ms: 0.034534
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for SD as current
+        ok 10 - throws RangeError for SD as current
+          ---
+          duration_ms: 0.034352
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for NR as previous
+        ok 11 - throws RangeError for NR as previous
+          ---
+          duration_ms: 0.033339
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for NR as current
+        ok 12 - throws RangeError for NR as current
+          ---
+          duration_ms: 0.034884
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for C as previous
+        ok 13 - throws RangeError for C as previous
+          ---
+          duration_ms: 0.113994
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for C as current
+        ok 14 - throws RangeError for C as current
+          ---
+          duration_ms: 0.065743
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for AAA+ as previous
+        ok 15 - throws RangeError for AAA+ as previous
+          ---
+          duration_ms: 0.079588
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for AAA+ as current
+        ok 16 - throws RangeError for AAA+ as current
+          ---
+          duration_ms: 0.051865
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for CCC-- as previous
+        ok 17 - throws RangeError for CCC-- as previous
+          ---
+          duration_ms: 0.04773
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for CCC-- as current
+        ok 18 - throws RangeError for CCC-- as current
+          ---
+          duration_ms: 0.044668
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for BBB++ as previous
+        ok 19 - throws RangeError for BBB++ as previous
+          ---
+          duration_ms: 0.046737
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for BBB++ as current
+        ok 20 - throws RangeError for BBB++ as current
+          ---
+          duration_ms: 0.042775
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for Baa1 as previous
+        ok 21 - throws RangeError for Baa1 as previous
+          ---
+          duration_ms: 0.041706
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for Baa1 as current
+        ok 22 - throws RangeError for Baa1 as current
+          ---
+          duration_ms: 0.041944
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for inner spaces B B B+ as previous
+        ok 23 - throws RangeError for inner spaces B B B+ as previous
+          ---
+          duration_ms: 0.087714
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for inner spaces B B B+ as current
+        ok 24 - throws RangeError for inner spaces B B B+ as current
+          ---
+          duration_ms: 0.056183
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for space before sign BBB + as previous
+        ok 25 - throws RangeError for space before sign BBB + as previous
+          ---
+          duration_ms: 0.044367
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for space before sign BBB + as current
+        ok 26 - throws RangeError for space before sign BBB + as current
+          ---
+          duration_ms: 0.041204
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for undefined as previous
+        ok 27 - throws RangeError for undefined as previous
+          ---
+          duration_ms: 0.044888
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for undefined as current
+        ok 28 - throws RangeError for undefined as current
+          ---
+          duration_ms: 0.041701
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for null as previous
+        ok 29 - throws RangeError for null as previous
+          ---
+          duration_ms: 0.051603
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for null as current
+        ok 30 - throws RangeError for null as current
+          ---
+          duration_ms: 0.071081
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for number 8 as previous
+        ok 31 - throws RangeError for number 8 as previous
+          ---
+          duration_ms: 0.052741
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for number 8 as current
+        ok 32 - throws RangeError for number 8 as current
+          ---
+          duration_ms: 0.044237
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for boolean true as previous
+        ok 33 - throws RangeError for boolean true as previous
+          ---
+          duration_ms: 0.043631
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for boolean true as current
+        ok 34 - throws RangeError for boolean true as current
+          ---
+          duration_ms: 0.067217
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty object as previous
+        ok 35 - throws RangeError for empty object as previous
+          ---
+          duration_ms: 0.04389
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty object as current
+        ok 36 - throws RangeError for empty object as current
+          ---
+          duration_ms: 0.0443
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for array [BBB] as previous
+        ok 37 - throws RangeError for array [BBB] as previous
+          ---
+          duration_ms: 0.04325
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for array [BBB] as current
+        ok 38 - throws RangeError for array [BBB] as current
+          ---
+          duration_ms: 0.044679
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for String wrapper object as previous
+        ok 39 - throws RangeError for String wrapper object as previous
+          ---
+          duration_ms: 0.0436
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for String wrapper object as current
+        ok 40 - throws RangeError for String wrapper object as current
+          ---
+          duration_ms: 0.042206
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for object with toString as previous
+        ok 41 - throws RangeError for object with toString as previous
+          ---
+          duration_ms: 0.042503
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for object with toString as current
+        ok 42 - throws RangeError for object with toString as current
+          ---
+          duration_ms: 0.044646
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for zero-width space prefix as previous
+        ok 43 - throws RangeError for zero-width space prefix as previous
+          ---
+          duration_ms: 0.046138
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for zero-width space prefix as current
+        ok 44 - throws RangeError for zero-width space prefix as current
+          ---
+          duration_ms: 0.042866
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for constructor as previous
+        ok 45 - throws RangeError for constructor as previous
+          ---
+          duration_ms: 0.050895
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for constructor as current
+        ok 46 - throws RangeError for constructor as current
+          ---
+          duration_ms: 0.067959
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for __proto__ as previous
+        ok 47 - throws RangeError for __proto__ as previous
+          ---
+          duration_ms: 0.055574
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for __proto__ as current
+        ok 48 - throws RangeError for __proto__ as current
+          ---
+          duration_ms: 0.049814
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for toString as previous
+        ok 49 - throws RangeError for toString as previous
+          ---
+          duration_ms: 0.045439
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for toString as current
+        ok 50 - throws RangeError for toString as current
+          ---
+          duration_ms: 0.169497
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for length as previous
+        ok 51 - throws RangeError for length as previous
+          ---
+          duration_ms: 0.07133
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for length as current
+        ok 52 - throws RangeError for length as current
+          ---
+          duration_ms: 0.048215
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 0 as previous
+        ok 53 - throws RangeError for index 0 as previous
+          ---
+          duration_ms: 0.04466
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 0 as current
+        ok 54 - throws RangeError for index 0 as current
+          ---
+          duration_ms: 0.066541
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 7 as previous
+        ok 55 - throws RangeError for index 7 as previous
+          ---
+          duration_ms: 0.064546
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for index 7 as current
+        ok 56 - throws RangeError for index 7 as current
+          ---
+          duration_ms: 0.048741
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for missing arguments
+        ok 57 - throws RangeError for missing arguments
+          ---
+          duration_ms: 0.119135
+          type: 'test'
+          ...
+        1..57
+    ok 15 - AC-6 validation
+      ---
+      duration_ms: 4.546148
+      type: 'suite'
+      ...
+    # Subtest: same call twice gives deep-equal but separate objects
+    ok 16 - same call twice gives deep-equal but separate objects
+      ---
+      duration_ms: 0.129431
+      type: 'test'
+      ...
+    # Subtest: AC-9 property over all 361 ordered pairs
+    ok 17 - AC-9 property over all 361 ordered pairs
+      ---
+      duration_ms: 2.570552
+      type: 'test'
+      ...
+    1..17
+ok 3 - notchCalculator
+  ---
+  duration_ms: 9.794998
+  type: 'suite'
+  ...
+1..3
+# tests 155
+# suites 6
+# pass 155
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 142.403343
+ok    verify passed
