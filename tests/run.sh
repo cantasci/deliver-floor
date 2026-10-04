@@ -110,6 +110,12 @@ expect_ok "the human's answer is recorded" "$DL" clarify CON-interface "signed i
 jq -e '.items[] | select(.id=="CON-interface") | .status=="decided" and (.source|startswith("human:")) and (.history|length==1)' "$RJ/readiness.json" >/dev/null \
   && ok "answer stored with source human + history of the question" || bad "clarify record"
 grep -q "signed integers" "$RJ/readiness.md" && ok "readiness.md carries the decision" || bad "readiness.md"
+# R2: before the freeze an answer that does not answer its question goes back to the human
+out="$("$DL" reopen CON-interface "the answer is about the display, not the sign" 2>&1)"; contains "dl reopen puts an answered item back to the human" "$out" "open again"
+jq -e '.items[] | select(.id=="CON-interface") | .status=="open" and .owner=="business" and (.question|test("Asked again")) and (.history[-1].rejected|test("display"))' "$RJ/readiness.json" >/dev/null \
+  && ok "…same question, asked again, the rejected answer kept in its history" || bad "reopen record: $(jq -c '.items[] | select(.id=="CON-interface")' "$RJ/readiness.json")"
+grep -q "CON-interface" "$RJ/QUESTIONS.md" && ok "…and QUESTIONS.md asks it again" || bad "QUESTIONS.md"
+DELIVER_APPROVER=ana "$DL" clarify CON-interface "signed like notchChange" >/dev/null
 jq '.items += [{id:"X-immutable",status:"open",owner:"pm",question:"Freeze the options array?",options:["freeze","plain"]}]' "$RJ/readiness.json" > "$RJ/r.t" && mv "$RJ/r.t" "$RJ/readiness.json"
 contains "next asks the PM to decide an implementation detail" "$("$DL" next)" "DECIDE  (PM) X-immutable"
 expect_fail 1 "planning refused while a PM decision is open" "$DL" phase planning

@@ -119,7 +119,8 @@ READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.m
    Never answer a business item yourself, never pick a default. Headless: `QUESTIONS.md` is the question; stop.
    On resume, answers already recorded with `dl clarify` (source `human: …`) **are the human's**: hooks stop every agent and every
    headless session from running `dl clarify`, so only a person at a terminal can have recorded them. Read each answer; if one
-   does not actually answer its question, ask again — this is still the start. Check every answer **before** `dl phase planning`:
+   does not actually answer its question, put it back to the human — this is still the start:
+   `"$DL" reopen <id> "<why the answer does not answer it>"` (it is open again and QUESTIONS.md asks it; never edit the item). Check every answer **before** `dl phase planning`:
    after the freeze you no longer ask (invariant 7), so a gap found later is decided by you within the frozen decisions.
 4. `"$DL" phase planning` — refused until nothing is open. It **freezes** `readiness.json` (decisions + architecture): from now
    on they do not change, and `dl` refuses every step if the file is edited. Only the human can reopen them (`dl unfreeze`).

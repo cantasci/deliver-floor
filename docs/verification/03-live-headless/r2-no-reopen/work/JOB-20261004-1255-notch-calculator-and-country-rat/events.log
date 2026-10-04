@@ -1,0 +1,19 @@
+2026-10-04T12:55:31Z	new	Notch calculator and country rating
+2026-10-04T12:55:37Z	jobset	stack: .stack=["javascript"]
+2026-10-04T12:55:37Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"backend-lead selected; implements notchChange/notchCalculator/countryRatingChangeWl"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer"}]
+2026-10-04T12:55:37Z	jobset	assumptions: .assumptions += ["C5 is missing from the request; no sign convention for notchCalculator().notches is assumed yet — raised as a readiness question"]
+2026-10-04T12:55:38Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T12:55:38Z	phase	readiness
+2026-10-04T13:00:50Z	agent	business-analyst a4aa929a: Two items need a business answer before planning: the sign of `notchCalculator().notches` for upgrades (CON-interface) and what "input is trimmed" removes (X-in
+2026-10-04T13:01:27Z	readiness	33 items: 20 decided, 7 n/a, 6 open
+2026-10-04T13:01:27Z	decide	X-error-message: A: tests assert only instanceof RangeError; message names the offending value — Message text is not in the contract; avoids brittle tests
+2026-10-04T13:01:27Z	decide	X-test-layout: A: dev test/<area>/<name>.test.mjs; QA test/<area>/<name>.acceptance.test.mjs — Separate files avoid dev/QA write conflicts and match CLAUDE.md naming
+2026-10-04T13:01:27Z	decide	X-scale-shape: A: RATING_SCALE frozen array; returned objects plain — Protects the shared constant from importers; contract silent otherwise
+2026-10-04T13:01:27Z	decide	DEL-docs: A: JSDoc on the four exports only — Documents sign and RangeError for importers; no README change requested
+2026-10-04T13:01:38Z	jobset	roles: .roles += [{"role":"docs","agent":"ecc:doc-updater","why":"DEL-docs decided: JSDoc on the four exports"}]
+2026-10-04T13:01:38Z	roles	ba backend-lead backend qa reviewer docs
+2026-10-04T13:01:38Z	phase	readiness
+2026-10-04T13:01:38Z	readiness	33 items: 24 decided, 7 n/a, 2 open
+2026-10-04T13:01:39Z	phase	awaiting_clarification
+2026-10-04T13:01:46Z	clarify	CON-interface: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-04T13:01:46Z	clarify	X-input-trim: Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.

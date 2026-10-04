@@ -29,6 +29,7 @@
 #   dl wt rm <card>                remove the card worktree (branch is kept)
 #   dl card <card> state <state>   review | blocked | ready (from blocked) | archived ["<reason>" — required after the start]
 #   dl card <card> note "<text>"   attach a note to a card (blocked reason, guidance, …)
+#   dl reopen <id> "<why>"         before the freeze: an answer that does not answer its question goes back to the human
 #   dl pm-decide "<what>" "<why>" [card]   after the start the human is not asked: your decision, logged, listed in the PR
 #   dl card <card> retry           human-granted: attempts=0 and state=ready (after guidance)
 #   dl card <card> set <field> <value> "<reason>"   change a ready/blocked card's contract (validated, logged, history)
@@ -534,6 +535,14 @@ cmd_decide() {
   node "$BIN_DIR/readiness.mjs" decide "$JOB_DIR" "$id" "$decision" "$why" || exit 1
   node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || true
   reset_stop_guard; log_event decide "$id: $decision — $why"
+}
+cmd_reopen() {
+  load_job
+  local id=${1:-} why=${2:-}; [[ -n $id && -n $why ]] || die 'usage: dl reopen <id> "<why the recorded answer does not answer it>"'
+  [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "items are reopened only at the start, before the freeze (now: $(phase_now)) — after that it is your decision: dl pm-decide"
+  node "$BIN_DIR/readiness.mjs" reopen "$JOB_DIR" "$id" "$why" || exit 1
+  node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || true   # QUESTIONS.md lists it again
+  reset_stop_guard; log_event reopen "$id: $why"; echo "$id is open again — QUESTIONS.md asks it; the human answers with dl clarify"
 }
 cmd_clarify() {
   human_only "answering a business question (dl clarify)"; load_job
@@ -1312,6 +1321,7 @@ main() {
     clarify) cmd_clarify "$@" ;;
     decide) cmd_decide "$@" ;;
     pm-decide) cmd_pm_decide "$@" ;;
+    reopen) cmd_reopen "$@" ;;
     unfreeze) cmd_unfreeze "$@" ;;
     reseal) cmd_reseal "$@" ;;
     learn) cmd_learn "$@" ;;
@@ -1340,7 +1350,7 @@ main() {
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,63p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,64p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

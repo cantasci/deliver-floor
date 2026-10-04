@@ -151,8 +151,12 @@ if [[ -n ${E2E_MISMATCH:-} ]]; then
   step "R2 · Michael does not build on an answer that does not answer its question"
   n="$(grep -cP "\tclarify\t$E2E_MISMATCH:" "$J/events.log")"
   [[ $n -ge 2 ]] && ok "$E2E_MISMATCH was asked again after the unrelated answer ($n answers recorded)" || bad "$E2E_MISMATCH was not asked again ($n answer(s) recorded)"
-  fin="$(jq -r --arg id "$E2E_MISMATCH" '(.items // .)[] | select(.id==$id) | .answer' "$J/readiness.json")"
-  [[ $fin != *"displayed"* ]] && ok "the frozen answer for $E2E_MISMATCH is the right one: ${fin:0:80}" || bad "the unrelated answer was frozen: ${fin:0:80}"
+  grep -qP "\treopen\t$E2E_MISMATCH:" "$J/events.log" && ok "Michael put $E2E_MISMATCH back to the human (dl reopen): $(grep -P "\treopen\t$E2E_MISMATCH:" "$J/events.log" | head -1 | cut -f3 | cut -c1-100)" \
+    || bad "Michael did not reopen $E2E_MISMATCH"
+  fin="$(jq -r --arg id "$E2E_MISMATCH" '(.items // .)[] | select(.id==$id) | .answer // ""' "$J/readiness.json")"
+  if grep -qP "\tfreeze\t" "$J/events.log"; then
+    [[ $fin != *"displayed"* ]] && ok "the frozen answer for $E2E_MISMATCH is the right one: ${fin:0:80}" || bad "the unrelated answer was frozen: ${fin:0:80}"
+  else bad "readiness was never frozen — the job did not get past the start"; fi
 fi
 if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   step "R3 · a blocked card is Michael's decision — no question to the human after the start"

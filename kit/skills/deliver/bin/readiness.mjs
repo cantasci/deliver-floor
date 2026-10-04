@@ -154,6 +154,23 @@ export function decide(jobDir, id, decision, rationale) { // the PM closes an im
   return i;
 }
 
+// Before the freeze, an answer that does not answer its question goes back to the human: the item is open again with
+// the same question (and why the answer did not settle it); the rejected answer stays in its history.
+export function reopen(jobDir, id, why) {
+  const file = join(jobDir, "readiness.json");
+  const raw = JSON.parse(readFileSync(file, "utf8"));
+  const items = Array.isArray(raw) ? raw : raw.items;
+  const i = items.find((x) => x.id === id);
+  if (!i) throw new Error(`no readiness item ${id}`);
+  if (i.status !== "decided") throw new Error(`${id} is ${i.status} — only a decided item can be reopened`);
+  const asked = [...(i.history ?? [])].reverse().find((h) => h.question)?.question ?? i.question ?? `What is the answer for ${id}?`;
+  i.history = [...(i.history ?? []), { status: i.status, answer: i.answer, source: i.source, rejected: why, at: new Date().toISOString() }];
+  Object.assign(i, { status: "open", owner: "business", question: `${asked} (Asked again: the recorded answer did not answer it — ${why})` });
+  delete i.answer; delete i.source; delete i.quote;
+  writeFileSync(file, JSON.stringify(raw, null, 2) + "\n");
+  return i;
+}
+
 export function clarify(jobDir, id, by, answer) {
   const file = join(jobDir, "readiness.json");
   const raw = JSON.parse(readFileSync(file, "utf8"));
@@ -191,6 +208,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       if (!id || !by || !answer.length) throw new Error('usage: readiness.mjs clarify <job dir> <id> <by> "<answer>"');
       const i = clarify(jobDir, id, by, answer.join(" "));
       console.log(`${i.id}: decided — ${i.answer}`);
-    } else throw new Error("usage: readiness.mjs applicable|check|clarify <job dir> …");
+    } else if (cmd === "reopen") {
+      const [id, ...why] = rest;
+      if (!id || !why.length) throw new Error('usage: readiness.mjs reopen <job dir> <id> "<why the answer did not answer it>"');
+      const i = reopen(jobDir, id, why.join(" "));
+      console.log(`${i.id}: open again for the human`);
+    } else throw new Error("usage: readiness.mjs applicable|check|clarify|decide|reopen <job dir> …");
   } catch (e) { console.error(`readiness: ${e.message}`); process.exit(1); }
 }
