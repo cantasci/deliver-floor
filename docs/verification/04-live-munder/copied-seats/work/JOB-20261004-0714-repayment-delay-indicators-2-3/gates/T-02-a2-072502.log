@@ -1,0 +1,121 @@
+# gate: T-02  attempt: 2  2026-10-04T07:25:02Z
+ok    on job/JOB-20261004-0714-repayment-delay-indicators-2-3--T-02
+ok    working tree clean
+ok    3 commit(s)
+ok    all changes within scope ["src/indicators/delayCount.mjs","test/indicators/delayCount.test.mjs"] (+ QA tests ["test/integration/indicators/delayCount.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/delayCount.test.mjs
+TAP version 13
+# Subtest: option list content, order and frozen
+ok 1 - option list content, order and frozen
+  ---
+  duration_ms: 1.372136
+  type: 'test'
+  ...
+# Subtest: WL per option
+ok 2 - WL per option
+  ---
+  duration_ms: 0.365787
+  type: 'test'
+  ...
+# Subtest: trims leading/trailing whitespace
+ok 3 - trims leading/trailing whitespace
+  ---
+  duration_ms: 1.816497
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError
+ok 4 - invalid strings throw RangeError
+  ---
+  duration_ms: 2.016306
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError
+ok 5 - non-strings throw RangeError
+  ---
+  duration_ms: 0.474617
+  type: 'test'
+  ...
+# Subtest: round-trip: every option yields integer WL in 0..4
+ok 6 - round-trip: every option yields integer WL in 0..4
+  ---
+  duration_ms: 0.689768
+  type: 'test'
+  ...
+# Subtest: exact export names
+ok 7 - exact export names
+  ---
+  duration_ms: 0.23387
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 150.985966
+ok    verify passed
+----- qa_verify (QA's integration/e2e tests): node --test test/integration/indicators/delayCount.integration.test.mjs
+TAP version 13
+# Subtest: AC-6: options deep-equal ["0","1",">1"] in order and are frozen
+ok 1 - AC-6: options deep-equal ["0","1",">1"] in order and are frozen
+  ---
+  duration_ms: 5.762717
+  type: 'test'
+  ...
+# Subtest: AC-7: "0", "1", ">1" give 0, 1, 2
+ok 2 - AC-7: "0", "1", ">1" give 0, 1, 2
+  ---
+  duration_ms: 0.417284
+  type: 'test'
+  ...
+# Subtest: AC-8: leading/trailing whitespace (space, tab, newline, NBSP) is trimmed
+ok 3 - AC-8: leading/trailing whitespace (space, tab, newline, NBSP) is trimmed
+  ---
+  duration_ms: 0.218832
+  type: 'test'
+  ...
+# Subtest: AC-9: invalid strings throw RangeError
+ok 4 - AC-9: invalid strings throw RangeError
+  ---
+  duration_ms: 0.799881
+  type: 'test'
+  ...
+# Subtest: AC-9: non-strings (incl. numeric 0 and 1) throw RangeError
+ok 5 - AC-9: non-strings (incl. numeric 0 and 1) throw RangeError
+  ---
+  duration_ms: 0.501516
+  type: 'test'
+  ...
+# Subtest: AC-9: ">1 " with trailing space returns 2
+ok 6 - AC-9: ">1 " with trailing space returns 2
+  ---
+  duration_ms: 0.232982
+  type: 'test'
+  ...
+# Subtest: AC-10: every option yields an integer WL in 0..4 and none throws
+ok 7 - AC-10: every option yields an integer WL in 0..4 and none throws
+  ---
+  duration_ms: 0.396722
+  type: 'test'
+  ...
+# Subtest: AC-11: exact export names, no I/O or imports in module, no dependencies in package.json
+ok 8 - AC-11: exact export names, no I/O or imports in module, no dependencies in package.json
+  ---
+  duration_ms: 235.528566
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 365.960267
+ok    QA tests pass

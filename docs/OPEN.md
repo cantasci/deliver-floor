@@ -12,7 +12,7 @@ Last updated: 2026-10-03.
 | --- | --- | --- | --- |
 | L1 | Headless `complete` (`tests/e2e-live.sh complete`) | last passed in run 7; shared code changed since (`stop-guard`, validate path rule, `roles.mjs`, plugin detection) | **done** — run 21 passed 25/25 ([report](verification/03-live-headless/complete-run21/report.md)) |
 | L2 | Headless `incomplete` (`tests/e2e-live.sh incomplete`) | run 19 failed in the test's prepared human; run 20 stopped correctly on two new business questions, which the user answered | **done** — run 23 passed 30/30, the recorded answer checked against its question ([report](verification/03-live-headless/incomplete-run23/report.md)) |
-| L3 | Munder Difflin floor with the kit **copied** (not a plugin) and seats | last live with a copy was run 15, before the `md-inbox` and `stop-guard` fixes; run 18 verified the plugin install | L1/L2 done; waits for the user's decision on R2 (it runs on the answer picker) |
+| L3 | Munder Difflin floor with the kit **copied** (not a plugin) and seats | last live with a copy was run 15, before the `md-inbox` and `stop-guard` fixes | **done** — run 24 passed every check ([report](verification/04-live-munder/copied-seats/report.md)) |
 | L4 | **Interactive mode** — a person at the terminal with Michael (`tests/e2e-interactive.sh`) | first run (run 22) passed every check, but its one human answer was the wrong answer to a compliance question (R2) — the answer path is not verified | mechanics verified ([report](verification/06-live-interactive/first-run/report.md)); repeat after R2 — the picker change is on hold by the user |
 
 ## Multiple projects on one floor
@@ -36,7 +36,7 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 
 | R2 | **Michael recorded an answer that does not answer its question.** In the first interactive run the test's prepared human (a first-keyword match) answered a compliance question ("is any banking regulation a constraint?") with the WL-thresholds answer; Michael recorded it with `dl clarify` and moved on. In headless run 19 he caught the same kind of mismatch and asked again — so the playbook rule exists but was not applied. | **Fixed in code, not yet live:** the playbook checks every answer against its question before `dl clarify`; the test picker takes an item id or at least two keywords, else a person answers (`tests/run.sh`: the live compliance case is now unanswered). Closes with the L4 repeat. |
 
-| R3 | **The human is asked only at the start** (the user's rule): after planning Michael decides himself — a blocked card is split or dropped with its reason (`dl pm-decide`, `dl card … state archived "<why>"`), `awaiting_clarification` cannot be reopened, and `dl ship` lists every such decision in the PR body. | **Done in code and covered by `tests/run.sh`**; a blocked card has not happened in a live run yet, so the live path is not exercised. |
+| R3 | **The human is asked only at the start** (the user's rule): after planning Michael decides himself — a blocked card is split or dropped with its reason (`dl pm-decide`, `dl card … state archived "<why>"`), `awaiting_clarification` cannot be reopened, and `dl ship` lists every such decision in the PR body. | **Done in code (`tests/run.sh`); live in run 24**: Michael asked nothing after planning and his two `pm-decide` decisions are in the PR body. Not yet seen live: a blocked card being split or dropped. |
 
 ## Verified by the owner, not here
 

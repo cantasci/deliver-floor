@@ -1,0 +1,6 @@
+MODE: CLOSING
+ROLE CARD: /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/roles/ba.md
+PLAN: /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/plan.md
+EVIDENCE: board /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/board.json (gate/qa/review per card), handoffs in /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/handoffs/, gate logs in /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/gates/, verify-all log /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/gates/verify-all-072545.log. Integrated code: /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/wt/_integration (job branch job/JOB-20261004-0714-repayment-delay-indicators-2-3) or git show on that branch.
+For each AC: met / not met / partially, with the evidence (test name, QA result, log file). List follow-ups.
+OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list. Write it to: /tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/out/closing-ba.md
