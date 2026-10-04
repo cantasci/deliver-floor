@@ -13,6 +13,10 @@
 #     parallel    two independent requirements, "two backend developers in parallel" → two seats work at the same time
 #   Each writes <work dir>/<scenario>/report.md (the scenario, step by step) and keeps every artifact.
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
+#   E2E_MISMATCH=<readiness id>  the human first answers that item with an unrelated answer: Michael must not build on it,
+#                                must ask it again (still the start), and deliver after the right answer (R2)
+#   E2E_MAX_ATTEMPTS=1           one attempt per card: a review change blocks a card; Michael must decide it himself — split
+#                                or drop, recorded and listed in the PR — and ask nothing (R3). No blocked card = not exercised
 set -uo pipefail
 # grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
 gq() { grep "$@" >/dev/null; }
@@ -48,6 +52,10 @@ fi
 iso_env claude plugin list 2>/dev/null | gq ecc@ecc && ok "ECC plugin installed ($(iso_env claude plugin list 2>/dev/null | grep -A1 ecc@ecc | grep -o 'Version: [0-9.]*'))" || bad "ECC plugin not installed"
 iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
 SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" "$SB" "$EXN" > /dev/null
+if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
+  jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
+  git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"
+fi
 iso_env "$HERE/scripts/doctor.sh" "$SB" > "$W/doctor.log" 2>&1 && ok "doctor: $(tail -1 "$W/doctor.log")" || bad "doctor: $(tail -1 "$W/doctor.log")"
 DL="$ISO_HOME/.claude/skills/deliver/bin/dl"
 dlx() { iso_env "$DL" -C "$SB" "$@"; }
@@ -78,6 +86,10 @@ for round in 1 2 3; do
   log "Open questions (QUESTIONS.md):"; sed 's/^/    /' "$J/QUESTIONS.md" >> "$REP"
   while IFS=$'\t' read -r id q; do
     ans="$(node "$HERE/tests/pick-answer.mjs" "$EX/HUMAN_ANSWERS.json" "$q" "$id" 2>/dev/null)"
+    if [[ $id == "${E2E_MISMATCH:-}" && ! -f $W/.mismatched ]]; then   # R2: the first answer is about something else
+      ans="$(jq -r '.[] | select(.topic | startswith("what '"'"'displayed'"'"' means")) | .answer' "$EX/HUMAN_ANSWERS.json")"; touch "$W/.mismatched"
+      log "    (R2) answering $id on purpose with an unrelated answer: ${ans:0:90}"
+    fi
     if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id — $(cut -c1-90 <<<"$q")"
     else bad "no prepared answer for $id — a real person must answer: $q"; fi
   done < <(jq -r '(.items // .)[] | select(.status=="open" and .owner != "pm") | [.id, .question] | @tsv' "$J/readiness.json")
@@ -134,6 +146,33 @@ if [[ $SC == parallel ]]; then
   first_merge="$(grep -n $'\tintegrate\t' "$J/events.log" | head -1 | cut -d: -f1)"
   assigns_before="$(head -n "${first_merge:-0}" "$J/events.log" | grep -c $'\tassign\t')"
   [[ ${assigns_before:-0} -ge 2 ]] && ok "two cards were assigned before the first merge (they ran in parallel)" || bad "cards ran one after another"
+fi
+if [[ -n ${E2E_MISMATCH:-} ]]; then
+  step "R2 · Michael does not build on an answer that does not answer its question"
+  n="$(grep -cP "\tclarify\t$E2E_MISMATCH:" "$J/events.log")"
+  [[ $n -ge 2 ]] && ok "$E2E_MISMATCH was asked again after the unrelated answer ($n answers recorded)" || bad "$E2E_MISMATCH was not asked again ($n answer(s) recorded)"
+  fin="$(jq -r --arg id "$E2E_MISMATCH" '(.items // .)[] | select(.id==$id) | .answer' "$J/readiness.json")"
+  [[ $fin != *"displayed"* ]] && ok "the frozen answer for $E2E_MISMATCH is the right one: ${fin:0:80}" || bad "the unrelated answer was frozen: ${fin:0:80}"
+fi
+if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
+  step "R3 · a blocked card is Michael's decision — no question to the human after the start"
+  blocked="$(grep -oP "\tstate\t\KT-[0-9]+(?==blocked)" "$J/events.log" | sort -u | tr '\n' ' ')"
+  if [[ -z $blocked ]]; then log "R3 NOT EXERCISED: no card was blocked in this run (every card passed on its one attempt)"
+  else
+    log "blocked card(s): $blocked"
+    pl="$(grep -nP "\tphase\tplanning" "$J/events.log" | head -1 | cut -d: -f1)"
+    late="$(tail -n +"${pl:-1}" "$J/events.log" | grep -cP "\tphase\tawaiting_clarification|\tclarify\t")"
+    [[ $late -eq 0 && ! -f $J/APPROVAL.md ]] && ok "no question to the human after planning (no clarify, no APPROVAL.md)" || bad "the human was asked after the start ($late event(s), APPROVAL.md: $([[ -f $J/APPROVAL.md ]] && echo yes || echo no))"
+    for c in $blocked; do
+      st="$(jq -r --arg c "$c" '.cards[] | select(.id==$c) | .state' "$B")"
+      dec="$(grep -P "\tpm-decision\t$c:" "$J/events.log" | head -1 | cut -f3)"
+      [[ ( $st == archived || $st == merged ) ]] && ok "$c was decided by Michael: now $st" || bad "$c is still $st"
+      [[ $st == merged || -n $dec ]] && ok "…with a recorded decision: ${dec:0:110}" || bad "$c archived without a recorded decision"
+    done
+    grep -q "## Decisions Michael took after the start" "$J/report.md" && [[ "$(sed -n '/deliver:pm-decisions/,$p' "$J/report.md" | grep -c '^- ')" -ge 1 ]] \
+      && ok "the PR body lists his decisions" || bad "the PR body does not list the decisions"
+    log "note: a dropped card leaves its requirement undelivered — the oracle result above shows the effect"
+  fi
 fi
 cost="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | jq -s '[.[] | select(.type=="result") | .total_cost_usd // 0] | add // 0')"
 step "result"
