@@ -1,0 +1,79 @@
+
+━━ 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+√ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+  ✔ ECC plugin installed (Version: 2.2.3)
+  ✔ kit installed (scripts/install.sh --user)
+  ✔ doctor: result: 25 ok, 5 warning(s), 0 problem(s)
+
+━━ 2 · run: the only input is examples/watchlist-poc/JOB-incomplete.md
+    ▶ claude -p "/deliver /home/user/skills-shop/examples/watchlist-poc/JOB-incomplete.md"   (log: .work/runs/20261004-080028.jsonl)
+      result: success  turns=16  cost=$1.2655158000000002
+    ⏸  the requirements have open questions: .work/JOB-20261004-0800-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+  ✔ Michael opened the job JOB-20261004-0800-rating-notch-calculator-and-coun
+
+━━ 3 · the gap: Michael must stop and ask — not assume
+  ✔ phase awaiting_clarification (stopped before planning)
+  ✔ QUESTIONS.md asks about the unspecified sign of notches
+  ✔ no card was cut before the answer
+  ✔ no code was written before the answer
+
+Open questions (QUESTIONS.md):
+
+━━ 4.1 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+Open questions (QUESTIONS.md):
+    (R2) answering CON-interface on purpose with an unrelated answer: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens 
+  ✔ answered CON-interface — What sign does notchCalculator(previous, current).notches carry for an upgrade? The reques
+  ✘ no prepared answer for X-input-whitespace — a real person must answer: C1 says input is 'trimmed' but does not say which characters are trimmed. Which leading and trailing characters are removed before matching?
+  ✔ answered X-input-nonstring — What happens when an argument is not a string (null, undefined, a number, an object, or a 
+    ⏸  the requirements have open questions: .work/JOB-20261004-0800-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.2 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for X-input-whitespace — a real person must answer: C1 says input is 'trimmed' but does not say which characters are trimmed. Which leading and trailing characters are removed before matching?
+    ⏸  the requirements have open questions: .work/JOB-20261004-0800-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.3 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for X-input-whitespace — a real person must answer: C1 says input is 'trimmed' but does not say which characters are trimmed. Which leading and trailing characters are removed before matching?
+    ⏸  the requirements have open questions: .work/JOB-20261004-0800-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+wall time: 5 min
+
+━━ 5 · verify the whole flow on disk
+  ✘ job reached done
+  ✘ job shipped (local)
+roles: ba, qa, backend-lead, backend, reviewer, docs
+  ✔ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+  ✔ role cards generated for every role
+PM decisions: 3 (implementation details, recorded with rationale)
+  ✘ readiness review complete (no open item) with an architecture
+readiness: 36 items — 26 decided, 9 n/a · architecture: library: ratings-notch [javascript+node], indicators-country-rating [javascript+node]
+  ✘ readiness frozen at planning and unchanged since
+  ✘ no cards on the board
+  ✔ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+  ✘ no QA test files on main
+  ✔ role really ran: business-analyst
+  ✘ no ecc:architect run in events.log
+  ✘ no qa-tester run in events.log
+  ✘ no dev agent run
+  ✘ no reviewer run
+  ✔ no tracker errors
+  ✘ kanban view rendered
+  ✘ report.md is the template
+  ✔ no AI attribution in the delivered history (0 commits)
+  ✔ the whole test suite passes on main
+  ✘ hidden oracle FAILED (oracle.log)
+✖ oracle/watchlist.oracle.test.mjs (62.415795ms)
+✖ failing tests:
+✖ oracle/watchlist.oracle.test.mjs (62.415795ms)
+
+━━ R2 · Michael does not build on an answer that does not answer its question
+  ✘ CON-interface was not asked again (1 answer(s) recorded)
+  ✘ the unrelated answer was frozen: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the PO
+
+━━ result
+cost: $1.27  ·  artifacts: /tmp/claude-0/e2e-r2/incomplete
+**17 passed, 18 failed**
