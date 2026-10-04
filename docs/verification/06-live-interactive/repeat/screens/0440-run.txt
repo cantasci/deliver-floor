@@ -1,0 +1,50 @@
+      48 +- AC-14 (REQ-03-12): `countryRatingChangeWl` for downgrades: BBB+->BBB (1) = 1; AA->AA- (1) = 1; BBB+->BBB- (2) = 2; BBB+->BB+ (3) = 2; AAA->CCC- (18) = 2.
+      49 +- AC-15 (REQ-03-12, C3): `countryRatingChangeWl` for upgrades/unchanged = 0: BBB->BBB+, BB+->BBB+, CCC-->AAA, A->A (+0); over all 361 pairs the result is in {0,1,2} and equals `n<=0 ?
+         + 0 : n===1 ? 1 : 2`.
+      50 +- AC-16 (C2, C6, PRD-conflicts): The two rule sets differ on purpose: BBB+->BBB- calculator 1 vs indicator 2; AA->AA- 0 vs 1; BBB+->BB+ 2 vs 2; BBB->BBB+ 0 vs 0.
+      51 +- AC-17 (REQ-03-12 editable, C7): ("A","BBB+") -> 2; after edit ("A","A-") -> 1; a third argument is ignored (("A","A-",2) -> 1); nothing is stored between calls (("A","BBB+") again -
+         +> 2).
+      52 +- AC-18 (REQ-03-12, Contract, C4): `src/indicators/countryRating.mjs` imports `notchChange` from `../ratings/notch.mjs`, defines no rating list or index map, imports no node:fs/http/h
+         +ttps/net and calls no fetch; its RangeError behaviour for every invalid input of AC-8 matches `notchChange`.
+      53 +- AC-19 (C8, CLAUDE.md): Importing both modules and calling every function with valid and invalid inputs in a child node process writes nothing to stdout/stderr and logs nothing; neit
+         +her module imports a node: I/O module.
+      54 +- AC-20 (Contract): `Object.keys(import * as notch).sort()` deep-equals ["RATING_SCALE","notchCalculator","notchChange"]; `Object.keys(import * as countryRating)` deep-equals ["countr
+         +yRatingChangeWl"]; no default exports.
+      55 +- AC-21 (DEL-ci, ARC-stack, TST-strategy, X-test-layout): `node --test` from the repo root exits 0; `package.json` has no dependencies or devDependencies; test files exist under test/
+         +unit/ratings, test/unit/indicators, test/integration/ratings, test/integration/indicators, all `*.test.mjs`; no API newer than Node 18 (no toSorted, toReversed, Object.groupBy).
+      56
+      57  ## Risks and assumptions
+      58
+      59 +- The POC example "BBB+ -> BB+ = 2 notches -> WL=1" contradicts the C1 scale; C2 resolves it (3 notches, WL 2, AC-10).
+      60 +- Two threshold sets: a shared WL mapping would be a defect (AC-16).
+      61 +- `-0`: negation or transformation could yield -0; AC-5 uses `Object.is`.
+      62 +- Prototype keys: a plain-object lookup would accept "__proto__"/"toString"; use an own-key or Map lookup (AC-8).
+      63 +- Error message formatting with a template literal throws TypeError for Symbol and null-prototype objects (AC-8).
+      64 +- Assumption: `new String("BBB+")` is a non-string and rejected; "trimmed" means `String.prototype.trim()` (NBSP, BOM, line terminators included).
+      65 +- Local runtime is Node 22; Node 18 compatibility is checked by review only (AC-21).
+      66 +- `node --test` runs every `.mjs` under `test/`: keep only `*.test.mjs` there.
+      67 +- Build order: `notch.mjs` first; `countryRatingChangeWl` depends on `notchChange`.
+      68 +
+      69  ## Open questions
+      18 -<!-- Questions whose answers would change the scope. Asked to the human at plan approval. -->
+      70 +
+      71 +None. All 31 readiness items are decided or not applicable.
+
+● Plan saved. Next I'm asking the backend lead for implementation cards.
+
+● ecc:architect(Backend lead cards)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The backend lead is cutting the cards in the background. I'll merge them into the board once it reports back.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents · ↓ to manage                                                                                  ✘ Auto-update failed · Run claude doctor
+
+  ● main
+  ◯ ecc:architect  Reading package.json scripts and deps                                                                                                                          32s · ↓ 20.3k tokens
+
+
+
+

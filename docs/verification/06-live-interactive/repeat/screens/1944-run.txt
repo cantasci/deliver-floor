@@ -1,0 +1,50 @@
+  - The human is not asked after the start. A card that cannot be finished: 'dl card <id> state blocked' + a note,
+    then decide it yourself — split it (dl card add) or drop it (dl card <id> state archived "<reason>"). Other
+    decisions: dl pm-decide "<what>" "<why>". Every such decision is listed in the PR.
+
+
+● Bash(timeout 200 bash -c 'until grep -q "end_turn" /tmp/claude-0/-tmp-claude-0-e2e-ia2-interactive-repo/4d35ff5a-31f9-4b07-a098-bf07b8113a0a/tasks/a605d95aa21fa23cc.…)
+  ⎿  done
+  ⎿  (timeout 3m 30s)
+
+● Agent "Review T-02" finished · 10s
+
+● Bash(DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl; J=.work/JOB-20261004-0713-notch-calculator-and-country-rat
+      "$DL" review T-02 approve "N…)
+  ⎿  review: T-02 reviewer approve  (card: approve)
+     MERGED: T-02 → job/JOB-20261004-0713-notch-calculator-and-country-rat
+     PHASE   dl phase integrating
+
+● Both cards are merged. I'm moving to integration and running the full suite on the job branch.
+
+● Bash(DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl
+      "$DL" phase integrating 2>&1 | tail -2; "$DL" verify-all 2>&1 | tail -8; "$DL" next)
+  ⎿  phase: integrating
+     verify_full: node --test  (log: /tmp/claude-0/e2e-ia2/interactive/repo/.work/JOB-20261004-0713-notch-calculator-and-country-rat/gates/verify-all-074525.log)
+     PASSED
+     QA      job-level QA roles if selected (failure → fix card + dl phase executing), then: dl phase closing
+
+● The full suite passes on the job branch. No job-level QA roles were selected, so I'm moving to closing and asking the BA for the AC check.
+
+● Bash(/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl phase closing 2>&1 | tail -2; ls .work/*/gates | head)
+  ⎿  phase: closing
+     T-01-a1-072734.log
+     T-01-qa-a1-072957.log
+     … +3 lines (ctrl+o to expand)
+
+● business-analyst(BA closing AC check)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The BA is doing the closing AC check in the background. When it reports I'll write the report and ship.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents · ↓ to manage                                                                                  ✘ Auto-update failed · Run claude doctor
+
+  ● main
+  ◯ business-analyst  BA closing AC check                                                                                                                                         16s · ↓ 33.5k tokens
+
+
+
+

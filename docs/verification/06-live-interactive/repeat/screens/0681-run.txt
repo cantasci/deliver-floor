@@ -1,0 +1,50 @@
+         +ches, direction, wl (not frozen, no extra keys). notches = notchChange(...). direction 'downgrade' if notches>0, 'upgrade' if <0, 'unchanged' if 0. wl (Indicator 13): 0 when notches<=
+         +1 (all upgrades, unchanged, 1-notch downgrade), 1 when notches===2, 2 when notches>=3; never above 2, never -0. Example: BBB+ -> BB+ returns {notches:3, direction:'downgr … [+2212 cha
+         +rs]
+       8 +"acceptance":["AC-1: RATING_SCALE deep-equals the 19-entry list in order, length 19, upper-case primitive strings","AC-2: RATING_SCALE frozen; push/assign/reverse throw TypeError; res
+         +ults unchanged afterwards","AC-3: downgrades positive (BBB+->BB+ 3, BBB+->BBB- 2, BBB+->BBB 1, AA->AA- 1, AAA->CCC- 18)","AC-4: upgrades negative (BB+->BBB+ -3, BBB->BBB+ -1, CCC-->AA
+         +A -18)","AC-5: unchanged is +0 for notches, wl, no -0 in the 361-pair matrix","AC-6: 361 pairs equal indexOf(c)-indexOf(p), integer, -18..18","AC-7: normalisation of case and surround
+         +ing whitespace","AC-8: RangeError for every invalid input in either position","AC-9: error message names parameter and value, previous first","AC-10: notchCalculator('BBB+','BB+') = {
+         +notches:3,direction:'downgrade',wl:2}","AC-11: calculator wl thresholds for downgrades","AC-12: calculator for upgrades and unchanged","AC-13: calculator shape over 361 pairs","AC-19:
+         + no I/O import or output in notch.mjs","AC-20: exports exactly RATING_SCALE, notchCalculator, notchChange","AC-21: unit tests pass, no dependencies, Node 18 APIs only"]},
+       9 +{"id":"T-02","title":"Indicator 12 countryRatingChangeWl in src/indicators/countryRating.mjs","role":"backend","agent":"backend-dev","component":"indicators-country-rating","state":"r
+         +eady","attempts":0,"notes":[],"depends_on":["T-01"],
+      10 +"scope":["src/indicators/**","test/unit/indicators/**"],
+      11 +"verify":"node --test test/unit/indicators/*.test.mjs",
+      12 +"qa_scope":["test/integration/indicators/**"],
+      13 +"qa_verify":"node --test test/integration/indicators/*.test.mjs",
+      14 +"context":"WHY: REQ-03-12 (Indicator 12, country rating change) maps the notch change between previous and current country rating to a WL (0-4, higher worse); this slice only returns
+         +0, 1 or 2. Built on notchChange from T-01 (src/ratings/notch.mjs, merged before you start): RATING_SCALE (frozen, 19 ratings), notchChange(previous, current) -> index(current)-index(p
+         +revious), positive = downgrade, unchanged +0, and notchCalculator. notchChange already trims, upper-cases, validates (previous first) and throws RangeError naming the parameter and va
+         +lue. Do not modify src/ratings/.\n\nPROJECT RULES (CLAUDE.md): Node 18+ ESM (.mjs), no npm dependencies, pure functions, no I/O in src/indicators (no node:fs/http/https/net, no fetch,
+         + no console.*, no stdout/stderr). Tests node:test + node:assert/strict in *.test.mjs. No APIs newer than Node 18. TDD. Commit messages carry no AI attribution.\n\nFILES: create src/in
+         +dicators/countryRating.mjs and test/unit/indicators/countryRating.test.mjs.\n\nCONTRACT: exactly one named export countryRatingChangeWl(previous, current), no default export.\n- impor
+         +t { notchChange } from '../ratings/notch.mjs'; n = notchChange(previous, current).\n- Return 0 when n<=0, 1 when n===1, 2 when n>=2; never above 2, never -0 (return literals 0/1/2).\n
+         +- Indicator 12 thresholds (C3) deliberately DIFFER from notchCalculator's (1->0, 2->1, 3+->2). Do NOT reuse or derive from notchCalculator's WL mapping (AC-16). BBB+->BBB- gives 2 her
+         +e but calculator wl 1; AA->AA- gives 1 here but calculator wl 0.\n- Define no rating list, index map or validation: all validation comes from notchChange so RangeError behaviour is id
+         +entical. Do not catch, wrap or swallow the error.\n- Ignore extra arguments (override out of scope, C7): countryRatingChangeWl('A','A-',2) is 1. No state between calls.\n- No fetching
+         + from a public source (C4).\n- JSDoc on the export (params, return 0|1|2, @throws {RangeError}).\n\nOUT OF SCOPE: override parameter, persistence, audit trail, other indi … [+32 chars
+         +]
+      15 +"acceptance":["AC-5: unchanged ratings give +0, no -0 over the 361-pair matrix","AC-7: countryRatingChangeWl('bbb+',' bbb ') === 1","AC-8: RangeError for every invalid input in either
+         + position","AC-9: error message names parameter and value, previous first","AC-14: downgrades BBB+->BBB 1, AA->AA- 1, BBB+->BBB- 2, BBB+->BB+ 2, AAA->CCC- 2","AC-15: upgrades/unchange
+         +d 0; 361 pairs equal n<=0?0:n===1?1:2","AC-16: calculator and indicator differ on purpose","AC-17: result depends only on the two arguments, extra argument ignored","AC-18: imports no
+         +tchChange, no own list, no I/O import, no fetch","AC-19: no I/O import or output","AC-20: exports exactly countryRatingChangeWl","AC-21: unit tests pass, no dependencies, Node 18 APIs
+         + only"]}
+      16 +]}
+
+● business-analyst(BA card specs)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The BA is writing the card specs in the background. When it finishes I'll save them, replace each card's acceptance lines with the spec's criteria, and run validate.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents · ↓ to manage                                                                                  ✘ Auto-update failed · Run claude doctor
+
+  ● main
+  ◯ business-analyst  Checking sloppy-mode frozen array assignment                                                                                                             2m 55s · ↓ 34.7k tokens
+
+
+
+

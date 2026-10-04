@@ -1,0 +1,50 @@
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash("/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl" status 2>&1 | head -20; ls /tmp/claude-0/e2e-ia2/interactive/repo)
+  ⎿  Error: PreToolUse:Bash hook error: [Fact-Forcing Gate]
+
+     Before the first Bash command this session, present these facts:
+
+     1. The current user request in one sentence
+     2. What this specific command verifies or produces
+
+     Present the facts, then retry the same operation.
+
+     Narrow recovery: set `GATEGUARD_BASH_ROUTINE_DISABLED=1`; destructive Bash checks remain active.
+     … +2 lines (ctrl+o to expand)
+
+● I need two things before running Bash: the request is to run /deliver for the Watchlist POC job (rating notch calculator and country rating change indicator) from JOB.md, and the commands I'll run
+  first (dl status, ls) are read-only and won't change anything. · summary
+
+● Bash("/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl" status 2>&1 | head -20; ls /tmp/claude-0/e2e-ia2/interactive/repo)
+  ⎿  dl: no active job — start one with: dl new "<title>" "<request>"
+     CLAUDE.md
+     README.md
+     … +3 lines (ctrl+o to expand)
+
+● Bash(cd /tmp/claude-0/e2e-ia2/interactive/repo; DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl; find src test -type f; cat package.json; REQ…)
+  ⎿  src/.gitkeep
+     test/.gitkeep
+     {
+     … +10 lines (ctrl+o to expand)
+
+● Bash(cd /tmp/claude-0/e2e-ia2/interactive/repo; DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl; D=$(dirname $DL)/..; cat $D/roles.yaml | hea…)
+  ⎿  # Role catalog — Michael selects roles ONLY from this list (not from all of ECC's agents).
+     # `dl roles` turns the selected roles into project-specific role cards (.work/<job>/roles/<role>.md); on the Munder
+     # Difflin floor every seat of a role is a person (dl md-hire). A role card = rules.all + rules.<kind> + the role's own
+     … +132 lines (ctrl+o to expand)
+
+● Bash(cd /tmp/claude-0/e2e-ia2/interactive/repo; DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl; D=$(dirname $DL)/..; sed -n 120,400p $D/role…)
+  ⎿  1:    agent: backend-dev
+     11:  frontend:
+     13:    agent: frontend-dev
+     … +75 lines (ctrl+o to expand)
+
+✢ Orbiting… (19s · ↓ 1.2k tokens)
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for agents                                                                             ✘ Auto-update failed · Run claude doctor
+
