@@ -1,0 +1,346 @@
+TAP version 13
+# Subtest: AC-10: downgrades map to WL 1 (one notch) or 2 (two or more notches)
+ok 1 - AC-10: downgrades map to WL 1 (one notch) or 2 (two or more notches)
+  ---
+  duration_ms: 2.517949
+  type: 'test'
+  ...
+# Subtest: AC-11: upgrades and unchanged ratings give WL 0
+ok 2 - AC-11: upgrades and unchanged ratings give WL 0
+  ---
+  duration_ms: 0.367476
+  type: 'test'
+  ...
+# Subtest: AC-12: differs deliberately from notchCalculator().wl (C6)
+ok 3 - AC-12: differs deliberately from notchCalculator().wl (C6)
+  ---
+  duration_ms: 0.231839
+  type: 'test'
+  ...
+# Subtest: AC-13: matches the notchChange rule for all 361 ordered pairs of the scale
+ok 4 - AC-13: matches the notchChange rule for all 361 ordered pairs of the scale
+  ---
+  duration_ms: 0.549473
+  type: 'test'
+  ...
+# Subtest: AC-13: source imports notchChange and holds no copy of the scale
+ok 5 - AC-13: source imports notchChange and holds no copy of the scale
+  ---
+  duration_ms: 0.441458
+  type: 'test'
+  ...
+# Subtest: AC-14: trims and ignores case like notchChange
+ok 6 - AC-14: trims and ignores case like notchChange
+  ---
+  duration_ms: 0.120846
+  type: 'test'
+  ...
+# Subtest: AC-14: invalid input throws RangeError
+ok 7 - AC-14: invalid input throws RangeError
+  ---
+  duration_ms: 0.500613
+  type: 'test'
+  ...
+# Subtest: AC-14: every invalid value throws RangeError in either position
+ok 8 - AC-14: every invalid value throws RangeError in either position
+  ---
+  duration_ms: 0.455009
+  type: 'test'
+  ...
+# Subtest: AC-15: has exactly two parameters and is deterministic
+ok 9 - AC-15: has exactly two parameters and is deterministic
+  ---
+  duration_ms: 0.357026
+  type: 'test'
+  ...
+# Subtest: AC-15: source is pure (no console, process, node: imports, require) and no npm dependencies
+ok 10 - AC-15: source is pure (no console, process, node: imports, require) and no npm dependencies
+  ---
+  duration_ms: 0.642413
+  type: 'test'
+  ...
+# Subtest: AC-15: test/indicators holds only side-effect-free test files
+ok 11 - AC-15: test/indicators holds only side-effect-free test files
+  ---
+  duration_ms: 0.330909
+  type: 'test'
+  ...
+# Subtest: AC-10: downgrades map to WL 1 (one notch) or WL 2 (two or more notches)
+ok 12 - AC-10: downgrades map to WL 1 (one notch) or WL 2 (two or more notches)
+  ---
+  duration_ms: 1.346645
+  type: 'test'
+  ...
+# Subtest: AC-10: boundaries - AAA->AA+ is the smallest downgrade (WL 1); BBB+->BBB- is WL 2
+ok 13 - AC-10: boundaries - AAA->AA+ is the smallest downgrade (WL 1); BBB+->BBB- is WL 2
+  ---
+  duration_ms: 0.130642
+  type: 'test'
+  ...
+# Subtest: AC-11: upgrades and unchanged ratings give WL 0
+ok 14 - AC-11: upgrades and unchanged ratings give WL 0
+  ---
+  duration_ms: 0.311184
+  type: 'test'
+  ...
+# Subtest: AC-12: indicator differs from notchCalculator().wl only on 1- and 2-notch downgrades (C6)
+ok 15 - AC-12: indicator differs from notchCalculator().wl only on 1- and 2-notch downgrades (C6)
+  ---
+  duration_ms: 0.232972
+  type: 'test'
+  ...
+# Subtest: AC-13: all 361 ordered pairs of RATING_SCALE follow the notchChange rule
+ok 16 - AC-13: all 361 ordered pairs of RATING_SCALE follow the notchChange rule
+  ---
+  duration_ms: 0.674314
+  type: 'test'
+  ...
+# Subtest: AC-13: source imports notchChange from ../ratings/notch.mjs and holds no copy of the scale
+ok 17 - AC-13: source imports notchChange from ../ratings/notch.mjs and holds no copy of the scale
+  ---
+  duration_ms: 0.404667
+  type: 'test'
+  ...
+# Subtest: AC-14: AC-3-style input is accepted: (' a ','a-') -> 1
+ok 18 - AC-14: AC-3-style input is accepted: (' a ','a-') -> 1
+  ---
+  duration_ms: 0.174697
+  type: 'test'
+  ...
+# Subtest: AC-14: invalid input throws RangeError (named examples and no arguments)
+ok 19 - AC-14: invalid input throws RangeError (named examples and no arguments)
+  ---
+  duration_ms: 0.498449
+  type: 'test'
+  ...
+# Subtest: AC-14: every invalid AC-4 value throws RangeError in either position
+ok 20 - AC-14: every invalid AC-4 value throws RangeError in either position
+  ---
+  duration_ms: 0.672881
+  type: 'test'
+  ...
+# Subtest: AC-14: RangeError propagates unchanged from notchChange (same error class and message)
+ok 21 - AC-14: RangeError propagates unchanged from notchChange (same error class and message)
+  ---
+  duration_ms: 0.445426
+  type: 'test'
+  ...
+# Subtest: AC-15: arity is 2 and the result is deterministic
+ok 22 - AC-15: arity is 2 and the result is deterministic
+  ---
+  duration_ms: 0.142318
+  type: 'test'
+  ...
+# Subtest: AC-15: source has no console/process/node: imports/require; package.json has no dependencies
+ok 23 - AC-15: source has no console/process/node: imports/require; package.json has no dependencies
+  ---
+  duration_ms: 0.401573
+  type: 'test'
+  ...
+# Subtest: AC-15: no output is written to stdout/stderr when called
+ok 24 - AC-15: no output is written to stdout/stderr when called
+  ---
+  duration_ms: 0.156911
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is the frozen 19-step scale
+ok 25 - AC-1: RATING_SCALE is the frozen 19-step scale
+  ---
+  duration_ms: 4.233863
+  type: 'test'
+  ...
+# Subtest: AC-1: mutating RATING_SCALE throws TypeError in strict ESM and leaves it unchanged
+ok 26 - AC-1: mutating RATING_SCALE throws TypeError in strict ESM and leaves it unchanged
+  ---
+  duration_ms: 0.71789
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange returns index(current) - index(previous) for valid uppercase ratings
+ok 27 - AC-2: notchChange returns index(current) - index(previous) for valid uppercase ratings
+  ---
+  duration_ms: 0.362435
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange accepts case and surrounding whitespace differences
+ok 28 - AC-3: notchChange accepts case and surrounding whitespace differences
+  ---
+  duration_ms: 0.203248
+  type: 'test'
+  ...
+# Subtest: AC-4: every invalid value in either position throws RangeError (never TypeError)
+ok 29 - AC-4: every invalid value in either position throws RangeError (never TypeError)
+  ---
+  duration_ms: 0.649106
+  type: 'test'
+  ...
+# Subtest: AC-4: NR / undefined / missing arguments throw RangeError
+ok 30 - AC-4: NR / undefined / missing arguments throw RangeError
+  ---
+  duration_ms: 0.322645
+  type: 'test'
+  ...
+# Subtest: AC-4: error message contains the raw invalid string as passed
+ok 31 - AC-4: error message contains the raw invalid string as passed
+  ---
+  duration_ms: 0.350736
+  type: 'test'
+  ...
+# Subtest: AC-4: near-misses are rejected, not mapped, and internal whitespace is kept significant
+ok 32 - AC-4: near-misses are rejected, not mapped, and internal whitespace is kept significant
+  ---
+  duration_ms: 0.162113
+  type: 'test'
+  ...
+# Subtest: AC-5: downgrade of 2+ notches gives wl by threshold (corrected example: A -> BBB+ is 2 notches, wl 1)
+ok 33 - AC-5: downgrade of 2+ notches gives wl by threshold (corrected example: A -> BBB+ is 2 notches, wl 1)
+  ---
+  duration_ms: 0.461715
+  type: 'test'
+  ...
+# Subtest: AC-6: 1-notch downgrade gives wl 0
+ok 34 - AC-6: 1-notch downgrade gives wl 0
+  ---
+  duration_ms: 0.458173
+  type: 'test'
+  ...
+# Subtest: AC-7: upgrade or unchanged gives wl 0 with signed notches
+ok 35 - AC-7: upgrade or unchanged gives wl 0 with signed notches
+  ---
+  duration_ms: 0.279837
+  type: 'test'
+  ...
+# Subtest: AC-8: all 361 ordered pairs are consistent with notchChange, direction and WL thresholds
+ok 36 - AC-8: all 361 ordered pairs are consistent with notchChange, direction and WL thresholds
+  ---
+  duration_ms: 2.60874
+  type: 'test'
+  ...
+# Subtest: AC-9: notchCalculator accepts AC-3 style input
+ok 37 - AC-9: notchCalculator accepts AC-3 style input
+  ---
+  duration_ms: 0.178791
+  type: 'test'
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for every invalid value in either position and no arguments
+ok 38 - AC-9: notchCalculator throws RangeError for every invalid value in either position and no arguments
+  ---
+  duration_ms: 0.444234
+  type: 'test'
+  ...
+# Subtest: AC-15: arity and determinism
+ok 39 - AC-15: arity and determinism
+  ---
+  duration_ms: 0.11728
+  type: 'test'
+  ...
+# Subtest: AC-15: notch.mjs has no I/O or output and package.json has no dependencies
+ok 40 - AC-15: notch.mjs has no I/O or output and package.json has no dependencies
+  ---
+  duration_ms: 1.501538
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE holds the 19 ratings, best first, and is frozen
+ok 41 - AC-1: RATING_SCALE holds the 19 ratings, best first, and is frozen
+  ---
+  duration_ms: 2.735442
+  type: 'test'
+  ...
+# Subtest: AC-1: mutating RATING_SCALE throws TypeError and leaves it unchanged
+ok 42 - AC-1: mutating RATING_SCALE throws TypeError and leaves it unchanged
+  ---
+  duration_ms: 0.599993
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange returns index(current) - index(previous)
+ok 43 - AC-2: notchChange returns index(current) - index(previous)
+  ---
+  duration_ms: 0.373545
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange ignores case and leading/trailing whitespace
+ok 44 - AC-3: notchChange ignores case and leading/trailing whitespace
+  ---
+  duration_ms: 0.134303
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for every invalid value in either position
+ok 45 - AC-4: notchChange throws RangeError for every invalid value in either position
+  ---
+  duration_ms: 0.474183
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for NR, undefined and missing arguments
+ok 46 - AC-4: notchChange throws RangeError for NR, undefined and missing arguments
+  ---
+  duration_ms: 0.205374
+  type: 'test'
+  ...
+# Subtest: AC-4: error message contains the raw invalid string as passed
+ok 47 - AC-4: error message contains the raw invalid string as passed
+  ---
+  duration_ms: 0.372436
+  type: 'test'
+  ...
+# Subtest: AC-4: non-string input gives RangeError without a second error (symbols, arrays, objects)
+ok 48 - AC-4: non-string input gives RangeError without a second error (symbols, arrays, objects)
+  ---
+  duration_ms: 0.229813
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator maps downgrades of 2+ notches to WL 1 or 2
+ok 49 - AC-5: notchCalculator maps downgrades of 2+ notches to WL 1 or 2
+  ---
+  duration_ms: 0.40195
+  type: 'test'
+  ...
+# Subtest: AC-6: a 1-notch downgrade is WL 0
+ok 50 - AC-6: a 1-notch downgrade is WL 0
+  ---
+  duration_ms: 0.392545
+  type: 'test'
+  ...
+# Subtest: AC-7: upgrades and unchanged ratings are WL 0
+ok 51 - AC-7: upgrades and unchanged ratings are WL 0
+  ---
+  duration_ms: 0.227385
+  type: 'test'
+  ...
+# Subtest: AC-8: notchCalculator is consistent with notchChange for all 361 ordered pairs
+ok 52 - AC-8: notchCalculator is consistent with notchChange for all 361 ordered pairs
+  ---
+  duration_ms: 2.090882
+  type: 'test'
+  ...
+# Subtest: AC-9: notchCalculator normalises case and whitespace
+ok 53 - AC-9: notchCalculator normalises case and whitespace
+  ---
+  duration_ms: 0.133439
+  type: 'test'
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for every invalid value in either position
+ok 54 - AC-9: notchCalculator throws RangeError for every invalid value in either position
+  ---
+  duration_ms: 0.442559
+  type: 'test'
+  ...
+# Subtest: AC-15: arities are 2 and results are deterministic and fresh
+ok 55 - AC-15: arities are 2 and results are deterministic and fresh
+  ---
+  duration_ms: 0.12924
+  type: 'test'
+  ...
+# Subtest: AC-15: source is pure and package.json has no dependencies
+ok 56 - AC-15: source is pure and package.json has no dependencies
+  ---
+  duration_ms: 0.410257
+  type: 'test'
+  ...
+1..56
+# tests 56
+# suites 0
+# pass 56
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 156.550412

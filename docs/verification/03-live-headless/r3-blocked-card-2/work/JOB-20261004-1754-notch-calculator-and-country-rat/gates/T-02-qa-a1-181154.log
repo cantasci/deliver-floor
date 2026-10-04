@@ -1,0 +1,113 @@
+# qa_verify: node --test test/integration/indicators/*.test.mjs
+TAP version 13
+# Subtest: AC-6: A→A- is 1, BBB+→BBB is 1, A→BBB+ is 2, BBB+→BB+ is 2, AAA→CCC- is 2
+ok 1 - AC-6: A→A- is 1, BBB+→BBB is 1, A→BBB+ is 2, BBB+→BB+ is 2, AAA→CCC- is 2
+  ---
+  duration_ms: 1.29292
+  type: 'test'
+  ...
+# Subtest: AC-6: BBB+→BBB is WL 1 for Indicator 12 while notchCalculator gives wl 0 (C6)
+ok 2 - AC-6: BBB+→BBB is WL 1 for Indicator 12 while notchCalculator gives wl 0 (C6)
+  ---
+  duration_ms: 0.249924
+  type: 'test'
+  ...
+# Subtest: AC-6 edge: BBB-→BB+ is 1 (calculator 0); A+→A- is 2 (calculator 1)
+ok 3 - AC-6 edge: BBB-→BB+ is 1 (calculator 0); A+→A- is 2 (calculator 1)
+  ---
+  duration_ms: 0.171623
+  type: 'test'
+  ...
+# Subtest: AC-7: upgrades and unchanged ratings give 0
+ok 4 - AC-7: upgrades and unchanged ratings give 0
+  ---
+  duration_ms: 0.179834
+  type: 'test'
+  ...
+# Subtest: AC-7: all 361 ordered pairs follow the notch rule; control totals 190/18/153
+ok 5 - AC-7: all 361 ordered pairs follow the notch rule; control totals 190/18/153
+  ---
+  duration_ms: 1.644785
+  type: 'test'
+  ...
+# Subtest: AC-7 edge: boundaries n=0, 1, 2, 18 and negative n of any size; never -0
+ok 6 - AC-7 edge: boundaries n=0, 1, 2, 18 and negative n of any size; never -0
+  ---
+  duration_ms: 0.181108
+  type: 'test'
+  ...
+# Subtest: AC-8: case and surrounding whitespace are ignored: ("a", " A- ") → 1
+ok 7 - AC-8: case and surrounding whitespace are ignored: ("a", " A- ") → 1
+  ---
+  duration_ms: 0.185335
+  type: 'test'
+  ...
+# Subtest: AC-9: every invalid value in either position throws RangeError, never TypeError
+ok 8 - AC-9: every invalid value in either position throws RangeError, never TypeError
+  ---
+  duration_ms: 2.076626
+  type: 'test'
+  ...
+# Subtest: AC-9 edge: new String("BBB") and a missing argument throw RangeError
+ok 9 - AC-9 edge: new String("BBB") and a missing argument throw RangeError
+  ---
+  duration_ms: 0.468777
+  type: 'test'
+  ...
+# Subtest: AC-9 / X-error-message: message names the offending argument and echoes the value
+ok 10 - AC-9 / X-error-message: message names the offending argument and echoes the value
+  ---
+  duration_ms: 0.526854
+  type: 'test'
+  ...
+# Subtest: AC-9 / X-error-message: the error passes through unchanged from notchChange
+ok 11 - AC-9 / X-error-message: the error passes through unchanged from notchChange
+  ---
+  duration_ms: 0.655039
+  type: 'test'
+  ...
+# Subtest: AC-11: repeated calls return the same value; an edited rating just changes the result
+ok 12 - AC-11: repeated calls return the same value; an edited rating just changes the result
+  ---
+  duration_ms: 0.141075
+  type: 'test'
+  ...
+# Subtest: AC-11: child process import + calls (incl. a caught RangeError) is silent and exits 0
+ok 13 - AC-11: child process import + calls (incl. a caught RangeError) is silent and exits 0
+  ---
+  duration_ms: 51.410989
+  type: 'test'
+  ...
+# Subtest: AC-11: source has only the notch import, no I/O modules and no console/process output
+ok 14 - AC-11: source has only the notch import, no I/O modules and no console/process output
+  ---
+  duration_ms: 0.422675
+  type: 'test'
+  ...
+# Subtest: AC-12: source imports notchChange from ../ratings/notch.mjs and exports countryRatingChangeWl as ESM
+ok 15 - AC-12: source imports notchChange from ../ratings/notch.mjs and exports countryRatingChangeWl as ESM
+  ---
+  duration_ms: 0.128098
+  type: 'test'
+  ...
+# Subtest: AC-12: no repeated scale and no own normalisation in the source
+ok 16 - AC-12: no repeated scale and no own normalisation in the source
+  ---
+  duration_ms: 0.101562
+  type: 'test'
+  ...
+# Subtest: AC-12: package.json has no dependencies/devDependencies; notch.mjs is unchanged by this card
+ok 17 - AC-12: package.json has no dependencies/devDependencies; notch.mjs is unchanged by this card
+  ---
+  duration_ms: 7.410019
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 144.003733

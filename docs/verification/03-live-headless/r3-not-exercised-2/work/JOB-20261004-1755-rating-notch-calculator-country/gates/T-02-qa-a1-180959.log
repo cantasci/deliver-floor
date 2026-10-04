@@ -1,0 +1,89 @@
+# qa_verify: node --test test/integration/indicators/*.test.mjs
+TAP version 13
+# Subtest: AC-10: downgrades map to WL 1 (one notch) or WL 2 (two or more notches)
+ok 1 - AC-10: downgrades map to WL 1 (one notch) or WL 2 (two or more notches)
+  ---
+  duration_ms: 1.337897
+  type: 'test'
+  ...
+# Subtest: AC-10: boundaries - AAA->AA+ is the smallest downgrade (WL 1); BBB+->BBB- is WL 2
+ok 2 - AC-10: boundaries - AAA->AA+ is the smallest downgrade (WL 1); BBB+->BBB- is WL 2
+  ---
+  duration_ms: 0.507465
+  type: 'test'
+  ...
+# Subtest: AC-11: upgrades and unchanged ratings give WL 0
+ok 3 - AC-11: upgrades and unchanged ratings give WL 0
+  ---
+  duration_ms: 0.383495
+  type: 'test'
+  ...
+# Subtest: AC-12: indicator differs from notchCalculator().wl only on 1- and 2-notch downgrades (C6)
+ok 4 - AC-12: indicator differs from notchCalculator().wl only on 1- and 2-notch downgrades (C6)
+  ---
+  duration_ms: 0.295107
+  type: 'test'
+  ...
+# Subtest: AC-13: all 361 ordered pairs of RATING_SCALE follow the notchChange rule
+ok 5 - AC-13: all 361 ordered pairs of RATING_SCALE follow the notchChange rule
+  ---
+  duration_ms: 0.743962
+  type: 'test'
+  ...
+# Subtest: AC-13: source imports notchChange from ../ratings/notch.mjs and holds no copy of the scale
+ok 6 - AC-13: source imports notchChange from ../ratings/notch.mjs and holds no copy of the scale
+  ---
+  duration_ms: 0.544889
+  type: 'test'
+  ...
+# Subtest: AC-14: AC-3-style input is accepted: (' a ','a-') -> 1
+ok 7 - AC-14: AC-3-style input is accepted: (' a ','a-') -> 1
+  ---
+  duration_ms: 0.213697
+  type: 'test'
+  ...
+# Subtest: AC-14: invalid input throws RangeError (named examples and no arguments)
+ok 8 - AC-14: invalid input throws RangeError (named examples and no arguments)
+  ---
+  duration_ms: 0.607932
+  type: 'test'
+  ...
+# Subtest: AC-14: every invalid AC-4 value throws RangeError in either position
+ok 9 - AC-14: every invalid AC-4 value throws RangeError in either position
+  ---
+  duration_ms: 0.888424
+  type: 'test'
+  ...
+# Subtest: AC-14: RangeError propagates unchanged from notchChange (same error class and message)
+ok 10 - AC-14: RangeError propagates unchanged from notchChange (same error class and message)
+  ---
+  duration_ms: 0.527899
+  type: 'test'
+  ...
+# Subtest: AC-15: arity is 2 and the result is deterministic
+ok 11 - AC-15: arity is 2 and the result is deterministic
+  ---
+  duration_ms: 0.15966
+  type: 'test'
+  ...
+# Subtest: AC-15: source has no console/process/node: imports/require; package.json has no dependencies
+ok 12 - AC-15: source has no console/process/node: imports/require; package.json has no dependencies
+  ---
+  duration_ms: 0.475982
+  type: 'test'
+  ...
+# Subtest: AC-15: no output is written to stdout/stderr when called
+ok 13 - AC-15: no output is written to stdout/stderr when called
+  ---
+  duration_ms: 1.203489
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 93.5275

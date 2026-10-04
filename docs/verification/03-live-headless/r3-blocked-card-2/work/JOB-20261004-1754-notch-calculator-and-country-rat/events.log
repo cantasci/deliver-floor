@@ -1,0 +1,58 @@
+2026-10-04T17:54:50Z	new	Notch calculator and country rating
+2026-10-04T17:54:54Z	jobset	stack: .stack=["javascript"]
+2026-10-04T17:54:54Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02 notchCalculator and REQ-03-12 countryRatingChangeWl implementation"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer for the Node ESM code"}]
+2026-10-04T17:54:54Z	jobset	assumptions: .assumptions += ["Slice is pure functions in plain Node ESM; no UI, persistence or public-source fetch (C4, C7, C8)."]
+2026-10-04T17:54:54Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T17:54:54Z	phase	readiness
+2026-10-04T17:58:27Z	agent	business-analyst a4f3d2dc: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two parts of the Watchlist POC get built. (1) A notch calculator helper: it takes a previous an
+2026-10-04T17:59:06Z	readiness	31 items: 19 decided, 8 n/a, 4 open
+2026-10-04T17:59:11Z	decide	DEL-docs: JSDoc on the exports only — Request requires no docs; JSDoc helps later POC parts find the contract at no behavioural cost.
+2026-10-04T17:59:11Z	decide	X-input-trim: String.prototype.trim() semantics, then upper-case — C1 says 'trimmed'; in a JS contract that is trim(). Only exotic whitespace differs, internal whitespace is rejected either way.
+2026-10-04T17:59:11Z	decide	X-error-message: Check previous first, then current; RangeError message names the argument and echoes the value — Contract fixes only the error type; this is debuggable and tests assert the type only.
+2026-10-04T17:59:11Z	decide	X-scale-immutability: RATING_SCALE is a frozen array — Same contents/order; protects every importer from corrupting notch counts.
+2026-10-04T17:59:26Z	readiness	31 items: 22 decided, 9 n/a, 0 open
+2026-10-04T17:59:26Z	freeze	readiness + architecture frozen (01ce2353be52)
+2026-10-04T17:59:26Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T17:59:26Z	phase	planning
+2026-10-04T18:00:24Z	agent	business-analyst a190ad69: ## Goal Add two pure-function ES modules that other parts of the Watchlist POC will import: 1. A notch calculator. It takes a previous and a current rating and 
+2026-10-04T18:01:37Z	agent	ecc:architect a7f2c261: [{"tmp_id":"B1","title":"Notch calculator: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs)","role":"backend","component":"ratings","context":
+2026-10-04T18:03:42Z	agent	business-analyst a9aff606: === T-01 === # T-01: Notch calculator: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs) ## User story As a developer of another Watchlist POC 
+2026-10-04T18:04:37Z	phase	executing
+2026-10-04T18:04:38Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T18:06:00Z	agent	backend-dev ab80018c: status: done commit: 5ee1e93 verify: passed (`node --test test/ratings/notch.test.mjs`: 14 pass, 0 fail; full `node --test` also 14 pass, 0 fail) open issues: T
+2026-10-04T18:06:03Z	gate	T-01 PASS
+2026-10-04T18:07:23Z	agent	qa-tester ac02578b: The tests are written and committed, but I couldn't push, and `qa_verify` exits 1 as written. The 19 integration tests pass, so I'm calling the verdict a pass o
+2026-10-04T18:07:32Z	card-set	T-02.qa_verify = "node --test test/integration/indicators/*.test.mjs" — Node 22 treats a directory arg as a file (MODULE_NOT_FOUND); use a glob
+2026-10-04T18:07:39Z	state	T-01=blocked
+2026-10-04T18:07:39Z	note	T-01: qa_verify directory form fails on Node 22; switching to glob form
+2026-10-04T18:07:39Z	card-set	T-01.qa_verify = "node --test test/integration/ratings/*.test.mjs" — Node 22 treats a directory arg as a file (MODULE_NOT_FOUND); use a glob
+2026-10-04T18:07:40Z	state	T-01=ready
+2026-10-04T18:08:08Z	card-add	T-03: T-01 became stuck after QA (qa_verify directory form fails on Node 22) with no attempts left; re-run its finished work as a fresh card with a corrected qa_verify
+2026-10-04T18:08:09Z	state	T-01=archived
+2026-10-04T18:08:09Z	pm-decision	T-01: T-01 is not delivered (archived) — Replaced by T-03: stuck with no attempts left after QA; its finished dev commit 5ee1e93 is carried into T-03
+2026-10-04T18:08:09Z	card-set	T-02.depends_on = ["T-03"] — T-01 replaced by T-03
+2026-10-04T18:08:14Z	pm-decision	T-03: T-01 replaced by T-03 (same contract; qa_verify changed to glob form) — T-01 reached QA but qa_verify (directory arg) fails on Node 22; I moved it out of review to fix it, leaving no attempts (max_attempts 1). Re-planned inside the frozen decisions.
+2026-10-04T18:08:14Z	assign	T-03 → backend-dev (backend#1) attempt=1
+2026-10-04T18:08:59Z	agent	backend-dev afd63928: status: done commit: d97ce5d verify: passed (`node --test test/ratings/notch.test.mjs` gives 15 pass, 0 fail; full `node --test` also 15 pass, 0 fail) open issu
+2026-10-04T18:09:02Z	gate	T-03 PASS
+2026-10-04T18:09:40Z	agent	qa-tester a6dc9f08: ```json {"verdict":"pass", "tests":["test/integration/ratings/notch.int.test.mjs"], "criteria":[ {"ac":"AC-1","status":"pass","evidence":"AC-1: RATING_SCALE has
+2026-10-04T18:09:47Z	qa	T-03 pass (qa_verify PASS) — AC-1..5, AC-8..12 pass: 21 integration tests (notch.int.test.mjs), qa_verify exit 0
+2026-10-04T18:10:00Z	agent	ecc:typescript-reviewer acf953e8: ```json {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: the error message lists all 19 ratings on every failure. That is fine for debugging, 
+2026-10-04T18:10:06Z	review	T-03 reviewer approve — approve, no blocking items; 5 nits
+2026-10-04T18:10:06Z	integrate	T-03 merged
+2026-10-04T18:10:11Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-04T18:11:00Z	agent	backend-dev a6b01700: status: done commit: 55ebf41 verify: passed (`node --test test/indicators/countryRating.test.mjs`: 15/15 pass; full `node --test`: 51/51 pass) open issues: - (`
+2026-10-04T18:11:03Z	gate	T-02 PASS
+2026-10-04T18:11:52Z	agent	qa-tester affdaceb: ```json {"verdict":"pass", "tests":["test/integration/indicators/countryRating.int.test.mjs"], "criteria":[ {"ac":"AC-6","status":"pass","evidence":"AC-6: A→A
+2026-10-04T18:11:55Z	qa	T-02 pass (qa_verify PASS) — AC-6..9, AC-11, AC-12 pass: 17 integration tests (countryRating.int.test.mjs)
+2026-10-04T18:12:06Z	agent	ecc:typescript-reviewer afc70a13: {"verdict":"approve","blocking":[],"nits":["src/indicators/countryRating.mjs: `countryRatingChangeWl` matches the spec. It does one `notchChange` call and maps 
+2026-10-04T18:12:10Z	review	T-02 reviewer approve — approve, no blocking items; nits only
+2026-10-04T18:12:11Z	integrate	T-02 merged
+2026-10-04T18:12:11Z	phase	integrating
+2026-10-04T18:12:12Z	verify-all	PASS
+2026-10-04T18:12:15Z	phase	closing
+2026-10-04T18:13:23Z	agent	business-analyst a8b34bcd: ## Closing check: JOB-20261004-1754 (notch calculator and Indicator 12 country rating) All 12 ACs are met. The verify-all log shows 68 tests, 68 pass and 0 fail
+2026-10-04T18:13:35Z	learn	all: qa_verify/verify commands must use a glob (node --test dir/*.test.mjs); a directory argument fails on Node 22 and a card moved out of review loses its attempts when max_attempts is 1
+2026-10-04T18:13:35Z	learn	all: Do not move a card out of review to fix its contract when no attempts remain; fix commands for ready cards before dispatch
+2026-10-04T18:13:35Z	ship	local merge into main
+2026-10-04T18:13:38Z	cleanup	

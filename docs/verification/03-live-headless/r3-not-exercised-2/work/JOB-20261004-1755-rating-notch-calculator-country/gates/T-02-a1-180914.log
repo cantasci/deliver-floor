@@ -1,0 +1,85 @@
+# gate: T-02  attempt: 1  2026-10-04T18:09:14Z
+ok    on job/JOB-20261004-1755-rating-notch-calculator-country--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/**","test/indicators/**"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: AC-10: downgrades map to WL 1 (one notch) or 2 (two or more notches)
+ok 1 - AC-10: downgrades map to WL 1 (one notch) or 2 (two or more notches)
+  ---
+  duration_ms: 3.06183
+  type: 'test'
+  ...
+# Subtest: AC-11: upgrades and unchanged ratings give WL 0
+ok 2 - AC-11: upgrades and unchanged ratings give WL 0
+  ---
+  duration_ms: 0.409167
+  type: 'test'
+  ...
+# Subtest: AC-12: differs deliberately from notchCalculator().wl (C6)
+ok 3 - AC-12: differs deliberately from notchCalculator().wl (C6)
+  ---
+  duration_ms: 0.287333
+  type: 'test'
+  ...
+# Subtest: AC-13: matches the notchChange rule for all 361 ordered pairs of the scale
+ok 4 - AC-13: matches the notchChange rule for all 361 ordered pairs of the scale
+  ---
+  duration_ms: 0.759015
+  type: 'test'
+  ...
+# Subtest: AC-13: source imports notchChange and holds no copy of the scale
+ok 5 - AC-13: source imports notchChange and holds no copy of the scale
+  ---
+  duration_ms: 0.622192
+  type: 'test'
+  ...
+# Subtest: AC-14: trims and ignores case like notchChange
+ok 6 - AC-14: trims and ignores case like notchChange
+  ---
+  duration_ms: 0.235343
+  type: 'test'
+  ...
+# Subtest: AC-14: invalid input throws RangeError
+ok 7 - AC-14: invalid input throws RangeError
+  ---
+  duration_ms: 0.656527
+  type: 'test'
+  ...
+# Subtest: AC-14: every invalid value throws RangeError in either position
+ok 8 - AC-14: every invalid value throws RangeError in either position
+  ---
+  duration_ms: 0.869479
+  type: 'test'
+  ...
+# Subtest: AC-15: has exactly two parameters and is deterministic
+ok 9 - AC-15: has exactly two parameters and is deterministic
+  ---
+  duration_ms: 0.555479
+  type: 'test'
+  ...
+# Subtest: AC-15: source is pure (no console, process, node: imports, require) and no npm dependencies
+ok 10 - AC-15: source is pure (no console, process, node: imports, require) and no npm dependencies
+  ---
+  duration_ms: 0.894101
+  type: 'test'
+  ...
+# Subtest: AC-15: test/indicators holds only side-effect-free test files
+ok 11 - AC-15: test/indicators holds only side-effect-free test files
+  ---
+  duration_ms: 0.472944
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 102.628131
+ok    verify passed

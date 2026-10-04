@@ -1,0 +1,137 @@
+# qa_verify: node --test test/integration/ratings/*.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE has the 19 ratings in order, is frozen
+ok 1 - AC-1: RATING_SCALE has the 19 ratings in order, is frozen
+  ---
+  duration_ms: 2.274487
+  type: 'test'
+  ...
+# Subtest: AC-1: in strict mode push and index assignment throw TypeError and leave the scale intact
+ok 2 - AC-1: in strict mode push and index assignment throw TypeError and leave the scale intact
+  ---
+  duration_ms: 0.611442
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange = index(current) - index(previous) for the spec data
+ok 3 - AC-2: notchChange = index(current) - index(previous) for the spec data
+  ---
+  duration_ms: 0.505308
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange is an integer in -18..18, sign: positive downgrade, negative upgrade, 0 unchanged
+ok 4 - AC-2: notchChange is an integer in -18..18, sign: positive downgrade, negative upgrade, 0 unchanged
+  ---
+  duration_ms: 3.317274
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator downgrade examples (BBB+ -> BB+ is 3 notches, WL 2)
+ok 5 - AC-3: notchCalculator downgrade examples (BBB+ -> BB+ is 3 notches, WL 2)
+  ---
+  duration_ms: 4.504832
+  type: 'test'
+  ...
+# Subtest: AC-3: the wrong POC example (2 notches / WL 1 for BBB+ -> BB+) does not hold
+ok 6 - AC-3: the wrong POC example (2 notches / WL 1 for BBB+ -> BB+) does not hold
+  ---
+  duration_ms: 0.339277
+  type: 'test'
+  ...
+# Subtest: AC-4: upgrades and unchanged give negative/zero notches and WL 0
+ok 7 - AC-4: upgrades and unchanged give negative/zero notches and WL 0
+  ---
+  duration_ms: 0.318794
+  type: 'test'
+  ...
+# Subtest: AC-4: scale ends are valid in both positions and unchanged at the ends is WL 0
+ok 8 - AC-4: scale ends are valid in both positions and unchanged at the ends is WL 0
+  ---
+  duration_ms: 0.118055
+  type: 'test'
+  ...
+# Subtest: AC-5: all 361 ordered pairs are consistent, with control totals
+ok 9 - AC-5: all 361 ordered pairs are consistent, with control totals
+  ---
+  duration_ms: 1.790091
+  type: 'test'
+  ...
+# Subtest: AC-8: input is trimmed and case-insensitive
+ok 10 - AC-8: input is trimmed and case-insensitive
+  ---
+  duration_ms: 0.402142
+  type: 'test'
+  ...
+# Subtest: AC-8: NBSP is stripped by trim, so " BBB " is valid
+ok 11 - AC-8: NBSP is stripped by trim, so " BBB " is valid
+  ---
+  duration_ms: 0.152748
+  type: 'test'
+  ...
+# Subtest: AC-9: every invalid value throws RangeError (never TypeError) in either position, in both functions
+ok 12 - AC-9: every invalid value throws RangeError (never TypeError) in either position, in both functions
+  ---
+  duration_ms: 2.431511
+  type: 'test'
+  ...
+# Subtest: AC-9: edge inputs (boxed strings, Symbol, null-prototype object, booleans, missing arg, inner whitespace, dashes)
+ok 13 - AC-9: edge inputs (boxed strings, Symbol, null-prototype object, booleans, missing arg, inner whitespace, dashes)
+  ---
+  duration_ms: 0.914207
+  type: 'test'
+  ...
+# Subtest: AC-9: hostile inputs (throwing Proxy, throwing toString/Symbol.toPrimitive, revoked proxy) still end in RangeError
+ok 14 - AC-9: hostile inputs (throwing Proxy, throwing toString/Symbol.toPrimitive, revoked proxy) still end in RangeError
+  ---
+  duration_ms: 0.871389
+  type: 'test'
+  ...
+# Subtest: AC-9: an object with a valid-looking trim/toString is still rejected (only real strings accepted)
+ok 15 - AC-9: an object with a valid-looking trim/toString is still rejected (only real strings accepted)
+  ---
+  duration_ms: 0.13685
+  type: 'test'
+  ...
+# Subtest: AC-10: error message names the offending argument and echoes its value
+ok 16 - AC-10: error message names the offending argument and echoes its value
+  ---
+  duration_ms: 0.279189
+  type: 'test'
+  ...
+# Subtest: AC-10: missing second argument reports current; both invalid reports previous
+ok 17 - AC-10: missing second argument reports current; both invalid reports previous
+  ---
+  duration_ms: 0.108613
+  type: 'test'
+  ...
+# Subtest: AC-11: same arguments give equal results, each a fresh object, no state kept
+ok 18 - AC-11: same arguments give equal results, each a fresh object, no state kept
+  ---
+  duration_ms: 0.137374
+  type: 'test'
+  ...
+# Subtest: AC-11: child process using the module (incl. a caught RangeError) prints nothing and exits 0
+ok 19 - AC-11: child process using the module (incl. a caught RangeError) prints nothing and exits 0
+  ---
+  duration_ms: 34.597696
+  type: 'test'
+  ...
+# Subtest: AC-11: source has no import/require and no console/stdout/stderr usage
+ok 20 - AC-11: source has no import/require and no console/stdout/stderr usage
+  ---
+  duration_ms: 0.665466
+  type: 'test'
+  ...
+# Subtest: AC-12: contract files exist as plain ESM, unit tests pass, package.json clean and unchanged
+ok 21 - AC-12: contract files exist as plain ESM, unit tests pass, package.json clean and unchanged
+  ---
+  duration_ms: 176.052923
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 324.603705

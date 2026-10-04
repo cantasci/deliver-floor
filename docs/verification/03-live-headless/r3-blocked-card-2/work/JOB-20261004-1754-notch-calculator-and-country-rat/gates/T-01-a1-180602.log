@@ -1,0 +1,103 @@
+# gate: T-01  attempt: 1  2026-10-04T18:06:02Z
+ok    on job/JOB-20261004-1754-notch-calculator-and-country-rat--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE has the 19 ratings, best first, and is frozen
+ok 1 - RATING_SCALE has the 19 ratings, best first, and is frozen
+  ---
+  duration_ms: 1.582669
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE cannot be mutated (strict mode)
+ok 2 - RATING_SCALE cannot be mutated (strict mode)
+  ---
+  duration_ms: 0.511179
+  type: 'test'
+  ...
+# Subtest: notchChange returns index(current) - index(previous)
+ok 3 - notchChange returns index(current) - index(previous)
+  ---
+  duration_ms: 0.311853
+  type: 'test'
+  ...
+# Subtest: notchCalculator example rows
+ok 4 - notchCalculator example rows
+  ---
+  duration_ms: 0.485466
+  type: 'test'
+  ...
+# Subtest: all 361 ordered pairs are consistent, with the expected control totals
+ok 5 - all 361 ordered pairs are consistent, with the expected control totals
+  ---
+  duration_ms: 2.535241
+  type: 'test'
+  ...
+# Subtest: input is trimmed and upper-cased
+ok 6 - input is trimmed and upper-cased
+  ---
+  duration_ms: 0.181523
+  type: 'test'
+  ...
+# Subtest: invalid input throws RangeError (never TypeError) in either position
+ok 7 - invalid input throws RangeError (never TypeError) in either position
+  ---
+  duration_ms: 1.054327
+  type: 'test'
+  ...
+# Subtest: a missing argument reports current
+ok 8 - a missing argument reports current
+  ---
+  duration_ms: 0.194582
+  type: 'test'
+  ...
+# Subtest: error message names the argument and echoes the value
+ok 9 - error message names the argument and echoes the value
+  ---
+  duration_ms: 0.424848
+  type: 'test'
+  ...
+# Subtest: both invalid names previous, not current
+ok 10 - both invalid names previous, not current
+  ---
+  duration_ms: 0.370289
+  type: 'test'
+  ...
+# Subtest: same arguments give equal results, each a fresh object; no state kept
+ok 11 - same arguments give equal results, each a fresh object; no state kept
+  ---
+  duration_ms: 0.217012
+  type: 'test'
+  ...
+# Subtest: module is silent in a child process, including a caught RangeError
+ok 12 - module is silent in a child process, including a caught RangeError
+  ---
+  duration_ms: 32.250722
+  type: 'test'
+  ...
+# Subtest: source is pure: no module imports, no output calls, ESM exports only
+ok 13 - source is pure: no module imports, no output calls, ESM exports only
+  ---
+  duration_ms: 0.487947
+  type: 'test'
+  ...
+# Subtest: package.json declares no dependencies
+ok 14 - package.json declares no dependencies
+  ---
+  duration_ms: 0.183453
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 113.334054
+ok    verify passed

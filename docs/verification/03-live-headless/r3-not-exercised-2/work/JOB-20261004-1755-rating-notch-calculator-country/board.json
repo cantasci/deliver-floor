@@ -1,0 +1,217 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "ratings-notch",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "context": "WHY: REQ-06-02 asks for a rating notch calculator. Given a previous and a current rating it returns the signed notch change, direction and resulting WL (0-4, higher is worse). Other POC parts import this module and T-02 is built on notchChange; export names, path and return shapes are a frozen contract. Built first.\n\nFILES: create src/ratings/notch.mjs and test/ratings/notch.test.mjs. Repo holds only .gitkeep files; package.json already has type=module and test=node --test.\n\nCONVENTIONS (CLAUDE.md): plain Node 18+ ESM (.mjs), no npm dependencies (do not add dependencies/devDependencies). node:test + node:assert/strict. Pure functions: source has no console.*, no process.*, no imports from 'node:*', no require(). Print nothing.\n\nCONTRACT (named exports):\n1. export const RATING_SCALE = Object.freeze(['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-']) — 19 entries, uppercase, best first; frozen so push/assignment throw TypeError in strict ESM.\n2. export function notchChange(previous, current) -> integer index(current)-index(previous), -18..18, positive = downgrade. Exactly two declared parameters (length === 2), no defaults, no override param.\n3. export function notchCalculator(previous, current) -> new plain object with exactly keys notches, direction, wl: notches = notchChange(previous,current) with the same sign (C5); direction = 'downgrade' if notches>0, 'upgrade' if <0, 'unchanged' if 0; wl uses Indicator 13 thresholds (C2): 2 if notches>=3, 1 if notches===2, else 0 (a 1-notch downgrade is WL 0; upgrade/unchanged WL 0). length === 2.\nThe POC example 'BBB+ -> BB+ = 2 notch, WL=1' is WRONG; C2 corrects it to 3 notches, WL 2. Test the corrected values.\n\nINPUT VALIDATION (one shared internal normaliser is fine; extra internal exports allowed but not contract): first check typeof value === 'string'; if not (null, undefined, number, object, missing argument) throw RangeError BEFORE calling .trim(). Then String.prototype.trim() and case-insensitive exact match against RATING_SCALE (e.g. toUpperCase + indexOf). Internal whitespace is NOT removed ('BBB +', 'B B B' invalid). No match -> RangeError; for string inputs the message MUST contain the raw input as passed (before trimming), e.g. `Invalid rating: \"NR\"`; build the message for non-strings safely without throwing another error. Validate both arguments before computing; never return a default or partial object. No second scale/alias table: D, SD, NR, CC, C, WD, Baa1, AAA-, AAA+, CCC--, BBB++ are rejected.\n\nTEST DATA (TDD; name tests after their AC, e.g. 'AC-2: ...'): AC-2: BBB+->BB+ 3, BBB+->BBB- 2, BBB+->BBB 1, AAA->AA+ 1, CCC->CCC- 1, BB+->BBB+ -3, A-->A -1, AAA->CCC- 18, CCC-->AAA -18, A->A 0. AC-3: ('bbb+','bb+') 3, ('  BBB+ ','\\tbB+\\n') 3, ('aaa','AAA') 0, (' a- ',' A ') -1, ('ccc-','aaa') -18. AC-4 invalid: '', '   ', 'D','NR','CC','C','AAA-','AAA+','CCC--','BBB++','Baa1','BBB +','B B B', null, undefined, 3, {} in both positions, plus ('NR','A'), ('A','NR'), ('A',undefined), notchChange(). AC-5..7 calculator: BBB+->BB+ {3,'downgrade',2}; BBB+->BBB- {2,'downgrade',1}; A->BBB+ {3,'downgrade',2}; AAA->CCC- {18,'downgrade',2}; BBB+->BBB {1,'downgrade',0}; CCC->CCC- {1,'downgrade',0}; BB+->BBB+ {-3,'upgrade',0}; A-->A {-1,'upgrade',0}; CCC-->AAA {-18,'upgrade',0}; A->A {0,'unchanged',0}; (' a ','A') {0,'unchanged',0}; use deepStrictEqual so exactly three keys. AC-8: loop all 361 ordered pairs. AC-9: notchCalculator('bbb+',' BB+ ') = {3,'downgrade',2}; every invalid AC-4 value in either position throws RangeError. AC-15: .length === 2 for both, deterministic results.",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/**",
+        "test/ratings/**"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/integration/ratings/**"
+      ],
+      "qa_verify": "node --test test/integration/ratings/*.test.mjs",
+      "acceptance": [
+        "AC-1: Given `import { RATING_SCALE } from './src/ratings/notch.mjs'`, when inspected, then it deep-strict-equals ['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-'], length 19, [0]==='AAA', [18]==='CCC-', and `Object.isFrozen(RATING_SCALE) === true`.",
+        "AC-1: Given the frozen `RATING_SCALE` in strict ESM, when `RATING_SCALE.push('D')` or `RATING_SCALE[0] = 'X'` runs, then each throws `TypeError` and the array still deep-equals the 19-entry list.",
+        "AC-2: Given two valid uppercase ratings, `notchChange(previous, current)` returns the integer `index(current) - index(previous)`: ('BBB+','BB+')→3; ('BBB+','BBB-')→2; ('BBB+','BBB')→1; ('AAA','AA+')→1; ('CCC','CCC-')→1; ('BB+','BBB+')→-3; ('A-','A')→-1; ('AAA','CCC-')→18; ('CCC-','AAA')→-18; ('A','A')→0; `Number.isInteger(result)` each.",
+        "AC-3: Given inputs differing only in case or leading/trailing whitespace, `notchChange`: ('bbb+','bb+')→3; ('  BBB+ ','\\tbB+\\n')→3; ('aaa','AAA')→0; (' a- ',' A ')→-1; ('ccc-','aaa')→-18.",
+        "AC-4: Given each invalid value v in ['', '   ', 'D', 'NR', 'CC', 'C', 'AAA-', 'AAA+', 'CCC--', 'BBB++', 'Baa1', 'BBB +', 'B B B', null, undefined, 3, {}], `notchChange(v,'A')` and `notchChange('A',v)` both throw `RangeError` (never `TypeError`, never a return value).",
+        "AC-4: Given ('NR','A'), ('A','NR'), ('A',undefined) and no arguments, `notchChange` throws `RangeError`.",
+        "AC-4: Given an invalid string such as 'NR', 'Baa1' or 'BBB +' in either position, `err.message` includes the raw value as passed (/NR/, /Baa1/, /BBB \\+/); for '' and '   ' only the `RangeError` type is checked.",
+        "AC-5: Given a downgrade of 2+ notches, `notchCalculator` deep-strict-equals: ('BBB+','BB+')→{notches:3, direction:'downgrade', wl:2}; ('BBB+','BBB-')→{notches:2, direction:'downgrade', wl:1}; ('A','BBB+')→{notches:3, direction:'downgrade', wl:2}; ('AAA','CCC-')→{notches:18, direction:'downgrade', wl:2}; result is a plain object (prototype Object.prototype).",
+        "AC-6: Given a 1-notch downgrade, ('BBB+','BBB')→{notches:1, direction:'downgrade', wl:0} and ('CCC','CCC-')→{notches:1, direction:'downgrade', wl:0}.",
+        "AC-7: Given an upgrade or no change: ('BB+','BBB+')→{notches:-3, direction:'upgrade', wl:0}; ('A-','A')→{notches:-1, direction:'upgrade', wl:0}; ('CCC-','AAA')→{notches:-18, direction:'upgrade', wl:0}; ('A','A')→{notches:0, direction:'unchanged', wl:0}; (' a ','A')→{notches:0, direction:'unchanged', wl:0}.",
+        "AC-8: Given every ordered pair (p,c) of `RATING_SCALE` (361 pairs), `notchCalculator(p,c)` has notches === notchChange(p,c); direction 'downgrade' if >0, 'upgrade' if <0, 'unchanged' if 0; wl 2 if notches>=3, 1 if ===2, else 0; `Object.keys(r).sort()` equals ['direction','notches','wl'].",
+        "AC-9: Given AC-3-style input, `notchCalculator('bbb+',' BB+ ')` returns {notches:3, direction:'downgrade', wl:2}.",
+        "AC-9: Given every AC-4 invalid value in either position, plus no arguments, `notchCalculator` throws `RangeError` and returns no object.",
+        "AC-15: `notchChange.length === 2` and `notchCalculator.length === 2`; `notchChange('BBB+','BB+')` twice gives 3; `notchCalculator('BBB+','BB+')` twice gives deep-equal objects that are different references.",
+        "AC-15: `grep -nE \"console\\.|process\\.|from 'node:|require\\(\" src/ratings/notch.mjs` prints nothing; `package.json` has no `dependencies`/`devDependencies` key."
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-04T18:05:34Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-r3d/complete/repo/.work/JOB-20261004-1755-rating-notch-calculator-country/wt/T-01",
+      "branch": "job/JOB-20261004-1755-rating-notch-calculator-country--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "187f8f7df12ac575fad70286f91128531eb893ed",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-r3d/complete/repo/.work/JOB-20261004-1755-rating-notch-calculator-country/gates/T-01-a1-180658.log",
+        "at": "2026-10-04T18:06:58Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-04T18:06:58.788Z",
+          "author": "gate",
+          "text": "PASS — 23 checks ok, 0 failed (T-01-a1-180658.log)"
+        },
+        {
+          "at": "2026-10-04T18:08:10.536Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-9 and AC-15 pass (16/16 integration tests); AC-5 uses the PM-corrected A→BBB+ values"
+        },
+        {
+          "at": "2026-10-04T18:08:28.985Z",
+          "author": "reviewer",
+          "text": "approve — No blocking items; nits only (magic values, overlapping test suites)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "4884cbf38ddecadea909397ee626193cd0716d11",
+        "gate_head": "187f8f7df12ac575fad70286f91128531eb893ed",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-r3d/complete/repo/.work/JOB-20261004-1755-rating-notch-calculator-country/gates/T-01-qa-a1-180810.log",
+        "summary": "AC-1..AC-9 and AC-15 pass (16/16 integration tests); AC-5 uses the PM-corrected A→BBB+ values",
+        "at": "2026-10-04T18:08:10Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "4884cbf38ddecadea909397ee626193cd0716d11",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-9 and AC-15 pass (16/16 integration tests); AC-5 uses the PM-corrected A→BBB+ values",
+          "at": "2026-10-04T18:08:10Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "4884cbf38ddecadea909397ee626193cd0716d11",
+          "summary": "No blocking items; nits only (magic values, overlapping test suites)",
+          "at": "2026-10-04T18:08:28Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "4884cbf38ddecadea909397ee626193cd0716d11",
+        "summary": "reviewer: approve — No blocking items; nits only (magic values, overlapping test suites)",
+        "pending": [],
+        "at": "2026-10-04T18:08:28Z"
+      }
+    },
+    {
+      "id": "T-02",
+      "title": "Indicator 12 countryRatingChangeWl in src/indicators/countryRating.mjs",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "indicators-country-rating",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "context": "WHY: REQ-03-12 (Indicator 12, country rating change) maps a previous and a current country rating to WL 0, 1 or 2 (higher is worse). Other POC parts import it by this exact name and path. Built on notchChange from T-01 (merged first).\n\nFILES: create src/indicators/countryRating.mjs and test/indicators/countryRating.test.mjs. Do not modify src/ratings/notch.mjs; report defects instead.\n\nCONVENTIONS (CLAUDE.md): plain Node 18+ ESM, no npm dependencies, node:test + node:assert/strict. Pure: source has no console.*, no process.*, no imports from 'node:*', no require(). Print nothing.\n\nDEPENDENCY (from T-01, in the repo): src/ratings/notch.mjs exports RATING_SCALE (frozen, 19 entries, index 0 'AAA' .. 18 'CCC-'), notchChange(previous,current) (integer index(current)-index(previous), positive = downgrade; trims, case-insensitive; RangeError for non-strings/off-scale; message contains raw string input) and notchCalculator.\n\nCONTRACT: export function countryRatingChangeWl(previous, current), exactly two declared parameters (length === 2), no override parameter (C7). import { notchChange } from '../ratings/notch.mjs'; n = notchChange(previous,current); return 2 if n>=2, 1 if n===1, else 0 (upgrade/unchanged 0, C3). Do NOT copy the scale, add validation or catch errors: let notchChange's RangeError propagate. The file must hold no rating string array (AC-13).\nDELIBERATE DIFFERENCE (C6): Indicator 12 gives WL 1 for a 1-notch downgrade and 2 from 2 notches; notchCalculator().wl gives 0/1/2 for 1/2/3+ notches. Do not 'fix' either to match the other (AC-12).\n\nTEST DATA (TDD; name tests after their AC): AC-10: A->A- 1, CCC->CCC- 1, A->BBB+ 2, A->BBB 2, BBB+->BB+ 2, AAA->CCC- 2. AC-11: A-->A, BB+->BBB+, CCC-->AAA, A->A, ('bbb',' BBB ') all 0. AC-12: compare with notchCalculator(p,c).wl: BBB+->BBB 1 vs 0; BBB+->BBB- 2 vs 1; BBB+->BB+ 2 vs 2; BB+->BBB+ 0 vs 0. AC-13: loop all 361 ordered pairs vs the rule on notchChange; in the test only, read the source with node:fs and assert it imports notchChange from '../ratings/notch.mjs' and contains no scale literal (no 'AAA' / 'CCC-' string). AC-14: (' a ','a-') = 1; ('A','D'), (null,'A'), ('','') and every AC-4 invalid value ('', '   ', 'D','NR','CC','C','AAA-','AAA+','CCC--','BBB++','Baa1','BBB +','B B B', null, undefined, 3, {}) in both positions throw RangeError. AC-15: length === 2, deterministic.\nAC-16 (job level): once QA tests of both components exist, `node --test` from the repo root exits 0; helpers under test/ must be named *.test.mjs or be side-effect free.",
+      "depends_on": [
+        "T-01"
+      ],
+      "scope": [
+        "src/indicators/**",
+        "test/indicators/**"
+      ],
+      "verify": "node --test test/indicators/countryRating.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/**"
+      ],
+      "qa_verify": "node --test test/integration/indicators/*.test.mjs",
+      "acceptance": [
+        "AC-10: Given a downgrade, when `countryRatingChangeWl` is called, then: ('A','A-')→1, ('CCC','CCC-')→1, ('A','BBB+')→2, ('A','BBB')→2, ('BBB+','BB+')→2, ('AAA','CCC-')→2; every return value is one of 0, 1, 2.",
+        "AC-11: Given an upgrade or no change, when `countryRatingChangeWl` is called, then ('A-','A'), ('BB+','BBB+'), ('CCC-','AAA'), ('A','A') and ('bbb',' BBB ') each return 0.",
+        "AC-12: Given the same pair passed to both functions, when `countryRatingChangeWl(p,c)` is compared with `notchCalculator(p,c).wl`, then: ('BBB+','BBB')→1 vs 0; ('BBB+','BBB-')→2 vs 1; ('BBB+','BB+')→2 vs 2; ('BB+','BBB+')→0 vs 0 (the difference is intended, C6).",
+        "AC-13: Given every ordered pair (p,c) of `RATING_SCALE` (361 pairs), when `countryRatingChangeWl(p,c)` is called, then it equals 2 if `notchChange(p,c) >= 2`, 1 if `=== 1`, else 0.",
+        "AC-13: Given `src/indicators/countryRating.mjs` read as text (in the test only, via `node:fs`), when inspected, then it matches /import\\s*\\{[^}]*\\bnotchChange\\b[^}]*\\}\\s*from\\s*['\"]\\.\\.\\/ratings\\/notch\\.mjs['\"]/ and contains neither `AAA` nor `CCC-` anywhere, comments included.",
+        "AC-14: Given AC-3-style input, when `countryRatingChangeWl(' a ','a-')` is called, then it returns 1.",
+        "AC-14: Given ('A','D'), (null,'A'), ('',''), no arguments, and every AC-4 invalid value v in ['', '   ', 'D', 'NR', 'CC', 'C', 'AAA-', 'AAA+', 'CCC--', 'BBB++', 'Baa1', 'BBB +', 'B B B', null, undefined, 3, {}] as (v,'A') and ('A',v), when `countryRatingChangeWl` is called, then each throws `RangeError`.",
+        "AC-15: Given the module, when inspected, then `countryRatingChangeWl.length === 2` (no override parameter, C7); `countryRatingChangeWl('A','BBB+')` twice returns 2.",
+        "AC-15: Given the source, when this runs, then `grep -nE \"console\\.|process\\.|from 'node:|require\\(\" src/indicators/countryRating.mjs` prints nothing; `package.json` has no `dependencies`/`devDependencies` key.",
+        "AC-16: Given the job branch with T-01 and T-02 merged and the QA tests under `test/integration/ratings/` and `test/integration/indicators/` in place, when `node --test` runs from that checkout's root, then it exits 0 with 0 failing and 0 cancelled tests, and every AC-1..AC-15 has at least one test whose name contains that AC id."
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-04T18:08:32Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-r3d/complete/repo/.work/JOB-20261004-1755-rating-notch-calculator-country/wt/T-02",
+      "branch": "job/JOB-20261004-1755-rating-notch-calculator-country--T-02",
+      "gate": {
+        "result": "PASS",
+        "head": "2dd3007b6957ca3645e191e9aa2e966cabc66cf8",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-r3d/complete/repo/.work/JOB-20261004-1755-rating-notch-calculator-country/gates/T-02-a1-180914.log",
+        "at": "2026-10-04T18:09:14Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-04T18:09:14.846Z",
+          "author": "gate",
+          "text": "PASS — 18 checks ok, 0 failed (T-02-a1-180914.log)"
+        },
+        {
+          "at": "2026-10-04T18:09:59.359Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-10..AC-15 pass (13/13 integration); full node --test in worktree: 56 pass, 0 fail"
+        },
+        {
+          "at": "2026-10-04T18:10:13.100Z",
+          "author": "reviewer",
+          "text": "approve — No blocking items; nits only (overlapping tests, fragile stdout monkeypatch)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "6f861648f5793ca10c909a99eb792290442c30dc",
+        "gate_head": "2dd3007b6957ca3645e191e9aa2e966cabc66cf8",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-r3d/complete/repo/.work/JOB-20261004-1755-rating-notch-calculator-country/gates/T-02-qa-a1-180959.log",
+        "summary": "AC-10..AC-15 pass (13/13 integration); full node --test in worktree: 56 pass, 0 fail",
+        "at": "2026-10-04T18:09:59Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "6f861648f5793ca10c909a99eb792290442c30dc",
+          "qa_verify": "PASS",
+          "summary": "AC-10..AC-15 pass (13/13 integration); full node --test in worktree: 56 pass, 0 fail",
+          "at": "2026-10-04T18:09:59Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "6f861648f5793ca10c909a99eb792290442c30dc",
+          "summary": "No blocking items; nits only (overlapping tests, fragile stdout monkeypatch)",
+          "at": "2026-10-04T18:10:12Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "6f861648f5793ca10c909a99eb792290442c30dc",
+        "summary": "reviewer: approve — No blocking items; nits only (overlapping tests, fragile stdout monkeypatch)",
+        "pending": [],
+        "at": "2026-10-04T18:10:12Z"
+      }
+    }
+  ]
+}
