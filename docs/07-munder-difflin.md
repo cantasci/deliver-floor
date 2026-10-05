@@ -43,7 +43,8 @@ human's command: bash-guard refuses it to every agent, Michael included, and it 
 session does not run the job itself: `dl floor-open` aims Munder Difflin at the repo's floor (`munder.hive_root` in
 `.deliver.json`, else the app's current floor), starts the app when it is not running (`munder.app_command`, else the
 installed app, else the source checkout `scripts/init.sh --munder` made), teaches Michael `/deliver` there, and puts your
-request in his inbox — the app wakes him. You follow the job on the floor (or `dl status` / `dl kanban` from the terminal).
+request in his inbox — the app wakes him. When the app had to be started, it opens on its floor picker with the repo's floor
+selected: **click Open once** (the app has no setting to skip the picker); Michael starts and reads the job. You follow the job on the floor (or `dl status` / `dl kanban` from the terminal).
 An app already open on another floor is never switched: you are told to open the repo's floor in it.
 
 **The job itself never runs from a separate terminal.** The app's Michael reads the hive inbox; a second Michael

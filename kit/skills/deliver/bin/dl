@@ -1531,6 +1531,7 @@ REPO: $ROOT" --arg t "$(date -u +%FT%T.000Z)" \
     '{id:$id, conversation:("deliver-" + $id), from:"human", to:"god", act:"request", subject:"/deliver", body:$body, hops:0, requires_reply:false, needs_human:false, created_at:$t}' \
     > "$inbox/.$id.tmp" && mv "$inbox/.$id.tmp" "$inbox/$id.json"
   echo "Munder Difflin $([[ $started == 1 ]] && echo "is starting on" || echo "is open on") $home — the job went to Michael there (his inbox: $id)."
+  [[ $started == 1 ]] && echo "The app opens on its floor picker with this floor selected: click Open once — Michael starts and reads the job."
   echo "Follow it on the floor; from here: dl status · dl kanban · dl md-seats (read only — Michael in the app drives the job)."
 }
 
