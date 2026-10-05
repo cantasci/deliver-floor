@@ -482,11 +482,15 @@ cmd_phase() {
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       executing)
+        # only after planning (the readiness review and its freeze), or back from later for a fix card — never skipping them
+        [[ " planning awaiting_plan_approval executing integrating closing awaiting_pr_merge " == *" $cur "* ]] \
+          || refuse 1 "executing comes after planning — the readiness review and the plan first (now: $cur)"
         if [[ "$(jq -r .settings.gates.plan "$JOBJ")" != false && "$(jq -r '.gates.plan.status // ""' "$JOBJ")" != approved ]]; then
           refuse 1 "the plan is not approved by the human (gates.plan). Ask them; record with dl approve plan"
         fi
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       integrating)
+        [[ $cur == executing || $cur == integrating ]] || refuse 1 "integrating comes after executing (now: $cur)"
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
           || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl card add …) or drop it (dl card <id> state archived \"<reason>\")" ;;
       closing)
@@ -684,6 +688,15 @@ cmd_wt() {
       # 1. checks + reservation, atomically (two parallel assignments can't take the same seat or exceed a limit);
       # 2. worktree + setup outside the lock, so a slow setup never holds up other assignments.
       assert_frozen
+      # QA's work is recorded before anyone else touches the card: commits that changed only QA tests since QA's last record
+      # (or since the gate) would otherwise be counted as the dev's at the next gate.
+      local qh gh hb base; qh="$(card_get "$card" '.qa.head // ""')"; gh="$(card_get "$card" '.gate.head // ""')"
+      hb="$(git -C "$ROOT" rev-parse -q --verify "refs/heads/$branch" 2>/dev/null || true)"
+      base="$qh"; [[ -n $base ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null || base="$gh"
+      if [[ -n $hb && -n $base && $hb != "$base" ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null \
+         && [[ -n "$(git -C "$ROOT" diff --name-only "$base" "$hb")" && -z "$(outside "$base" "$hb" "$(card_get "$card" '.qa_scope // []')")" ]]; then
+        refuse 1 "$card has QA commits that are not recorded yet (${base:0:9}..${hb:0:9} changed only QA tests) — record QA's round first: dl qa $card pass|fail \"<AC results>\", then send the card on"
+      fi
       local prev; prev="$(card_get "$card" '{state, attempts, seat}')"
       _wt_reserve "$card" "$flag" || exit $?
       if [[ ! -d $path ]]; then
@@ -963,7 +976,8 @@ dl_merge() {
   if [[ -n $tpl ]]; then
     m="${tpl//\{card\}/$what}"; m="${m//\{title\}/$title}"; m="${m//\{key\}/$key}"; msgs+=("$m")
   fi
-  subj="merge $what${key:+ ($key)} — $low"
+  local w=$what; [[ $what == job/* ]] && w="${what#job/}"; w="${w%%-[a-z]*}"   # job/JOB-20261005-1952-slug → JOB-20261005-1952
+  subj="merge $w${key:+ ($key)} - $low"   # ASCII only: cut to the header limit (100) without splitting a character
   if [[ $conv == conventional ]]; then msgs+=("chore: ${subj:0:93}" "chore(deliver): ${subj:0:84}" "Merge $what${key:+ ($key)}: $title")
   else msgs+=("Merge $what${key:+ ($key)}: $title" "chore: ${subj:0:93}"); fi
   for m in ${msgs[@]+"${msgs[@]}"}; do

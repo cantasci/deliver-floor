@@ -64,6 +64,13 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    lists every such decision in the PR. (Only a plan gate the human switched on themselves — `settings.gates.plan` — asks once
    more, before execution.) The human takes over at the PR.
 8. No push to main/master, no force push (a hook enforces this too).
+9. **Card branches change only through the roles that own them and `dl`** — the same in every mode (subagents, the floor,
+   any CLI). You never run git that changes a card or integration worktree (merge, reset, rebase, commit, checkout, …); a hook
+   refuses it. Each role's round is **recorded before the card moves on**: QA's commits (new tests, or a fix to a test of
+   theirs that contradicted the spec) are recorded with `dl qa` before anyone else is sent to the card — `dl wt add` refuses
+   while QA's commits are unrecorded. A conflict with the job branch is the dev's to resolve, after re-dispatch.
+10. Every commit follows the repo's commit convention (`settings.commit.convention`, detected; your role cards give the
+   format). `dl`'s own merges follow it too and go through the repo's hooks — never around them.
 
 ## Phase 0 — Intake (`intake`)
 

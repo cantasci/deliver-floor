@@ -365,6 +365,13 @@ contains "force push denied" "$(bg 'git push -f origin job/x')" "rc=2"
 contains "job branch push allowed for Michael" "$(bg "git -C x push -u origin job/$JOB")" "rc=0"
 contains "an agent outside a card worktree cannot push" "$(bg 'git push origin job/x--T-01' "$R/.work/$JOB/wt/T-01")" "rc=2"
 contains "rm -rf .work denied" "$(bg 'rm -rf .work')" "rc=2"
+W1="$R/.work/$JOB/wt/T-01"
+contains "the main session (Michael / Claude itself, subagent mode) cannot reset a card worktree" "$(bg "git -C $W1 reset --hard 30388981")" "rc=2"
+contains "…nor merge into one, even with its shell cd'ed inside" "$(bg "git merge job/$JOB" "$W1")" "rc=2"
+contains "…nor commit in the integration worktree" "$(bg "cd $R/.work/$JOB/wt/_integration && git commit -qm x")" "rc=2"
+contains "…reading is fine (git log / status / diff)" "$(bg "git -C $W1 log --oneline")" "rc=0"
+contains "the dev subagent commits in its own worktree" "$(bg "git commit -qm 'feat: x (T-01)'" "$W1" abc123)" "rc=0"
+contains "git in the repo outside .work is not affected" "$(bg "git commit -qm x" "$R")" "rc=0"
 contains "subagent dl integrate denied" "$(bg 'dl integrate T-01' "$R" abc123)" "rc=2"
 contains "subagent dl status allowed" "$(bg 'dl status' "$R" abc123)" "rc=0"
 contains "Michael dl gate allowed" "$(bg '/x/bin/dl gate T-01')" "rc=0"
@@ -919,6 +926,11 @@ for i in 1 2 3 4; do git -C "$TMP/cc-hist" commit -q --allow-empty -m "feat: thi
 contains "detected: commitlint config → Conventional Commits, enforced" "$(node "$HERE/kit/skills/deliver/bin/detect.mjs" --commit "$TMP/cc-cl")" '{"convention":"conventional","source":"commitlint.config.mjs (commitlint)","enforced":true}'
 contains "…from the history when no tool enforces it" "$(node "$HERE/kit/skills/deliver/bin/detect.mjs" --commit "$TMP/cc-hist" | jq -r .source)" "the history: 4 of the last 4 commits"
 contains "…plain when neither says so" "$(node "$HERE/kit/skills/deliver/bin/detect.mjs" --commit "$TMP/cc-plain" | jq -r .convention)" "plain"
+# phases cannot be skipped: no executing straight from readiness (no readiness review, no freeze), no integrating before it
+SK="$TMP/skip"; mkdir -p "$SK" && git -C "$SK" init -q -b main && (cd "$SK" && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i && "$DL" new s x >/dev/null 2>&1 \
+  && "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null && "$DL" phase readiness >/dev/null)
+contains "readiness → executing is refused (the readiness review and its freeze cannot be skipped)" "$(cd "$SK" && "$DL" phase executing 2>&1)" "executing comes after planning"
+contains "readiness → integrating is refused" "$(cd "$SK" && "$DL" phase integrating 2>&1)" "integrating comes after executing"
 CC="$TMP/cc-cl"; cd "$CC"
 # the repo's commit-msg hook (what husky + commitlint do): Conventional Commits only — also for merges
 printf '#!/bin/sh\ngrep -qE "^(feat|fix|chore|test|docs|refactor)(\\(.+\\))?: [a-z]" "$1" || { echo "commitlint: subject may not be empty / type must be one of [feat, fix, …]" >&2; exit 1; }\n' > .git/hooks/commit-msg; chmod +x .git/hooks/commit-msg
@@ -937,10 +949,11 @@ out="$("$DL" gate T-01 2>&1)"; contains "the gate refuses a card commit outside 
 git -C "$WC" commit -q --amend -m "feat: notch change (T-01)"
 expect_ok "…and passes once it follows it" "$DL" gate T-01
 mkdir -p "$WC/it" && echo t > "$WC/it/t" && git -C "$WC" add -A && git -C "$WC" commit -qm "test: integration tests for AC-1 (T-01)"
+out="$("$DL" wt add T-01 2>&1)"; contains "QA's commits must be recorded before the card goes anywhere else (dl wt add refuses)" "$out" "has QA commits that are not recorded yet"
 "$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve "ok" >/dev/null
 out="$("$DL" integrate T-01 2>&1)"; rc=$?
-[[ $rc == 0 && "$(git -C "$CJ/wt/_integration" log -1 --format=%s)" == "chore: merge T-01 — notch change" ]] \
-  && ok "dl's own merge commit follows the convention and passes the repo's hook: \"chore: merge T-01 — notch change\"" || bad "integrate under commitlint: rc=$rc $out / $(git -C "$CJ/wt/_integration" log -1 --format=%s)"
+[[ $rc == 0 && "$(git -C "$CJ/wt/_integration" log -1 --format=%s)" == "chore: merge T-01 - notch change" ]] \
+  && ok "dl's own merge commit follows the convention and passes the repo's hook: \"chore: merge T-01 - notch change\"" || bad "integrate under commitlint: rc=$rc $out / $(git -C "$CJ/wt/_integration" log -1 --format=%s)"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null
 # a hook that refuses every form dl can write: not a conflict — the hook's words, exit 5, the card untouched
 printf '#!/bin/sh\ncase "$(head -1 "$1")" in *TICKET-*) exit 0 ;; esac; echo "commit-msg: every subject needs a TICKET-n reference" >&2; exit 1\n' > .git/hooks/commit-msg
