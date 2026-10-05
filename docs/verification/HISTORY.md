@@ -73,3 +73,9 @@ Not a live run, but its failures belong here too:
   beside the old one, with a check. And the first `.deliver.json` was written from the shipped defaults only, so the
   user's own `$DELIVER_HOME/config.json` never applied in a new repo — it now starts from defaults ⊕ the user's config
   (`0f9f63c`).
+- `.deliver.json` was written with `verify_full: "npm test"` for any repo with a `package.json` — even npm's own
+  placeholder test script ("no test specified") — and the README example showed it as if it were a default. It is now read
+  from the repo (`bin/detect.mjs`, shared by `dl`, `scripts/init.sh` and the docs): Makefile test target, package.json
+  scripts with the lockfile's package manager, pytest/uv/poetry, Go, Rust, Maven/Gradle and others, a project per folder;
+  the lockfile's install command as `worktree_setup`; the floor the repo is registered on as `munder.hive_root`; nothing
+  found → empty. Each value is printed with where it came from. 8 new checks in `tests/run.sh`, run through the real `dl new`.

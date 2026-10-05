@@ -63,12 +63,8 @@ if [[ -n $project ]]; then "$HERE/scripts/install.sh" --project "$project"; else
 
 if [[ -n $repo && ! -f $repo/.deliver.json ]]; then
   step ".deliver.json for $repo"
-  verify="npm test"; [[ -f $repo/package.json ]] || verify=""
-  [[ -f $repo/pyproject.toml || -f $repo/requirements.txt ]] && verify="pytest -q"
-  [[ -f $repo/go.mod ]] && verify="go test ./..."
-  mm=human; git -C "$repo" remote get-url origin >/dev/null 2>&1 || mm=local
-  jq -n --arg v "${verify:-echo set verify_full && false}" --arg m "$mm" '{verify_full:$v, worktree_setup:"", merge_mode:$m}' > "$repo/.deliver.json"
-  cat "$repo/.deliver.json"; echo "(edit verify_full / worktree_setup to match the repo — docs/03-settings.md)"
+  (cd "$repo" && "$HERE/kit/skills/deliver/bin/dl" config --init)   # read from the repo: test script, lockfile, remote
+  echo "(every key: docs/03-settings.md)"
 fi
 [[ $munder == 1 && $subagent == 1 ]] && { echo "init: --munder and --subagent exclude each other" >&2; exit 1; }
 if [[ -n $repo && $subagent == 1 ]]; then
@@ -143,9 +139,9 @@ if [[ $munder -eq 1 ]]; then
     "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
   echo "config: $cfg"; jq -c '{harnessHome, registeredRepos, orchestratorMaySpawn, workerIdleTimeoutMinutes, maxConcurrentWorkers, knowledgeGraph, onboardingComplete}' "$cfg"
   if [[ -n $repo ]]; then
-    jq '.dispatch = "munder"' "$repo/.deliver.json" > "$repo/.deliver.json.tmp" 2>/dev/null && mv "$repo/.deliver.json.tmp" "$repo/.deliver.json" \
-      || echo '{"dispatch":"munder"}' > "$repo/.deliver.json"
-    echo "$repo/.deliver.json: dispatch=munder (cards run as floor workers)"
+    jq --arg h "$hive" '.dispatch = "munder" | .munder.hive_root = $h' "$repo/.deliver.json" > "$repo/.deliver.json.tmp" 2>/dev/null && mv "$repo/.deliver.json.tmp" "$repo/.deliver.json" \
+      || jq -n --arg h "$hive" '{dispatch: "munder", munder: {hive_root: $h}}' > "$repo/.deliver.json"
+    echo "$repo/.deliver.json: dispatch=munder, munder.hive_root=$hive (this repo's floor)"
   fi
   step "teach Michael /deliver ($hive/CLAUDE.md)"
   "$HERE/scripts/md-brief.sh" "$hive" ${repo:+"$repo"}
