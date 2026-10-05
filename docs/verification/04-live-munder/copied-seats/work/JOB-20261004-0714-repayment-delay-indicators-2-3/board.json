@@ -1,0 +1,357 @@
+{
+  "cards": [
+    {
+      "title": "Indicator 2: daysWithDelay options and daysWithDelayWl (REQ-03-02)",
+      "role": "backend",
+      "component": "indicators-lib",
+      "context": "Why: Watchlist POC needs the WL (0-4, higher is worse) for Indicator 2 'days with delay' as a pure function plus an exported dropdown option list. Plain Node 18+ ESM (.mjs), no npm deps, no I/O (CLAUDE.md). Tests: node:test + node:assert/strict. Do TDD (skills ecc:backend-patterns, ecc:tdd-workflow).\nCreate src/indicators/daysWithDelay.mjs exporting EXACTLY two names: (1) `DAYS_WITH_DELAY_OPTIONS = Object.freeze(['no delay','<=3 days','>3 days','>60 days','>90 days'])` in that order (Object.isFrozen must be true); (2) `daysWithDelayWl(option)` returning an integer WL by option: 'no delay'->0, '<=3 days'->0, '>3 days'->2, '>60 days'->3, '>90 days'->4. Options are mutually exclusive caller selections, not cumulative ranges and not numeric days.\nInput rules: input must be a string, else RangeError (null, undefined, 3, true, {}, ['>3 days']). Apply String.prototype.trim() (leading/trailing whitespace only: space, tab, newline, NBSP...), then require an exact, case-sensitive match against the options; inner whitespace untouched. Anything else throws RangeError: '>3 Days', 'No delay', '>3  days' (two inner spaces), '≤3 days' (Unicode, NOT an alias; only ASCII '<=3 days' is valid), '<=3days', '>30 days', '', '   ', 'unknown'. Never return a fallback WL. Tests assert error type only (RangeError), not the message.\nKeep the module self-contained: do NOT create or import a shared trim/validate helper (the sibling card B2 owns src/indicators/delayCount.mjs; the two cards must share no file). Do not touch package.json. Add short JSDoc. Unit tests go to test/indicators/daysWithDelay.test.mjs and must cover: option list content/order/frozen; each option's WL; trimming with ' ', '\\t', '\\n', NBSP; all invalid strings and non-strings above; round-trip (every option yields an integer in 0..4, none throws); exact export names (Object.keys of the imported namespace sorted equals ['DAYS_WITH_DELAY_OPTIONS','daysWithDelayWl']).",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/daysWithDelay.mjs",
+        "test/indicators/daysWithDelay.test.mjs"
+      ],
+      "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/daysWithDelay.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/daysWithDelay.integration.test.mjs",
+      "acceptance": [
+        "(AC-1) Given `src/indicators/daysWithDelay.mjs`, when `DAYS_WITH_DELAY_OPTIONS` is read, then it deep-equals `[\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"]` in that order and `Object.isFrozen(DAYS_WITH_DELAY_OPTIONS)` is true.",
+        "(AC-2) Given the exact options, when `daysWithDelayWl(\"no delay\")` and `daysWithDelayWl(\"<=3 days\")` are called, then both return 0.",
+        "(AC-3) When `daysWithDelayWl(\">3 days\")`, `(\">60 days\")`, `(\">90 days\")` are called, then they return 2, 3, 4.",
+        "(AC-4) When `daysWithDelayWl(\"  >60 days  \")`, `(\"\\t>90 days\\n\")`, `(\" >3 days \")`, `(\" no delay \")` are called, then they return 3, 4, 2, 0.",
+        "(AC-5) When `daysWithDelayWl` receives \">3 Days\", \"No delay\", \">3  days\", \"≤3 days\", \"<=3days\", \">30 days\", \"\", \"   \", \"unknown\", then each throws RangeError; and for `null`, `undefined`, `3`, `true`, `{}`, `[\">3 days\"]` each throws RangeError. No fallback WL is ever returned.",
+        "(AC-10) Every element of `DAYS_WITH_DELAY_OPTIONS` passed to `daysWithDelayWl` returns an integer in 0..4 and none throws.",
+        "(AC-11) The module performs no I/O, `Object.keys` of its namespace sorted equals `[\"DAYS_WITH_DELAY_OPTIONS\",\"daysWithDelayWl\"]`, `package.json` gains no dependency, and `node --test test/indicators/daysWithDelay.test.mjs` passes."
+      ],
+      "id": "T-01",
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 2,
+      "notes": [],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-04T07:19:33Z"
+        },
+        {
+          "attempt": 2,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-04T07:21:56Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/wt/T-01",
+      "branch": "job/JOB-20261004-0714-repayment-delay-indicators-2-3--T-01",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261004-0714-backend-1-h1",
+          "at": "2026-10-04T07:19:39Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261004-0714-qa-1-h1",
+          "at": "2026-10-04T07:20:28Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261004-0714-reviewer-1-h1",
+          "at": "2026-10-04T07:21:25Z"
+        },
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261004-0714-backend-1-h1",
+          "at": "2026-10-04T07:21:57Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261004-0714-qa-1-h1",
+          "at": "2026-10-04T07:22:55Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261004-0714-reviewer-1-h1",
+          "at": "2026-10-04T07:23:47Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "6caa53ad35a350d4b9459e92b5c9338d2ffeb823",
+        "attempt": 2,
+        "log": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/gates/T-01-a2-072245.log",
+        "at": "2026-10-04T07:22:45Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-04T07:20:20.617Z",
+          "author": "gate",
+          "text": "PASS — 14 checks ok, 0 failed (T-01-a1-072019.log)"
+        },
+        {
+          "at": "2026-10-04T07:21:24.755Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass (strings + non-strings); AC-10 pass; AC-11 pass — 8/8 in daysWithDelay.integration.test.mjs"
+        },
+        {
+          "at": "2026-10-04T07:21:56.346Z",
+          "author": "reviewer",
+          "text": "changes — unit test lacks NBSP trim case (AC-4 ' >3 days ' -> 2)"
+        },
+        {
+          "at": "2026-10-04T07:22:46.313Z",
+          "author": "gate",
+          "text": "PASS — 23 checks ok, 0 failed (T-01-a2-072245.log)"
+        },
+        {
+          "at": "2026-10-04T07:23:24.974Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): round 2: AC-1..5, AC-10, AC-11 pass — 8/8 unchanged against 6caa53a"
+        },
+        {
+          "at": "2026-10-04T07:24:10.879Z",
+          "author": "reviewer",
+          "text": "approve — NBSP blocker resolved in 6caa53a; scope clean, 2 exports, no I/O"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "6caa53ad35a350d4b9459e92b5c9338d2ffeb823",
+        "gate_head": "6caa53ad35a350d4b9459e92b5c9338d2ffeb823",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/gates/T-01-qa-a2-072324.log",
+        "summary": "round 2: AC-1..5, AC-10, AC-11 pass — 8/8 unchanged against 6caa53a",
+        "at": "2026-10-04T07:23:24Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "ce6cf5f323e3296fbbd37203bb5ed72d7c79f229",
+          "qa_verify": "PASS",
+          "summary": "AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass (strings + non-strings); AC-10 pass; AC-11 pass — 8/8 in daysWithDelay.integration.test.mjs",
+          "at": "2026-10-04T07:21:24Z"
+        },
+        {
+          "verdict": "pass",
+          "head": "6caa53ad35a350d4b9459e92b5c9338d2ffeb823",
+          "qa_verify": "PASS",
+          "summary": "round 2: AC-1..5, AC-10, AC-11 pass — 8/8 unchanged against 6caa53a",
+          "at": "2026-10-04T07:23:24Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "changes",
+          "head": "ce6cf5f323e3296fbbd37203bb5ed72d7c79f229",
+          "summary": "unit test lacks NBSP trim case (AC-4 ' >3 days ' -> 2)",
+          "at": "2026-10-04T07:21:56Z"
+        },
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "6caa53ad35a350d4b9459e92b5c9338d2ffeb823",
+          "summary": "NBSP blocker resolved in 6caa53a; scope clean, 2 exports, no I/O",
+          "at": "2026-10-04T07:24:10Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "6caa53ad35a350d4b9459e92b5c9338d2ffeb823",
+        "summary": "reviewer: approve — NBSP blocker resolved in 6caa53a; scope clean, 2 exports, no I/O",
+        "pending": [],
+        "at": "2026-10-04T07:24:10Z"
+      }
+    },
+    {
+      "title": "Indicator 3: delayCount options and delayCountWl (REQ-03-03)",
+      "role": "backend",
+      "component": "indicators-lib",
+      "context": "Why: Watchlist POC needs the WL (0-4, higher is worse) for Indicator 3 'delays in the last 12 months' as a pure function plus an exported dropdown option list. Plain Node 18+ ESM (.mjs), no npm deps, no I/O (CLAUDE.md). Tests: node:test + node:assert/strict. Do TDD (skills ecc:backend-patterns, ecc:tdd-workflow).\nCreate src/indicators/delayCount.mjs exporting EXACTLY two names: (1) `DELAY_COUNT_OPTIONS = Object.freeze(['0','1','>1'])` in that order (Object.isFrozen must be true); (2) `delayCountWl(option)` returning an integer WL by option: '0'->0, '1'->1, '>1'->2. Options are mutually exclusive caller selections; do not count delays or accept numbers.\nInput rules: input must be a string, else RangeError (null, undefined, 0, 1, NaN, {}, ['1']) — note numeric 0 and 1 are NOT valid, only the strings. Apply String.prototype.trim() (leading/trailing whitespace only: space, tab, newline, NBSP...), then require an exact, case-sensitive match against the options; inner whitespace untouched. Anything else throws RangeError: '2', '-1', '01', '> 1' (inner space), '>=1', 'one', '', '   '. Note '>1 ' (trailing space) and ' >1 ' are valid after trim and return 2. Never return a fallback WL. Tests assert error type only (RangeError), not the message.\nKeep the module self-contained: do NOT create or import a shared trim/validate helper (the sibling card B1 owns src/indicators/daysWithDelay.mjs; the two cards must share no file). Do not touch package.json. Add short JSDoc. Unit tests go to test/indicators/delayCount.test.mjs and must cover: option list content/order/frozen; each option's WL; trimming with ' ', '\\t', '\\n', NBSP; all invalid strings and non-strings above; round-trip (every option yields an integer in 0..4, none throws); exact export names (Object.keys of the imported namespace sorted equals ['DELAY_COUNT_OPTIONS','delayCountWl']).",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/delayCount.mjs",
+        "test/indicators/delayCount.test.mjs"
+      ],
+      "verify": "node --test test/indicators/delayCount.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/delayCount.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/delayCount.integration.test.mjs",
+      "acceptance": [
+        "(AC-6) Given `src/indicators/delayCount.mjs`, when `DELAY_COUNT_OPTIONS` is read, then it deep-equals `[\"0\",\"1\",\">1\"]` in that order and is frozen.",
+        "(AC-7) When `delayCountWl(\"0\")`, `(\"1\")`, `(\">1\")` are called, then they return 0, 1, 2.",
+        "(AC-8) When `delayCountWl(\" 1 \")`, `(\"\\t>1\\n\")`, `(\" 0 \")` are called, then they return 1, 2, 0 (also NBSP-padded input is trimmed).",
+        "(AC-9) When `delayCountWl` receives \"2\", \"-1\", \"01\", \"> 1\" (inner space), \">=1\", \"one\", \"\", \"   \", then each throws RangeError; for `null`, `undefined`, `0`, `1`, `NaN`, `{}`, `[\"1\"]` each throws RangeError. `delayCountWl(\">1 \")` (trailing space) returns 2.",
+        "(AC-10) Every element of `DELAY_COUNT_OPTIONS` passed to `delayCountWl` returns an integer in 0..4 and none throws.",
+        "(AC-11) The module performs no I/O, `Object.keys` of its namespace sorted equals `[\"DELAY_COUNT_OPTIONS\",\"delayCountWl\"]`, `package.json` gains no dependency, and `node --test test/indicators/delayCount.test.mjs` passes."
+      ],
+      "id": "T-02",
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 2,
+      "notes": [],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#2",
+          "by": "michael",
+          "at": "2026-10-04T07:19:34Z"
+        },
+        {
+          "attempt": 2,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-04T07:23:47Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/wt/T-02",
+      "branch": "job/JOB-20261004-0714-repayment-delay-indicators-2-3--T-02",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#2",
+          "worker": "worker-seat-20261004-0714-backend-2-h1",
+          "at": "2026-10-04T07:19:39Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261004-0714-qa-1-h1",
+          "at": "2026-10-04T07:21:25Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261004-0714-reviewer-1-h1",
+          "at": "2026-10-04T07:22:37Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261004-0714-reviewer-1-h1",
+          "at": "2026-10-04T07:23:13Z"
+        },
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261004-0714-backend-1-h1",
+          "at": "2026-10-04T07:23:55Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261004-0714-qa-1-h1",
+          "at": "2026-10-04T07:25:04Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261004-0714-reviewer-1-h1",
+          "at": "2026-10-04T07:25:24Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "017aa7846bbaeae6e1c6364d62a60fb576c1fa19",
+        "attempt": 2,
+        "log": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/gates/T-02-a2-072502.log",
+        "at": "2026-10-04T07:25:03Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-04T07:20:44.250Z",
+          "author": "gate",
+          "text": "PASS — 14 checks ok, 0 failed (T-02-a1-072043.log)"
+        },
+        {
+          "at": "2026-10-04T07:22:28.530Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-6 pass; AC-7 pass; AC-8 pass (incl. NBSP); AC-9 pass; AC-10 pass; AC-11 pass — 8/8 in delayCount.integration.test.mjs"
+        },
+        {
+          "at": "2026-10-04T07:23:46.500Z",
+          "author": "reviewer",
+          "text": "changes — unit test: add explicit \\u00a0 NBSP trim case (AC-8); line 22 raw NBSP not recognised"
+        },
+        {
+          "at": "2026-10-04T07:25:03.870Z",
+          "author": "gate",
+          "text": "PASS — 23 checks ok, 0 failed (T-02-a2-072502.log)"
+        },
+        {
+          "at": "2026-10-04T07:25:23.598Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): round 2: AC-6..9, AC-10, AC-11 pass — 8/8 unchanged against 017aa78"
+        },
+        {
+          "at": "2026-10-04T07:25:41.146Z",
+          "author": "reviewer",
+          "text": "approve — NBSP blocker resolved in 017aa78; scope clean, 2 exports, no I/O"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "017aa7846bbaeae6e1c6364d62a60fb576c1fa19",
+        "gate_head": "017aa7846bbaeae6e1c6364d62a60fb576c1fa19",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/gates/T-02-qa-a2-072523.log",
+        "summary": "round 2: AC-6..9, AC-10, AC-11 pass — 8/8 unchanged against 017aa78",
+        "at": "2026-10-04T07:25:23Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "2e259cdf98b04ed049f1a92c1c056d041cc5e98a",
+          "qa_verify": "PASS",
+          "summary": "AC-6 pass; AC-7 pass; AC-8 pass (incl. NBSP); AC-9 pass; AC-10 pass; AC-11 pass — 8/8 in delayCount.integration.test.mjs",
+          "at": "2026-10-04T07:22:28Z"
+        },
+        {
+          "verdict": "pass",
+          "head": "017aa7846bbaeae6e1c6364d62a60fb576c1fa19",
+          "qa_verify": "PASS",
+          "summary": "round 2: AC-6..9, AC-10, AC-11 pass — 8/8 unchanged against 017aa78",
+          "at": "2026-10-04T07:25:23Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "changes",
+          "head": "2e259cdf98b04ed049f1a92c1c056d041cc5e98a",
+          "summary": "unit test: add explicit \\u00a0 NBSP trim case (AC-8); line 22 raw NBSP not recognised",
+          "at": "2026-10-04T07:23:46Z"
+        },
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "017aa7846bbaeae6e1c6364d62a60fb576c1fa19",
+          "summary": "NBSP blocker resolved in 017aa78; scope clean, 2 exports, no I/O",
+          "at": "2026-10-04T07:25:40Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "017aa7846bbaeae6e1c6364d62a60fb576c1fa19",
+        "summary": "reviewer: approve — NBSP blocker resolved in 017aa78; scope clean, 2 exports, no I/O",
+        "pending": [],
+        "at": "2026-10-04T07:25:40Z"
+      }
+    }
+  ]
+}

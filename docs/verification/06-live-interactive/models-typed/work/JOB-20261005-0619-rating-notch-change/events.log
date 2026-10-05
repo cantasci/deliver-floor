@@ -1,0 +1,53 @@
+2026-10-05T06:19:31Z	new	Rating notch change
+2026-10-05T06:19:35Z	jobset	stack: .stack=["javascript"]
+2026-10-05T06:19:36Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notch calculator domain logic"},{"role":"backend","agent":"backend-dev","model":"haiku","why":"REQ-06-02: implement notchChange in src/ratings/notch.mjs; request: backend developer works on the haiku model"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"JavaScript ESM code for REQ-06-02"}]
+2026-10-05T06:19:36Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T06:19:36Z	phase	readiness
+2026-10-05T06:19:48Z	agent	 a6d5ec73: status 
+2026-10-05T06:20:16Z	agent	 aa5eb43a: Checking reviewer mapping in roles.yaml 
+2026-10-05T06:21:17Z	agent	 a09c198c: Confirming javascript reviewer in roles.yaml 
+2026-10-05T06:21:48Z	agent	 adb17fd8: Checking readiness quotes in r.json 
+2026-10-05T06:21:57Z	agent	business-analyst a3e22fb2: {"items":[ {"id":"PRD-goal","status":"decided","answer":"Deliver the reusable notch-change function that Ind. 11, 12, 13 and the notch calculator (REQ-06-02) bu
+2026-10-05T06:22:21Z	decide	DEL-docs: JSDoc on the two exports only — Cheap, documents the contract for importers; no README/changelog needed for a one-function slice
+2026-10-05T06:22:21Z	decide	X-scale-shape: Frozen Array of the 19 upper-case strings — Consumers cannot silently break notchChange; C1 fixes order and content either way
+2026-10-05T06:22:22Z	decide	X-error-message: RangeError message names the argument and the bad value; previous is checked first — Better diagnostics; tests assert only the error type per C2
+2026-10-05T06:22:45Z	readiness	29 items: 19 decided, 10 n/a, 0 open
+2026-10-05T06:22:50Z	freeze	readiness + architecture frozen (3666936ac5e8)
+2026-10-05T06:22:50Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T06:22:50Z	phase	planning
+2026-10-05T06:22:56Z	agent	 a86509cc: status 
+2026-10-05T06:23:25Z	agent	 ae3bb951: Checking Node version and README 
+2026-10-05T06:23:56Z	agent	 a2c9404a: Drafting notchChange acceptance criteria 
+2026-10-05T06:24:22Z	agent	business-analyst a7bfb751: # Plan ## Goal Deliver `src/ratings/notch.mjs`, a small pure library that Ind. 11, 12, 13 and the REQ-06-02 notch calculator will build on. It exports `RATING_S
+2026-10-05T06:24:55Z	agent	 afbc6196: status 
+2026-10-05T06:25:23Z	agent	 a7e5104d: Reading package.json test script 
+2026-10-05T06:25:32Z	agent	ecc:architect a7de53e8: ```json [{"tmp_id":"B1","title":"ratings: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with TDD unit tests","role":"backend","component":"ratings","co
+2026-10-05T06:25:57Z	agent	 a9acfb4d: status 
+2026-10-05T06:26:25Z	agent	 add33605: Inspecting package.json and plan.md bytes 
+2026-10-05T06:26:43Z	agent	business-analyst aa1154de: === T-01 === # T-01: ratings: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with TDD unit tests ## User story As a developer building the REQ-06-02 not
+2026-10-05T06:27:17Z	phase	executing
+2026-10-05T06:27:22Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T06:27:32Z	agent	 a3ff9766: status 
+2026-10-05T06:28:02Z	agent	 a9137aeb: Reading package.json and project setup 
+2026-10-05T06:29:17Z	agent	 a1d67cb9: Filling T-01 handoff file 
+2026-10-05T06:29:19Z	agent	backend-dev a0e8c618: Perfect! All work is complete. Here's the summary: ```text status: done commit: e3b3d8e verify: passed (81 tests pass) open issues: - ``` ## Completion Summary 
+2026-10-05T06:29:24Z	gate	T-01 PASS
+2026-10-05T06:29:36Z	agent	 a700a378: The QA tester is still running in the background. I'm waiting on its report before recording the QA result for T-01 and moving to review. 
+2026-10-05T06:29:40Z	agent	 a4f5e481: status 
+2026-10-05T06:29:47Z	agent	 a2972ff6: status 
+2026-10-05T06:30:02Z	agent	 a665122f: Reading notch.mjs and spec 
+2026-10-05T06:30:33Z	agent	 a2dbec8c: Pushing notch.integration.test.mjs commit 
+2026-10-05T06:30:43Z	agent	qa-tester ac188901: All 15 criteria pass: `qa_verify` ran 24 tests with 24 passing, 0 failing, exit 0. The tests are committed as `b6af6a5` ("T-01 QA: integration tests"). The work
+2026-10-05T06:30:52Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-15 pass; QA commit b6af6a5, 24 integration tests pass (qa_verify), tree clean; QA agent report: all 15 criteria pass
+2026-10-05T06:31:02Z	agent	 aedf35c2: continue 
+2026-10-05T06:31:15Z	agent	ecc:typescript-reviewer a2aaafdb: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: the catch fallback in safeDescribe calls Object.prototype.toString.call(value). That call can
+2026-10-05T06:33:09Z	review	T-01 reviewer approve — No blocking items; 105 tests pass; nits only (revoked-Proxy fallback, duplicated validation block, style)
+2026-10-05T06:33:10Z	integrate	T-01 merged
+2026-10-05T06:33:14Z	phase	integrating
+2026-10-05T06:33:15Z	verify-all	PASS
+2026-10-05T06:33:18Z	phase	closing
+2026-10-05T06:33:26Z	agent	 a4b24821: status 
+2026-10-05T06:33:53Z	agent	 a0781c78: Spot-checking notchChange and running tests 
+2026-10-05T06:34:22Z	agent	business-analyst aa907e71: All 15 ACs are met. One gap is outside the ACs as written: a revoked Proxy argument throws `TypeError`, not `RangeError` (details below). The evidence is the bo
+2026-10-05T06:34:33Z	learn	backend: Validate every external value before coercion and build error messages defensively (Symbol, null-prototype, revoked Proxy): a describer that throws turns RangeError into TypeError.
+2026-10-05T06:34:34Z	ship	local merge into main

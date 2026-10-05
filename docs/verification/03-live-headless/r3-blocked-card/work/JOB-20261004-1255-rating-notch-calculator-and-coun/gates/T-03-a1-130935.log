@@ -1,0 +1,181 @@
+# gate: T-03  attempt: 1  2026-10-04T13:09:35Z
+ok    on job/JOB-20261004-1255-rating-notch-calculator-and-coun--T-03
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/**","test/ratings/**"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE has the 19 ratings, best first, and is frozen
+ok 1 - RATING_SCALE has the 19 ratings, best first, and is frozen
+  ---
+  duration_ms: 1.803256
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE rejects mutation with TypeError and stays unchanged
+ok 2 - RATING_SCALE rejects mutation with TypeError and stays unchanged
+  ---
+  duration_ms: 0.620812
+  type: 'test'
+  ...
+# Subtest: notchChange returns index(current) - index(previous)
+ok 3 - notchChange returns index(current) - index(previous)
+  ---
+  duration_ms: 0.263916
+  type: 'test'
+  ...
+# Subtest: notchChange of the same rating is +0, not -0
+ok 4 - notchChange of the same rating is +0, not -0
+  ---
+  duration_ms: 0.154571
+  type: 'test'
+  ...
+# Subtest: notchChange gives an integer in -18..18 for all 361 pairs
+ok 5 - notchChange gives an integer in -18..18 for all 361 pairs
+  ---
+  duration_ms: 0.737271
+  type: 'test'
+  ...
+# Subtest: notchChange ignores case and leading/trailing whitespace
+ok 6 - notchChange ignores case and leading/trailing whitespace
+  ---
+  duration_ms: 0.136435
+  type: 'test'
+  ...
+# Subtest: notchCalculator ignores case and whitespace
+ok 7 - notchCalculator ignores case and whitespace
+  ---
+  duration_ms: 0.221369
+  type: 'test'
+  ...
+# Subtest: notchChange throws RangeError (never TypeError) for invalid previous
+ok 8 - notchChange throws RangeError (never TypeError) for invalid previous
+  ---
+  duration_ms: 1.486961
+  type: 'test'
+  ...
+# Subtest: notchChange throws RangeError (never TypeError) for invalid current
+ok 9 - notchChange throws RangeError (never TypeError) for invalid current
+  ---
+  duration_ms: 0.597245
+  type: 'test'
+  ...
+# Subtest: notchChange throws RangeError when both arguments are invalid
+ok 10 - notchChange throws RangeError when both arguments are invalid
+  ---
+  duration_ms: 0.427399
+  type: 'test'
+  ...
+# Subtest: notchChange error message names the argument and the bad value
+ok 11 - notchChange error message names the argument and the bad value
+  ---
+  duration_ms: 0.219703
+  type: 'test'
+  ...
+# Subtest: notchCalculator throws RangeError (never TypeError) for invalid previous
+ok 12 - notchCalculator throws RangeError (never TypeError) for invalid previous
+  ---
+  duration_ms: 0.233306
+  type: 'test'
+  ...
+# Subtest: notchCalculator throws RangeError (never TypeError) for invalid current
+ok 13 - notchCalculator throws RangeError (never TypeError) for invalid current
+  ---
+  duration_ms: 0.262988
+  type: 'test'
+  ...
+# Subtest: notchCalculator throws RangeError when both arguments are invalid
+ok 14 - notchCalculator throws RangeError when both arguments are invalid
+  ---
+  duration_ms: 0.057802
+  type: 'test'
+  ...
+# Subtest: notchCalculator error message names the argument and the bad value
+ok 15 - notchCalculator error message names the argument and the bad value
+  ---
+  duration_ms: 0.05398
+  type: 'test'
+  ...
+# Subtest: invalid input never surfaces as TypeError
+ok 16 - invalid input never surfaces as TypeError
+  ---
+  duration_ms: 0.599703
+  type: 'test'
+  ...
+# Subtest: notchCalculator BBB+ -> BB+ is 3 notches / WL 2 (C2) with exactly three keys
+ok 17 - notchCalculator BBB+ -> BB+ is 3 notches / WL 2 (C2) with exactly three keys
+  ---
+  duration_ms: 0.151512
+  type: 'test'
+  ...
+# Subtest: notchCalculator BBB+ -> BBB- is 2 notches / WL 1
+ok 18 - notchCalculator BBB+ -> BBB- is 2 notches / WL 1
+  ---
+  duration_ms: 0.079708
+  type: 'test'
+  ...
+# Subtest: notchCalculator downgrade thresholds
+ok 19 - notchCalculator downgrade thresholds
+  ---
+  duration_ms: 0.134251
+  type: 'test'
+  ...
+# Subtest: notchCalculator upgrades have WL 0
+ok 20 - notchCalculator upgrades have WL 0
+  ---
+  duration_ms: 0.070424
+  type: 'test'
+  ...
+# Subtest: notchCalculator unchanged is notches +0, WL 0
+ok 21 - notchCalculator unchanged is notches +0, WL 0
+  ---
+  duration_ms: 0.061578
+  type: 'test'
+  ...
+# Subtest: notchCalculator is consistent with notchChange for all 361 pairs
+ok 22 - notchCalculator is consistent with notchChange for all 361 pairs
+  ---
+  duration_ms: 0.526763
+  type: 'test'
+  ...
+# Subtest: module exports exactly RATING_SCALE, notchCalculator and notchChange
+ok 23 - module exports exactly RATING_SCALE, notchCalculator and notchChange
+  ---
+  duration_ms: 0.191396
+  type: 'test'
+  ...
+# Subtest: functions are synchronous and return plain values
+ok 24 - functions are synchronous and return plain values
+  ---
+  duration_ms: 0.119169
+  type: 'test'
+  ...
+# Subtest: functions do not write to the console
+ok 25 - functions do not write to the console
+  ---
+  duration_ms: 0.545165
+  type: 'test'
+  ...
+# Subtest: repeated calls are stable and do not alter RATING_SCALE
+ok 26 - repeated calls are stable and do not alter RATING_SCALE
+  ---
+  duration_ms: 0.096974
+  type: 'test'
+  ...
+# Subtest: source has no imports and no I/O or console use
+ok 27 - source has no imports and no I/O or console use
+  ---
+  duration_ms: 0.447902
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 81.936306
+ok    verify passed

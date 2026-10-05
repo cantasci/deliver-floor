@@ -1,0 +1,50 @@
+      20 +All 21 ACs met (AC-1..AC-21). Evidence per AC: QA integration tests `test/integration/ratings/notch.int.test.mjs` and `test/integration/indicators/countryRating.int.test.mjs`, dev uni
+         +t tests under `test/unit/`, gate logs in `.work/<job>/gates/`.
+      21
+      20 -## Risks and follow-ups
+      22 +| AC | Status |
+      23 +|---|---|
+      24 +| AC-1..AC-4 scale content, frozen scale, signed notch change | met |
+      25 +| AC-5, AC-6 +0 never -0, 361-pair matrix | met |
+      26 +| AC-7..AC-9 normalisation, RangeError cases, error messages | met |
+      27 +| AC-10..AC-13 calculator example, thresholds, upgrades/unchanged, shape | met |
+      28 +| AC-14..AC-17 Indicator 12 thresholds, upgrades, differs from calculator, editable by arguments | met |
+      29 +| AC-18..AC-20 built on notchChange, no I/O, exact export surface | met |
+      30 +| AC-21 `node --test` green, no deps, Node 18 APIs only | met (tests ran on Node 22 only; Node 18 checked by search and review) |
+      31
+      22 -## Delivery
+      32 +## Decisions (PM)
+      33 +- DEL-docs: no separate documentation deliverable; dev writes JSDoc on the exports.
+      34 +- RATING_SCALE is `Object.freeze`d; lookups use a private Map.
+      35 +- RangeError messages name the parameter and value; `previous` is validated first.
+      36 +- "Trimmed" means `String.prototype.trim()`.
+      37 +- Test layout: `test/unit/<area>/` (dev), `test/integration/<area>/` (QA).
+      38
+      24 -- Branch: `job/{id}`
+      25 -- PR / merge:
+      39 +## Follow-ups
+      40 +1. The unit test "src/ratings is unchanged against the job branch" in `test/unit/indicators/countryRating.test.mjs` skips when the job branch is absent; it will skip silently after cl
+         +eanup. Remove it or keep it gate-only.
+      41 +2. Run `node --test` once on Node 18 (CLAUDE.md says 18+).
+      42 +3. T-01 nit: add unit assertions for BOM (U+FEFF) and U+3000 trimmed, U+200B not trimmed.
+      43 +4. T-01 nit: the integration file overlaps the unit tests heavily; trim to consumer-level checks.
+      44 +5. T-01 nit: `describeValue` could truncate very long values in error messages.
+      45 +6. T-02 nit: JSDoc says "previous (checked first)"; word it as "as thrown by notchChange".
+      46 +7. Tooling: `deliver/bash-guard.sh` rejected the devs' and QA's `git push` of their card branches from inside the card worktrees ("not a card worktree"). Merges are local, so nothing
+         +was lost, but the hook's worktree detection needs a fix.
+      47 +8. Out of scope by design: Indicator 13 as its own export, WL 3/4, public-source fetch (C4), override/persistence/audit (C7), UI/CLI (C8).
+
+● Bash(DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl; "$DL" ship 2>&1 | tail -15; "$DL" status | head -8; git log --oneline | head -3; ls src…)
+  ⎿  SHIPPED: job/JOB-20261004-0713-notch-calculator-and-country-rat merged into main (local). Phase: done — dl cleanup
+     job:      JOB-20261004-0713-notch-calculator-and-country-rat
+     title:    Notch calculator and country rating
+     … +14 lines (ctrl+o to expand)
+
+✻ Coalescing… (24s · ↓ 2.1k tokens · thinking)
+  ⎿  Tip: Working on a plan or design doc? Ask Claude to publish it as an artifact — a polished web page you can open in your browser.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · /tasks to see subagents · esc to interrupt · ← for agents                                                   ✘ Auto-update failed · Run claude doctor
+

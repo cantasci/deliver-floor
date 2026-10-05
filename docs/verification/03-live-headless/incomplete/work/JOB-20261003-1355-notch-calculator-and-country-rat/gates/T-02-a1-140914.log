@@ -1,0 +1,98 @@
+# gate: T-02  attempt: 1  2026-10-03T14:09:14Z
+ok    on job/JOB-20261003-1355-notch-calculator-and-country-rat--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: countryRatingChangeWl (Ind. 12)
+    # Subtest: AC-10: downgrades map to 1 (1 notch) or 2 (2+ notches)
+    ok 1 - AC-10: downgrades map to 1 (1 notch) or 2 (2+ notches)
+      ---
+      duration_ms: 1.151233
+      type: 'test'
+      ...
+    # Subtest: AC-11: upgrades and unchanged ratings give 0
+    ok 2 - AC-11: upgrades and unchanged ratings give 0
+      ---
+      duration_ms: 0.317272
+      type: 'test'
+      ...
+    # Subtest: AC-11: all 361 pairs follow the n >= 2 ? 2 : n === 1 ? 1 : 0 rule
+    ok 3 - AC-11: all 361 pairs follow the n >= 2 ? 2 : n === 1 ? 1 : 0 rule
+      ---
+      duration_ms: 0.545726
+      type: 'test'
+      ...
+    # Subtest: AC-12: thresholds differ deliberately from notchCalculator.wl
+    ok 4 - AC-12: thresholds differ deliberately from notchCalculator.wl
+      ---
+      duration_ms: 0.257505
+      type: 'test'
+      ...
+    # Subtest: AC-3: trims whitespace and ignores letter case
+    ok 5 - AC-3: trims whitespace and ignores letter case
+      ---
+      duration_ms: 0.121074
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid input throws RangeError for previous and for current
+    ok 6 - AC-4: invalid input throws RangeError for previous and for current
+      ---
+      duration_ms: 0.785075
+      type: 'test'
+      ...
+    # Subtest: AC-4: both arguments invalid throws RangeError
+    ok 7 - AC-4: both arguments invalid throws RangeError
+      ---
+      duration_ms: 0.147855
+      type: 'test'
+      ...
+    # Subtest: AC-4: the RangeError from notchChange reaches the caller unchanged
+    ok 8 - AC-4: the RangeError from notchChange reaches the caller unchanged
+      ---
+      duration_ms: 0.268093
+      type: 'test'
+      ...
+    # Subtest: AC-13: source has one import (notchChange) and no I/O references
+    ok 9 - AC-13: source has one import (notchChange) and no I/O references
+      ---
+      duration_ms: 0.676023
+      type: 'test'
+      ...
+    # Subtest: AC-13: arity is exactly 2 (no override/options parameter)
+    ok 10 - AC-13: arity is exactly 2 (no override/options parameter)
+      ---
+      duration_ms: 0.352624
+      type: 'test'
+      ...
+    # Subtest: AC-13: inputs are not mutated
+    ok 11 - AC-13: inputs are not mutated
+      ---
+      duration_ms: 0.275647
+      type: 'test'
+      ...
+    # Subtest: result is always 0, 1 or 2 and never NaN
+    ok 12 - result is always 0, 1 or 2 and never NaN
+      ---
+      duration_ms: 1.412715
+      type: 'test'
+      ...
+    1..12
+ok 1 - countryRatingChangeWl (Ind. 12)
+  ---
+  duration_ms: 7.693821
+  type: 'suite'
+  ...
+1..1
+# tests 12
+# suites 1
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 135.896353
+ok    verify passed

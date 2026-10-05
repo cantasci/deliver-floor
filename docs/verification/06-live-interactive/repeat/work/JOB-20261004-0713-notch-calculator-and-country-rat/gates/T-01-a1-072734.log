@@ -1,0 +1,990 @@
+# gate: T-01  attempt: 1  2026-10-04T07:27:34Z
+ok    on job/JOB-20261004-0713-notch-calculator-and-country-rat--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/**","test/unit/ratings/**"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/unit/ratings/*.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE (AC-1, AC-2)
+    # Subtest: has the 19 ratings, best first, upper-case strings
+    ok 1 - has the 19 ratings, best first, upper-case strings
+      ---
+      duration_ms: 1.407942
+      type: 'test'
+      ...
+    # Subtest: is frozen and rejects mutation with TypeError
+    ok 2 - is frozen and rejects mutation with TypeError
+      ---
+      duration_ms: 0.439347
+      type: 'test'
+      ...
+    1..2
+ok 1 - RATING_SCALE (AC-1, AC-2)
+  ---
+  duration_ms: 2.616506
+  type: 'suite'
+  ...
+# Subtest: notchChange (AC-3, AC-4, AC-5, AC-6, AC-7)
+    # Subtest: downgrades are positive
+    ok 1 - downgrades are positive
+      ---
+      duration_ms: 0.261961
+      type: 'test'
+      ...
+    # Subtest: upgrades are negative
+    ok 2 - upgrades are negative
+      ---
+      duration_ms: 0.094962
+      type: 'test'
+      ...
+    # Subtest: unchanged is +0 for every rating and for normalised inputs
+    ok 3 - unchanged is +0 for every rating and for normalised inputs
+      ---
+      duration_ms: 0.30814
+      type: 'test'
+      ...
+    # Subtest: never returns -0 over all 361 pairs
+    ok 4 - never returns -0 over all 361 pairs
+      ---
+      duration_ms: 1.513422
+      type: 'test'
+      ...
+    # Subtest: equals index difference, integer, within -18..18 for all pairs
+    ok 5 - equals index difference, integer, within -18..18 for all pairs
+      ---
+      duration_ms: 0.61952
+      type: 'test'
+      ...
+    # Subtest: ignores case and surrounding whitespace
+    ok 6 - ignores case and surrounding whitespace
+      ---
+      duration_ms: 0.348254
+      type: 'test'
+      ...
+    # Subtest: trim follows String.prototype.trim (NBSP, BOM, ideographic space)
+    ok 7 - trim follows String.prototype.trim (NBSP, BOM, ideographic space)
+      ---
+      duration_ms: 0.435147
+      type: 'test'
+      ...
+    1..7
+ok 2 - notchChange (AC-3, AC-4, AC-5, AC-6, AC-7)
+  ---
+  duration_ms: 4.147158
+  type: 'suite'
+  ...
+# Subtest: validation (AC-8, AC-9)
+    # Subtest: notchChange throws RangeError for empty string as previous
+    ok 1 - notchChange throws RangeError for empty string as previous
+      ---
+      duration_ms: 0.972107
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for empty string as current
+    ok 2 - notchChange throws RangeError for empty string as current
+      ---
+      duration_ms: 0.124335
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for empty string as previous
+    ok 3 - notchCalculator throws RangeError for empty string as previous
+      ---
+      duration_ms: 0.064288
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for empty string as current
+    ok 4 - notchCalculator throws RangeError for empty string as current
+      ---
+      duration_ms: 0.055981
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for blank string as previous
+    ok 5 - notchChange throws RangeError for blank string as previous
+      ---
+      duration_ms: 0.115559
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for blank string as current
+    ok 6 - notchChange throws RangeError for blank string as current
+      ---
+      duration_ms: 0.126802
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for blank string as previous
+    ok 7 - notchCalculator throws RangeError for blank string as previous
+      ---
+      duration_ms: 0.069639
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for blank string as current
+    ok 8 - notchCalculator throws RangeError for blank string as current
+      ---
+      duration_ms: 0.072794
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for undefined as previous
+    ok 9 - notchChange throws RangeError for undefined as previous
+      ---
+      duration_ms: 0.058694
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for undefined as current
+    ok 10 - notchChange throws RangeError for undefined as current
+      ---
+      duration_ms: 0.054972
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for undefined as previous
+    ok 11 - notchCalculator throws RangeError for undefined as previous
+      ---
+      duration_ms: 0.122022
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for undefined as current
+    ok 12 - notchCalculator throws RangeError for undefined as current
+      ---
+      duration_ms: 0.09842
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for null as previous
+    ok 13 - notchChange throws RangeError for null as previous
+      ---
+      duration_ms: 0.054824
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for null as current
+    ok 14 - notchChange throws RangeError for null as current
+      ---
+      duration_ms: 0.057717
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for null as previous
+    ok 15 - notchCalculator throws RangeError for null as previous
+      ---
+      duration_ms: 0.050177
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for null as current
+    ok 16 - notchCalculator throws RangeError for null as current
+      ---
+      duration_ms: 0.049585
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for number 7 as previous
+    ok 17 - notchChange throws RangeError for number 7 as previous
+      ---
+      duration_ms: 0.052429
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for number 7 as current
+    ok 18 - notchChange throws RangeError for number 7 as current
+      ---
+      duration_ms: 0.125155
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for number 7 as previous
+    ok 19 - notchCalculator throws RangeError for number 7 as previous
+      ---
+      duration_ms: 0.072305
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for number 7 as current
+    ok 20 - notchCalculator throws RangeError for number 7 as current
+      ---
+      duration_ms: 0.061226
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for number 0 as previous
+    ok 21 - notchChange throws RangeError for number 0 as previous
+      ---
+      duration_ms: 0.059292
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for number 0 as current
+    ok 22 - notchChange throws RangeError for number 0 as current
+      ---
+      duration_ms: 0.061239
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for number 0 as previous
+    ok 23 - notchCalculator throws RangeError for number 0 as previous
+      ---
+      duration_ms: 0.051954
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for number 0 as current
+    ok 24 - notchCalculator throws RangeError for number 0 as current
+      ---
+      duration_ms: 0.054373
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for NaN as previous
+    ok 25 - notchChange throws RangeError for NaN as previous
+      ---
+      duration_ms: 0.056206
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for NaN as current
+    ok 26 - notchChange throws RangeError for NaN as current
+      ---
+      duration_ms: 0.116353
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for NaN as previous
+    ok 27 - notchCalculator throws RangeError for NaN as previous
+      ---
+      duration_ms: 0.082805
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for NaN as current
+    ok 28 - notchCalculator throws RangeError for NaN as current
+      ---
+      duration_ms: 0.075215
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for bigint as previous
+    ok 29 - notchChange throws RangeError for bigint as previous
+      ---
+      duration_ms: 0.093071
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for bigint as current
+    ok 30 - notchChange throws RangeError for bigint as current
+      ---
+      duration_ms: 0.076692
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for bigint as previous
+    ok 31 - notchCalculator throws RangeError for bigint as previous
+      ---
+      duration_ms: 0.058093
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for bigint as current
+    ok 32 - notchCalculator throws RangeError for bigint as current
+      ---
+      duration_ms: 0.049207
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for boolean as previous
+    ok 33 - notchChange throws RangeError for boolean as previous
+      ---
+      duration_ms: 0.05186
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for boolean as current
+    ok 34 - notchChange throws RangeError for boolean as current
+      ---
+      duration_ms: 0.054974
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for boolean as previous
+    ok 35 - notchCalculator throws RangeError for boolean as previous
+      ---
+      duration_ms: 0.055823
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for boolean as current
+    ok 36 - notchCalculator throws RangeError for boolean as current
+      ---
+      duration_ms: 0.049085
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for plain object as previous
+    ok 37 - notchChange throws RangeError for plain object as previous
+      ---
+      duration_ms: 0.050994
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for plain object as current
+    ok 38 - notchChange throws RangeError for plain object as current
+      ---
+      duration_ms: 0.051003
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for plain object as previous
+    ok 39 - notchCalculator throws RangeError for plain object as previous
+      ---
+      duration_ms: 0.048488
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for plain object as current
+    ok 40 - notchCalculator throws RangeError for plain object as current
+      ---
+      duration_ms: 0.059989
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for array as previous
+    ok 41 - notchChange throws RangeError for array as previous
+      ---
+      duration_ms: 0.049637
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for array as current
+    ok 42 - notchChange throws RangeError for array as current
+      ---
+      duration_ms: 0.061462
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for array as previous
+    ok 43 - notchCalculator throws RangeError for array as previous
+      ---
+      duration_ms: 0.072188
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for array as current
+    ok 44 - notchCalculator throws RangeError for array as current
+      ---
+      duration_ms: 0.063916
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for String object as previous
+    ok 45 - notchChange throws RangeError for String object as previous
+      ---
+      duration_ms: 0.075541
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for String object as current
+    ok 46 - notchChange throws RangeError for String object as current
+      ---
+      duration_ms: 0.979243
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for String object as previous
+    ok 47 - notchCalculator throws RangeError for String object as previous
+      ---
+      duration_ms: 0.084776
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for String object as current
+    ok 48 - notchCalculator throws RangeError for String object as current
+      ---
+      duration_ms: 0.052176
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for symbol as previous
+    ok 49 - notchChange throws RangeError for symbol as previous
+      ---
+      duration_ms: 0.047111
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for symbol as current
+    ok 50 - notchChange throws RangeError for symbol as current
+      ---
+      duration_ms: 0.044832
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for symbol as previous
+    ok 51 - notchCalculator throws RangeError for symbol as previous
+      ---
+      duration_ms: 0.048119
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for symbol as current
+    ok 52 - notchCalculator throws RangeError for symbol as current
+      ---
+      duration_ms: 0.041613
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for null-prototype object as previous
+    ok 53 - notchChange throws RangeError for null-prototype object as previous
+      ---
+      duration_ms: 0.06241
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for null-prototype object as current
+    ok 54 - notchChange throws RangeError for null-prototype object as current
+      ---
+      duration_ms: 0.049992
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for null-prototype object as previous
+    ok 55 - notchCalculator throws RangeError for null-prototype object as previous
+      ---
+      duration_ms: 0.04605
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for null-prototype object as current
+    ok 56 - notchCalculator throws RangeError for null-prototype object as current
+      ---
+      duration_ms: 0.046558
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for object with toString as previous
+    ok 57 - notchChange throws RangeError for object with toString as previous
+      ---
+      duration_ms: 0.079509
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for object with toString as current
+    ok 58 - notchChange throws RangeError for object with toString as current
+      ---
+      duration_ms: 0.056004
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for object with toString as previous
+    ok 59 - notchCalculator throws RangeError for object with toString as previous
+      ---
+      duration_ms: 0.041641
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for object with toString as current
+    ok 60 - notchCalculator throws RangeError for object with toString as current
+      ---
+      duration_ms: 0.038934
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for object with throwing toString as previous
+    ok 61 - notchChange throws RangeError for object with throwing toString as previous
+      ---
+      duration_ms: 0.075168
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for object with throwing toString as current
+    ok 62 - notchChange throws RangeError for object with throwing toString as current
+      ---
+      duration_ms: 0.048569
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for object with throwing toString as previous
+    ok 63 - notchCalculator throws RangeError for object with throwing toString as previous
+      ---
+      duration_ms: 0.048539
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for object with throwing toString as current
+    ok 64 - notchCalculator throws RangeError for object with throwing toString as current
+      ---
+      duration_ms: 0.05219
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for D as previous
+    ok 65 - notchChange throws RangeError for D as previous
+      ---
+      duration_ms: 0.048098
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for D as current
+    ok 66 - notchChange throws RangeError for D as current
+      ---
+      duration_ms: 0.043185
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for D as previous
+    ok 67 - notchCalculator throws RangeError for D as previous
+      ---
+      duration_ms: 0.086886
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for D as current
+    ok 68 - notchCalculator throws RangeError for D as current
+      ---
+      duration_ms: 0.051683
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for SD as previous
+    ok 69 - notchChange throws RangeError for SD as previous
+      ---
+      duration_ms: 0.052577
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for SD as current
+    ok 70 - notchChange throws RangeError for SD as current
+      ---
+      duration_ms: 0.045693
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for SD as previous
+    ok 71 - notchCalculator throws RangeError for SD as previous
+      ---
+      duration_ms: 0.041862
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for SD as current
+    ok 72 - notchCalculator throws RangeError for SD as current
+      ---
+      duration_ms: 0.048369
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for NR as previous
+    ok 73 - notchChange throws RangeError for NR as previous
+      ---
+      duration_ms: 0.071701
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for NR as current
+    ok 74 - notchChange throws RangeError for NR as current
+      ---
+      duration_ms: 0.060545
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for NR as previous
+    ok 75 - notchCalculator throws RangeError for NR as previous
+      ---
+      duration_ms: 0.050974
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for NR as current
+    ok 76 - notchCalculator throws RangeError for NR as current
+      ---
+      duration_ms: 0.053234
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for C as previous
+    ok 77 - notchChange throws RangeError for C as previous
+      ---
+      duration_ms: 0.060358
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for C as current
+    ok 78 - notchChange throws RangeError for C as current
+      ---
+      duration_ms: 0.054385
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for C as previous
+    ok 79 - notchCalculator throws RangeError for C as previous
+      ---
+      duration_ms: 0.053251
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for C as current
+    ok 80 - notchCalculator throws RangeError for C as current
+      ---
+      duration_ms: 0.049197
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for CC as previous
+    ok 81 - notchChange throws RangeError for CC as previous
+      ---
+      duration_ms: 0.050473
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for CC as current
+    ok 82 - notchChange throws RangeError for CC as current
+      ---
+      duration_ms: 0.050073
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for CC as previous
+    ok 83 - notchCalculator throws RangeError for CC as previous
+      ---
+      duration_ms: 0.049094
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for CC as current
+    ok 84 - notchCalculator throws RangeError for CC as current
+      ---
+      duration_ms: 0.047328
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for AAA+ as previous
+    ok 85 - notchChange throws RangeError for AAA+ as previous
+      ---
+      duration_ms: 0.049565
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for AAA+ as current
+    ok 86 - notchChange throws RangeError for AAA+ as current
+      ---
+      duration_ms: 0.050765
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for AAA+ as previous
+    ok 87 - notchCalculator throws RangeError for AAA+ as previous
+      ---
+      duration_ms: 0.050035
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for AAA+ as current
+    ok 88 - notchCalculator throws RangeError for AAA+ as current
+      ---
+      duration_ms: 0.06614
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for CCC-- as previous
+    ok 89 - notchChange throws RangeError for CCC-- as previous
+      ---
+      duration_ms: 0.057776
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for CCC-- as current
+    ok 90 - notchChange throws RangeError for CCC-- as current
+      ---
+      duration_ms: 0.058347
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for CCC-- as previous
+    ok 91 - notchCalculator throws RangeError for CCC-- as previous
+      ---
+      duration_ms: 0.048888
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for CCC-- as current
+    ok 92 - notchCalculator throws RangeError for CCC-- as current
+      ---
+      duration_ms: 0.049923
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for Baa1 as previous
+    ok 93 - notchChange throws RangeError for Baa1 as previous
+      ---
+      duration_ms: 0.051503
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for Baa1 as current
+    ok 94 - notchChange throws RangeError for Baa1 as current
+      ---
+      duration_ms: 0.141531
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for Baa1 as previous
+    ok 95 - notchCalculator throws RangeError for Baa1 as previous
+      ---
+      duration_ms: 0.064462
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for Baa1 as current
+    ok 96 - notchCalculator throws RangeError for Baa1 as current
+      ---
+      duration_ms: 0.126427
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for BBB + as previous
+    ok 97 - notchChange throws RangeError for BBB + as previous
+      ---
+      duration_ms: 0.073116
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for BBB + as current
+    ok 98 - notchChange throws RangeError for BBB + as current
+      ---
+      duration_ms: 0.108399
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for BBB + as previous
+    ok 99 - notchCalculator throws RangeError for BBB + as previous
+      ---
+      duration_ms: 0.066288
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for BBB + as current
+    ok 100 - notchCalculator throws RangeError for BBB + as current
+      ---
+      duration_ms: 0.062947
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for B B B as previous
+    ok 101 - notchChange throws RangeError for B B B as previous
+      ---
+      duration_ms: 0.049688
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for B B B as current
+    ok 102 - notchChange throws RangeError for B B B as current
+      ---
+      duration_ms: 0.073811
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for B B B as previous
+    ok 103 - notchCalculator throws RangeError for B B B as previous
+      ---
+      duration_ms: 0.050499
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for B B B as current
+    ok 104 - notchCalculator throws RangeError for B B B as current
+      ---
+      duration_ms: 0.046663
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for BBB-+ as previous
+    ok 105 - notchChange throws RangeError for BBB-+ as previous
+      ---
+      duration_ms: 3.607944
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for BBB-+ as current
+    ok 106 - notchChange throws RangeError for BBB-+ as current
+      ---
+      duration_ms: 0.091182
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for BBB-+ as previous
+    ok 107 - notchCalculator throws RangeError for BBB-+ as previous
+      ---
+      duration_ms: 0.053566
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for BBB-+ as current
+    ok 108 - notchCalculator throws RangeError for BBB-+ as current
+      ---
+      duration_ms: 0.052494
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for unicode minus as previous
+    ok 109 - notchChange throws RangeError for unicode minus as previous
+      ---
+      duration_ms: 0.049788
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for unicode minus as current
+    ok 110 - notchChange throws RangeError for unicode minus as current
+      ---
+      duration_ms: 0.045642
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for unicode minus as previous
+    ok 111 - notchCalculator throws RangeError for unicode minus as previous
+      ---
+      duration_ms: 0.04677
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for unicode minus as current
+    ok 112 - notchCalculator throws RangeError for unicode minus as current
+      ---
+      duration_ms: 0.042004
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for cyrillic AAA as previous
+    ok 113 - notchChange throws RangeError for cyrillic AAA as previous
+      ---
+      duration_ms: 0.044358
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for cyrillic AAA as current
+    ok 114 - notchChange throws RangeError for cyrillic AAA as current
+      ---
+      duration_ms: 0.044062
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for cyrillic AAA as previous
+    ok 115 - notchCalculator throws RangeError for cyrillic AAA as previous
+      ---
+      duration_ms: 0.042751
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for cyrillic AAA as current
+    ok 116 - notchCalculator throws RangeError for cyrillic AAA as current
+      ---
+      duration_ms: 0.049788
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for fullwidth plus as previous
+    ok 117 - notchChange throws RangeError for fullwidth plus as previous
+      ---
+      duration_ms: 0.061875
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for fullwidth plus as current
+    ok 118 - notchChange throws RangeError for fullwidth plus as current
+      ---
+      duration_ms: 0.061318
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for fullwidth plus as previous
+    ok 119 - notchCalculator throws RangeError for fullwidth plus as previous
+      ---
+      duration_ms: 0.050614
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for fullwidth plus as current
+    ok 120 - notchCalculator throws RangeError for fullwidth plus as current
+      ---
+      duration_ms: 1.006286
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for __proto__ as previous
+    ok 121 - notchChange throws RangeError for __proto__ as previous
+      ---
+      duration_ms: 0.072453
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for __proto__ as current
+    ok 122 - notchChange throws RangeError for __proto__ as current
+      ---
+      duration_ms: 0.045591
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for __proto__ as previous
+    ok 123 - notchCalculator throws RangeError for __proto__ as previous
+      ---
+      duration_ms: 0.075408
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for __proto__ as current
+    ok 124 - notchCalculator throws RangeError for __proto__ as current
+      ---
+      duration_ms: 0.038431
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for constructor as previous
+    ok 125 - notchChange throws RangeError for constructor as previous
+      ---
+      duration_ms: 0.038853
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for constructor as current
+    ok 126 - notchChange throws RangeError for constructor as current
+      ---
+      duration_ms: 0.036133
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for constructor as previous
+    ok 127 - notchCalculator throws RangeError for constructor as previous
+      ---
+      duration_ms: 0.03473
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for constructor as current
+    ok 128 - notchCalculator throws RangeError for constructor as current
+      ---
+      duration_ms: 0.033608
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for toString as previous
+    ok 129 - notchChange throws RangeError for toString as previous
+      ---
+      duration_ms: 0.036293
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for toString as current
+    ok 130 - notchChange throws RangeError for toString as current
+      ---
+      duration_ms: 0.03652
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for toString as previous
+    ok 131 - notchCalculator throws RangeError for toString as previous
+      ---
+      duration_ms: 0.033515
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for toString as current
+    ok 132 - notchCalculator throws RangeError for toString as current
+      ---
+      duration_ms: 0.03359
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for hasOwnProperty as previous
+    ok 133 - notchChange throws RangeError for hasOwnProperty as previous
+      ---
+      duration_ms: 0.037085
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for hasOwnProperty as current
+    ok 134 - notchChange throws RangeError for hasOwnProperty as current
+      ---
+      duration_ms: 0.043167
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for hasOwnProperty as previous
+    ok 135 - notchCalculator throws RangeError for hasOwnProperty as previous
+      ---
+      duration_ms: 0.035009
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for hasOwnProperty as current
+    ok 136 - notchCalculator throws RangeError for hasOwnProperty as current
+      ---
+      duration_ms: 0.070944
+      type: 'test'
+      ...
+    # Subtest: omitted arguments throw RangeError
+    ok 137 - omitted arguments throw RangeError
+      ---
+      duration_ms: 0.180367
+      type: 'test'
+      ...
+    # Subtest: never throws TypeError, even for symbol and null-prototype object
+    ok 138 - never throws TypeError, even for symbol and null-prototype object
+      ---
+      duration_ms: 0.313615
+      type: 'test'
+      ...
+    # Subtest: error messages name the parameter and the offending value
+    ok 139 - error messages name the parameter and the offending value
+      ---
+      duration_ms: 0.303385
+      type: 'test'
+      ...
+    1..139
+ok 3 - validation (AC-8, AC-9)
+  ---
+  duration_ms: 17.650134
+  type: 'suite'
+  ...
+# Subtest: notchCalculator (AC-10 .. AC-13)
+    # Subtest: BBB+ -> BB+ is WL 2 (C2)
+    ok 1 - BBB+ -> BB+ is WL 2 (C2)
+      ---
+      duration_ms: 0.114458
+      type: 'test'
+      ...
+    # Subtest: downgrade WL thresholds
+    ok 2 - downgrade WL thresholds
+      ---
+      duration_ms: 0.095728
+      type: 'test'
+      ...
+    # Subtest: upgrades and unchanged
+    ok 3 - upgrades and unchanged
+      ---
+      duration_ms: 0.069057
+      type: 'test'
+      ...
+    # Subtest: shape and consistency over all 361 pairs
+    ok 4 - shape and consistency over all 361 pairs
+      ---
+      duration_ms: 1.579033
+      type: 'test'
+      ...
+    # Subtest: returns a fresh plain object; mutating it does not affect later calls
+    ok 5 - returns a fresh plain object; mutating it does not affect later calls
+      ---
+      duration_ms: 0.162998
+      type: 'test'
+      ...
+    1..5
+ok 4 - notchCalculator (AC-10 .. AC-13)
+  ---
+  duration_ms: 2.174821
+  type: 'suite'
+  ...
+# Subtest: source hygiene (AC-19, AC-21)
+    # Subtest: source has no I/O imports or output
+    ok 1 - source has no I/O imports or output
+      ---
+      duration_ms: 0.435068
+      type: 'test'
+      ...
+    # Subtest: source and tests avoid post-Node-18 APIs
+    ok 2 - source and tests avoid post-Node-18 APIs
+      ---
+      duration_ms: 0.315765
+      type: 'test'
+      ...
+    # Subtest: package.json has no dependencies; unit folder holds only *.test.mjs
+    ok 3 - package.json has no dependencies; unit folder holds only *.test.mjs
+      ---
+      duration_ms: 0.457621
+      type: 'test'
+      ...
+    1..3
+ok 5 - source hygiene (AC-19, AC-21)
+  ---
+  duration_ms: 1.354692
+  type: 'suite'
+  ...
+1..5
+# tests 156
+# suites 5
+# pass 156
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 152.875386
+ok    verify passed

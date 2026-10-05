@@ -1,0 +1,61 @@
+# gate: T-02  attempt: 1  2026-10-04T07:20:43Z
+ok    on job/JOB-20261004-0714-repayment-delay-indicators-2-3--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/delayCount.mjs","test/indicators/delayCount.test.mjs"] (+ QA tests ["test/integration/indicators/delayCount.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/delayCount.test.mjs
+TAP version 13
+# Subtest: option list content, order and frozen
+ok 1 - option list content, order and frozen
+  ---
+  duration_ms: 1.54939
+  type: 'test'
+  ...
+# Subtest: WL per option
+ok 2 - WL per option
+  ---
+  duration_ms: 0.252056
+  type: 'test'
+  ...
+# Subtest: trims leading/trailing whitespace
+ok 3 - trims leading/trailing whitespace
+  ---
+  duration_ms: 0.170536
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError
+ok 4 - invalid strings throw RangeError
+  ---
+  duration_ms: 2.366287
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError
+ok 5 - non-strings throw RangeError
+  ---
+  duration_ms: 0.429777
+  type: 'test'
+  ...
+# Subtest: round-trip: every option yields integer WL in 0..4
+ok 6 - round-trip: every option yields integer WL in 0..4
+  ---
+  duration_ms: 0.157712
+  type: 'test'
+  ...
+# Subtest: exact export names
+ok 7 - exact export names
+  ---
+  duration_ms: 0.230895
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 126.549869
+ok    verify passed

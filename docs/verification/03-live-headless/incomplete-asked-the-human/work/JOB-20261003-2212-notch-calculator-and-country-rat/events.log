@@ -1,0 +1,17 @@
+2026-10-03T22:12:21Z	new	Notch calculator and country rating
+2026-10-03T22:12:30Z	jobset	stack: .stack=["javascript"]
+2026-10-03T22:12:30Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: domain logic modules notch.mjs and countryRating.mjs"},{"role":"backend","agent":"backend-dev","why":"builds the pure rating/indicator functions of the contract"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer"}]
+2026-10-03T22:12:30Z	jobset	assumptions: .assumptions += ["Notch sign follows the Contract line: positive = downgrade, negative = upgrade (C5 is missing from the clarifications)"]
+2026-10-03T22:12:31Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:12:31Z	phase	readiness
+2026-10-03T22:12:36Z	jobset	assumptions: .assumptions = []
+2026-10-03T22:15:21Z	agent	business-analyst a77c8c80: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two pure helpers give analysts (and the POC screens built later) a correct notch count and Watc
+2026-10-03T22:16:09Z	readiness	33 items: 16 decided, 9 n/a, 8 open
+2026-10-03T22:16:14Z	decide	DEL-docs: JSDoc on the exported functions only; no README change — Internal-only; smallest change that documents the contract for the other POC parts.
+2026-10-03T22:16:14Z	decide	X-ratingscale-form: Frozen Array (Object.freeze) — Shared by both modules; freezing stops consumers corrupting it, and reads are identical.
+2026-10-03T22:16:14Z	decide	X-error-message: RangeError message names the parameter and the offending value; previous is validated first — Better diagnostics at no cost; tests assert the error type only.
+2026-10-03T22:16:14Z	decide	X-coverage: No numeric target; tests cover every AC example, both scale ends and the error paths — The request sets none and the slice is tiny.
+2026-10-03T22:16:31Z	readiness	33 items: 19 decided, 10 n/a, 4 open
+2026-10-03T22:16:35Z	phase	awaiting_clarification
+2026-10-03T22:16:43Z	clarify	CON-interface: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-03T22:16:43Z	clarify	X-missing-C5: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.

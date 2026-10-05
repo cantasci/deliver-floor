@@ -1,0 +1,50 @@
+        6); src/indicators/countryRating.mjs (countryRatingChangeWl -> 0|1|2, built on notchChange); unit tests under test/. OUT: fetching/pre-filling ratings from a public source (C4); overrid
+        e parameter, persistence, audit trail (C7); any UI/CLI/printed output (C8); an Indicator 13 function; other POC requirements; ratings outside the 19-step scale (rejected, C1).","source"
+      5 {"id":"PRD-acceptance","status":"decided","answer":"Yes. BBB+ -> BB+ = notches 3, 'downgrade', wl 2. BBB+ -> BBB- = notches 2, wl 1 (C2). 1-notch downgrade: calculator wl 0, Ind.12 WL 1
+         (C6). 2+ notch downgrade: Ind.12 WL 2. Upgrades/unchanged: WL 0 for
+     … +77 lines (ctrl+o to expand)
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" readiness 2>&1 | tail -30)
+  ⎿  ERROR DEL-docs is decided ("JSDoc on the exported functions and constant only; no README") → role 'docs' must be on the job (dl jobset, see roles.yaml)
+     WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+     OPEN  NFR-compliance: Is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off, a required traceability document) a constraint on thi
+     s POC slice beyond the business-confirmed rules in C1-C8? The request is silent.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; F=.work/JOB-*/readiness.json; node -e '
+      const…)
+  ⎿  WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+     OPEN  NFR-compliance: Is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off, a required traceability document) a constraint on thi
+     s POC slice beyond the business-confirmed rules in C1-C8? The request is silent.
+     readiness: 33 item(s), 1 open for the human, 0 for the PM → /tmp/claude-0/e2e-ia/interactive/repo/.work/JOB-20261003-2206-notch-calculator-and-country-rat/readiness.md
+
+● One business item is open, so I'm moving to awaiting clarification and asking you.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" phase awaiting_clarification 2>&1 | tail…)
+  ⎿  phase: awaiting_clarification
+
+● User declined to answer questions
+  ⎿  · NFR-compliance: is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off, a required traceability document) a constraint on this slice
+     beyond the business-confirmed rules C1–C8? (None for the POC / A named policy applies)
+
+✻ Churned for 3m 31s · done 10:09 PM
+
+❯ My answers, in my words — record each with dl clarify: NFR-compliance: C2/C6 stand: the calculator uses the Indicator 13 thresholds (2 notches → WL 1, 3+ → WL 2); Indicator 12 keeps its own (1 → 1,
+  2+ → 2). The difference is intended.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" clarify NFR-compliance "C2/C6 stand: the…)
+  ⎿  NFR-compliance: decided — C2/C6 stand: the calculator uses the Indicator 13 thresholds (2 notches → WL 1, 3+ → WL 2); Indicator 12 keeps its own (1 → 1, 2+ → 2). The difference is intended.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" readiness 2>&1 | tail -3; "$DL" phase pl…)
+  ⎿  WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+     readiness: 33 item(s), 0 open for the human, 0 for the PM → /tmp/claude-0/e2e-ia/interactive/repo/.work/JOB-20261003-2206-notch-calculator-and-country-rat/readiness.md
+     WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+     … +35 lines (ctrl+o to expand)
+
+✽ Coalescing… (9s · ↓ 824 tokens)
+  ⎿  Tip: Working on a plan or design doc? Ask Claude to publish it as an artifact — a polished web page you can open in your browser.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for agents                                                                             ✘ Auto-update failed · Run claude doctor
+

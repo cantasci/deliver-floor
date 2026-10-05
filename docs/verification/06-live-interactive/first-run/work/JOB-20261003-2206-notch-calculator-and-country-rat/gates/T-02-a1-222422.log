@@ -1,0 +1,382 @@
+# gate: T-02  attempt: 1  2026-10-03T22:24:22Z
+ok    on job/JOB-20261003-2206-notch-calculator-and-country-rat--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/**","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/indicators/integration/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: countryRatingChangeWl: downgrades (AC-10)
+    # Subtest: A -> A- = 1
+    ok 1 - A -> A- = 1
+      ---
+      duration_ms: 0.797152
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB- = 2
+    ok 2 - BBB+ -> BBB- = 2
+      ---
+      duration_ms: 0.133122
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BB+ = 2
+    ok 3 - BBB+ -> BB+ = 2
+      ---
+      duration_ms: 0.107603
+      type: 'test'
+      ...
+    # Subtest: AAA -> CCC- = 2
+    ok 4 - AAA -> CCC- = 2
+      ---
+      duration_ms: 0.167109
+      type: 'test'
+      ...
+    1..4
+ok 1 - countryRatingChangeWl: downgrades (AC-10)
+  ---
+  duration_ms: 2.398623
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: upgrades and unchanged (AC-11)
+    # Subtest: A- -> A = +0
+    ok 1 - A- -> A = +0
+      ---
+      duration_ms: 0.270068
+      type: 'test'
+      ...
+    # Subtest: BB+ -> BBB+ = +0
+    ok 2 - BB+ -> BBB+ = +0
+      ---
+      duration_ms: 0.100264
+      type: 'test'
+      ...
+    # Subtest: CCC- -> AAA = +0
+    ok 3 - CCC- -> AAA = +0
+      ---
+      duration_ms: 1.157999
+      type: 'test'
+      ...
+    # Subtest: A -> A = +0
+    ok 4 - A -> A = +0
+      ---
+      duration_ms: 0.26675
+      type: 'test'
+      ...
+    # Subtest: CCC- -> CCC- = +0
+    ok 5 - CCC- -> CCC- = +0
+      ---
+      duration_ms: 0.202894
+      type: 'test'
+      ...
+    1..5
+ok 2 - countryRatingChangeWl: upgrades and unchanged (AC-11)
+  ---
+  duration_ms: 2.535175
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: boundaries on notch change
+    # Subtest: 0 notches -> 0
+    ok 1 - 0 notches -> 0
+      ---
+      duration_ms: 0.499055
+      type: 'test'
+      ...
+    # Subtest: 1 notches -> 1
+    ok 2 - 1 notches -> 1
+      ---
+      duration_ms: 0.186543
+      type: 'test'
+      ...
+    # Subtest: 2 notches -> 2
+    ok 3 - 2 notches -> 2
+      ---
+      duration_ms: 0.158955
+      type: 'test'
+      ...
+    # Subtest: 3 notches -> 2
+    ok 4 - 3 notches -> 2
+      ---
+      duration_ms: 0.290252
+      type: 'test'
+      ...
+    # Subtest: 18 notches -> 2
+    ok 5 - 18 notches -> 2
+      ---
+      duration_ms: 0.16351
+      type: 'test'
+      ...
+    # Subtest: -1 notches -> 0
+    ok 6 - -1 notches -> 0
+      ---
+      duration_ms: 0.196878
+      type: 'test'
+      ...
+    # Subtest: -2 notches -> 0
+    ok 7 - -2 notches -> 0
+      ---
+      duration_ms: 0.157635
+      type: 'test'
+      ...
+    # Subtest: -3 notches -> 0
+    ok 8 - -3 notches -> 0
+      ---
+      duration_ms: 0.219843
+      type: 'test'
+      ...
+    # Subtest: -18 notches -> 0
+    ok 9 - -18 notches -> 0
+      ---
+      duration_ms: 0.202966
+      type: 'test'
+      ...
+    1..9
+ok 3 - countryRatingChangeWl: boundaries on notch change
+  ---
+  duration_ms: 2.304362
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: case and whitespace (AC-4)
+    # Subtest: trims and case-folds
+    ok 1 - trims and case-folds
+      ---
+      duration_ms: 0.096967
+      type: 'test'
+      ...
+    1..1
+ok 4 - countryRatingChangeWl: case and whitespace (AC-4)
+  ---
+  duration_ms: 0.184446
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: invalid input (AC-5)
+    # Subtest: "" throws RangeError in previous, current and both
+    ok 1 - "" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.586136
+      type: 'test'
+      ...
+    # Subtest: "   " throws RangeError in previous, current and both
+    ok 2 - "   " throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.143431
+      type: 'test'
+      ...
+    # Subtest: "CC" throws RangeError in previous, current and both
+    ok 3 - "CC" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.080692
+      type: 'test'
+      ...
+    # Subtest: "C" throws RangeError in previous, current and both
+    ok 4 - "C" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.090511
+      type: 'test'
+      ...
+    # Subtest: "D" throws RangeError in previous, current and both
+    ok 5 - "D" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.160067
+      type: 'test'
+      ...
+    # Subtest: "SD" throws RangeError in previous, current and both
+    ok 6 - "SD" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.075555
+      type: 'test'
+      ...
+    # Subtest: "NR" throws RangeError in previous, current and both
+    ok 7 - "NR" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.065234
+      type: 'test'
+      ...
+    # Subtest: "Baa1" throws RangeError in previous, current and both
+    ok 8 - "Baa1" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.063427
+      type: 'test'
+      ...
+    # Subtest: "BBB +" throws RangeError in previous, current and both
+    ok 9 - "BBB +" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.154285
+      type: 'test'
+      ...
+    # Subtest: "BBB−" throws RangeError in previous, current and both
+    ok 10 - "BBB−" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.085838
+      type: 'test'
+      ...
+    # Subtest: "AAA+" throws RangeError in previous, current and both
+    ok 11 - "AAA+" throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.075437
+      type: 'test'
+      ...
+    # Subtest: [object Null] throws RangeError in previous, current and both
+    ok 12 - [object Null] throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.103748
+      type: 'test'
+      ...
+    # Subtest: [object Undefined] throws RangeError in previous, current and both
+    ok 13 - [object Undefined] throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.069741
+      type: 'test'
+      ...
+    # Subtest: [object Number] throws RangeError in previous, current and both
+    ok 14 - [object Number] throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.063349
+      type: 'test'
+      ...
+    # Subtest: [object Object] throws RangeError in previous, current and both
+    ok 15 - [object Object] throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.06132
+      type: 'test'
+      ...
+    # Subtest: [object Array] throws RangeError in previous, current and both
+    ok 16 - [object Array] throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.110019
+      type: 'test'
+      ...
+    # Subtest: [object String] throws RangeError in previous, current and both
+    ok 17 - [object String] throws RangeError in previous, current and both
+      ---
+      duration_ms: 0.076127
+      type: 'test'
+      ...
+    # Subtest: no arguments throws RangeError
+    ok 18 - no arguments throws RangeError
+      ---
+      duration_ms: 0.08882
+      type: 'test'
+      ...
+    1..18
+ok 5 - countryRatingChangeWl: invalid input (AC-5)
+  ---
+  duration_ms: 3.564173
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl vs notchCalculator (AC-12, C6)
+    # Subtest: A -> A-: calculator 0, indicator 12 1
+    ok 1 - A -> A-: calculator 0, indicator 12 1
+      ---
+      duration_ms: 0.178994
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB-: calculator 1, indicator 12 2
+    ok 2 - BBB+ -> BBB-: calculator 1, indicator 12 2
+      ---
+      duration_ms: 0.051727
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BB+: calculator 2, indicator 12 2
+    ok 3 - BBB+ -> BB+: calculator 2, indicator 12 2
+      ---
+      duration_ms: 0.072859
+      type: 'test'
+      ...
+    # Subtest: AAA -> CCC-: calculator 2, indicator 12 2
+    ok 4 - AAA -> CCC-: calculator 2, indicator 12 2
+      ---
+      duration_ms: 0.107241
+      type: 'test'
+      ...
+    # Subtest: BB+ -> BBB+: calculator 0, indicator 12 0
+    ok 5 - BB+ -> BBB+: calculator 0, indicator 12 0
+      ---
+      duration_ms: 0.061597
+      type: 'test'
+      ...
+    # Subtest: A -> A: calculator 0, indicator 12 0
+    ok 6 - A -> A: calculator 0, indicator 12 0
+      ---
+      duration_ms: 0.044476
+      type: 'test'
+      ...
+    1..6
+ok 6 - countryRatingChangeWl vs notchCalculator (AC-12, C6)
+  ---
+  duration_ms: 0.656116
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: exhaustive scale x scale (AC-12, AC-10)
+    # Subtest: matches the formula for all 361 pairs
+    ok 1 - matches the formula for all 361 pairs
+      ---
+      duration_ms: 0.530594
+      type: 'test'
+      ...
+    1..1
+ok 7 - countryRatingChangeWl: exhaustive scale x scale (AC-12, AC-10)
+  ---
+  duration_ms: 0.589324
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: editing and statelessness (AC-13, C7)
+    # Subtest: re-evaluates after edit and keeps no state
+    ok 1 - re-evaluates after edit and keeps no state
+      ---
+      duration_ms: 0.153364
+      type: 'test'
+      ...
+    # Subtest: function arity has no override parameter
+    ok 2 - function arity has no override parameter
+      ---
+      duration_ms: 0.069366
+      type: 'test'
+      ...
+    1..2
+ok 8 - countryRatingChangeWl: editing and statelessness (AC-13, C7)
+  ---
+  duration_ms: 0.295774
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: module shape (AC-14, C6, C8)
+    # Subtest: exports exactly countryRatingChangeWl
+    ok 1 - exports exactly countryRatingChangeWl
+      ---
+      duration_ms: 0.930289
+      type: 'test'
+      ...
+    # Subtest: only import is notchChange from ../ratings/notch.mjs
+    ok 2 - only import is notchChange from ../ratings/notch.mjs
+      ---
+      duration_ms: 0.412887
+      type: 'test'
+      ...
+    # Subtest: source avoids notchCalculator, node:, console and process
+    ok 3 - source avoids notchCalculator, node:, console and process
+      ---
+      duration_ms: 0.147348
+      type: 'test'
+      ...
+    # Subtest: writes nothing to stdout or stderr
+    ok 4 - writes nothing to stdout or stderr
+      ---
+      duration_ms: 0.182288
+      type: 'test'
+      ...
+    1..4
+ok 9 - countryRatingChangeWl: module shape (AC-14, C6, C8)
+  ---
+  duration_ms: 1.825603
+  type: 'suite'
+  ...
+1..9
+# tests 50
+# suites 9
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 116.230734
+ok    verify passed

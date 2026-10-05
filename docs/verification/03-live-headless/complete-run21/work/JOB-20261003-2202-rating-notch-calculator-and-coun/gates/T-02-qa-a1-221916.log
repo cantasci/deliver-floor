@@ -1,0 +1,155 @@
+# qa_verify: node --test test/integration/indicators/*.test.mjs
+TAP version 13
+# Subtest: AC-3: previous "a" and current " A- " is a 1-notch downgrade, WL 1
+ok 1 - AC-3: previous "a" and current " A- " is a 1-notch downgrade, WL 1
+  ---
+  duration_ms: 1.24148
+  type: 'test'
+  ...
+# Subtest: AC-3: case/whitespace variants give the same WL as the canonical values
+ok 2 - AC-3: case/whitespace variants give the same WL as the canonical values
+  ---
+  duration_ms: 0.309377
+  type: 'test'
+  ...
+# Subtest: AC-8: unchanged rating or upgrade returns 0 (C3)
+ok 3 - AC-8: unchanged rating or upgrade returns 0 (C3)
+  ---
+  duration_ms: 0.163121
+  type: 'test'
+  ...
+# Subtest: AC-8: 1-notch downgrade returns 1 (REQ-03-12)
+ok 4 - AC-8: 1-notch downgrade returns 1 (REQ-03-12)
+  ---
+  duration_ms: 0.137879
+  type: 'test'
+  ...
+# Subtest: AC-8: downgrade of 2 or more notches returns 2 (REQ-03-12)
+ok 5 - AC-8: downgrade of 2 or more notches returns 2 (REQ-03-12)
+  ---
+  duration_ms: 0.151104
+  type: 'test'
+  ...
+# Subtest: AC-8: boundaries n = -1, 0, 1, 2 and scale ends
+ok 6 - AC-8: boundaries n = -1, 0, 1, 2 and scale ends
+  ---
+  duration_ms: 0.130424
+  type: 'test'
+  ...
+# Subtest: AC-8: all 361 pairs follow the threshold rule applied to notchChange
+ok 7 - AC-8: all 361 pairs follow the threshold rule applied to notchChange
+  ---
+  duration_ms: 1.884998
+  type: 'test'
+  ...
+# Subtest: AC-8: distribution over the 361 pairs is wl0 = 190, wl1 = 18, wl2 = 153
+ok 8 - AC-8: distribution over the 361 pairs is wl0 = 190, wl1 = 18, wl2 = 153
+  ---
+  duration_ms: 1.011033
+  type: 'test'
+  ...
+# Subtest: AC-9 (C6): calculator WL is 0 and Indicator 12 is 1 for BBB+ -> BBB
+ok 9 - AC-9 (C6): calculator WL is 0 and Indicator 12 is 1 for BBB+ -> BBB
+  ---
+  duration_ms: 0.393084
+  type: 'test'
+  ...
+# Subtest: AC-9: calculator and Indicator 12 differ only for 1 notch (18 pairs) and 2 notches (17 pairs)
+ok 10 - AC-9: calculator and Indicator 12 differ only for 1 notch (18 pairs) and 2 notches (17 pairs)
+  ---
+  duration_ms: 0.83796
+  type: 'test'
+  ...
+# Subtest: AC-10 (C7): countryRatingChangeWl takes exactly two parameters
+ok 11 - AC-10 (C7): countryRatingChangeWl takes exactly two parameters
+  ---
+  duration_ms: 0.233812
+  type: 'test'
+  ...
+# Subtest: AC-10 (C7): no state, no caching - repeated calls in alternating order
+ok 12 - AC-10 (C7): no state, no caching - repeated calls in alternating order
+  ---
+  duration_ms: 0.125336
+  type: 'test'
+  ...
+# Subtest: Scope: the module exports only countryRatingChangeWl
+ok 13 - Scope: the module exports only countryRatingChangeWl
+  ---
+  duration_ms: 0.130421
+  type: 'test'
+  ...
+# Subtest: AC-11 (C1): every invalid value throws RangeError in either position
+ok 14 - AC-11 (C1): every invalid value throws RangeError in either position
+  ---
+  duration_ms: 0.858764
+  type: 'test'
+  ...
+# Subtest: AC-11: missing arguments throw RangeError
+ok 15 - AC-11: missing arguments throw RangeError
+  ---
+  duration_ms: 0.12097
+  type: 'test'
+  ...
+# Subtest: AC-11: ratings outside the 19-step scale are never swallowed (no 0/null/undefined)
+ok 16 - AC-11: ratings outside the 19-step scale are never swallowed (no 0/null/undefined)
+  ---
+  duration_ms: 0.153755
+  type: 'test'
+  ...
+# Subtest: AC-11: errors are the same RangeError type that notchChange throws (propagated, not wrapped)
+ok 17 - AC-11: errors are the same RangeError type that notchChange throws (propagated, not wrapped)
+  ---
+  duration_ms: 0.464515
+  type: 'test'
+  ...
+# Subtest: AC-12: src/ has no console/process/node:/fetch/require usage
+ok 18 - AC-12: src/ has no console/process/node:/fetch/require usage
+  ---
+  duration_ms: 0.748932
+  type: 'test'
+  ...
+# Subtest: AC-12: countryRating.mjs imports only notchChange from ../ratings/notch.mjs; notch.mjs imports nothing
+ok 19 - AC-12: countryRating.mjs imports only notchChange from ../ratings/notch.mjs; notch.mjs imports nothing
+  ---
+  duration_ms: 0.379651
+  type: 'test'
+  ...
+# Subtest: AC-12: package.json declares no dependencies of any kind
+ok 20 - AC-12: package.json declares no dependencies of any kind
+  ---
+  duration_ms: 0.346752
+  type: 'test'
+  ...
+# Subtest: AC-12 (C8): calling both modules writes nothing to stdout/stderr and exits 0
+ok 21 - AC-12 (C8): calling both modules writes nothing to stdout/stderr and exits 0
+  ---
+  duration_ms: 31.043109
+  type: 'test'
+  ...
+# Subtest: AC-13: node --test from the repo root exits 0, fails nothing, and runs both unit files
+ok 22 - AC-13: node --test from the repo root exits 0, fails nothing, and runs both unit files
+  ---
+  duration_ms: 566.875387
+  type: 'test'
+  ...
+# Subtest: AC-13 (C2): no test or source expects BBB+ -> BB+ to be 2 notches / calculator WL 1
+ok 23 - AC-13 (C2): no test or source expects BBB+ -> BB+ to be 2 notches / calculator WL 1
+  ---
+  duration_ms: 1.482977
+  type: 'test'
+  ...
+# Subtest: AC-13 (C2): behaviourally, BBB+ -> BB+ is 3 notches, calculator WL 2, Indicator 12 WL 2
+ok 24 - AC-13 (C2): behaviourally, BBB+ -> BB+ is 3 notches, calculator WL 2, Indicator 12 WL 2
+  ---
+  duration_ms: 0.162747
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 693.952387

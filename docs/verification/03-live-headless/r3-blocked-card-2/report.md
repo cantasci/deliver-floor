@@ -1,0 +1,64 @@
+# Live E2E — scenario `complete`
+
+Request: `examples/watchlist-poc/JOB.md`  ·  started 2026-10-04T17:54:22Z
+
+## 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+
+√ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+- ✅ ECC plugin installed (Version: 2.2.3)
+- ✅ kit installed (scripts/install.sh --user)
+max_attempts = 1 (one review change blocks a card)
+- ✅ doctor: result: 25 ok, 5 warning(s), 0 problem(s)
+
+## 2 · run: the only input is examples/watchlist-poc/JOB.md
+
+- ✅ Michael opened the job JOB-20261004-1754-notch-calculator-and-country-rat
+wall time: 19 min
+
+## 5 · verify the whole flow on disk
+
+- ✅ job reached done
+- ✅ job shipped (local)
+roles: ba, backend-lead, backend, qa, reviewer
+- ✅ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+- ✅ role cards generated for every role
+PM decisions: 4 (implementation details, recorded with rationale)
+- ✅ readiness review complete (no open item) with an architecture
+readiness: 31 items — 22 decided, 9 n/a · architecture: library: ratings [javascript]
+- ✅ readiness frozen at planning and unchanged since
+- ✅ the Leads cut 2 card(s)
+- ✅ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T-01 Notch calculator: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs) | ratings | backend#1 | 1 | PASS | - (qa_verify -) | - | archived |
+| T-02 Indicator 12 country rating change WL: countryRatingChangeWl (src/indicators/countryRating.mjs) | ratings | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+| T-03 Notch calculator: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs) (re-run of T-01) | ratings | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+- ✅ every card (2): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged
+- ✅ QA's integration tests are on main (2 file(s) in the cards' qa_scope)
+- ✅ role really ran: business-analyst
+- ✅ role really ran: ecc:architect
+- ✅ role really ran: qa-tester
+- ✅ role really ran: a dev agent
+- ✅ role really ran: a stack reviewer
+- ✅ no tracker errors
+- ✅ kanban view rendered
+- ✅ report.md written by the closing check
+- ✅ no AI attribution in the delivered history (8 commits)
+- ✅ the whole test suite passes on main
+- ✅ hidden oracle passes (5 checks, watchlist.oracle.test.mjs)
+
+## R3 · a blocked card is Michael's decision — no question to the human after the start
+
+blocked card(s): T-01 
+- ✅ no question to the human after planning (no clarify, no APPROVAL.md)
+- ✅ T-01 was decided by Michael: now archived
+- ✅ …with a recorded decision: T-01: T-01 is not delivered (archived) — Replaced by T-03: stuck with no attempts left after QA; its finishe
+- ✅ the PR body lists his decisions
+note: a dropped card leaves its requirement undelivered — the oracle result above shows the effect
+
+## result
+
+cost: $5.03  ·  artifacts: /tmp/claude-0/e2e-r3c/complete
+**29 passed, 0 failed**

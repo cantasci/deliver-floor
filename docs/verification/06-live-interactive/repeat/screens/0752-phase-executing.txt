@@ -1,0 +1,50 @@
+        )`. A single private helper validates and normalises the inputs, looking them up in a private module-level `Map` built from the scale. Dev unit tests go in `test/unit/ratings/*.test.mjs
+      7
+      8 ## Traces to
+      9 AC-1, AC-2, AC-3, AC-4, AC-5 (notchChange and notchCalculator parts), AC-6, AC-7 (notch parts), AC-8, AC-9 (notchChange and notchCalculator), AC-10, AC-11, AC-12, AC-13, AC-19 (notch.mj
+        ity, X-error-message, X-normalisation, X-test-layout.
+     … +103 lines (ctrl+o to expand)
+
+● Write(.work/JOB-20261004-0713-notch-calculator-and-country-rat/specs/T-02.md)
+  ⎿  Wrote 62 lines to .work/JOB-20261004-0713-notch-calculator-and-country-rat/specs/T-02.md
+      1 # T-02: Indicator 12 countryRatingChangeWl in src/indicators/countryRating.mjs
+      2
+      4 As a credit analyst (through later POC screens) and as the Watchlist indicator engine, I want to give a previous and a current country rating and get the Indicator 12 WL (0, 1 or 2), so
+         that a country downgrade raises the watchlist level by its own thresholds, not by the calculator's (REQ-03-12, C3).
+      5
+        orted from `'../ratings/notch.mjs'`) and returns the literal `0` when n <= 0, `1` when n === 1 and `2` when n >= 2. No rating list, no map, no validation of its own, no catching or wrap
+        ping of errors. Dev unit tests in `test/unit/indicators/*.test.mjs`; QA integration tests in `test/integration/indicators/*.test.mjs`. `src/ratings/` must not be modified.
+      7
+      9 AC-5 (countryRatingChangeWl part), AC-7 (example), AC-8, AC-9 (countryRatingChangeWl), AC-14, AC-15, AC-16, AC-17, AC-18, AC-19 (countryRating.mjs, plus both modules together), AC-20 (c
+        ountryRating namespace), AC-21 (whole repo). REQ-03-12, C1, C3, C4, C5, C7, C8. Readiness: CON-interface, CON-errors, PRD-conflicts, X-error-message, X-normalisation, X-test-layout.
+     … +70 lines (ctrl+o to expand)
+
+● Both specs are saved. Next I'm copying each spec's numbered criteria into the card's acceptance list, then running dl validate.
+
+● Bash(cd /tmp/claude-0/e2e-ia2/interactive/repo; DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl; J=.work/JOB-20261004-0713-notch-calculator-a…)
+  ⎿  [
+       20,
+       16
+     … +2 lines (ctrl+o to expand)
+
+● The board is valid with 2 cards. Plan approval is off, so I'm going straight to execution.
+
+● Bash(cd /tmp/claude-0/e2e-ia2/interactive/repo; DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl
+      "$DL" phase executing 2>&1 | tail -3; "$DL" n…)
+  ⎿  phase: executing
+     DISPATCH T-01
+
+● Bash(cd /tmp/claude-0/e2e-ia2/interactive/repo; DL=/tmp/claude-0/e2e-ia2/interactive/home/.claude/skills/deliver/bin/dl; J=.work/JOB-20261004-0713-notch-calculator-a…)
+  ⎿  WT=/tmp/claude-0/e2e-ia2/interactive/repo/.work/JOB-20261004-0713-notch-calculator-and-country-rat/wt/T-01
+     board.json
+     handoff.md
+     … +5 lines (ctrl+o to expand)
+
+* Forging… (59s · ↓ 9.6k tokens)
+  ⎿  Tip: Use /btw to ask a quick side question without interrupting Claude's current work
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for agents                                                                             ✘ Auto-update failed · Run claude doctor
+

@@ -1,0 +1,163 @@
+{
+  "id": "JOB-20261003-1641-repayment-delay-indicators-2-3",
+  "title": "Repayment delay indicators 2-3",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md\nRepayment delay indicators 2 and 3 (Watchlist POC slice, parallel)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool), EPIC-03.\nBuild only these two requirements. They are independent of each other.\n\nStaffing: two backend developers work in parallel, one per requirement.\n\n## Requirements (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-03-02 | Indicator 2 (Days with delay): Dropdown → no delay / ≤3 days / >3 days / >60 days / >90 days | >3 days → WL=2; >60 days → WL=3; >90 days → WL=4 |\n| REQ-03-03 | Indicator 3 (Delays in 12 months): Dropdown → 0 / 1 / >1 | 1 → WL=1; >1 → WL=2 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Dropdown values are exactly these strings: Indicator 2: \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\";\n  Indicator 3: \"0\", \"1\", \">1\". Input is trimmed; any other value throws a RangeError.\n- C2. \"no delay\" and \"<=3 days\" → WL 0; Indicator 3 \"0\" → WL 0.\n- C3. Indicator 1 (repayment delay yes/no) and its collapsing of indicators 2–3 are OUT of scope here.\n- C4. \"Dropdown\" is met by the exported option lists (`*_OPTIONS`) that the POC screens, built later by other parts, render.\n  No UI in this slice.\n- C5. Matching is exact and case-sensitive after trimming (\">3 days\" yes, \">3 Days\" no → RangeError); a non-string input is a RangeError too.\n- C6. The caller counts the delays in the last 12 months and picks the option; this slice only maps the option to a WL.\n\n## Contract\n\n- `src/indicators/daysWithDelay.mjs` → `export const DAYS_WITH_DELAY_OPTIONS` (the 5 strings, in order) and `export function daysWithDelayWl(option)` → 0 | 2 | 3 | 4\n- `src/indicators/delayCount.mjs` → `export const DELAY_COUNT_OPTIONS` (the 3 strings, in order) and `export function delayCountWl(option)` → 0 | 1 | 2\n\nPlain Node ESM, no dependencies; tests with `node --test`.",
+  "created": "2026-10-03T16:41:03Z",
+  "repo": "/tmp/claude-0/e2e-v/munder/repo",
+  "phase": "planning",
+  "stack": [
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "domain logic: REQ-03-02/REQ-03-03 option→WL mapping"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "count": 2,
+      "why": "Staffing: two backend developers work in parallel, one per requirement"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack javascript (plain Node ESM)"
+    }
+  ],
+  "assumptions": [
+    "No tech-lead: two independent pure-function modules with the contract fixed in the request",
+    "No security/quality reviewer: pure functions, no I/O, no external input beyond a dropdown option validated by RangeError"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261003-1641-repayment-delay-indicators-2-3",
+  "integration_worktree": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1641-repayment-delay-indicators-2-3/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": null,
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "munder",
+    "max_parallel": 2,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "/tmp/claude-0/e2e-v/munder/bin/claude",
+      "model": "claude-sonnet-5-5",
+      "token_cap": 0
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "commit": {
+      "ai_attribution": false,
+      "role_in_message": false
+    }
+  },
+  "pr": null,
+  "shipped": false,
+  "delivery": null,
+  "munder": {
+    "seats": {
+      "ba#1": {
+        "role": "ba",
+        "worker": "worker-seat-20261003-1641-ba-1-h1",
+        "hires": 1,
+        "character": "pam",
+        "hired_at": "2026-10-03T16:41:18Z",
+        "task": null,
+        "orders": 3,
+        "since": null,
+        "last_done": "2026-10-03T16:47:42Z"
+      },
+      "backend-lead#1": {
+        "role": "backend-lead",
+        "worker": "worker-seat-20261003-1641-backend-lead-1-h1",
+        "hires": 1,
+        "character": "oscar",
+        "hired_at": "2026-10-03T16:41:18Z",
+        "task": null,
+        "orders": 2,
+        "since": null,
+        "last_done": "2026-10-03T16:46:45Z"
+      },
+      "backend#1": {
+        "role": "backend",
+        "worker": "worker-seat-20261003-1641-backend-1-h1",
+        "hires": 1,
+        "character": "dwight",
+        "hired_at": "2026-10-03T16:41:19Z",
+        "task": null,
+        "orders": 0
+      },
+      "backend#2": {
+        "role": "backend",
+        "worker": "worker-seat-20261003-1641-backend-2-h1",
+        "hires": 1,
+        "character": "jim",
+        "hired_at": "2026-10-03T16:41:19Z",
+        "task": null,
+        "orders": 0
+      },
+      "qa#1": {
+        "role": "qa",
+        "worker": "worker-seat-20261003-1641-qa-1-h1",
+        "hires": 1,
+        "character": "angela",
+        "hired_at": "2026-10-03T16:41:19Z",
+        "task": null,
+        "orders": 0
+      },
+      "reviewer#1": {
+        "role": "reviewer",
+        "worker": "worker-seat-20261003-1641-reviewer-1-h1",
+        "hires": 1,
+        "character": "toby",
+        "hired_at": "2026-10-03T16:41:19Z",
+        "task": null,
+        "orders": 0
+      }
+    }
+  },
+  "frozen": {
+    "readiness_sha256": "a15b2957242bde5c8168f0b28060e47eca909b309a5ed603f59cfa2555fee342",
+    "at": "2026-10-03T16:43:28Z"
+  }
+}

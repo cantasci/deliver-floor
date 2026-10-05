@@ -1,0 +1,109 @@
+{
+  "id": "JOB-20261005-0619-rating-notch-change",
+  "title": "Rating notch change",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-models.md\nRating notch change (Watchlist POC — one task)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch\ncalculator (REQ-06-02) are built on. It is small: one card.\n\n## Requirement\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 (part) | Given a previous and a current rating, the system computes the notch change between them | BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.\n  A notch is one step on this scale. Input is trimmed with `String.prototype.trim()` and case-insensitive (\"bbb+\" = \"BBB+\").\n- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object\n  such as `new String('A')` is a non-string. No banking-regulation or internal-policy constraint applies to this slice.\n- C3. The result is signed: downgrade positive, upgrade negative, unchanged 0.\n- C4. No UI, CLI or printed output; other parts of the POC import the function.\n\n## Contract\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer (C3).\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.\n\n## Staffing\n\n- The backend developer works on the **haiku** model.",
+  "created": "2026-10-05T06:19:14Z",
+  "repo": "/tmp/claude-0/e2e-mA/models/repo",
+  "phase": "done",
+  "stack": [
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-06-02: notch calculator domain logic"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "model": "haiku",
+      "why": "REQ-06-02: implement notchChange in src/ratings/notch.mjs; Staffing: backend dev on haiku"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "JavaScript ESM module review"
+    }
+  ],
+  "assumptions": [
+    "Single component: Node ESM library (src/ratings, test/); no UI/CLI/service"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261005-0619-rating-notch-change",
+  "integration_worktree": "/tmp/claude-0/e2e-mA/models/repo/.work/JOB-20261005-0619-rating-notch-change/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "553ac10de5faae5277698f09d03ba8330c34542c",
+    "log": "/tmp/claude-0/e2e-mA/models/repo/.work/JOB-20261005-0619-rating-notch-change/gates/verify-all-064040.log",
+    "at": "2026-10-05T06:40:42Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 2,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "",
+      "token_cap": 0
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "commit": {
+      "ai_attribution": false,
+      "role_in_message": false
+    }
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "3f88371edc0ddb61c4d21057107d0cbe25e9eb7d",
+    "at": "2026-10-05T06:41:39Z"
+  },
+  "frozen": {
+    "readiness_sha256": "8dcadf0a761e6b8d44edae0c1f3e67be4f0b12d23e0ea2647fb0cf004aac1ee6",
+    "at": "2026-10-05T06:23:44Z"
+  }
+}

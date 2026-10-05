@@ -1,0 +1,62 @@
+2026-10-05T07:00:31Z	new	Rating notch change
+2026-10-05T07:00:31Z	jobset	stack: .stack=["javascript"]
+2026-10-05T07:00:32Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: domain logic notchChange in src/ratings/notch.mjs"},{"role":"backend","agent":"backend-dev","model":"sonnet","why":"builds REQ-06-02 notchChange; request: the backend developer works on the sonnet model"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (plain Node ESM)"}]
+2026-10-05T07:00:32Z	jobset	assumptions: .assumptions += ["No security/a11y/perf specialists: pure in-process function, no UI, no external I/O (C4)."]
+2026-10-05T07:00:32Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T07:00:32Z	phase	readiness
+2026-10-05T07:00:36Z	md-hire	ba#1 → worker-seat-20261005-0700-ba-1-h1 (claude claude-haiku-4-5-20251001, pam)
+2026-10-05T07:00:36Z	md-hire	backend-lead#1 → worker-seat-20261005-0700-backend-lead-1-h1 (claude claude-haiku-4-5-20251001, oscar)
+2026-10-05T07:00:36Z	md-hire	backend#1 → worker-seat-20261005-0700-backend-1-h1 (claude sonnet, dwight)
+2026-10-05T07:00:37Z	md-hire	qa#1 → worker-seat-20261005-0700-qa-1-h1 (claude claude-haiku-4-5-20251001, angela)
+2026-10-05T07:00:37Z	md-hire	reviewer#1 → worker-seat-20261005-0700-reviewer-1-h1 (claude claude-haiku-4-5-20251001, toby)
+2026-10-05T07:00:54Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261005-0700-ba-1-h1
+2026-10-05T07:03:44Z	md-done	readiness ba#1: readiness: 19 decided, 6 n_a, 1 component (ratings library)
+2026-10-05T07:03:57Z	md-send	readiness-fix ba#1 (business-analyst) → worker-seat-20261005-0700-ba-1-h1
+2026-10-05T07:05:37Z	md-done	readiness-fix ba#1: readiness-fix: quotes corrected, reviewer=reviewer, DEL-docs n_a
+2026-10-05T07:05:45Z	readiness	27 items: 16 decided, 11 n/a, 0 open
+2026-10-05T07:05:54Z	freeze	readiness + architecture frozen (a6118c7a440a)
+2026-10-05T07:05:54Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T07:05:54Z	phase	planning
+2026-10-05T07:05:54Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261005-0700-ba-1-h1
+2026-10-05T07:05:59Z	pm-decision	No security reviewer role — Pure in-process function, no external I/O, auth, secrets or personal data; input validation is fully specified by C2 and covered by QA + the stack reviewer
+2026-10-05T07:07:29Z	md-done	plan ba#1: plan: 11 ACs (AC-1..AC-11) for REQ-06-02 notchChange
+2026-10-05T07:07:30Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261005-0700-backend-lead-1-h1
+2026-10-05T07:08:51Z	md-done	cards-backend-lead backend-lead#1: cards: 1 card B1 (ratings, AC-1..AC-11)
+2026-10-05T07:08:52Z	md-send	spec-T-01 ba#1 (business-analyst) → worker-seat-20261005-0700-ba-1-h1
+2026-10-05T07:10:41Z	md-done	spec-T-01 ba#1: spec-T-01: 11 ACs + 30 test-data rows
+2026-10-05T07:10:47Z	phase	executing
+2026-10-05T07:10:48Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T07:10:57Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261005-0700-backend-1-h1
+2026-10-05T07:11:36Z	md-done	T-01 backend#1: T-01 done: cea3163, verify 10/10, src/ratings/notch.mjs + unit tests
+2026-10-05T07:11:38Z	gate	T-01 PASS
+2026-10-05T07:11:46Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261005-0700-qa-1-h1
+2026-10-05T07:14:30Z	md-done	T-01 qa#1: T-01 QA pass: 18 integration tests, AC-1..AC-11
+2026-10-05T07:14:32Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261005-0700-reviewer-1-h1
+2026-10-05T07:14:59Z	state	T-01=blocked
+2026-10-05T07:14:59Z	note	T-01: qa_verify used a directory path that node --test (v22) cannot load; contract fix only, code+tests unchanged
+2026-10-05T07:15:00Z	card-set	T-01.qa_verify = "node --test test/ratings/integration/*.test.mjs" — Card's qa_verify passed a directory to node --test, which Node 22 resolves as a module (Cannot find module); the glob runs the same QA tests (18/18 pass)
+2026-10-05T07:15:06Z	state	T-01=ready
+2026-10-05T07:15:09Z	gate	T-01 FAIL
+2026-10-05T07:15:49Z	pm-decision	T-01: T-01 qa_verify corrected to a glob; QA commit re-sequenced — Lead's qa_verify passed a directory to node --test (Node 22 'Cannot find module'), so dl rejected a QA pass whose 18 tests actually pass; QA reverts and re-applies its own commit so gate→QA order holds. No code or test content changes.
+2026-10-05T07:15:50Z	assign	T-01 → backend-dev (backend#1) attempt=2
+2026-10-05T07:15:50Z	md-send	T-01-revert qa#1 (qa-tester) → worker-seat-20261005-0700-qa-1-h1
+2026-10-05T07:16:00Z	md-done	T-01 reviewer#1: T-01 review: approve, no blocking items
+2026-10-05T07:16:34Z	md-done	T-01-revert qa#1: T-01-revert: QA tests withdrawn (b8c10d4)
+2026-10-05T07:16:36Z	gate	T-01 PASS
+2026-10-05T07:16:36Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261005-0700-qa-1-h1
+2026-10-05T07:17:19Z	md-done	T-01 qa#1: T-01 QA tests restored, 18/18 pass
+2026-10-05T07:17:20Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-10 pass; AC-11 pass
+2026-10-05T07:17:26Z	review	T-01 reviewer approve — All 11 ACs met; frozen RATING_SCALE, typeof guard rejects non-strings incl. String objects; no blocking items
+2026-10-05T07:17:27Z	integrate	T-01 merged
+2026-10-05T07:17:34Z	phase	integrating
+2026-10-05T07:17:35Z	verify-all	PASS
+2026-10-05T07:17:35Z	phase	closing
+2026-10-05T07:17:36Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261005-0700-ba-1-h1
+2026-10-05T07:18:41Z	md-done	closing ba#1: closing: AC check written
+2026-10-05T07:18:52Z	learn	backend-lead: qa_verify/verify must pass test FILES or a glob to node --test (e.g. test/x/integration/*.test.mjs), never a bare directory — Node 22 resolves it as a module and fails.
+2026-10-05T07:18:53Z	ship	local merge into main
+2026-10-05T07:19:02Z	md-release	ba#1 → worker-seat-20261005-0700-ba-1-h1
+2026-10-05T07:19:02Z	md-release	backend-lead#1 → worker-seat-20261005-0700-backend-lead-1-h1
+2026-10-05T07:19:02Z	md-release	backend#1 → worker-seat-20261005-0700-backend-1-h1
+2026-10-05T07:19:02Z	md-release	qa#1 → worker-seat-20261005-0700-qa-1-h1
+2026-10-05T07:19:02Z	md-release	reviewer#1 → worker-seat-20261005-0700-reviewer-1-h1

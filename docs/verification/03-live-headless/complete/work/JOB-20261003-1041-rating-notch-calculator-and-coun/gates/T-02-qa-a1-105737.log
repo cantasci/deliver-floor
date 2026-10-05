@@ -1,0 +1,167 @@
+# qa_verify: node --test test/integration/countryRating*.test.mjs test/integration/purity*.test.mjs
+TAP version 13
+# Subtest: AC-1: trim and case: " a ", "a-" is 1
+ok 1 - AC-1: trim and case: " a ", "a-" is 1
+  ---
+  duration_ms: 1.143789
+  type: 'test'
+  ...
+# Subtest: AC-1: "A" to "\\tA-\\n" is 1
+ok 2 - AC-1: "A" to "\\tA-\\n" is 1
+  ---
+  duration_ms: 0.229269
+  type: 'test'
+  ...
+# Subtest: AC-1: "bbb+" to "BB+" is 2 (3 notches)
+ok 3 - AC-1: "bbb+" to "BB+" is 2 (3 notches)
+  ---
+  duration_ms: 0.108626
+  type: 'test'
+  ...
+# Subtest: AC-1: "aaa" to "ccc-" is 2
+ok 4 - AC-1: "aaa" to "ccc-" is 2
+  ---
+  duration_ms: 0.108283
+  type: 'test'
+  ...
+# Subtest: AC-1: every scale rating, lower-cased vs padded, is 0 both ways
+ok 5 - AC-1: every scale rating, lower-cased vs padded, is 0 both ways
+  ---
+  duration_ms: 0.314505
+  type: 'test'
+  ...
+# Subtest: AC-2: invalid list has 23 values
+ok 6 - AC-2: invalid list has 23 values
+  ---
+  duration_ms: 0.123766
+  type: 'test'
+  ...
+# Subtest: AC-2: each invalid value in previous, current and both throws RangeError (69 calls, never TypeError)
+ok 7 - AC-2: each invalid value in previous, current and both throws RangeError (69 calls, never TypeError)
+  ---
+  duration_ms: 1.336027
+  type: 'test'
+  ...
+# Subtest: AC-2: missing arguments throw RangeError
+ok 8 - AC-2: missing arguments throw RangeError
+  ---
+  duration_ms: 0.200948
+  type: 'test'
+  ...
+# Subtest: AC-2 (edge): Symbol, BigInt, null-prototype object and String object pass the RangeError through
+ok 9 - AC-2 (edge): Symbol, BigInt, null-prototype object and String object pass the RangeError through
+  ---
+  duration_ms: 0.417418
+  type: 'test'
+  ...
+# Subtest: AC-2 (edge): default grades D, SD, RD cannot be scored and throw RangeError
+ok 10 - AC-2 (edge): default grades D, SD, RD cannot be scored and throw RangeError
+  ---
+  duration_ms: 4.825052
+  type: 'test'
+  ...
+# Subtest: AC-3: downgrade rows I1-I5 return the expected numeric WL
+ok 11 - AC-3: downgrade rows I1-I5 return the expected numeric WL
+  ---
+  duration_ms: 0.205134
+  type: 'test'
+  ...
+# Subtest: AC-4: upgrade/unchanged rows I6-I10 return 0 (not -0)
+ok 12 - AC-4: upgrade/unchanged rows I6-I10 return 0 (not -0)
+  ---
+  duration_ms: 0.19533
+  type: 'test'
+  ...
+# Subtest: AC-5: rows D1-D4 compared with notchCalculator wl
+ok 13 - AC-5: rows D1-D4 compared with notchCalculator wl
+  ---
+  duration_ms: 0.158741
+  type: 'test'
+  ...
+# Subtest: AC-5: over 361 pairs the two differ exactly when notches is 1 or 2 (35 pairs: 18 n=1, 17 n=2; 326 equal)
+ok 14 - AC-5: over 361 pairs the two differ exactly when notches is 1 or 2 (35 pairs: 18 n=1, 17 n=2; 326 equal)
+  ---
+  duration_ms: 0.58519
+  type: 'test'
+  ...
+# Subtest: AC-6: over 361 pairs the result equals n <= 0 ? 0 : n === 1 ? 1 : 2 with sweep totals 190/18/153
+ok 15 - AC-6: over 361 pairs the result equals n <= 0 ? 0 : n === 1 ? 1 : 2 with sweep totals 190/18/153
+  ---
+  duration_ms: 1.184933
+  type: 'test'
+  ...
+# Subtest: AC-6 (edge): threshold boundaries n = 0, 1, 2, -1, 18, -18; never WL 3 or 4
+ok 16 - AC-6 (edge): threshold boundaries n = 0, 1, 2, -1, 18, -18; never WL 3 or 4
+  ---
+  duration_ms: 0.103854
+  type: 'test'
+  ...
+# Subtest: AC-6: source imports notchChange from ../ratings/notch.mjs
+ok 17 - AC-6: source imports notchChange from ../ratings/notch.mjs
+  ---
+  duration_ms: 0.378829
+  type: 'test'
+  ...
+# Subtest: AC-6: source has no single-quoted rating literal 'AAA', 'BBB+' or 'CCC-' (grep exit 1)
+ok 18 - AC-6: source has no single-quoted rating literal 'AAA', 'BBB+' or 'CCC-' (grep exit 1)
+  ---
+  duration_ms: 4.523717
+  type: 'test'
+  ...
+# Subtest: AC-7: edited rating A to A- is 1; unedited A to A is 0
+ok 19 - AC-7: edited rating A to A- is 1; unedited A to A is 0
+  ---
+  duration_ms: 0.120231
+  type: 'test'
+  ...
+# Subtest: AC-7: arity is exactly 2 for countryRatingChangeWl, notchChange and notchCalculator
+ok 20 - AC-7: arity is exactly 2 for countryRatingChangeWl, notchChange and notchCalculator
+  ---
+  duration_ms: 0.085083
+  type: 'test'
+  ...
+# Subtest: AC-7: repeatable, three calls return 1 each time
+ok 21 - AC-7: repeatable, three calls return 1 each time
+  ---
+  duration_ms: 0.102528
+  type: 'test'
+  ...
+# Subtest: AC-9: the only export is countryRatingChangeWl
+ok 22 - AC-9: the only export is countryRatingChangeWl
+  ---
+  duration_ms: 0.08655
+  type: 'test'
+  ...
+# Subtest: AC-15(a): no file under src/ uses console., process. or I/O module imports
+ok 23 - AC-15(a): no file under src/ uses console., process. or I/O module imports
+  ---
+  duration_ms: 2.858015
+  type: 'test'
+  ...
+# Subtest: AC-15(b): package.json has no dependencies and no devDependencies
+ok 24 - AC-15(b): package.json has no dependencies and no devDependencies
+  ---
+  duration_ms: 1.829997
+  type: 'test'
+  ...
+# Subtest: AC-15(c): importing and calling the modules is silent in a child process
+ok 25 - AC-15(c): importing and calling the modules is silent in a child process
+  ---
+  duration_ms: 32.861607
+  type: 'test'
+  ...
+# Subtest: AC-15(d): test layout: a *.test.mjs in ratings, indicators and integration; every .mjs there is *.test.mjs
+ok 26 - AC-15(d): test layout: a *.test.mjs in ratings, indicators and integration; every .mjs there is *.test.mjs
+  ---
+  duration_ms: 0.457621
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 166.681716

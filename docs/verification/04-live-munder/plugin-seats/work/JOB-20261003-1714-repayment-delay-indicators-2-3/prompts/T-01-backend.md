@@ -1,0 +1,58 @@
+CARD:
+{
+ "id": "T-01",
+ "title": "Indicator 2 \"Days with delay\": daysWithDelayWl + DAYS_WITH_DELAY_OPTIONS (REQ-03-02)",
+ "role": "backend",
+ "component": "indicators",
+ "context": "Why: Watchlist-level (WL, 0-4, higher is worse) mapping for POC indicator 2 \"Days with delay\"; pure function plus exported dropdown option list that later POC screens render. Plain Node 18+ ESM (.mjs), no npm deps, no imports, no I/O, no logging (CLAUDE.md). Tests: node:test + node:assert/strict. TDD: write the unit test first.\nFiles: create src/indicators/daysWithDelay.mjs and test/indicators/daysWithDelay.test.mjs. Touch nothing else; do NOT create src/indicators/index.mjs or any shared helper (the other indicator is built in parallel by another dev; tiny duplicated trim/validate logic is accepted).\nExports (named): DAYS_WITH_DELAY_OPTIONS = Object.freeze([\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"]) in exactly this order; function daysWithDelayWl(option) -> number in {0, 2, 3, 4}.\nMapping: \"no delay\"->0, \"<=3 days\"->0, \">3 days\"->2, \">60 days\"->3, \">90 days\"->4. Mapping is by option STRING, never by number (labels overlap numerically). WL 1 is intentionally never produced..\nThe requirement table writes unicode \"≤3 days\" but the business-confirmed contract is ASCII \"<=3 days\"; \"≤3 days\" must throw RangeError.\nAlgorithm: (1) if typeof option !== 'string' throw RangeError (BEFORE trimming: String objects, arrays, numbers like 1 must be rejected); (2) t = option.trim() (String.prototype.trim; internal whitespace untouched); (3) exact, case-sensitive match against the option list using an own-property-safe lookup (Map, switch, or Object.hasOwn) - never plain map[option], which would accept 'constructor'/'__proto__'/'toString' (NFR-security); (4) otherwise throw RangeError, never return a default WL. Return plain numbers.\nError message (X-errors-msg): must contain the function name and quote the rejected value for strings, e.g. daysWithDelayWl: invalid option \">3 Days\"; for non-strings describe the type/value safely (e.g. `daysWithDelayWl: invalid option (${typeof option})` or String()-free formatting; must not throw itself for Symbol/object input). Tests assert only instanceof RangeError and message includes 'daysWithDelayWl'.\nInvalid inputs to cover in tests: \">3 Days\", \"NO DELAY\", \"≤3 days\", \"<= 3 days\", \">30 days\", \"\", \"   \", \"constructor\", \"__proto__\", \"toString\", \">3  days\" (internal double space). Non-strings: undefined, null, 3, 0, true, {}, [], [\">3 days\"], new String(\">3 days\"), and call with no argument.\nAlso test: option list equals expected array and Object.isFrozen is true; every entry of the list maps without throwing to [0,0,2,3,4] (map over the list); push on the frozen list throws TypeError (ESM is strict) or leaves it unchanged, and mapping unchanged; whitespace trimming cases \"  >3 days \" -> 2, \"\\t>90 days\\n\" -> 4, \" no delay\" -> 0.",
+ "depends_on": [],
+ "scope": [
+  "src/indicators/daysWithDelay.mjs",
+  "test/indicators/daysWithDelay.test.mjs"
+ ],
+ "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+ "qa_scope": [
+  "test/integration/indicators/daysWithDelay.test.mjs"
+ ],
+ "qa_verify": "node --test test/integration/indicators/daysWithDelay.test.mjs",
+ "acceptance": [
+  "AC-1: Given the module, when `DAYS_WITH_DELAY_OPTIONS` is read, then `deepEqual` to `[\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"]` (this order) and `Object.isFrozen(DAYS_WITH_DELAY_OPTIONS) === true`.",
+  "AC-2: Given `\"no delay\"` or `\"<=3 days\"`, when `daysWithDelayWl(option)` is called, then it returns `0` (`strictEqual`, a number).",
+  "AC-3: `daysWithDelayWl(\">3 days\")` returns `2`.",
+  "AC-4: `daysWithDelayWl(\">60 days\")` returns `3`.",
+  "AC-5: `daysWithDelayWl(\">90 days\")` returns `4`.",
+  "AC-6: `\"  >3 days \"` → `2`, `\"\\t>90 days\\n\"` → `4`, `\" no delay\"` → `0` (`String.prototype.trim`); `\">3  days\"` (internal double space) → `RangeError`.",
+  "AC-7: `\">3 Days\"`, `\"NO DELAY\"`, `\"≤3 days\"`, `\"<= 3 days\"`, `\">30 days\"`, `\"\"`, `\"   \"`, `\"constructor\"`, `\"__proto__\"`, `\"toString\"` → `RangeError`; no default WL is ever returned.",
+  "AC-8: `undefined`, `null`, `3`, `0`, `true`, `{}`, `[]`, `[\">3 days\"]`, `new String(\">3 days\")`, and a call with no argument → `RangeError`. The `typeof` check happens before trimming.",
+  "AC-16: for an invalid input the error is `instanceof RangeError` and its message contains `daysWithDelayWl`; for strings it quotes the value, e.g. `daysWithDelayWl: invalid option \">3 Days\"`. Building the message must not itself throw for Symbol/object input (non-strings: describe via `typeof`). Tests assert only the type and the function name.",
+  "AC-17: mapping every entry of `DAYS_WITH_DELAY_OPTIONS` through `daysWithDelayWl` does not throw and gives `[0,0,2,3,4]`; `push` on the frozen list throws `TypeError` (ESM is strict) or leaves it unchanged, and the mapping is unchanged afterwards.",
+  "AC-18: the module is plain ESM `.mjs`, has no `import`, no I/O, no logging; `src/indicators/index.mjs` and any shared helper are not created; `node --test test/indicators/daysWithDelay.test.mjs` passes (and the full `node --test` stays green)."
+ ],
+ "agent": "backend-dev",
+ "state": "running",
+ "attempts": 1,
+ "notes": [],
+ "seat": "backend#1",
+ "assignments": [
+  {
+   "attempt": 1,
+   "agent": "backend-dev",
+   "seat": "backend#1",
+   "by": "michael",
+   "at": "2026-10-03T17:21:01Z"
+  }
+ ],
+ "worktree": "/tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/wt/T-01",
+ "branch": "job/JOB-20261003-1714-repayment-delay-indicators-2-3--T-01"
+}
+SPEC (what to build, the acceptance criteria and test data — follow it): /tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/specs/T-01.md
+COMPONENT: indicators — stack javascript (plain Node 18+ ESM, node:test, no deps), path src/indicators/, test/indicators/; load these skills: ecc:backend-patterns, ecc:tdd-workflow
+ROLE CARD (your rules — read first): /tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/roles/backend.md
+WORKTREE: /tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/wt/T-01   (branch job/JOB-20261003-1714-repayment-delay-indicators-2-3--T-01; base is the job branch job/JOB-20261003-1714-repayment-delay-indicators-2-3)
+Work ONLY inside this directory. All paths are relative to it.
+PLAN CONTEXT: /tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/plan.md — Goal section and the ACs listed in the card.
+READINESS (binding): /tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/readiness.md
+HANDOFF FILE: /tmp/claude-0/e2e-v/munder/repo/.work/JOB-20261003-1714-repayment-delay-indicators-2-3/handoffs/T-01.md — fill it in.
+QA TESTS: qa_scope "test/integration/indicators/daysWithDelay.test.mjs" belongs to the QA role — never edit it; after a QA round its tests must pass unchanged.
+PREVIOUS FEEDBACK: none
+Work test-first (unit tests). When done: run the verify command in the worktree, commit, fill the handoff, and report done.

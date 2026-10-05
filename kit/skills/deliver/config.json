@@ -1,13 +1,44 @@
 {
   "base_branch": "auto",
+  "dispatch": "subagent",
   "max_parallel": 3,
   "max_attempts": 2,
   "gates": {
-    "plan": true,
-    "merge": true
+    "plan": false
   },
-  "merge_strategy": "pr",
   "verify_full": "npm test",
   "worktree_setup": "",
-  "stop_guard_max": 5
+  "worktree_exclude": [
+    "node_modules",
+    ".venv",
+    ".env",
+    ".claude/settings.local.json"
+  ],
+  "gate_timeout": 1800,
+  "stop_guard_max": 5,
+  "munder": {
+    "hive_root": "",
+    "claude_command": "claude",
+    "model": "",
+    "token_cap": 0
+  },
+  "merge_mode": "human",
+  "push_branches": "auto",
+  "tracker": {
+    "kind": "local",
+    "columns": {},
+    "jira": {
+      "project": "",
+      "issue_type": "Task",
+      "epic_type": "Epic",
+      "labels": [
+        "deliver"
+      ],
+      "api_version": "3"
+    }
+  },
+  "commit": {
+    "ai_attribution": false,
+    "role_in_message": false
+  }
 }

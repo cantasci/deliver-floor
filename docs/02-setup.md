@@ -1,118 +1,184 @@
-# 02 — Setup
+# 02 — Setup, and taking a normal project into the flow
 
-About 15 minutes. Do the steps in order.
+About 15 minutes. `scripts/init.sh` does steps 1–3 for you; the rest is per repository.
 
-## 1. Install ECC (the role library)
-
-Inside Claude Code:
-
-```text
-/plugin marketplace add https://github.com/affaan-m/ECC     # skip if already added
-/plugin install ecc@ecc
-```
-
-Restart Claude Code, then check that the agents are visible: `/agents` should list `ecc:planner`, `ecc:architect`, `ecc:typescript-reviewer`, …
-
-ECC rules to keep in mind:
-
-- **Pick one install path.** If you used `/plugin install`, do **not** also run ECC's `./install.sh --profile full`. Doing both installs the same things twice.
-- **Don't copy ECC's hooks into `settings.json`.** The plugin already loads them. Copying them makes them run twice.
-- **Rules are not part of the plugin.** If you want ECC's rules, copy whole directories by hand: `rules/common` plus the one language you use, into `~/.claude/rules/`. Rules are loaded into every session, so keep this small.
-- **ECC has 286 skills.** They only load when relevant, but their descriptions still use context. If sessions feel crowded, use ECC's selective install instead of the full plugin (e.g. `./install.sh --target claude --skills tdd-workflow,security-review`; see ECC's README).
-
-## 2. Install this kit
+## 1. One command: `scripts/init.sh`
 
 ```bash
-cd __new_plan
-scripts/install.sh --user --dry-run           # look first
-scripts/install.sh --user                     # every project on this machine
-# or
-scripts/install.sh --project /path/to/repo    # one repo; commit .claude/ to share with the team
+git clone https://github.com/cantasci/skills-shop && cd skills-shop
+scripts/init.sh --repo /path/to/your/repo                        # ECC + the kit (~/.claude) + .deliver.json + doctor
+scripts/init.sh --repo /path/to/repo --munder --hive ~/md-hive   # … and Munder Difflin from source (see 07)
 ```
 
-What it does:
+| Flag | Effect |
+| --- | --- |
+| *(none)* | checks tools · installs the ECC plugin (`ecc@ecc`) if missing · installs the kit at user level · runs doctor |
+| `--repo <path>` | also writes a starter `.deliver.json` for that repo (if it has none): `verify_full` guessed from the stack, `merge_mode` `human` (or `local` without an `origin`) |
+| `--project <repo>` | installs the kit into `<repo>/.claude` instead of `~/.claude` (commit it to share it with the team) |
+| `--munder --hive <dir>` | clones, installs, builds and configures Munder Difflin, registers the repo, teaches Michael `/deliver` |
+| `--munder-dir <dir>` | where the Munder Difflin checkout lives (default `~/.local/share/munder-difflin`) |
+| `--skip-onboarding` | marks Munder Difflin's first-run wizard as done (CI / headless) |
+| `--no-ecc` | leave the ECC plugin alone |
 
-- Copies `kit/agents/*.md` into `<target>/agents/`.
-- Copies `kit/skills/deliver/` into `<target>/skills/deliver/`.
-- Copies `kit/hooks/deliver/` into `<target>/hooks/deliver/`.
-- Adds the three hooks to `<target>/settings.json`. It backs the file up first and never adds a duplicate.
-- Running it again is safe: unchanged files are skipped and changed ones are backed up.
+It is idempotent: every step checks first. `bash -x scripts/init.sh …` shows every command.
 
-## 3. Put `dl` on your PATH (for you, not for Michael)
+### What it installs
+
+`scripts/install.sh` (called by init; usable on its own: `--user`, `--project <repo>`, `--dry-run`, `--uninstall`,
+`--keep-attribution`, `--plugin` — see the plugin section below):
+
+- `kit/agents/*.md` → `<target>/agents/` (business-analyst, qa-tester, backend-dev, frontend-dev, mobile-dev, database-dev)
+- `kit/skills/deliver/` → `<target>/skills/deliver/` (SKILL.md, roles.yaml, readiness.yaml, config.json, templates, `bin/dl` …)
+- `kit/hooks/deliver/` → `<target>/hooks/deliver/`
+- merges `kit/settings.hooks.json` into `<target>/settings.json`: the five hooks, `env.GATEGUARD_EXEMPT_GLOBS` (so ECC's
+  GateGuard lets Michael write `.work/` files), and `attribution: {commit: "", pr: ""}` so no Co-Authored-By / "Generated with"
+  lines are added to commits and PRs. Backup first (in `<target>/.deliver-backups/`), no duplicates, foreign hooks kept.
+
+ECC notes:
+
+- **One install path.** With the plugin installed, don't also run ECC's `./install.sh --profile full`.
+- **Don't copy ECC's hooks into `settings.json`** — the plugin loads them.
+- ECC has hundreds of skills; they load on demand. The role cards name the few each role should load.
+
+### Or: install the kit as a Claude Code plugin
+
+The repo is also a plugin marketplace (`.claude-plugin/marketplace.json` → `kit/`, plugin `deliver`). Inside Claude Code:
+
+```text
+/plugin marketplace add https://github.com/cantasci/skills-shop
+/plugin install deliver@skills-shop
+```
+
+then, once, in a terminal: `scripts/install.sh --user --plugin`. A plugin cannot set `env` or `attribution`, so this merges
+only those two into `~/.claude/settings.json` — it copies no files and adds no hooks (the plugin brings the skill, the six
+agents and `kit/hooks/hooks.json`).
+
+What changes with the plugin:
+
+- The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin (the kit carries
+  its manifest and Claude Code lists the plugin as installed — whether it loads it from its cache or, for a marketplace
+  added from a local folder, from the folder itself) and writes those names into ROLES.md, the role cards and floor workers' `claude --agent`.
+  `job.json` and `board.json` keep the plain names. Developing with `claude --plugin-dir kit`? Set `DELIVER_AGENT_NS=deliver`.
+- `/deliver` still works; `/deliver:deliver` is the fully qualified name.
+- `dl` lives in the plugin cache: `ls ~/.claude/plugins/cache/skills-shop/deliver/*/skills/deliver/bin/dl`.
+- **One install path.** Don't also copy the kit with `scripts/install.sh --user` — the skill and the hooks would load twice.
+  `scripts/doctor.sh` reports it.
+
+`kit/hooks/hooks.json` is generated from `kit/settings.hooks.json` (the one source of truth); after changing the hooks:
+
+```bash
+jq '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver")))}' \
+  kit/settings.hooks.json > kit/hooks/hooks.json
+```
+
+`tests/run.sh` fails while the two disagree.
+
+## 2. `dl` on your PATH (for you; Michael uses the absolute path)
 
 ```bash
 echo 'alias dl="$HOME/.claude/skills/deliver/bin/dl"' >> ~/.zshrc && source ~/.zshrc
 dl help
 ```
 
-With `--project`, point the alias at `<repo>/.claude/skills/deliver/bin/dl` instead.
-
-## 4. Configure each repo (`.deliver.json`)
-
-Create `.deliver.json` at the root of every repo you'll run jobs in. It overrides the kit defaults (see [03-settings](03-settings.md)):
-
-```json
-{
-  "verify_full": "npm run typecheck && npm test",
-  "worktree_setup": "ln -s \"$ROOT/node_modules\" node_modules",
-  "merge_strategy": "pr"
-}
-```
-
-`worktree_setup` matters. A fresh worktree has no `node_modules`, Gradle cache or `.env`, so without it every `verify` fails. Pick a setup command that matches the repo:
-
-| Repo | `worktree_setup` |
-| --- | --- |
-| npm, deps rarely change | `ln -s "$ROOT/node_modules" node_modules` |
-| npm, cards add deps | `npm ci --prefer-offline` |
-| pnpm | `pnpm install --frozen-lockfile --prefer-offline` |
-| needs `.env` | `cp "$ROOT/.env" .env && …` |
-| Gradle | `""` (the Gradle cache is global) |
-| Python | `ln -s "$ROOT/.venv" .venv` |
-
-## 5. Fewer permission prompts (recommended)
-
-Dev agents run tests and git all the time. Add an allowlist to the repo's `.claude/settings.json`, adjusted to your commands:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git *)",
-      "Bash(npm test *)",
-      "Bash(npm run *)",
-      "Bash(npx *)",
-      "Bash(*/.claude/skills/deliver/bin/dl *)",
-      "Bash(node */.claude/skills/deliver/bin/validate.mjs *)"
-    ]
-  }
-}
-```
-
-`bash-guard` still blocks pushes to main, force pushes and deleting `.work/`, whatever the allowlist says.
-
-## 6. Check
+## 3. Check
 
 ```bash
 scripts/doctor.sh /path/to/repo
 ```
 
-Everything should be ✔. Warnings about optional tools are fine.
+Everything should be ✔. Warnings about optional tools (gh, Munder Difflin, tracker) are fine.
 
-## 7. First run: a small job
+## 4. Taking a normal project into the flow
 
-Pick something tiny to learn the flow, e.g.:
+Do this once per repository. It is the difference between a flow that works and one that fails every gate.
 
-```text
-/deliver Add a /health endpoint that returns {"status":"ok"} with a test
+### 4.1 `.deliver.json` — how this repo is verified and delivered
+
+```json
+{
+  "verify_full": "npm run typecheck && npm run lint && npm test",
+  "worktree_setup": "npm ci --prefer-offline",
+  "merge_mode": "human",
+  "max_parallel": 3,
+  "tracker": { "kind": "local" }
+}
 ```
 
-Watch for these:
+- **`verify_full`** — the whole suite, run on the job branch after every card merged. Make it what your CI runs.
+- **`worktree_setup`** — a fresh worktree has no dependencies or `.env`; without this, every `verify` fails:
 
-1. **Gate 1** shows you the roles, the plan and the board. Read the cards: are the `scope` and `verify` of each one right? That is where most later trouble starts.
-2. During execution, `dl status` (from another terminal) shows the board, and `tail -f .work/*/events.log` shows the timeline.
-3. **Gate 2** shows the diff stat. Approve, and you get a PR from `job/<id>`.
+| Repo | `worktree_setup` |
+| --- | --- |
+| npm, deps rarely change | `ln -s "$ROOT/node_modules" node_modules` |
+| npm/pnpm, cards add deps | `npm ci --prefer-offline` · `pnpm install --frozen-lockfile --prefer-offline` |
+| needs `.env` | `cp "$ROOT/.env" .env && …` |
+| Gradle / Maven (Spring Boot) | `""` (caches are global) — or `./gradlew --offline dependencies -q` |
+| Go | `""` (module cache is global) |
+| Python | `ln -s "$ROOT/.venv" .venv` |
 
-## 8. (Optional) Munder Difflin
+  Symlinked paths are listed in `worktree_exclude` (default: `node_modules`, `.venv`, `.env`) so they never show up as
+  uncommitted files.
+- **`merge_mode`** — `human` (PR, you merge), `semi` (PR + auto-merge on your approval), `auto` (merge on green CI),
+  `local` (no remote: merge into the base branch). See [03](03-settings.md#merge-modes).
+- Everything else: [03-settings](03-settings.md).
 
-If you want Michael on the office floor, see [05-run-modes](05-run-modes.md#2-michael-in-munder-difflin). The kit doesn't change; only where the session runs does.
+### 4.2 Company and project standards — what every role must follow
+
+```text
+~/.deliver/knowledge/*.md            company standards (or DELIVER_KNOWLEDGE=<a cloned standards repo>)
+<repo>/.deliver/knowledge/*.md       this project's standards (commit them)
+```
+
+Each file has a `## Must` list that is copied into every matching role card (`applies_to: [dev, review, backend]`,
+`stack: [java]`). Details and examples: [08-knowledge](08-knowledge.md). `dl knowledge list` shows what each role gets.
+
+### 4.3 Multi-component repos (microservices, BFF + core, mobile + backend)
+
+You don't configure the architecture up front: the readiness review asks for it and freezes it. What helps is a requirements
+document that says it — e.g. "4 Spring Boot services + 1 Go service, PostgreSQL owned by the DBA team, React web, Kotlin
+Android". The BA records each component with its path, stack and owner; Michael adds the right dev and reviewer roles
+(`reviewer-java`, `reviewer-go`, `database`) and the cards stay inside their component's path. See
+[04-roles](04-roles.md#mixed-stacks-one-role-card-per-component-stack).
+
+### 4.4 Requirements
+
+A sentence works for small jobs. For real work, write a requirements `.md`: goal, users/roles, requirement ids (`REQ-…`) with
+examples, out of scope, non-functional targets (accessibility, performance, security), and clarifications you already know.
+[`examples/watchlist-poc/JOB.md`](../examples/watchlist-poc/JOB.md) is a small, complete one. Anything missing becomes a
+question at readiness — Michael does not guess.
+
+### 4.5 Permissions
+
+Auto mode (`Shift+Tab` → auto) is the easiest. Without it, allow the repo's commands in `.claude/settings.json`:
+
+```json
+{ "permissions": { "allow": ["Bash(git *)", "Bash(npm *)", "Bash(npx *)", "Bash(node *)", "Bash(*/.claude/skills/deliver/bin/dl *)"] } }
+```
+
+The guards still block pushes to main, force pushes, and writes outside a card's worktree, whatever the allowlist says.
+
+### 4.6 Tracker (optional)
+
+The local kanban is on by default (`dl kanban`, `.work/<job>/kanban.html`). For Jira, set the credentials in the environment
+and `"tracker": {"kind": "jira", "jira": {"project": "WL"}}` — [10-trackers](10-trackers.md).
+
+## 5. First run
+
+Try it on the sandbox first — nothing of yours is touched:
+
+```bash
+scripts/sandbox.sh /tmp/wl watchlist-poc && cd /tmp/wl && claude
+```
+
+```text
+/deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md
+```
+
+Then on your repo, something small: `/deliver Add a /health endpoint that returns {"status":"ok"}`.
+
+Watch:
+
+1. **Readiness** — the BA's answers (`.work/<job>/readiness.md`). If something business-related is open, Michael asks you,
+   once, all questions together.
+2. **The board** — `dl status` / `dl kanban` in a second terminal, `tail -f .work/*/events.log` for the timeline.
+3. **The PR** — `report.md` is its body: every acceptance criterion with its evidence.

@@ -1,0 +1,178 @@
+TAP version 13
+# Subtest: AC-1: RATING_SCALE is exported as immutable array of 19 ratings in order
+ok 1 - AC-1: RATING_SCALE is exported as immutable array of 19 ratings in order
+  ---
+  duration_ms: 6.286444
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange returns index difference for valid ratings
+ok 2 - AC-2: notchChange returns index difference for valid ratings
+  ---
+  duration_ms: 0.74611
+  type: 'test'
+  ...
+# Subtest: AC-3: Downgrade (worse rating) returns positive integer
+ok 3 - AC-3: Downgrade (worse rating) returns positive integer
+  ---
+  duration_ms: 0.625101
+  type: 'test'
+  ...
+# Subtest: AC-4: Upgrade (better rating) returns negative integer
+ok 4 - AC-4: Upgrade (better rating) returns negative integer
+  ---
+  duration_ms: 0.34376
+  type: 'test'
+  ...
+# Subtest: AC-5: Same rating returns exactly 0
+ok 5 - AC-5: Same rating returns exactly 0
+  ---
+  duration_ms: 0.578766
+  type: 'test'
+  ...
+# Subtest: AC-6: Leading and trailing whitespace is trimmed
+ok 6 - AC-6: Leading and trailing whitespace is trimmed
+  ---
+  duration_ms: 0.313937
+  type: 'test'
+  ...
+# Subtest: AC-7: Case-insensitive input normalization
+ok 7 - AC-7: Case-insensitive input normalization
+  ---
+  duration_ms: 0.544825
+  type: 'test'
+  ...
+# Subtest: AC-8: Unknown rating throws RangeError
+ok 8 - AC-8: Unknown rating throws RangeError
+  ---
+  duration_ms: 0.912474
+  type: 'test'
+  ...
+# Subtest: AC-9: Empty string (before or after trim) throws RangeError
+ok 9 - AC-9: Empty string (before or after trim) throws RangeError
+  ---
+  duration_ms: 0.944289
+  type: 'test'
+  ...
+# Subtest: AC-10: Non-string primitives throw RangeError
+ok 10 - AC-10: Non-string primitives throw RangeError
+  ---
+  duration_ms: 1.143635
+  type: 'test'
+  ...
+# Subtest: AC-11: String objects (not primitive strings) throw RangeError
+ok 11 - AC-11: String objects (not primitive strings) throw RangeError
+  ---
+  duration_ms: 0.489875
+  type: 'test'
+  ...
+# Subtest: Edge case: Maximum downgrade (AAA to CCC-)
+ok 12 - Edge case: Maximum downgrade (AAA to CCC-)
+  ---
+  duration_ms: 0.171625
+  type: 'test'
+  ...
+# Subtest: Edge case: Maximum upgrade (CCC- to AAA)
+ok 13 - Edge case: Maximum upgrade (CCC- to AAA)
+  ---
+  duration_ms: 0.150788
+  type: 'test'
+  ...
+# Subtest: Edge case: Adjacent downgrade (AAA to AA+)
+ok 14 - Edge case: Adjacent downgrade (AAA to AA+)
+  ---
+  duration_ms: 0.142658
+  type: 'test'
+  ...
+# Subtest: Edge case: Adjacent upgrade (AA+ to AAA)
+ok 15 - Edge case: Adjacent upgrade (AA+ to AAA)
+  ---
+  duration_ms: 0.193016
+  type: 'test'
+  ...
+# Subtest: Edge case: Last two ratings
+ok 16 - Edge case: Last two ratings
+  ---
+  duration_ms: 0.158447
+  type: 'test'
+  ...
+# Subtest: Comprehensive test data: All spec examples
+ok 17 - Comprehensive test data: All spec examples
+  ---
+  duration_ms: 0.298163
+  type: 'test'
+  ...
+# Subtest: Comprehensive error cases from spec
+ok 18 - Comprehensive error cases from spec
+  ---
+  duration_ms: 0.686567
+  type: 'test'
+  ...
+# Subtest: AC-1 RATING_SCALE has 19 unique ratings in order
+ok 19 - AC-1 RATING_SCALE has 19 unique ratings in order
+  ---
+  duration_ms: 1.834388
+  type: 'test'
+  ...
+# Subtest: AC-2/3 downgrade is positive
+ok 20 - AC-2/3 downgrade is positive
+  ---
+  duration_ms: 0.473418
+  type: 'test'
+  ...
+# Subtest: AC-4 upgrade is negative
+ok 21 - AC-4 upgrade is negative
+  ---
+  duration_ms: 0.210963
+  type: 'test'
+  ...
+# Subtest: AC-5 same rating is 0
+ok 22 - AC-5 same rating is 0
+  ---
+  duration_ms: 0.229897
+  type: 'test'
+  ...
+# Subtest: AC-6 trims whitespace
+ok 23 - AC-6 trims whitespace
+  ---
+  duration_ms: 0.344702
+  type: 'test'
+  ...
+# Subtest: AC-7 case-insensitive
+ok 24 - AC-7 case-insensitive
+  ---
+  duration_ms: 0.149263
+  type: 'test'
+  ...
+# Subtest: AC-8 unknown rating throws RangeError (either arg)
+ok 25 - AC-8 unknown rating throws RangeError (either arg)
+  ---
+  duration_ms: 0.79832
+  type: 'test'
+  ...
+# Subtest: AC-9 empty/blank string throws RangeError
+ok 26 - AC-9 empty/blank string throws RangeError
+  ---
+  duration_ms: 0.231779
+  type: 'test'
+  ...
+# Subtest: AC-10 non-string primitives throw RangeError
+ok 27 - AC-10 non-string primitives throw RangeError
+  ---
+  duration_ms: 0.575883
+  type: 'test'
+  ...
+# Subtest: AC-11 String objects throw RangeError
+ok 28 - AC-11 String objects throw RangeError
+  ---
+  duration_ms: 0.493643
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 286.698867

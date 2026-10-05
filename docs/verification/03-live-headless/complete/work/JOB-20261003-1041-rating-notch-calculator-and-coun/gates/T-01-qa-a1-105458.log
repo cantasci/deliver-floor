@@ -1,0 +1,137 @@
+# qa_verify: node --test test/integration/notch*.test.mjs
+TAP version 13
+# Subtest: AC-2: RATING_SCALE is frozen; push, index assignment and sort each throw TypeError
+ok 1 - AC-2: RATING_SCALE is frozen; push, index assignment and sort each throw TypeError
+  ---
+  duration_ms: 1.65867
+  type: 'test'
+  ...
+# Subtest: AC-2: after mutation attempts the scale is unchanged and notchChange still works
+ok 2 - AC-2: after mutation attempts the scale is unchanged and notchChange still works
+  ---
+  duration_ms: 1.539837
+  type: 'test'
+  ...
+# Subtest: AC-1: scale content and order (19 ratings, best first)
+ok 3 - AC-1: scale content and order (19 ratings, best first)
+  ---
+  duration_ms: 8.541429
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange over all 361 pairs equals j - i, integer
+ok 4 - AC-3: notchChange over all 361 pairs equals j - i, integer
+  ---
+  duration_ms: 0.690055
+  type: 'test'
+  ...
+# Subtest: AC-3: unchanged rating returns +0 (not -0) for all 19 ratings
+ok 5 - AC-3: unchanged rating returns +0 (not -0) for all 19 ratings
+  ---
+  duration_ms: 0.206579
+  type: 'test'
+  ...
+# Subtest: AC-3: boundary table N1-N11
+ok 6 - AC-3: boundary table N1-N11
+  ---
+  duration_ms: 0.276194
+  type: 'test'
+  ...
+# Subtest: AC-4: trim and case-insensitivity on both arguments (T1-T4)
+ok 7 - AC-4: trim and case-insensitivity on both arguments (T1-T4)
+  ---
+  duration_ms: 0.231107
+  type: 'test'
+  ...
+# Subtest: AC-4: every rating, lowercase vs padded, in either position, gives +0
+ok 8 - AC-4: every rating, lowercase vs padded, in either position, gives +0
+  ---
+  duration_ms: 0.160448
+  type: 'test'
+  ...
+# Subtest: AC-5: invalid list has 23 values
+ok 9 - AC-5: invalid list has 23 values
+  ---
+  duration_ms: 0.203495
+  type: 'test'
+  ...
+# Subtest: AC-5: notchChange throws RangeError for every invalid value in each position (69 calls)
+ok 10 - AC-5: notchChange throws RangeError for every invalid value in each position (69 calls)
+  ---
+  duration_ms: 3.118619
+  type: 'test'
+  ...
+# Subtest: AC-5: notchChange with missing arguments throws RangeError
+ok 11 - AC-5: notchChange with missing arguments throws RangeError
+  ---
+  duration_ms: 0.364093
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator throws RangeError for every invalid value in each position (69 calls)
+ok 12 - AC-5: notchCalculator throws RangeError for every invalid value in each position (69 calls)
+  ---
+  duration_ms: 1.357214
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator with missing arguments throws RangeError
+ok 13 - AC-5: notchCalculator with missing arguments throws RangeError
+  ---
+  duration_ms: 0.153563
+  type: 'test'
+  ...
+# Subtest: AC-6: calculator shape, sign, direction over all 361 pairs, with sweep totals
+ok 14 - AC-6: calculator shape, sign, direction over all 361 pairs, with sweep totals
+  ---
+  duration_ms: 1.961851
+  type: 'test'
+  ...
+# Subtest: AC-6: example BBB -> BBB+ is a 1-notch upgrade with WL 0
+ok 15 - AC-6: example BBB -> BBB+ is a 1-notch upgrade with WL 0
+  ---
+  duration_ms: 0.246709
+  type: 'test'
+  ...
+# Subtest: AC-7: downgrade rows C1-C6 use the Indicator 13 thresholds
+ok 16 - AC-7: downgrade rows C1-C6 use the Indicator 13 thresholds
+  ---
+  duration_ms: 0.162058
+  type: 'test'
+  ...
+# Subtest: AC-7: WL over all 361 pairs is 0 for n<=1, 1 for n=2, 2 for n>=3 (totals 208/17/136)
+ok 17 - AC-7: WL over all 361 pairs is 0 for n<=1, 1 for n=2, 2 for n>=3 (totals 208/17/136)
+  ---
+  duration_ms: 0.430319
+  type: 'test'
+  ...
+# Subtest: AC-8: upgrade or no change gives WL 0 (rows C7-C11)
+ok 18 - AC-8: upgrade or no change gives WL 0 (rows C7-C11)
+  ---
+  duration_ms: 0.132724
+  type: 'test'
+  ...
+# Subtest: AC-9: corrected POC example BBB+ -> BB+ is 3 notches, WL 2
+ok 19 - AC-9: corrected POC example BBB+ -> BB+ is 3 notches, WL 2
+  ---
+  duration_ms: 0.122276
+  type: 'test'
+  ...
+# Subtest: AC-14: only the two passed ratings matter (arity, repeatability, fresh objects)
+ok 20 - AC-14: only the two passed ratings matter (arity, repeatability, fresh objects)
+  ---
+  duration_ms: 0.09386
+  type: 'test'
+  ...
+# Subtest: Contract: module exports exactly RATING_SCALE, notchCalculator, notchChange
+ok 21 - Contract: module exports exactly RATING_SCALE, notchCalculator, notchChange
+  ---
+  duration_ms: 0.077449
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 169.223052

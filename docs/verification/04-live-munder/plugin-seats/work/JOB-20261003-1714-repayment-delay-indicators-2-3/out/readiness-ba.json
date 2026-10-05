@@ -1,0 +1,51 @@
+{
+  "items": [
+    {"id":"PRD-goal","status":"decided","answer":"Deliver the WL mapping for Indicator 2 (days with delay) and Indicator 3 (delays in last 12 months) as pure functions plus exported option lists. Success = the REQ-03-02 / REQ-03-03 mappings hold for every option and every invalid input throws RangeError, checked by node --test.","source":"JOB-parallel.md: Requirements table (REQ-03-02, REQ-03-03), C1-C2, Contract"},
+    {"id":"PRD-users","status":"n_a","answer":"No user roles or permissions: library functions only, no UI. The POC screens built later consume the exports.","source":"JOB-parallel.md C4 (no UI in this slice)"},
+    {"id":"PRD-scope","status":"decided","answer":"In: src/indicators/daysWithDelay.mjs (DAYS_WITH_DELAY_OPTIONS, daysWithDelayWl) and src/indicators/delayCount.mjs (DELAY_COUNT_OPTIONS, delayCountWl), with unit tests. Out: Indicator 1 and its collapsing of Ind. 2-3 (C3), any UI/dropdown rendering (C4), counting delays in 12 months (C6), other indicators.","source":"JOB-parallel.md C3, C4, C6, Contract"},
+    {"id":"PRD-acceptance","status":"decided","answer":"Yes. Ind. 2: 'no delay'->0, '<=3 days'->0, '>3 days'->2, '>60 days'->3, '>90 days'->4. Ind. 3: '0'->0, '1'->1, '>1'->2. Invalid (unknown string, wrong case, non-string, empty) -> RangeError; surrounding whitespace is trimmed first.","source":"JOB-parallel.md requirements table, C1, C2, C5"},
+    {"id":"PRD-conflicts","status":"decided","answer":"One surface mismatch: the requirement table writes the dropdown label as '≤3 days' (unicode) while C1 fixes the exact string '<=3 days'. Resolved by C1, which is explicit and confirmed by the business unit; '≤3 days' is therefore NOT accepted and throws RangeError (C5 exact matching). Also the labels '>60 days' and '>90 days' overlap numerically with '>3 days'; each option is a single selected value, so the mapping is by option string, not by number. No other contradictions.","source":"JOB-parallel.md table REQ-03-02 vs C1, C5"},
+    {"id":"PRD-priority","status":"decided","answer":"Both requirements are Must and independent; they ship together, no ordering between them.","source":"JOB-parallel.md: 'Build only these two requirements. They are independent of each other.'"},
+    {"id":"CON-interface","status":"decided","answer":"daysWithDelayWl(option: string) -> 0|2|3|4; delayCountWl(option: string) -> 0|1|2; DAYS_WITH_DELAY_OPTIONS = ['no delay','<=3 days','>3 days','>60 days','>90 days'] (in this order); DELAY_COUNT_OPTIONS = ['0','1','>1'] (in this order). Returns plain numbers. Input trimmed (String.prototype.trim), exact case-sensitive match. Named exports in the two .mjs files.","source":"JOB-parallel.md Contract, C1, C5"},
+    {"id":"CON-errors","status":"decided","answer":"Any value not in the option list after trimming (unknown string, different case, '', whitespace-only, '≤3 days') and any non-string (null, undefined, number, object) throws RangeError. Never returns a fallback/default WL.","source":"JOB-parallel.md C1, C5"},
+    {"id":"CON-errors-msg","status":"open","question":"Is a specific RangeError message text required?","options":["Free text naming the offending value (assumed)","A fixed message agreed with the screens"],"impact":"Tests would assert only the error class (RangeError), not the message. No behaviour change either way.","owner":"pm"},
+    {"id":"CON-compat","status":"n_a","answer":"New code, empty src/ and test/; nothing existing to stay compatible with; no versioning.","source":"repo: src/ and test/ are empty (git log shows only seed commits)"},
+    {"id":"ARC-style","status":"decided","answer":"Library of pure functions in a single-component repo, under src/indicators/.","source":"CLAUDE.md ('Pure functions, no I/O in src/ratings and src/indicators'); readiness order notes"},
+    {"id":"ARC-components","status":"decided","answer":"One component: indicators library, see architecture block.","source":"readiness order notes; JOB-parallel.md Contract"},
+    {"id":"ARC-layer","status":"decided","answer":"Domain logic in a shared library; no BFF/service/client layer in this slice.","source":"JOB-parallel.md Contract, C4"},
+    {"id":"ARC-stack","status":"decided","answer":"Plain Node.js 18+ ES modules (.mjs), node:test + node:assert/strict, no npm dependencies and none may be added.","source":"CLAUDE.md; JOB-parallel.md ('Plain Node ESM, no dependencies')"},
+    {"id":"ARC-data","status":"n_a","answer":"No data stored, no schema or migrations.","source":"JOB-parallel.md Contract (pure mapping functions); CLAUDE.md (no I/O)"},
+    {"id":"ARC-integration","status":"n_a","answer":"No external systems.","source":"CLAUDE.md (no I/O in src/indicators)"},
+    {"id":"ARC-async","status":"n_a","answer":"Synchronous pure functions; no queues, ordering or idempotency concerns beyond purity.","source":"CLAUDE.md; JOB-parallel.md Contract"},
+    {"id":"NFR-performance","status":"n_a","answer":"No targets; O(1) lookup on a 3-5 element list.","source":"JOB-parallel.md (none stated)"},
+    {"id":"NFR-availability","status":"n_a","answer":"In-process pure functions; no dependencies to degrade.","source":"CLAUDE.md"},
+    {"id":"NFR-security","status":"decided","answer":"Only input validation applies: strict exact-match whitelist, RangeError otherwise, no eval or dynamic lookup by arbitrary key (guard against inherited property names such as 'constructor' or '__proto__' if a lookup object is used: these must throw RangeError).","source":"JOB-parallel.md C1, C5"},
+    {"id":"NFR-privacy","status":"n_a","answer":"Inputs are dropdown labels, no personal data; nothing is logged.","source":"JOB-parallel.md C1, C6"},
+    {"id":"NFR-audit","status":"n_a","answer":"No auditing in this slice.","source":"JOB-parallel.md (not requested)"},
+    {"id":"NFR-observability","status":"n_a","answer":"Pure functions, no logging, metrics or tracing.","source":"CLAUDE.md (no I/O)"},
+    {"id":"NFR-compliance","status":"n_a","answer":"No regulation constrains this mapping beyond the POC's WL rules, which are already captured in the requirements.","source":"JOB-parallel.md requirements table"},
+    {"id":"TST-strategy","status":"decided","answer":"Dev unit tests (TDD) in test/indicators/<name>.test.mjs per indicator via node:test + node:assert/strict; QA integration tests in test/integration/indicators/. Full verification: node --test. Cover every option, option list order, trim, case sensitivity, non-strings, empty string.","source":"CLAUDE.md (tests); role card (full verification); readiness order notes"},
+    {"id":"DEL-ci","status":"decided","answer":"`node --test` green (npm test runs the same). No lint/typecheck/security-scan tooling exists in the repo.","source":"role card (Full verification); CLAUDE.md"},
+    {"id":"DEL-deploy","status":"n_a","answer":"No deployment: modules merged to the job branch and consumed later by the POC screens; no flags or migrations.","source":"JOB-parallel.md C4"},
+    {"id":"DEL-docs","status":"n_a","answer":"No docs/changelog required by the request.","source":"JOB-parallel.md (none requested)"},
+    {"id":"X-options-immutable","status":"open","question":"Must the exported *_OPTIONS arrays be immutable (Object.freeze)?","options":["Freeze them (assumed, protects consumers)","Plain arrays"],"impact":"Only internal robustness; the required content and order are the same. Tests can assert content/order via deepEqual either way.","owner":"pm"},
+    {"id":"X-trim-whitespace","status":"decided","answer":"'Trimmed' means String.prototype.trim() (leading/trailing whitespace incl. tabs/newlines). e.g. '  >3 days ' -> 2. Internal whitespace is not altered ('>3  days' -> RangeError).","source":"JOB-parallel.md C1, C5 (trim then exact match)"},
+    {"id":"X-ind3-sequence","status":"decided","answer":"Indicator 3 option '>1' means more than one delay in 12 months -> WL 2; '1' -> WL 1; '0' -> WL 0. Counting is the caller's job.","source":"JOB-parallel.md REQ-03-03, C2, C6"},
+    {"id":"X-ind2-unlisted-wl","status":"decided","answer":"Indicator 2 only yields WL 0, 2, 3 or 4; WL 1 is never produced by this indicator (no option maps to 1). This is intended per the requirement.","source":"JOB-parallel.md REQ-03-02, Contract (0 | 2 | 3 | 4)"},
+    {"id":"X-parallel-files","status":"decided","answer":"The two devs touch disjoint files (daysWithDelay.mjs/delayCount.mjs and their tests); no shared module or index file is created, so no merge conflict is expected. An src/indicators/index.mjs barrel is not requested and must not be added.","source":"JOB-parallel.md Contract, 'independent of each other'"}
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "indicators",
+        "kind": "library",
+        "stack": ["javascript", "nodejs-esm"],
+        "path": ["src/indicators/", "test/indicators/", "test/integration/indicators/"],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Pure functions, no I/O, no dependencies. Two independent modules (daysWithDelay.mjs, delayCount.mjs), one backend dev each. Unit tests by devs, integration tests by QA."
+      }
+    ]
+  }
+}

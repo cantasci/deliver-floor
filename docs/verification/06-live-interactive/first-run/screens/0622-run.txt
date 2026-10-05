@@ -1,0 +1,50 @@
+  ⎿  Wrote 55 lines to .work/JOB-20261003-2206-notch-calculator-and-country-rat/specs/T-02.md
+       1 # T-02: Indicator 12: countryRatingChangeWl built on notchChange (REQ-03-12)
+       3 ## User story
+       4 As a POC module that scores the Watchlist (and as the analyst who enters or edits the previous and current country rating), I want Indicator 12 to map a country rating change to WL 0,
+         1 or 2, so that a sovereign downgrade raises the client's Watchlist level by its own thresholds.
+       6 ## Traces to
+       7 AC-4 (indicator part), AC-5 (indicator part), AC-10, AC-11, AC-12, AC-13, AC-14 (indicator part), AC-15. REQ-03-12. Clarifications C1, C3, C6, C7, C8. Depends on T-01 (the card context
+       8
+       9 ## What to build
+      10 - `src/indicators/countryRating.mjs`: pure, synchronous, inline JSDoc. Exports exactly `countryRatingChangeWl(previous, current)`. Only import: `import { notchChange } from "../ratings
+         `.
+     … +56 lines (ctrl+o to expand)
+
+● Now I'll set each card's acceptance lines from its spec and validate the board.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; J=$(ls -d $PWD/.work/JOB-*); node -e '
+      const f…)
+  ⎿  T-01 15
+     T-02 11
+     board valid: 2 card(s).
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" phase executing 2>&1 | tail -3; "$DL" ne…)
+  ⎿  phase: executing
+     DISPATCH T-01
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; WT=$("$DL" wt add T-01 2>&1 | tail -1); echo "…)
+  ⎿  WT=/tmp/claude-0/e2e-ia/interactive/repo/.work/JOB-20261003-2206-notch-calculator-and-country-rat/wt/T-01
+     board.json
+     handoff.md
+     … +10 lines (ctrl+o to expand)
+
+● backend-dev(Dev T-01 ratings module)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Planning is done and the job is executing. The board is validated: T-01 has 15 criteria and T-02 has 11. T-01 is assigned to the backend dev, who is working in its own worktree. T-02 stays ready
+  until T-01 merges. When the dev reports back I'll run the gate, QA and review for T-01.
+
+● Agent "Dev T-01 ratings module" finished · 1m 1s
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" gate T-01 2>&1 | tail -15)
+  ⎿  Waiting…
+
+· Photosynthesizing… (running PreToolUse hooks… 1/4 · 1s · ↓ 141 tokens · thinking)
+  ⎿  Tip: Start with small features or bug fixes, tell Claude to propose a plan, and verify its suggested edits
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · /tasks to see subagents · esc to interrupt · ← for agents                                                   ✘ Auto-update failed · Run claude doctor
+

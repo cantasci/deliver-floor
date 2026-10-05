@@ -1,0 +1,370 @@
+TAP version 13
+# Subtest: AC-1: given previous rating "BBB+" and current rating "BB+", returns 3
+ok 1 - AC-1: given previous rating "BBB+" and current rating "BB+", returns 3
+  ---
+  duration_ms: 1.351437
+  type: 'test'
+  ...
+# Subtest: AC-2: given previous rating "BB+" and current rating "BBB+", returns -3
+ok 2 - AC-2: given previous rating "BB+" and current rating "BBB+", returns -3
+  ---
+  duration_ms: 0.243394
+  type: 'test'
+  ...
+# Subtest: AC-3: given previous rating "A" and current rating "A", returns 0
+ok 3 - AC-3: given previous rating "A" and current rating "A", returns 0
+  ---
+  duration_ms: 0.137498
+  type: 'test'
+  ...
+# Subtest: AC-4: RATING_SCALE is an array of 19 ratings from AAA (index 0) to CCC- (index 18)
+ok 4 - AC-4: RATING_SCALE is an array of 19 ratings from AAA (index 0) to CCC- (index 18)
+  ---
+  duration_ms: 1.127953
+  type: 'test'
+  ...
+# Subtest: AC-5: given previous rating "  AAA  " with whitespace, trims and returns 18
+ok 5 - AC-5: given previous rating "  AAA  " with whitespace, trims and returns 18
+  ---
+  duration_ms: 0.176036
+  type: 'test'
+  ...
+# Subtest: AC-6: given previous rating "aaa" in lowercase, normalizes and returns 18
+ok 6 - AC-6: given previous rating "aaa" in lowercase, normalizes and returns 18
+  ---
+  duration_ms: 0.149001
+  type: 'test'
+  ...
+# Subtest: AC-7: given mixed-case ratings "bBb+" and "Bb+", normalizes both and returns 3
+ok 7 - AC-7: given mixed-case ratings "bBb+" and "Bb+", normalizes both and returns 3
+  ---
+  duration_ms: 0.198055
+  type: 'test'
+  ...
+# Subtest: AC-7b: given ratings with trim and case "  bbb+ " and " BB+  ", returns 3
+ok 8 - AC-7b: given ratings with trim and case "  bbb+ " and " BB+  ", returns 3
+  ---
+  duration_ms: 0.124969
+  type: 'test'
+  ...
+# Subtest: AC-8: given boundary ratings AAA to CCC-, returns 18 (maximum downgrade)
+ok 9 - AC-8: given boundary ratings AAA to CCC-, returns 18 (maximum downgrade)
+  ---
+  duration_ms: 0.352433
+  type: 'test'
+  ...
+# Subtest: AC-9: given boundary ratings CCC- to AAA, returns -18 (maximum upgrade)
+ok 10 - AC-9: given boundary ratings CCC- to AAA, returns -18 (maximum upgrade)
+  ---
+  duration_ms: 0.406408
+  type: 'test'
+  ...
+# Subtest: AC-10: given same rating for both previous and current for each of 19 ratings, returns 0
+ok 11 - AC-10: given same rating for both previous and current for each of 19 ratings, returns 0
+  ---
+  duration_ms: 0.277378
+  type: 'test'
+  ...
+# Subtest: AC-11: given previous rating as empty string "", throws RangeError
+ok 12 - AC-11: given previous rating as empty string "", throws RangeError
+  ---
+  duration_ms: 0.326503
+  type: 'test'
+  ...
+# Subtest: AC-12: given previous rating as unknown string "XYZ", throws RangeError
+ok 13 - AC-12: given previous rating as unknown string "XYZ", throws RangeError
+  ---
+  duration_ms: 0.129622
+  type: 'test'
+  ...
+# Subtest: AC-13: given previous rating as whitespace-only "   ", trims to empty and throws RangeError
+ok 14 - AC-13: given previous rating as whitespace-only "   ", trims to empty and throws RangeError
+  ---
+  duration_ms: 0.11109
+  type: 'test'
+  ...
+# Subtest: AC-14: given previous rating as non-string number 123, throws RangeError
+ok 15 - AC-14: given previous rating as non-string number 123, throws RangeError
+  ---
+  duration_ms: 0.172006
+  type: 'test'
+  ...
+# Subtest: AC-15: given previous rating as String object new String("A"), throws RangeError
+ok 16 - AC-15: given previous rating as String object new String("A"), throws RangeError
+  ---
+  duration_ms: 0.112771
+  type: 'test'
+  ...
+# Subtest: AC-16: given previous rating as null, throws RangeError
+ok 17 - AC-16: given previous rating as null, throws RangeError
+  ---
+  duration_ms: 1.899694
+  type: 'test'
+  ...
+# Subtest: AC-17: given previous rating as undefined, throws RangeError
+ok 18 - AC-17: given previous rating as undefined, throws RangeError
+  ---
+  duration_ms: 0.120818
+  type: 'test'
+  ...
+# Subtest: AC-18: given current rating as empty string "", throws RangeError
+ok 19 - AC-18: given current rating as empty string "", throws RangeError
+  ---
+  duration_ms: 0.174192
+  type: 'test'
+  ...
+# Subtest: AC-19: given current rating as unknown string "XYZ", throws RangeError
+ok 20 - AC-19: given current rating as unknown string "XYZ", throws RangeError
+  ---
+  duration_ms: 0.102727
+  type: 'test'
+  ...
+# Subtest: AC-20: given current rating as whitespace-only "   ", throws RangeError
+ok 21 - AC-20: given current rating as whitespace-only "   ", throws RangeError
+  ---
+  duration_ms: 0.089033
+  type: 'test'
+  ...
+# Subtest: AC-21: given current rating as non-string number 123, throws RangeError
+ok 22 - AC-21: given current rating as non-string number 123, throws RangeError
+  ---
+  duration_ms: 3.378034
+  type: 'test'
+  ...
+# Subtest: AC-22: given current rating as String object new String("B"), throws RangeError
+ok 23 - AC-22: given current rating as String object new String("B"), throws RangeError
+  ---
+  duration_ms: 0.158808
+  type: 'test'
+  ...
+# Subtest: AC-23: given current rating as null, throws RangeError
+ok 24 - AC-23: given current rating as null, throws RangeError
+  ---
+  duration_ms: 0.115882
+  type: 'test'
+  ...
+# Subtest: AC-24: given current rating as undefined, throws RangeError
+ok 25 - AC-24: given current rating as undefined, throws RangeError
+  ---
+  duration_ms: 0.0934
+  type: 'test'
+  ...
+# Subtest: AC-25: given all 19 previous ratings against current "A", returns correct notch distances
+ok 26 - AC-25: given all 19 previous ratings against current "A", returns correct notch distances
+  ---
+  duration_ms: 0.129285
+  type: 'test'
+  ...
+# Subtest: AC-26: given previous "A" against all 19 current ratings, returns correct notch distances
+ok 27 - AC-26: given previous "A" against all 19 current ratings, returns correct notch distances
+  ---
+  duration_ms: 0.111015
+  type: 'test'
+  ...
+# Subtest: AC-4: RATING_SCALE has 19 ratings best to worst
+ok 28 - AC-4: RATING_SCALE has 19 ratings best to worst
+  ---
+  duration_ms: 2.19432
+  type: 'test'
+  ...
+# Subtest: AC-1: downgrade is positive
+ok 29 - AC-1: downgrade is positive
+  ---
+  duration_ms: 0.399507
+  type: 'test'
+  ...
+# Subtest: AC-2: upgrade is negative
+ok 30 - AC-2: upgrade is negative
+  ---
+  duration_ms: 0.169074
+  type: 'test'
+  ...
+# Subtest: AC-3: unchanged is 0
+ok 31 - AC-3: unchanged is 0
+  ---
+  duration_ms: 0.189155
+  type: 'test'
+  ...
+# Subtest: AC-5: trims whitespace
+ok 32 - AC-5: trims whitespace
+  ---
+  duration_ms: 0.185557
+  type: 'test'
+  ...
+# Subtest: AC-6: lowercase
+ok 33 - AC-6: lowercase
+  ---
+  duration_ms: 0.265442
+  type: 'test'
+  ...
+# Subtest: AC-7: mixed case
+ok 34 - AC-7: mixed case
+  ---
+  duration_ms: 0.279659
+  type: 'test'
+  ...
+# Subtest: AC-7b: trim and case
+ok 35 - AC-7b: trim and case
+  ---
+  duration_ms: 0.149788
+  type: 'test'
+  ...
+# Subtest: AC-8: max downgrade
+ok 36 - AC-8: max downgrade
+  ---
+  duration_ms: 0.340949
+  type: 'test'
+  ...
+# Subtest: AC-9: max upgrade
+ok 37 - AC-9: max upgrade
+  ---
+  duration_ms: 0.494619
+  type: 'test'
+  ...
+# Subtest: AC-10: same rating gives 0 for all ratings
+ok 38 - AC-10: same rating gives 0 for all ratings
+  ---
+  duration_ms: 0.350399
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous empty throws RangeError
+ok 39 - AC-11..24: previous empty throws RangeError
+  ---
+  duration_ms: 0.713046
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current empty throws RangeError
+ok 40 - AC-11..24: current empty throws RangeError
+  ---
+  duration_ms: 0.164517
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous unknown throws RangeError
+ok 41 - AC-11..24: previous unknown throws RangeError
+  ---
+  duration_ms: 0.089435
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current unknown throws RangeError
+ok 42 - AC-11..24: current unknown throws RangeError
+  ---
+  duration_ms: 0.140233
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous whitespace-only throws RangeError
+ok 43 - AC-11..24: previous whitespace-only throws RangeError
+  ---
+  duration_ms: 2.190538
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current whitespace-only throws RangeError
+ok 44 - AC-11..24: current whitespace-only throws RangeError
+  ---
+  duration_ms: 0.098663
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous number throws RangeError
+ok 45 - AC-11..24: previous number throws RangeError
+  ---
+  duration_ms: 0.070029
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current number throws RangeError
+ok 46 - AC-11..24: current number throws RangeError
+  ---
+  duration_ms: 0.061063
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous String object throws RangeError
+ok 47 - AC-11..24: previous String object throws RangeError
+  ---
+  duration_ms: 0.149207
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current String object throws RangeError
+ok 48 - AC-11..24: current String object throws RangeError
+  ---
+  duration_ms: 0.074548
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous null throws RangeError
+ok 49 - AC-11..24: previous null throws RangeError
+  ---
+  duration_ms: 0.073634
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current null throws RangeError
+ok 50 - AC-11..24: current null throws RangeError
+  ---
+  duration_ms: 0.118553
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous undefined throws RangeError
+ok 51 - AC-11..24: previous undefined throws RangeError
+  ---
+  duration_ms: 0.0704
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current undefined throws RangeError
+ok 52 - AC-11..24: current undefined throws RangeError
+  ---
+  duration_ms: 0.062652
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous boolean throws RangeError
+ok 53 - AC-11..24: previous boolean throws RangeError
+  ---
+  duration_ms: 0.144823
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current boolean throws RangeError
+ok 54 - AC-11..24: current boolean throws RangeError
+  ---
+  duration_ms: 0.079292
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous tab/newline throws RangeError
+ok 55 - AC-11..24: previous tab/newline throws RangeError
+  ---
+  duration_ms: 0.068396
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current tab/newline throws RangeError
+ok 56 - AC-11..24: current tab/newline throws RangeError
+  ---
+  duration_ms: 0.064985
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous B++ throws RangeError
+ok 57 - AC-11..24: previous B++ throws RangeError
+  ---
+  duration_ms: 0.065233
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current B++ throws RangeError
+ok 58 - AC-11..24: current B++ throws RangeError
+  ---
+  duration_ms: 0.060651
+  type: 'test'
+  ...
+# Subtest: AC-25: all previous vs "A"
+ok 59 - AC-25: all previous vs "A"
+  ---
+  duration_ms: 0.192058
+  type: 'test'
+  ...
+# Subtest: AC-26: "A" vs all current
+ok 60 - AC-26: "A" vs all current
+  ---
+  duration_ms: 0.141584
+  type: 'test'
+  ...
+1..60
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 189.161966

@@ -1,0 +1,55 @@
+2026-10-04T12:55:32Z	new	Rating notch calculator and country indicator
+2026-10-04T12:55:35Z	jobset	stack: .stack=["javascript"]
+2026-10-04T12:55:41Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: domain logic cards"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02: notchCalculator; REQ-03-12: countryRatingChangeWl"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer for the ESM modules"}]
+2026-10-04T12:55:42Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T12:55:42Z	phase	readiness
+2026-10-04T12:59:38Z	agent	business-analyst aa267ee3: {"items":[ {"id":"PRD-goal","status":"decided","answer":"Give the Watchlist POC two pure, importable domain functions: (1) a notch calculator that turns an anal
+2026-10-04T13:00:12Z	readiness	31 items: 19 decided, 8 n/a, 4 open
+2026-10-04T13:00:12Z	decide	X-scale-immutability: Frozen array (Object.freeze) — Prevents importers from corrupting the scale notchChange relies on; no contract change
+2026-10-04T13:00:12Z	decide	X-error-message: Message names the argument and offending value; tests assert RangeError type only — Better diagnosability, not part of the contract
+2026-10-04T13:00:12Z	decide	X-coverage: No numeric target; every AC and edge case has a test — POC; request sets no coverage number
+2026-10-04T13:00:13Z	readiness	31 items: 22 decided, 8 n/a, 1 open
+2026-10-04T13:00:15Z	phase	awaiting_clarification
+2026-10-04T13:00:22Z	clarify	X-trim: Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.
+2026-10-04T13:00:40Z	freeze	readiness + architecture frozen (776d1cc33f8c)
+2026-10-04T13:00:40Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T13:00:40Z	phase	planning
+2026-10-04T13:02:10Z	agent	business-analyst ac0db399: # Plan ## Goal Deliver two pure, synchronous ES modules for the Watchlist POC that other parts can import exactly as the contract names them: - **REQ-06-02, the
+2026-10-04T13:03:22Z	agent	ecc:architect a2d07800: [{"tmp_id":"B1","title":"Notch calculator module: RATING_SCALE, notchChange, notchCalculator (REQ-06-02)","role":"backend","component":"watchlist-ratings","cont
+2026-10-04T13:05:18Z	agent	business-analyst a316fcf8: === T-01 === # T-01: Notch calculator module: RATING_SCALE, notchChange, notchCalculator (REQ-06-02) ## User story As a developer building other Watchlist POC p
+2026-10-04T13:06:05Z	phase	executing
+2026-10-04T13:06:09Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T13:07:50Z	agent	backend-dev ab28e2f8: status: done (code and tests committed; push to origin blocked) commit: 8b71c33 verify: passed. `node --test test/ratings/` gives 27 of 27 passing on Node 20 (`
+2026-10-04T13:07:54Z	gate	T-01 FAIL
+2026-10-04T13:08:08Z	state	T-01=blocked
+2026-10-04T13:08:08Z	note	T-01: gate failed only because verify 'node --test test/ratings/' (directory form) errors MODULE_NOT_FOUND on Node 22; dev's 27 tests pass on Node 20 and by file/glob form
+2026-10-04T13:08:39Z	card-add	T-03: T-01 blocked by a defective verify string (directory form fails on Node 22); replacement has file-form verify and reuses T-01's commit
+2026-10-04T13:08:39Z	state	T-01=archived
+2026-10-04T13:08:39Z	pm-decision	T-01: T-01 is not delivered (archived) — replaced by T-03: verify command fixed; T-01's work is reused
+2026-10-04T13:08:40Z	card-set	T-02.depends_on = ["T-03"] — T-01 replaced by T-03
+2026-10-04T13:08:40Z	card-set	T-02.verify = "node --test test/indicators/countryRating.test.mjs" — directory-form verify fails on Node 22
+2026-10-04T13:08:40Z	card-set	T-02.qa_verify = "node --test test/integration/indicators/*.test.mjs" — directory-form verify fails on Node 22
+2026-10-04T13:08:41Z	pm-decision	T-01: Replace T-01 with T-03 and use file-form verify commands — directory-form 'node --test dir/' fails on Node 22 (MODULE_NOT_FOUND); max_attempts=1 leaves no retry; T-01's work is reused via cherry-pick
+2026-10-04T13:08:44Z	assign	T-03 → backend-dev (backend#1) attempt=1
+2026-10-04T13:09:32Z	agent	backend-dev af219e29: status: done commit: f030d1b verify: passed (`node --test test/ratings/notch.test.mjs`, 27 of 27 tests pass) open issues: - The commit message still says "T-01:
+2026-10-04T13:09:35Z	gate	T-03 PASS
+2026-10-04T13:10:27Z	agent	qa-tester a24523de: ```json {"verdict":"pass", "tests":["test/integration/ratings/notch.int.test.mjs"], "criteria":[ {"ac":"AC-1","status":"pass","evidence":"AC-1: RATING_SCALE dee
+2026-10-04T13:10:31Z	qa	T-03 pass (qa_verify PASS) — AC-1..AC-9, AC-13 pass: 23/23 integration tests
+2026-10-04T13:10:49Z	agent	ecc:typescript-reviewer afd2e5bf: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs meets AC-1 to AC-9 and AC-13 (notch part). The scale is frozen. The `typeof` check comes befor
+2026-10-04T13:10:51Z	review	T-03 reviewer approve — approve; nits only
+2026-10-04T13:10:52Z	integrate	T-03 merged
+2026-10-04T13:10:55Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-04T13:11:42Z	agent	backend-dev ac49cbca: status: done commit: 2787428 verify: passed (`node --test test/indicators/countryRating.test.mjs` ran 49 tests, 49 passed; the full `node --test` run ran 99, 99
+2026-10-04T13:11:45Z	gate	T-02 PASS
+2026-10-04T13:12:59Z	agent	qa-tester a5bef747: All 14 criteria pass. The `qa_verify` command exits 0 with 66 of 66 tests passing. I did not push, as instructed. The full `node --test` in the T-02 worktree al
+2026-10-04T13:13:03Z	qa	T-02 pass (qa_verify PASS) — AC-3, AC-4, AC-10..AC-14 pass: 66/66 integration tests, full suite 165/165
+2026-10-04T13:13:19Z	agent	ecc:typescript-reviewer a1ddb0c9: {"verdict":"approve","blocking":[],"nits":["test/indicators/countryRating.test.mjs line 15 repeats the line 14 assertion (' aa','a- ').","test/indicators/countr
+2026-10-04T13:13:22Z	review	T-02 reviewer approve — approve; nits only
+2026-10-04T13:13:23Z	integrate	T-02 merged
+2026-10-04T13:13:26Z	phase	integrating
+2026-10-04T13:13:27Z	verify-all	PASS
+2026-10-04T13:13:30Z	phase	closing
+2026-10-04T13:14:31Z	agent	business-analyst ab693b0d: I checked all 14 ACs: **every one is met**. Verify-all passed 165/165, and when I re-ran `node --test` in the integration worktree on Node v22.22.0 I got the sa
+2026-10-04T13:14:39Z	learn	all: Verify/qa_verify commands must use the file or glob form (node --test test/x/*.test.mjs); the directory form 'node --test test/x/' fails with MODULE_NOT_FOUND on Node 22.
+2026-10-04T13:14:40Z	ship	local merge into main
+2026-10-04T13:14:42Z	cleanup	

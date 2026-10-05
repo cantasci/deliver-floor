@@ -1,0 +1,585 @@
+{
+  "cards": [
+    {
+      "title": "Indicator 2: days with delay options and WL mapping (REQ-03-02)",
+      "role": "backend",
+      "component": "indicators-lib",
+      "context": "Why: Watchlist (WL, 0-4, higher is worse) mapping for Indicator 2 'days with delay' as a pure function plus an exported dropdown option list. Repo is plain Node 18+ ESM (.mjs), no dependencies, no I/O in src/indicators (CLAUDE.md); do NOT edit package.json or any file outside scope; src/ and test/ are currently empty so create dirs. Create src/indicators/daysWithDelay.mjs exporting (1) `export const DAYS_WITH_DELAY_OPTIONS = Object.freeze([\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"])` (this order, ASCII '<='; not the Unicode '≤'); (2) `export function daysWithDelayWl(option)` returning 0|2|3|4: 'no delay'->0, '<=3 days'->0, '>3 days'->2, '>60 days'->3, '>90 days'->4. Behaviour: if typeof option !== 'string' throw RangeError; otherwise String.prototype.trim() it (leading/trailing whitespace only, inner whitespace NOT normalised), then exact case-sensitive lookup (use a constant Map/frozen object lookup, avoid prototype keys like 'constructor'/'__proto__' resolving); anything not found throws RangeError. RangeError message must include the offending value (JSON.stringify/String) and the allowed list; tests assert only `instanceof RangeError`, not text. Options are discrete labels, no range arithmetic. Write tests FIRST (TDD) in test/indicators/daysWithDelay.test.mjs using node:test + node:assert/strict. Cover: option list deep-equals expected and Object.isFrozen; every option->WL; trimmed variants ('  >60 days '->3, '\\t>90 days\\n'->4, ' no delay'->0); RangeError for '>3 Days','NO DELAY','≤3 days','>3  days','> 3 days','>30 days','foo','','   ',null,undefined,3,{},['no delay']; purity (repeat calls same value, options array unchanged). Follow comment density/naming of surrounding code. Commit without any AI attribution lines.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/daysWithDelay.mjs",
+        "test/indicators/daysWithDelay.test.mjs"
+      ],
+      "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+      "qa_scope": [
+        "test/indicators/integration/daysWithDelay.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/indicators/integration/daysWithDelay.integration.test.mjs",
+      "acceptance": [
+        "(AC-1) Given `src/indicators/daysWithDelay.mjs`, when `DAYS_WITH_DELAY_OPTIONS` is imported, then it deep-equals `[\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"]` in this order (ASCII `<=`) and `Object.isFrozen(DAYS_WITH_DELAY_OPTIONS)` is `true`.",
+        "(AC-2) Given a valid option, when `daysWithDelayWl(option)` is called, then `\"no delay\"`→0, `\"<=3 days\"`→0, `\">3 days\"`→2, `\">60 days\"`→3, `\">90 days\"`→4.",
+        "(AC-3) Given an option with surrounding whitespace, when called, then it is trimmed first: `\"  >60 days \"`→3, `\"\\t>90 days\\n\"`→4, `\" no delay\"`→0.",
+        "(AC-4) Given invalid input, when called, then it throws an `instanceof RangeError` for `\">3 Days\"`, `\"NO DELAY\"`, `\"≤3 days\"`, `\">3  days\"`, `\"> 3 days\"`, `\">30 days\"`, `\"foo\"`, `\"\"`, `\"   \"`, `null`, `undefined`, `3`, `{}`, `[\"no delay\"]`. The message contains the offending value and the allowed list; tests do not pin the text.",
+        "(AC-9) Given every entry of `DAYS_WITH_DELAY_OPTIONS`, when passed to `daysWithDelayWl`, then none throws, each result is in {0,2,3,4}, a second call returns the same value, and the options array is unchanged afterwards.",
+        "(AC-10) Given the card is done, when `node --test test/indicators/daysWithDelay.test.mjs` runs, then it exits 0; only `src/indicators/daysWithDelay.mjs` and `test/indicators/daysWithDelay.test.mjs` are added and `package.json` is untouched."
+      ],
+      "id": "T-01",
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 2,
+      "notes": [],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T15:09:47Z"
+        },
+        {
+          "attempt": 2,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T15:14:19Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/T-01",
+      "branch": "job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-01",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261003-1505-backend-1-h1",
+          "at": "2026-10-03T15:10:00Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261003-1505-qa-1-h1",
+          "at": "2026-10-03T15:12:00Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261003-1505-reviewer-1-h1",
+          "at": "2026-10-03T15:13:08Z"
+        },
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261003-1505-backend-1-h1",
+          "at": "2026-10-03T15:14:30Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261003-1505-qa-1-h1",
+          "at": "2026-10-03T15:24:33Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261003-1505-reviewer-1-h1",
+          "at": "2026-10-03T15:25:18Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "5507a6d19a87b00c6282c08d6d2ee7ae144c21ed",
+        "attempt": 2,
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-01-a2-151457.log",
+        "at": "2026-10-03T15:14:58Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T15:11:21.199Z",
+          "author": "gate",
+          "text": "PASS — 12 checks ok, 0 failed (T-01-a1-151120.log)"
+        },
+        {
+          "at": "2026-10-03T15:12:46.461Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass (incl. constructor/__proto__/toString); AC-9 pass; AC-10 pass — 6/6 integration tests"
+        },
+        {
+          "at": "2026-10-03T15:14:16.829Z",
+          "author": "reviewer",
+          "text": "changes — C5: JSON.stringify in error msg → TypeError for BigInt/circular; must be RangeError"
+        },
+        {
+          "at": "2026-10-03T15:14:58.879Z",
+          "author": "gate",
+          "text": "PASS — 20 checks ok, 0 failed (T-01-a2-151457.log)"
+        },
+        {
+          "at": "2026-10-03T15:25:17.268Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): Round 2: AC-1..4 pass (incl. C5 BigInt/Symbol/circular → RangeError), AC-9, AC-10 pass — 7/7"
+        },
+        {
+          "at": "2026-10-03T15:25:52.600Z",
+          "author": "reviewer",
+          "text": "approve — Round 2: C5 fix verified (1n, circular, Symbol, Proxy → RangeError), 13/13, scope clean"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "67eaa045a0d1ead19a7de107b46d14949f607d8a",
+        "gate_head": "5507a6d19a87b00c6282c08d6d2ee7ae144c21ed",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-01-qa-a2-152516.log",
+        "summary": "Round 2: AC-1..4 pass (incl. C5 BigInt/Symbol/circular → RangeError), AC-9, AC-10 pass — 7/7",
+        "at": "2026-10-03T15:25:16Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "121ca5368cd346b185b145f5d65eecb78bc5b455",
+          "qa_verify": "PASS",
+          "summary": "AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass (incl. constructor/__proto__/toString); AC-9 pass; AC-10 pass — 6/6 integration tests",
+          "at": "2026-10-03T15:12:46Z"
+        },
+        {
+          "verdict": "pass",
+          "head": "67eaa045a0d1ead19a7de107b46d14949f607d8a",
+          "qa_verify": "PASS",
+          "summary": "Round 2: AC-1..4 pass (incl. C5 BigInt/Symbol/circular → RangeError), AC-9, AC-10 pass — 7/7",
+          "at": "2026-10-03T15:25:16Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "changes",
+          "head": "121ca5368cd346b185b145f5d65eecb78bc5b455",
+          "summary": "C5: JSON.stringify in error msg → TypeError for BigInt/circular; must be RangeError",
+          "at": "2026-10-03T15:14:16Z"
+        },
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "67eaa045a0d1ead19a7de107b46d14949f607d8a",
+          "summary": "Round 2: C5 fix verified (1n, circular, Symbol, Proxy → RangeError), 13/13, scope clean",
+          "at": "2026-10-03T15:25:52Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "67eaa045a0d1ead19a7de107b46d14949f607d8a",
+        "summary": "reviewer: approve — Round 2: C5 fix verified (1n, circular, Symbol, Proxy → RangeError), 13/13, scope clean",
+        "pending": [],
+        "at": "2026-10-03T15:25:52Z"
+      }
+    },
+    {
+      "title": "Indicator 3: delays in 12 months options and WL mapping (REQ-03-03)",
+      "role": "backend",
+      "component": "indicators-lib",
+      "context": "Why: Watchlist (WL, 0-4, higher is worse) mapping for Indicator 3 'delays in the last 12 months' as a pure function plus an exported dropdown option list. The caller counts delays and picks the option; no counting here. Repo is plain Node 18+ ESM (.mjs), no dependencies, no I/O in src/indicators (CLAUDE.md); do NOT edit package.json or any file outside scope; src/ and test/ are currently empty so create dirs. Independent of card B1 (disjoint files; may run in parallel). Create src/indicators/delayCount.mjs exporting (1) `export const DELAY_COUNT_OPTIONS = Object.freeze([\"0\",\"1\",\">1\"])` (this order); (2) `export function delayCountWl(option)` returning 0|1|2: '0'->0, '1'->1, '>1'->2. Behaviour: if typeof option !== 'string' throw RangeError (numbers 0 and 1 are NOT accepted, only strings); otherwise String.prototype.trim() it (leading/trailing only), then exact case-sensitive lookup (constant Map/frozen object; avoid prototype keys like 'constructor' resolving); anything not found throws RangeError. RangeError message must include the offending value (JSON.stringify/String) and the allowed list; tests assert only `instanceof RangeError`. Write tests FIRST (TDD) in test/indicators/delayCount.test.mjs using node:test + node:assert/strict. Cover: option list deep-equals ['0','1','>1'] and Object.isFrozen; each option->WL; trimmed variants (' 1 '->1, '\\t>1\\n'->2, ' 0'->0); RangeError for '2','-1','01','> 1','1.0','one','','  ',null,undefined,0,1,[]; purity (repeat calls same value, options array unchanged). Follow comment density/naming of surrounding code. Commit without any AI attribution lines.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/delayCount.mjs",
+        "test/indicators/delayCount.test.mjs"
+      ],
+      "verify": "node --test test/indicators/delayCount.test.mjs",
+      "qa_scope": [
+        "test/indicators/integration/delayCount.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/indicators/integration/delayCount.integration.test.mjs",
+      "acceptance": [
+        "(AC-5) Given `src/indicators/delayCount.mjs`, when `DELAY_COUNT_OPTIONS` is imported, then it deep-equals `[\"0\",\"1\",\">1\"]` in this order and `Object.isFrozen(DELAY_COUNT_OPTIONS)` is `true`.",
+        "(AC-6) Given a valid option, when `delayCountWl(option)` is called, then `\"0\"`→0, `\"1\"`→1, `\">1\"`→2.",
+        "(AC-7) Given an option with surrounding whitespace, when called, then it is trimmed first: `\" 1 \"`→1, `\"\\t>1\\n\"`→2, `\" 0\"`→0.",
+        "(AC-8) Given invalid input, when called, then it throws an `instanceof RangeError` for `\"2\"`, `\"-1\"`, `\"01\"`, `\"> 1\"`, `\"1.0\"`, `\"one\"`, `\"\"`, `\"  \"`, `null`, `undefined`, `0`, `1`, `[]`. The message contains the offending value and the allowed list; tests do not pin the text.",
+        "(AC-9) Given every entry of `DELAY_COUNT_OPTIONS`, when passed to `delayCountWl`, then none throws, each result is in {0,1,2}, a second call returns the same value, and the options array is unchanged afterwards.",
+        "(AC-10) Given the card is done, when `node --test test/indicators/delayCount.test.mjs` runs, then it exits 0; only `src/indicators/delayCount.mjs` and `test/indicators/delayCount.test.mjs` are added and `package.json` is untouched."
+      ],
+      "id": "T-02",
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "seat": "backend#2",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#2",
+          "by": "michael",
+          "at": "2026-10-03T15:09:48Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/T-02",
+      "branch": "job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-02",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#2",
+          "worker": "worker-seat-20261003-1505-backend-2-h1",
+          "at": "2026-10-03T15:10:00Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261003-1505-qa-1-h1",
+          "at": "2026-10-03T15:11:06Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261003-1505-reviewer-1-h1",
+          "at": "2026-10-03T15:12:00Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "899f665c283ba5a9076a91884dc9b104c1dc768a",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-02-a1-151040.log",
+        "at": "2026-10-03T15:10:41Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T15:10:41.582Z",
+          "author": "gate",
+          "text": "PASS — 12 checks ok, 0 failed (T-02-a1-151040.log)"
+        },
+        {
+          "at": "2026-10-03T15:11:59.279Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass (incl. constructor/__proto__); AC-9 pass; AC-10 pass — 6/6 integration tests"
+        },
+        {
+          "at": "2026-10-03T15:12:44.224Z",
+          "author": "reviewer",
+          "text": "approve — AC-5..10 met, 11/11 pass, scope clean; nit: JSON.stringify in error msg → TypeError for BigInt/circular (C5 follow-up)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "4f79b6c0bc83bc7f06b5bf4d8d994b2d27737052",
+        "gate_head": "899f665c283ba5a9076a91884dc9b104c1dc768a",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-02-qa-a1-151158.log",
+        "summary": "AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass (incl. constructor/__proto__); AC-9 pass; AC-10 pass — 6/6 integration tests",
+        "at": "2026-10-03T15:11:58Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "4f79b6c0bc83bc7f06b5bf4d8d994b2d27737052",
+          "qa_verify": "PASS",
+          "summary": "AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass (incl. constructor/__proto__); AC-9 pass; AC-10 pass — 6/6 integration tests",
+          "at": "2026-10-03T15:11:58Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "4f79b6c0bc83bc7f06b5bf4d8d994b2d27737052",
+          "summary": "AC-5..10 met, 11/11 pass, scope clean; nit: JSON.stringify in error msg → TypeError for BigInt/circular (C5 follow-up)",
+          "at": "2026-10-03T15:12:43Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "4f79b6c0bc83bc7f06b5bf4d8d994b2d27737052",
+        "summary": "reviewer: approve — AC-5..10 met, 11/11 pass, scope clean; nit: JSON.stringify in error msg → TypeError for BigInt/circular (C5 follow-up)",
+        "pending": [],
+        "at": "2026-10-03T15:12:43Z"
+      }
+    },
+    {
+      "id": "T-03",
+      "title": "Ind.3 delayCountWl: RangeError (not TypeError) for BigInt/circular input (C5)",
+      "role": "backend",
+      "component": "indicators-lib",
+      "agent": "backend-dev",
+      "context": "Follow-up from the T-02 review (merged). Clarification C5 (binding): any non-string input is a RangeError. In src/indicators/delayCount.mjs the error message uses JSON.stringify(option), which itself throws TypeError for BigInt (1n) and circular objects, so delayCountWl(1n) / delayCountWl(circular) raise TypeError. Fix: format the offending value safely (e.g. try { JSON.stringify } catch { String/typeof fallback }), keep the message containing the value and the allowed list. Add unit tests first: delayCountWl(1n) and a circular object throw instanceof RangeError. Do not change behaviour for any other input; do not edit package.json or files outside scope.",
+      "depends_on": [
+        "T-02"
+      ],
+      "scope": [
+        "src/indicators/delayCount.mjs",
+        "test/indicators/delayCount.test.mjs"
+      ],
+      "verify": "node --test test/indicators/delayCount.test.mjs",
+      "qa_scope": [
+        "test/indicators/integration/delayCount.c5.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/indicators/integration/delayCount.c5.integration.test.mjs",
+      "acceptance": [
+        "(AC-8, C5) delayCountWl(1n) throws instanceof RangeError (not TypeError)",
+        "(AC-8, C5) delayCountWl(o) with a circular object o (o.self = o) throws instanceof RangeError",
+        "(AC-6..9) all existing unit and integration tests still pass unchanged"
+      ],
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "history": [
+        {
+          "at": "2026-10-03T15:13:08Z",
+          "by": "michael",
+          "change": "added",
+          "reason": "T-02 review nit: C5 requires RangeError for every non-string; JSON.stringify throws TypeError on BigInt/circular"
+        }
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T15:13:20Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/T-03",
+      "branch": "job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-03",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261003-1505-backend-1-h1",
+          "at": "2026-10-03T15:13:34Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261003-1505-qa-1-h1",
+          "at": "2026-10-03T15:14:31Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261003-1505-reviewer-1-h1",
+          "at": "2026-10-03T15:24:34Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "ffdf0803d15608a44b27e00ddce27b65773b22c0",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-03-a1-151417.log",
+        "at": "2026-10-03T15:14:18Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T15:14:18.855Z",
+          "author": "gate",
+          "text": "PASS — 13 checks ok, 0 failed (T-03-a1-151417.log)"
+        },
+        {
+          "at": "2026-10-03T15:24:32.702Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): 1 pass: 1n → RangeError; 2 pass: circular → RangeError; 3 pass: existing tests unchanged (17/17)"
+        },
+        {
+          "at": "2026-10-03T15:25:02.121Z",
+          "author": "reviewer",
+          "text": "approve — C5 met: describe() formats BigInt/circular/Symbol safely, every non-string → RangeError; 17/17"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "963de3ec2a29712548aa7863156513eaecbb3721",
+        "gate_head": "ffdf0803d15608a44b27e00ddce27b65773b22c0",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-03-qa-a1-152432.log",
+        "summary": "1 pass: 1n → RangeError; 2 pass: circular → RangeError; 3 pass: existing tests unchanged (17/17)",
+        "at": "2026-10-03T15:24:32Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "963de3ec2a29712548aa7863156513eaecbb3721",
+          "qa_verify": "PASS",
+          "summary": "1 pass: 1n → RangeError; 2 pass: circular → RangeError; 3 pass: existing tests unchanged (17/17)",
+          "at": "2026-10-03T15:24:32Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "963de3ec2a29712548aa7863156513eaecbb3721",
+          "summary": "C5 met: describe() formats BigInt/circular/Symbol safely, every non-string → RangeError; 17/17",
+          "at": "2026-10-03T15:25:01Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "963de3ec2a29712548aa7863156513eaecbb3721",
+        "summary": "reviewer: approve — C5 met: describe() formats BigInt/circular/Symbol safely, every non-string → RangeError; 17/17",
+        "pending": [],
+        "at": "2026-10-03T15:25:01Z"
+      }
+    },
+    {
+      "id": "T-04",
+      "title": "Merged-branch AC-10 check: QA tests assert per-card files without pinning the whole diff",
+      "role": "backend",
+      "component": "indicators-lib",
+      "agent": "backend-dev",
+      "context": "verify-all on the job branch fails 2 tests: the AC-10 test in test/indicators/integration/daysWithDelay.integration.test.mjs and delayCount.integration.test.mjs deep-equals the list of files added since seed 24bdb9c to exactly that card's two files; after both cards merged, the other card's files are present too, so both fail. Product code is correct. This card adds a job-level AC-10 unit check that holds on the merged branch: test/indicators/job.test.mjs asserts (a) all four files src/indicators/{daysWithDelay,delayCount}.mjs and test/indicators/{daysWithDelay,delayCount}.test.mjs exist, (b) every file added since 24bdb9c is under src/indicators/ or test/indicators/, (c) package.json is unchanged since 24bdb9c, (d) package.json has no dependencies/devDependencies. The QA role separately relaxes its two per-card AC-10 tests (its own files) in this card's QA round. Do NOT edit test/indicators/integration/** (QA-owned).",
+      "depends_on": [
+        "T-01",
+        "T-02",
+        "T-03"
+      ],
+      "scope": [
+        "test/indicators/job.test.mjs"
+      ],
+      "verify": "node --test test/indicators/job.test.mjs",
+      "qa_scope": [
+        "test/indicators/integration/daysWithDelay.integration.test.mjs",
+        "test/indicators/integration/delayCount.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/indicators/integration/daysWithDelay.integration.test.mjs test/indicators/integration/delayCount.integration.test.mjs",
+      "acceptance": [
+        "(AC-10) on the merged job branch, node --test at repo root exits 0 (all unit + integration tests)",
+        "(AC-10) only files under src/indicators/ and test/indicators/ are added since seed 24bdb9c; the four card files exist",
+        "(AC-10) package.json unchanged since 24bdb9c and has no dependencies"
+      ],
+      "state": "merged",
+      "attempts": 2,
+      "notes": [
+        {
+          "at": "2026-10-03T15:28:46Z",
+          "note": "PM contract error: qa_verify passed a directory (MODULE_NOT_FOUND on Node 22); fixing to explicit files"
+        }
+      ],
+      "history": [
+        {
+          "at": "2026-10-03T15:26:32Z",
+          "by": "michael",
+          "change": "added",
+          "reason": "verify-all: per-card AC-10 QA tests pin the whole diff, fail on merged branch"
+        },
+        {
+          "at": "2026-10-03T15:28:47Z",
+          "by": "michael",
+          "field": "qa_verify",
+          "from": "node --test test/indicators/integration/",
+          "to": "node --test test/indicators/integration/daysWithDelay.integration.test.mjs test/indicators/integration/delayCount.integration.test.mjs",
+          "reason": "node --test with a directory argument fails on Node 22; list the QA files"
+        }
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T15:26:45Z"
+        },
+        {
+          "attempt": 2,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T15:29:17Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/wt/T-04",
+      "branch": "job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-04",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261003-1505-backend-1-h1",
+          "at": "2026-10-03T15:26:53Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261003-1505-qa-1-h1",
+          "at": "2026-10-03T15:27:38Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261003-1505-reviewer-1-h1",
+          "at": "2026-10-03T15:30:05Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "b7e1bf1bacc5d764a639132cce430400fe9c69b3",
+        "attempt": 2,
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-04-a2-152939.log",
+        "at": "2026-10-03T15:29:39Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T15:27:29.223Z",
+          "author": "gate",
+          "text": "PASS — 11 checks ok, 0 failed (T-04-a1-152728.log)"
+        },
+        {
+          "at": "2026-10-03T15:28:47.465Z",
+          "author": "michael",
+          "text": "changed qa_verify: node --test with a directory argument fails on Node 22; list the QA files"
+        },
+        {
+          "at": "2026-10-03T15:28:49.444Z",
+          "author": "gate",
+          "text": "FAIL — 10 checks ok, 2 failed (T-04-a1-152848.log)"
+        },
+        {
+          "at": "2026-10-03T15:29:40.286Z",
+          "author": "gate",
+          "text": "PASS — 11 checks ok, 0 failed (T-04-a2-152939.log)"
+        },
+        {
+          "at": "2026-10-03T15:29:52.966Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): 1 pass: full node --test 34/34; 2 pass: per-card AC-10 relaxed (own files included, only indicators dirs); 3 pass: package.json unchanged"
+        },
+        {
+          "at": "2026-10-03T15:30:30.389Z",
+          "author": "reviewer",
+          "text": "approve — 34/34 on merged branch; job-level AC-10 + robust per-card AC-10; nit: tests need git history (shallow clone)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "2b76fd06f525b378b19eb94894f52ebfd1ee56b3",
+        "gate_head": "b7e1bf1bacc5d764a639132cce430400fe9c69b3",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-seats/munder/repo/.work/JOB-20261003-1505-repayment-delay-indicators-2-3/gates/T-04-qa-a2-152952.log",
+        "summary": "1 pass: full node --test 34/34; 2 pass: per-card AC-10 relaxed (own files included, only indicators dirs); 3 pass: package.json unchanged",
+        "at": "2026-10-03T15:29:52Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "2b76fd06f525b378b19eb94894f52ebfd1ee56b3",
+          "qa_verify": "PASS",
+          "summary": "1 pass: full node --test 34/34; 2 pass: per-card AC-10 relaxed (own files included, only indicators dirs); 3 pass: package.json unchanged",
+          "at": "2026-10-03T15:29:52Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "2b76fd06f525b378b19eb94894f52ebfd1ee56b3",
+          "summary": "34/34 on merged branch; job-level AC-10 + robust per-card AC-10; nit: tests need git history (shallow clone)",
+          "at": "2026-10-03T15:30:29Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "2b76fd06f525b378b19eb94894f52ebfd1ee56b3",
+        "summary": "reviewer: approve — 34/34 on merged branch; job-level AC-10 + robust per-card AC-10; nit: tests need git history (shallow clone)",
+        "pending": [],
+        "at": "2026-10-03T15:30:29Z"
+      }
+    }
+  ]
+}

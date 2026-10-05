@@ -1,0 +1,40 @@
+Required tools
+  [32m✔[0m Claude Code 2.1.288
+  [32m✔[0m git 2.43.0
+  [32m✔[0m jq jq-1.7
+  [32m✔[0m node 22.22.0
+Optional tools
+  [32m✔[0m gh (PR creation)
+  [32m✔[0m timeout (gate_timeout for verify commands)
+  [33m![0m adb not found — only for mobile jobs
+ECC plugin
+  [32m✔[0m ecc installed (/tmp/claude-0/e2e-v/munder/home/.claude/plugins/cache/ecc/ecc/2.2.3)
+  [32m✔[0m ecc agents present (planner, architect, reviewers, e2e-runner)
+  [32m✔[0m ecc skills present (tdd-workflow, backend-patterns, frontend-patterns)
+  [33m![0m ECC hook profile: standard. GateGuard (standard/strict) asks for facts before the first edit of each file; the kit exempts .work/ bookkeeping (GATEGUARD_EXEMPT_GLOBS). Set ECC_GATEGUARD=off if agents loop on it
+Kit install
+  [32m✔[0m plugin: deliver (/tmp/claude-0/e2e-v/munder/home/.claude/plugins/cache/skills-shop/deliver/0.2.0)
+  [32m✔[0m plugin: dl executable
+  [32m✔[0m plugin: hook stop-guard
+  [32m✔[0m plugin: hook bash-guard
+  [32m✔[0m plugin: hook write-guard
+  [32m✔[0m plugin: hook agent-guard
+  [32m✔[0m plugin: hook subagent-log
+  [32m✔[0m plugin: settings carry the GateGuard exemption
+  [33m![0m dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl
+Munder Difflin (optional)
+  [32m✔[0m Munder Difflin app data found (run doctor from an agent terminal on the floor to check the hive)
+  [32m✔[0m Claude Code first run completed (Michael's terminal on the floor opens ready)
+  [32m✔[0m Michael may seat people (orchestratorMaySpawn)
+  [32m✔[0m seats are not sent home while they wait (workerIdleTimeoutMinutes 480)
+  [32m✔[0m room for a whole team (maxConcurrentWorkers 12)
+Repo: /tmp/claude-0/e2e-v/munder/repo
+  [32m✔[0m git repository
+  [32m✔[0m on branch main
+  [32m✔[0m has commits
+  [32m✔[0m working tree clean
+  [33m![0m no remote 'origin' — use merge_mode local
+  [32m✔[0m git identity set
+  [32m✔[0m .deliver.json valid: {"verify_full":"node --test","worktree_setup":"","merge_mode":"local","dispatch":"munder"}
+
+result: 28 ok, 4 warning(s), 0 problem(s)

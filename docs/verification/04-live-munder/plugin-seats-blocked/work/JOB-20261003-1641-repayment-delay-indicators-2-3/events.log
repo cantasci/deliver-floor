@@ -1,0 +1,29 @@
+2026-10-03T16:41:03Z	new	Repayment delay indicators 2-3
+2026-10-03T16:41:12Z	jobset	stack: .stack=["javascript"]
+2026-10-03T16:41:13Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"domain logic: REQ-03-02/REQ-03-03 option→WL mapping"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (plain Node ESM)"}]
+2026-10-03T16:41:13Z	jobset	assumptions: .assumptions += ["No tech-lead: two independent pure-function modules with the contract fixed in the request","No security/quality reviewer: pure functions, no I/O, no external input beyond a dropdown option validated by RangeError"]
+2026-10-03T16:41:13Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T16:41:13Z	phase	readiness
+2026-10-03T16:41:18Z	md-hire	ba#1 → worker-seat-20261003-1641-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-03T16:41:18Z	md-hire	backend-lead#1 → worker-seat-20261003-1641-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-03T16:41:19Z	md-hire	backend#1 → worker-seat-20261003-1641-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-03T16:41:19Z	md-hire	backend#2 → worker-seat-20261003-1641-backend-2-h1 (claude claude-sonnet-5-5, jim)
+2026-10-03T16:41:19Z	md-hire	qa#1 → worker-seat-20261003-1641-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-03T16:41:19Z	md-hire	reviewer#1 → worker-seat-20261003-1641-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-03T16:41:40Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261003-1641-ba-1-h1
+2026-10-03T16:43:14Z	md-done	readiness ba#1: readiness: 27 catalog + 2 X items; 0 business-open, 2 pm-open; library arch, 2 components
+2026-10-03T16:43:20Z	readiness	30 items: 15 decided, 13 n/a, 2 open
+2026-10-03T16:43:21Z	decide	X-errors-message: (a) Only the error class is contract: throw RangeError; message is free text that includes the offending value. Tests assert instanceof RangeError only. — C1/C5 fix only the type; a message format would be an un-asked public contract. Including the value helps debugging.
+2026-10-03T16:43:21Z	decide	X-option-immutability: Export the option arrays frozen (Object.freeze); tests assert content+order with deepStrictEqual and that the arrays are frozen. — Shared module-level constants rendered by later screens must not be mutable by a consumer; freezing changes no observable value or contract.
+2026-10-03T16:43:21Z	readiness	30 items: 17 decided, 13 n/a, 0 open
+2026-10-03T16:43:28Z	freeze	readiness + architecture frozen (a15b2957242b)
+2026-10-03T16:43:28Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T16:43:28Z	phase	planning
+2026-10-03T16:43:29Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261003-1641-ba-1-h1
+2026-10-03T16:44:55Z	md-done	plan ba#1: plan: 20 ACs (AC-1..6 REQ-03-02, AC-7..11 REQ-03-03, AC-12..18 trim/invalid/non-string, AC-19..20 repo-wide); no open questions
+2026-10-03T16:44:56Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261003-1641-backend-lead-1-h1
+2026-10-03T16:46:12Z	md-done	cards-backend-lead backend-lead#1: cards-backend-lead reported done but out/cards-backend-lead.json does not exist — re-sent
+2026-10-03T16:46:13Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261003-1641-backend-lead-1-h1
+2026-10-03T16:46:45Z	md-done	cards-backend-lead backend-lead#1: cards: B1 REQ-03-02 (AC-1..6,12,14,16,18-20), B2 REQ-03-03 (AC-7..11,13,15,17,18-20); parallel, disjoint scope; file verified
+2026-10-03T16:46:54Z	md-send	specs ba#1 (business-analyst) → worker-seat-20261003-1641-ba-1-h1
+2026-10-03T16:47:42Z	md-done	specs ba#1: specs: T-01 12 criteria, T-02 11 criteria, edge cases + test data

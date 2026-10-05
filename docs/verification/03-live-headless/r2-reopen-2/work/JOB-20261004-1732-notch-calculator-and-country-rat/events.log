@@ -1,0 +1,49 @@
+2026-10-04T17:32:23Z	new	Notch calculator and country rating
+2026-10-04T17:32:27Z	jobset	stack: .stack=["javascript"]
+2026-10-04T17:32:48Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: pure domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02 notchCalculator, REQ-03-12 countryRatingChangeWl implementation"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"plain Node ESM JavaScript code"}]
+2026-10-04T17:32:50Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T17:32:50Z	phase	readiness
+2026-10-04T17:36:29Z	agent	business-analyst a2ec791f: {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two pure library functions for the Watchlist POC. (1) A notch calculator (REQ-06-02): given a previous 
+2026-10-04T17:37:01Z	readiness	30 items: 17 decided, 8 n/a, 5 open
+2026-10-04T17:37:06Z	decide	DEL-docs: A: JSDoc on the four exports only — Other parts import these exports; JSDoc documents the contract without touching README and adds no dependency.
+2026-10-04T17:37:06Z	decide	X-scale-shape: A: frozen array — Shared constant imported by other modules; freezing prevents accidental mutation, content and order stay as in C1.
+2026-10-04T17:37:06Z	decide	X-error-message: A: message names the argument and offending value — Helps callers debug; the contract fixes only the RangeError type, so tests check the type only.
+2026-10-04T17:37:15Z	jobset	roles: .roles += [{"role":"docs","agent":"ecc:doc-updater","why":"DEL-docs: JSDoc on the four exports"}]
+2026-10-04T17:37:15Z	roles	ba backend-lead backend qa reviewer docs
+2026-10-04T17:37:15Z	phase	readiness
+2026-10-04T17:37:15Z	readiness	30 items: 20 decided, 8 n/a, 2 open
+2026-10-04T17:37:15Z	phase	awaiting_clarification
+2026-10-04T17:37:23Z	clarify	CON-interface: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-04T17:37:23Z	clarify	X-input-trim: Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.
+2026-10-04T17:37:38Z	reopen	CON-interface: The answer is about C8 (no UI/CLI output) and does not say what notches means: signed like notchChange, or always the size of the change? Deciding case notchCalculator('BBB','A') -> notches = ?
+2026-10-04T17:37:44Z	clarify	CON-interface: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-04T17:38:04Z	freeze	readiness + architecture frozen (14b5b28f8f81)
+2026-10-04T17:38:04Z	roles	ba backend-lead backend qa reviewer docs
+2026-10-04T17:38:04Z	phase	planning
+2026-10-04T17:40:27Z	agent	business-analyst a6278a92: Here is the plan, ready to paste into `plan.md`. I found no open questions: readiness has 0 open items, and the sign of upgrade notches is settled by the human 
+2026-10-04T17:42:05Z	agent	ecc:architect ae3de148: [ {"tmp_id":"B1","title":"Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs (with unit tests and JSDoc)","role":"backend","component":"watc
+2026-10-04T17:45:40Z	agent	business-analyst a3f51845: === T-01 === # T-01: Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs (with unit tests and JSDoc) ## User story As a credit analyst, using
+2026-10-04T17:46:42Z	phase	executing
+2026-10-04T17:46:46Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T17:48:02Z	agent	backend-dev a7cf76d0: status: done commit: dbdad56 verify: passed (`node --test test/ratings/*.test.mjs`: 155 pass, 0 fail) open issues: The commit is local and not pushed. The bash 
+2026-10-04T17:48:05Z	gate	T-01 PASS
+2026-10-04T17:49:11Z	agent	qa-tester a1706623: All criteria in scope pass, but the push of the card branch was blocked, so the tests are committed locally and not on the remote. `qa_verify` ran 132 tests wit
+2026-10-04T17:49:15Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-9 pass, AC-14 import checks pass; 132 tests
+2026-10-04T17:49:33Z	agent	ecc:typescript-reviewer a44e4bfd: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs:42 The spec says 'one internal helper', but the file has two: positionOf and describe. This is
+2026-10-04T17:49:36Z	review	T-01 reviewer approve — approve; nits only (second private helper, redundant +0)
+2026-10-04T17:49:36Z	integrate	T-01 merged
+2026-10-04T17:49:39Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-04T17:50:27Z	agent	backend-dev a7039ccd: status: done commit: 0f7d2e5 verify: passed (`node --test test/indicators/*.test.mjs` gives 63 pass, 0 fail; full `node --test` in the worktree gives 350 pass, 
+2026-10-04T17:50:29Z	gate	T-02 PASS
+2026-10-04T17:51:24Z	agent	qa-tester abc921a3: ```json {"verdict":"pass", "tests":["test/integration/indicators/countryRating.integration.test.mjs"], "criteria":[ {"ac":"AC-10","status":"pass","evidence":"AC
+2026-10-04T17:51:28Z	qa	T-02 pass (qa_verify PASS) — AC-5,6,10,11,12,14 pass; 70 tests
+2026-10-04T17:51:51Z	agent	ecc:typescript-reviewer a984d590: ```json {"verdict":"approve","blocking":[],"nits":["The whole job passes under `node --test` in the T-02 worktree: 420 tests, 0 failures. `package.json`, `READM
+2026-10-04T17:51:54Z	review	T-02 reviewer approve — approve; nits only (literal invisible chars in QA test, redundancy)
+2026-10-04T17:51:55Z	integrate	T-02 merged
+2026-10-04T17:51:57Z	phase	integrating
+2026-10-04T17:51:58Z	verify-all	PASS
+2026-10-04T17:52:01Z	phase	closing
+2026-10-04T17:53:14Z	agent	business-analyst a9e5f14d: All 17 acceptance criteria are met. On the job branch in the integration worktree, `node --test` exits 0 with 420 passed and 0 failed. Both cards passed their g
+2026-10-04T17:53:27Z	learn	ba: When two functions use different WL thresholds, state every notch count where they differ (here d=1 AND d=2), not just the headline case.
+2026-10-04T17:53:27Z	ship	local merge into main
+2026-10-04T17:53:29Z	cleanup	

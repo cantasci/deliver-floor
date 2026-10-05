@@ -1,0 +1,769 @@
+TAP version 13
+# Subtest: AC-13: a 1-notch downgrade gives WL 1
+ok 1 - AC-13: a 1-notch downgrade gives WL 1
+  ---
+  duration_ms: 0.977
+  type: 'test'
+  ...
+# Subtest: AC-13 (C6): differs from notchCalculator on a 1-notch downgrade
+ok 2 - AC-13 (C6): differs from notchCalculator on a 1-notch downgrade
+  ---
+  duration_ms: 1.214842
+  type: 'test'
+  ...
+# Subtest: AC-14: a downgrade of 2 or more notches gives WL 2
+ok 3 - AC-14: a downgrade of 2 or more notches gives WL 2
+  ---
+  duration_ms: 0.169905
+  type: 'test'
+  ...
+# Subtest: AC-15: upgrade or unchanged gives the number 0
+ok 4 - AC-15: upgrade or unchanged gives the number 0
+  ---
+  duration_ms: 0.197625
+  type: 'test'
+  ...
+# Subtest: AC-5: case and surrounding whitespace are ignored
+ok 5 - AC-5: case and surrounding whitespace are ignored
+  ---
+  duration_ms: 0.187443
+  type: 'test'
+  ...
+# Subtest: AC-6: any invalid value in either position throws RangeError
+ok 6 - AC-6: any invalid value in either position throws RangeError
+  ---
+  duration_ms: 0.81389
+  type: 'test'
+  ...
+# Subtest: AC-6: missing or doubly invalid arguments throw RangeError
+ok 7 - AC-6: missing or doubly invalid arguments throw RangeError
+  ---
+  duration_ms: 0.204932
+  type: 'test'
+  ...
+# Subtest: AC-17: analyst-edited ratings are graded from the caller's values
+ok 8 - AC-17: analyst-edited ratings are graded from the caller's values
+  ---
+  duration_ms: 0.105438
+  type: 'test'
+  ...
+# Subtest: AC-17: arity is 2, extra arguments are ignored, no state
+ok 9 - AC-17: arity is 2, extra arguments are ignored, no state
+  ---
+  duration_ms: 0.936218
+  type: 'test'
+  ...
+# Subtest: AC-13: one-notch downgrades give WL 1 (BBB>BBB-, AAA>AA+, CCC>CCC-)
+ok 10 - AC-13: one-notch downgrades give WL 1 (BBB>BBB-, AAA>AA+, CCC>CCC-)
+  ---
+  duration_ms: 2.840014
+  type: 'test'
+  ...
+# Subtest: AC-14: downgrades of 2+ notches give WL 2
+ok 11 - AC-14: downgrades of 2+ notches give WL 2
+  ---
+  duration_ms: 0.415106
+  type: 'test'
+  ...
+# Subtest: AC-15: upgrades and unchanged ratings give the number 0 (not -0, false, null)
+ok 12 - AC-15: upgrades and unchanged ratings give the number 0 (not -0, false, null)
+  ---
+  duration_ms: 0.180762
+  type: 'test'
+  ...
+# Subtest: AC-5: case and surrounding whitespace do not change the result
+ok 13 - AC-5: case and surrounding whitespace do not change the result
+  ---
+  duration_ms: 0.189724
+  type: 'test'
+  ...
+# Subtest: AC-6: every invalid value in either position throws RangeError
+ok 14 - AC-6: every invalid value in either position throws RangeError
+  ---
+  duration_ms: 0.907286
+  type: 'test'
+  ...
+# Subtest: AC-6: missing and doubly invalid arguments throw RangeError
+ok 15 - AC-6: missing and doubly invalid arguments throw RangeError
+  ---
+  duration_ms: 0.212039
+  type: 'test'
+  ...
+# Subtest: AC-17: analyst-edited rating is just the current argument; arity 2, extra args ignored, no state
+ok 16 - AC-17: analyst-edited rating is just the current argument; arity 2, extra args ignored, no state
+  ---
+  duration_ms: 0.795558
+  type: 'test'
+  ...
+# Subtest: AC-16: source imports notchChange from ../ratings/notch.mjs
+ok 17 - AC-16: source imports notchChange from ../ratings/notch.mjs
+  ---
+  duration_ms: 4.69894
+  type: 'test'
+  ...
+# Subtest: AC-16: source never mentions notchCalculator
+ok 18 - AC-16: source never mentions notchCalculator
+  ---
+  duration_ms: 2.813089
+  type: 'test'
+  ...
+# Subtest: AC-16: source has no rating literals anywhere (comments and JSDoc included)
+ok 19 - AC-16: source has no rating literals anywhere (comments and JSDoc included)
+  ---
+  duration_ms: 3.667123
+  type: 'test'
+  ...
+# Subtest: AC-16: source has no try/catch
+ok 20 - AC-16: source has no try/catch
+  ---
+  duration_ms: 2.44984
+  type: 'test'
+  ...
+# Subtest: AC-16: all 361 pairs return an integer in {0,1,2} equal to the notchChange threshold rule
+ok 21 - AC-16: all 361 pairs return an integer in {0,1,2} equal to the notchChange threshold rule
+  ---
+  duration_ms: 0.99888
+  type: 'test'
+  ...
+# Subtest: AC-16: over 361 pairs WL 2 = 153, WL 1 = 18, WL 0 = 190
+ok 22 - AC-16: over 361 pairs WL 2 = 153, WL 1 = 18, WL 0 = 190
+  ---
+  duration_ms: 0.360155
+  type: 'test'
+  ...
+# Subtest: AC-16 (C6): differs from notchCalculator().wl on exactly 35 pairs (18 one-notch, 17 two-notch), equal on 326
+ok 23 - AC-16 (C6): differs from notchCalculator().wl on exactly 35 pairs (18 one-notch, 17 two-notch), equal on 326
+  ---
+  duration_ms: 0.711979
+  type: 'test'
+  ...
+# Subtest: AC-5: all 361 pairs with lowercase and padded input equal the canonical result
+ok 24 - AC-5: all 361 pairs with lowercase and padded input equal the canonical result
+  ---
+  duration_ms: 1.212443
+  type: 'test'
+  ...
+# Subtest: AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+ok 25 - AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+  ---
+  duration_ms: 2.879898
+  type: 'test'
+  ...
+# Subtest: AC-18: importing and calling in a child process prints nothing and exits 0
+ok 26 - AC-18: importing and calling in a child process prints nothing and exits 0
+  ---
+  duration_ms: 41.855619
+  type: 'test'
+  ...
+# Subtest: AC-19: module exposes the named function and no default export
+ok 27 - AC-19: module exposes the named function and no default export
+  ---
+  duration_ms: 0.25528
+  type: 'test'
+  ...
+# Subtest: AC-19: dev unit tests and T-01 tests pass, and bare `node --test` passes with a count >= their sum
+ok 28 - AC-19: dev unit tests and T-01 tests pass, and bare `node --test` passes with a count >= their sum
+  ---
+  duration_ms: 642.208315
+  type: 'test'
+  ...
+# Subtest: AC-19: package.json is unchanged versus main and has no dependencies
+ok 29 - AC-19: package.json is unchanged versus main and has no dependencies
+  ---
+  duration_ms: 3.619771
+  type: 'test'
+  ...
+# Subtest: AC-19: no package-lock.json and no node_modules/ exist
+ok 30 - AC-19: no package-lock.json and no node_modules/ exist
+  ---
+  duration_ms: 0.333846
+  type: 'test'
+  ...
+# Subtest: AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+ok 31 - AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+  ---
+  duration_ms: 2.590516
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is the frozen 19-rating C1 array, best first
+ok 32 - AC-1: RATING_SCALE is the frozen 19-rating C1 array, best first
+  ---
+  duration_ms: 2.484185
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE cannot be mutated (push / index assignment throw TypeError)
+ok 33 - AC-1: RATING_SCALE cannot be mutated (push / index assignment throw TypeError)
+  ---
+  duration_ms: 0.901464
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange on a downgrade is positive
+ok 34 - AC-2: notchChange on a downgrade is positive
+  ---
+  duration_ms: 0.288697
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange on an upgrade is negative
+ok 35 - AC-3: notchChange on an upgrade is negative
+  ---
+  duration_ms: 0.187085
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange of the same rating is +0, never -0
+ok 36 - AC-4: notchChange of the same rating is +0, never -0
+  ---
+  duration_ms: 0.236971
+  type: 'test'
+  ...
+# Subtest: AC-2/AC-3: argument order matters (BBB->BB = 3, BB->BBB = -3)
+ok 37 - AC-2/AC-3: argument order matters (BBB->BB = 3, BB->BBB = -3)
+  ---
+  duration_ms: 0.139937
+  type: 'test'
+  ...
+# Subtest: AC-5: notchChange trims whitespace and folds case
+ok 38 - AC-5: notchChange trims whitespace and folds case
+  ---
+  duration_ms: 0.267423
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator trims whitespace and folds case
+ok 39 - AC-5: notchCalculator trims whitespace and folds case
+  ---
+  duration_ms: 0.36875
+  type: 'test'
+  ...
+# Subtest: AC-6: notchChange throws RangeError for every invalid value in either position
+ok 40 - AC-6: notchChange throws RangeError for every invalid value in either position
+  ---
+  duration_ms: 1.175872
+  type: 'test'
+  ...
+# Subtest: AC-6: notchCalculator throws RangeError for every invalid value in either position
+ok 41 - AC-6: notchCalculator throws RangeError for every invalid value in either position
+  ---
+  duration_ms: 3.177912
+  type: 'test'
+  ...
+# Subtest: AC-6: missing or doubly invalid arguments throw RangeError
+ok 42 - AC-6: missing or doubly invalid arguments throw RangeError
+  ---
+  duration_ms: 0.482775
+  type: 'test'
+  ...
+# Subtest: AC-6: non-breaking space is trimmed (trim strips U+00A0), still valid
+ok 43 - AC-6: non-breaking space is trimmed (trim strips U+00A0), still valid
+  ---
+  duration_ms: 0.122401
+  type: 'test'
+  ...
+# Subtest: AC-7: downgrade of 3+ notches gives WL 2
+ok 44 - AC-7: downgrade of 3+ notches gives WL 2
+  ---
+  duration_ms: 0.141794
+  type: 'test'
+  ...
+# Subtest: AC-8: downgrade of exactly 2 notches gives WL 1
+ok 45 - AC-8: downgrade of exactly 2 notches gives WL 1
+  ---
+  duration_ms: 0.149189
+  type: 'test'
+  ...
+# Subtest: AC-9: downgrade of exactly 1 notch gives WL 0
+ok 46 - AC-9: downgrade of exactly 1 notch gives WL 0
+  ---
+  duration_ms: 0.24993
+  type: 'test'
+  ...
+# Subtest: AC-10: upgrades give negative notches, direction upgrade and WL 0 (no Math.abs)
+ok 47 - AC-10: upgrades give negative notches, direction upgrade and WL 0 (no Math.abs)
+  ---
+  duration_ms: 0.294343
+  type: 'test'
+  ...
+# Subtest: AC-11: unchanged rating gives notches +0, direction unchanged, WL 0
+ok 48 - AC-11: unchanged rating gives notches +0, direction unchanged, WL 0
+  ---
+  duration_ms: 0.1517
+  type: 'test'
+  ...
+# Subtest: AC-12: notchCalculator(['BBB+','BB+']) returns exactly the keys direction, notches, wl
+ok 49 - AC-12: notchCalculator(['BBB+','BB+']) returns exactly the keys direction, notches, wl
+  ---
+  duration_ms: 0.131924
+  type: 'test'
+  ...
+# Subtest: AC-12: all 361 ordered pairs satisfy the notchCalculator contract
+ok 50 - AC-12: all 361 ordered pairs satisfy the notchCalculator contract
+  ---
+  duration_ms: 2.847703
+  type: 'test'
+  ...
+# Subtest: AC-12: all-pairs counts: downgrade 171 / upgrade 171 / unchanged 19; wl2 136 / wl1 17 / wl0 208
+ok 51 - AC-12: all-pairs counts: downgrade 171 / upgrade 171 / unchanged 19; wl2 136 / wl1 17 / wl0 208
+  ---
+  duration_ms: 0.829217
+  type: 'test'
+  ...
+# Subtest: AC-5: all 361 pairs given lower-case and padded equal the canonical result
+ok 52 - AC-5: all 361 pairs given lower-case and padded equal the canonical result
+  ---
+  duration_ms: 3.466173
+  type: 'test'
+  ...
+# Subtest: AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+ok 53 - AC-18: source has no I/O (grep for node:fs|node:http|node:net|fetch(|console.|process.std exits 1)
+  ---
+  duration_ms: 4.041225
+  type: 'test'
+  ...
+# Subtest: AC-18: importing and calling both functions in a child process prints nothing and exits 0
+ok 54 - AC-18: importing and calling both functions in a child process prints nothing and exits 0
+  ---
+  duration_ms: 27.117874
+  type: 'test'
+  ...
+# Subtest: AC-19: module surface is named exports only, source has .mjs extension
+ok 55 - AC-19: module surface is named exports only, source has .mjs extension
+  ---
+  duration_ms: 0.253387
+  type: 'test'
+  ...
+# Subtest: AC-19: dev unit tests pass (node --test test/ratings/notch.test.mjs exits 0, \# fail 0)
+ok 56 - AC-19: dev unit tests pass (node --test test/ratings/notch.test.mjs exits 0, \# fail 0)
+  ---
+  duration_ms: 183.402154
+  type: 'test'
+  ...
+# Subtest: AC-19: package.json is unchanged versus main and has no dependencies
+ok 57 - AC-19: package.json is unchanged versus main and has no dependencies
+  ---
+  duration_ms: 3.721936
+  type: 'test'
+  ...
+# Subtest: AC-19: no package-lock.json and no node_modules/ exist
+ok 58 - AC-19: no package-lock.json and no node_modules/ exist
+  ---
+  duration_ms: 0.366547
+  type: 'test'
+  ...
+# Subtest: AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+ok 59 - AC-19: Node 18 compatibility (no toSorted|toReversed|Object.groupBy|t.assert in source or dev tests)
+  ---
+  duration_ms: 3.088318
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE
+    # Subtest: AC-1: holds the 19 C1 ratings, best first, in a frozen array
+    ok 1 - AC-1: holds the 19 C1 ratings, best first, in a frozen array
+      ---
+      duration_ms: 1.308466
+      type: 'test'
+      ...
+    # Subtest: AC-1: cannot be mutated
+    ok 2 - AC-1: cannot be mutated
+      ---
+      duration_ms: 0.434911
+      type: 'test'
+      ...
+    1..2
+ok 60 - RATING_SCALE
+  ---
+  duration_ms: 2.827078
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: AC-2: downgrades are positive
+    ok 1 - AC-2: downgrades are positive
+      ---
+      duration_ms: 0.517026
+      type: 'test'
+      ...
+    # Subtest: AC-3: upgrades are negative
+    ok 2 - AC-3: upgrades are negative
+      ---
+      duration_ms: 0.243602
+      type: 'test'
+      ...
+    # Subtest: AC-4: the same rating gives +0, never -0
+    ok 3 - AC-4: the same rating gives +0, never -0
+      ---
+      duration_ms: 0.146984
+      type: 'test'
+      ...
+    # Subtest: argument order matters
+    ok 4 - argument order matters
+      ---
+      duration_ms: 0.09496
+      type: 'test'
+      ...
+    # Subtest: AC-5: ignores case and leading/trailing whitespace
+    ok 5 - AC-5: ignores case and leading/trailing whitespace
+      ---
+      duration_ms: 0.386161
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid empty string
+    ok 6 - AC-6: throws RangeError for invalid empty string
+      ---
+      duration_ms: 0.421239
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid blank string
+    ok 7 - AC-6: throws RangeError for invalid blank string
+      ---
+      duration_ms: 0.213266
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid internal space BBB +
+    ok 8 - AC-6: throws RangeError for invalid internal space BBB +
+      ---
+      duration_ms: 0.238763
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid internal space B B
+    ok 9 - AC-6: throws RangeError for invalid internal space B B
+      ---
+      duration_ms: 0.170743
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid D
+    ok 10 - AC-6: throws RangeError for invalid D
+      ---
+      duration_ms: 0.066385
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid SD
+    ok 11 - AC-6: throws RangeError for invalid SD
+      ---
+      duration_ms: 0.063736
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid NR
+    ok 12 - AC-6: throws RangeError for invalid NR
+      ---
+      duration_ms: 0.114205
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid CC
+    ok 13 - AC-6: throws RangeError for invalid CC
+      ---
+      duration_ms: 0.055183
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid AAA+
+    ok 14 - AC-6: throws RangeError for invalid AAA+
+      ---
+      duration_ms: 0.058169
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid CCC--
+    ok 15 - AC-6: throws RangeError for invalid CCC--
+      ---
+      duration_ms: 0.05612
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid Baa1
+    ok 16 - AC-6: throws RangeError for invalid Baa1
+      ---
+      duration_ms: 0.05191
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid null
+    ok 17 - AC-6: throws RangeError for invalid null
+      ---
+      duration_ms: 0.09101
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid undefined
+    ok 18 - AC-6: throws RangeError for invalid undefined
+      ---
+      duration_ms: 0.051181
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid number
+    ok 19 - AC-6: throws RangeError for invalid number
+      ---
+      duration_ms: 0.049366
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid object
+    ok 20 - AC-6: throws RangeError for invalid object
+      ---
+      duration_ms: 0.086273
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid array
+    ok 21 - AC-6: throws RangeError for invalid array
+      ---
+      duration_ms: 0.070316
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid object with toString
+    ok 22 - AC-6: throws RangeError for invalid object with toString
+      ---
+      duration_ms: 0.055894
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for missing or doubly invalid arguments
+    ok 23 - AC-6: throws RangeError for missing or doubly invalid arguments
+      ---
+      duration_ms: 0.119139
+      type: 'test'
+      ...
+    # Subtest: error message names the bad input
+    ok 24 - error message names the bad input
+      ---
+      duration_ms: 0.070138
+      type: 'test'
+      ...
+    1..24
+ok 61 - notchChange
+  ---
+  duration_ms: 5.193058
+  type: 'suite'
+  ...
+# Subtest: notchCalculator
+    # Subtest: BBB+ -> BB+ gives {"notches":3,"direction":"downgrade","wl":2}
+    ok 1 - BBB+ -> BB+ gives {"notches":3,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.425699
+      type: 'test'
+      ...
+    # Subtest: AAA -> CCC- gives {"notches":18,"direction":"downgrade","wl":2}
+    ok 2 - AAA -> CCC- gives {"notches":18,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.184632
+      type: 'test'
+      ...
+    # Subtest: AAA -> AA- gives {"notches":3,"direction":"downgrade","wl":2}
+    ok 3 - AAA -> AA- gives {"notches":3,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.058241
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB- gives {"notches":2,"direction":"downgrade","wl":1}
+    ok 4 - BBB+ -> BBB- gives {"notches":2,"direction":"downgrade","wl":1}
+      ---
+      duration_ms: 0.042263
+      type: 'test'
+      ...
+    # Subtest: A -> BBB+ gives {"notches":2,"direction":"downgrade","wl":1}
+    ok 5 - A -> BBB+ gives {"notches":2,"direction":"downgrade","wl":1}
+      ---
+      duration_ms: 0.139839
+      type: 'test'
+      ...
+    # Subtest: BBB -> BBB- gives {"notches":1,"direction":"downgrade","wl":0}
+    ok 6 - BBB -> BBB- gives {"notches":1,"direction":"downgrade","wl":0}
+      ---
+      duration_ms: 0.049216
+      type: 'test'
+      ...
+    # Subtest: CCC -> CCC- gives {"notches":1,"direction":"downgrade","wl":0}
+    ok 7 - CCC -> CCC- gives {"notches":1,"direction":"downgrade","wl":0}
+      ---
+      duration_ms: 0.043435
+      type: 'test'
+      ...
+    # Subtest: BB -> BBB gives {"notches":-3,"direction":"upgrade","wl":0}
+    ok 8 - BB -> BBB gives {"notches":-3,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.101768
+      type: 'test'
+      ...
+    # Subtest: BBB- -> BBB gives {"notches":-1,"direction":"upgrade","wl":0}
+    ok 9 - BBB- -> BBB gives {"notches":-1,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 1.051109
+      type: 'test'
+      ...
+    # Subtest: A- -> A gives {"notches":-1,"direction":"upgrade","wl":0}
+    ok 10 - A- -> A gives {"notches":-1,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.076487
+      type: 'test'
+      ...
+    # Subtest: CCC- -> AAA gives {"notches":-18,"direction":"upgrade","wl":0}
+    ok 11 - CCC- -> AAA gives {"notches":-18,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.047579
+      type: 'test'
+      ...
+    # Subtest: BBB- -> BBB+ gives {"notches":-2,"direction":"upgrade","wl":0}
+    ok 12 - BBB- -> BBB+ gives {"notches":-2,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.037374
+      type: 'test'
+      ...
+    # Subtest: BB+ -> BBB+ gives {"notches":-3,"direction":"upgrade","wl":0}
+    ok 13 - BB+ -> BBB+ gives {"notches":-3,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.064546
+      type: 'test'
+      ...
+    # Subtest: BBB -> BBB gives {"notches":0,"direction":"unchanged","wl":0}
+    ok 14 - BBB -> BBB gives {"notches":0,"direction":"unchanged","wl":0}
+      ---
+      duration_ms: 0.04597
+      type: 'test'
+      ...
+    # Subtest: AAA -> AAA gives {"notches":0,"direction":"unchanged","wl":0}
+    ok 15 - AAA -> AAA gives {"notches":0,"direction":"unchanged","wl":0}
+      ---
+      duration_ms: 0.041036
+      type: 'test'
+      ...
+    # Subtest: CCC- -> CCC- gives {"notches":0,"direction":"unchanged","wl":0}
+    ok 16 - CCC- -> CCC- gives {"notches":0,"direction":"unchanged","wl":0}
+      ---
+      duration_ms: 0.035561
+      type: 'test'
+      ...
+    # Subtest: AC-11: unchanged notches is +0, never -0
+    ok 17 - AC-11: unchanged notches is +0, never -0
+      ---
+      duration_ms: 0.11222
+      type: 'test'
+      ...
+    # Subtest: AC-5: ignores case and whitespace
+    ok 18 - AC-5: ignores case and whitespace
+      ---
+      duration_ms: 0.140645
+      type: 'test'
+      ...
+    # Subtest: AC-12: returns exactly the keys notches, direction, wl
+    ok 19 - AC-12: returns exactly the keys notches, direction, wl
+      ---
+      duration_ms: 0.093976
+      type: 'test'
+      ...
+    # Subtest: notches equals notchChange
+    ok 20 - notches equals notchChange
+      ---
+      duration_ms: 0.062332
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid empty string
+    ok 21 - AC-6: throws RangeError for invalid empty string
+      ---
+      duration_ms: 0.09506
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid blank string
+    ok 22 - AC-6: throws RangeError for invalid blank string
+      ---
+      duration_ms: 0.05865
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid internal space BBB +
+    ok 23 - AC-6: throws RangeError for invalid internal space BBB +
+      ---
+      duration_ms: 0.048541
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid internal space B B
+    ok 24 - AC-6: throws RangeError for invalid internal space B B
+      ---
+      duration_ms: 0.071465
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid D
+    ok 25 - AC-6: throws RangeError for invalid D
+      ---
+      duration_ms: 0.052736
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid SD
+    ok 26 - AC-6: throws RangeError for invalid SD
+      ---
+      duration_ms: 0.076445
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid NR
+    ok 27 - AC-6: throws RangeError for invalid NR
+      ---
+      duration_ms: 0.060723
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid CC
+    ok 28 - AC-6: throws RangeError for invalid CC
+      ---
+      duration_ms: 0.048401
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid AAA+
+    ok 29 - AC-6: throws RangeError for invalid AAA+
+      ---
+      duration_ms: 0.049656
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid CCC--
+    ok 30 - AC-6: throws RangeError for invalid CCC--
+      ---
+      duration_ms: 0.050783
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid Baa1
+    ok 31 - AC-6: throws RangeError for invalid Baa1
+      ---
+      duration_ms: 0.046918
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid null
+    ok 32 - AC-6: throws RangeError for invalid null
+      ---
+      duration_ms: 0.04562
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid undefined
+    ok 33 - AC-6: throws RangeError for invalid undefined
+      ---
+      duration_ms: 0.044334
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid number
+    ok 34 - AC-6: throws RangeError for invalid number
+      ---
+      duration_ms: 0.046552
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid object
+    ok 35 - AC-6: throws RangeError for invalid object
+      ---
+      duration_ms: 0.045811
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid array
+    ok 36 - AC-6: throws RangeError for invalid array
+      ---
+      duration_ms: 0.043963
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for invalid object with toString
+    ok 37 - AC-6: throws RangeError for invalid object with toString
+      ---
+      duration_ms: 0.043451
+      type: 'test'
+      ...
+    # Subtest: AC-6: throws RangeError for missing or doubly invalid arguments
+    ok 38 - AC-6: throws RangeError for missing or doubly invalid arguments
+      ---
+      duration_ms: 0.166349
+      type: 'test'
+      ...
+    1..38
+ok 62 - notchCalculator
+  ---
+  duration_ms: 4.67892
+  type: 'suite'
+  ...
+1..62
+# tests 123
+# suites 3
+# pass 123
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 819.742229

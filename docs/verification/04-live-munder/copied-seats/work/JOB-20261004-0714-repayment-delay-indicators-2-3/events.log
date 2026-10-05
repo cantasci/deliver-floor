@@ -1,0 +1,87 @@
+2026-10-04T07:14:41Z	new	Repayment delay indicators 2-3
+2026-10-04T07:14:41Z	jobset	stack: .stack=["javascript"]
+2026-10-04T07:14:47Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/REQ-03-03: domain logic (indicator → WL mapping)"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (plain Node ESM) → stack reviewer"}]
+2026-10-04T07:14:47Z	jobset	assumptions: .assumptions += ["No UI and no security reviewer: pure functions mapping fixed dropdown strings to WL (C4); input validation is a RangeError covered by ACs"]
+2026-10-04T07:14:47Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T07:14:47Z	phase	readiness
+2026-10-04T07:14:50Z	md-hire	ba#1 → worker-seat-20261004-0714-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-04T07:14:50Z	md-hire	backend-lead#1 → worker-seat-20261004-0714-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-04T07:14:51Z	md-hire	backend#1 → worker-seat-20261004-0714-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-04T07:14:51Z	md-hire	backend#2 → worker-seat-20261004-0714-backend-2-h1 (claude claude-sonnet-5-5, jim)
+2026-10-04T07:14:51Z	md-hire	qa#1 → worker-seat-20261004-0714-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-04T07:14:51Z	md-hire	reviewer#1 → worker-seat-20261004-0714-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-04T07:15:00Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261004-0714-ba-1-h1
+2026-10-04T07:15:57Z	md-done	readiness ba#1: readiness: 28+3 items answered, one library component, X-options-frozen open (pm)
+2026-10-04T07:16:10Z	readiness	30 items: 20 decided, 9 n/a, 1 open
+2026-10-04T07:16:11Z	decide	X-options-frozen: Export both *_OPTIONS as Object.freeze([...]) arrays, the exact strings in contract order — Shared contract consumed by later POC screens: freezing stops a consumer from silently mutating the options and breaking the WL mapping; reading/iterating is unchanged
+2026-10-04T07:16:11Z	readiness	30 items: 21 decided, 9 n/a, 0 open
+2026-10-04T07:16:19Z	freeze	readiness + architecture frozen (95b1b17cab8b)
+2026-10-04T07:16:19Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T07:16:19Z	phase	planning
+2026-10-04T07:16:19Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261004-0714-ba-1-h1
+2026-10-04T07:16:24Z	pm-decision	No security reviewer seat — Only 'external input' is a fixed dropdown string validated by strict type/value check with RangeError (C1, C5), fully covered by ACs and the stack reviewer; no auth, secrets, I/O or personal data
+2026-10-04T07:17:19Z	md-done	plan ba#1: plan: 11 ACs (AC-1..11), split AC-1..5 daysWithDelay, AC-6..9 delayCount, AC-10/11 shared
+2026-10-04T07:17:19Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261004-0714-backend-lead-1-h1
+2026-10-04T07:18:38Z	md-done	cards-backend-lead backend-lead#1: cards: B1 daysWithDelay (AC-1..5,10,11), B2 delayCount (AC-6..9,10,11), parallel, no shared files
+2026-10-04T07:18:38Z	md-send	spec-cards ba#1 (business-analyst) → worker-seat-20261004-0714-ba-1-h1
+2026-10-04T07:19:20Z	md-done	spec-cards ba#1: specs T-01 (AC-1..5,10,11) and T-02 (AC-6..9,10,11) with edges and test data
+2026-10-04T07:19:24Z	phase	executing
+2026-10-04T07:19:33Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T07:19:34Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-04T07:19:39Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261004-0714-backend-1-h1
+2026-10-04T07:19:39Z	md-send	T-02 backend#2 (backend-dev) → worker-seat-20261004-0714-backend-2-h1
+2026-10-04T07:20:19Z	md-done	T-01 backend#1: T-01 done: f7297c7, verify 7/7
+2026-10-04T07:20:20Z	gate	T-01 PASS
+2026-10-04T07:20:28Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261004-0714-qa-1-h1
+2026-10-04T07:20:43Z	md-done	T-02 backend#2: T-02 done: 4449205, verify 7/7 (local commit; merge mode is local, no push needed)
+2026-10-04T07:20:44Z	gate	T-02 PASS
+2026-10-04T07:21:23Z	md-done	T-01 qa#1: T-01 QA pass: 8/8 integration tests
+2026-10-04T07:21:24Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass (strings + non-strings); AC-10 pass; AC-11 pass — 8/8 in daysWithDelay.integration.test.mjs
+2026-10-04T07:21:25Z	md-send	T-02 qa#1 (qa-tester) → worker-seat-20261004-0714-qa-1-h1
+2026-10-04T07:21:25Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261004-0714-reviewer-1-h1
+2026-10-04T07:21:55Z	md-done	T-01 reviewer#1: T-01 review: changes — unit test missing NBSP trim case
+2026-10-04T07:21:56Z	review	T-01 reviewer changes — unit test lacks NBSP trim case (AC-4 ' >3 days ' -> 2)
+2026-10-04T07:21:57Z	assign	T-01 → backend-dev (backend#1) attempt=2
+2026-10-04T07:21:57Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261004-0714-backend-1-h1
+2026-10-04T07:22:27Z	md-done	T-02 qa#1: T-02 QA pass: 8/8 integration tests
+2026-10-04T07:22:28Z	qa	T-02 pass (qa_verify PASS) — AC-6 pass; AC-7 pass; AC-8 pass (incl. NBSP); AC-9 pass; AC-10 pass; AC-11 pass — 8/8 in delayCount.integration.test.mjs
+2026-10-04T07:22:37Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261004-0714-reviewer-1-h1
+2026-10-04T07:22:44Z	md-done	T-01 backend#1: T-01 attempt 2: 6caa53a, NBSP unit cases as \u00a0 escapes
+2026-10-04T07:22:46Z	gate	T-01 PASS
+2026-10-04T07:22:55Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261004-0714-qa-1-h1
+2026-10-04T07:23:13Z	md-done	T-02 reviewer#1: T-02 review v1: changes (NBSP) — sent back for re-check, line 22 is a raw NBSP
+2026-10-04T07:23:13Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261004-0714-reviewer-1-h1
+2026-10-04T07:23:14Z	learn	reviewer: Raw NBSP (U+00A0) in test strings looks like a plain space: check bytes (od -c) before flagging a missing NBSP case
+2026-10-04T07:23:23Z	md-done	T-01 qa#1: T-01 QA round 2 pass: 8/8 unchanged
+2026-10-04T07:23:24Z	qa	T-01 pass (qa_verify PASS) — round 2: AC-1..5, AC-10, AC-11 pass — 8/8 unchanged against 6caa53a
+2026-10-04T07:23:46Z	md-done	T-02 reviewer#1: T-02 review: changes — wants explicit \u00a0 NBSP unit case
+2026-10-04T07:23:46Z	review	T-02 reviewer changes — unit test: add explicit \u00a0 NBSP trim case (AC-8); line 22 raw NBSP not recognised
+2026-10-04T07:23:46Z	pm-decision	T-02: T-02: accept reviewer's NBSP blocker instead of overruling it — Line 22 already had raw U+00A0 bytes, but explicit \u00a0 escapes are clearer and match T-01; a one-line fix is cheaper than a dispute
+2026-10-04T07:23:47Z	assign	T-02 → backend-dev (backend#1) attempt=2
+2026-10-04T07:23:47Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261004-0714-reviewer-1-h1
+2026-10-04T07:23:56Z	md-send	T-02 backend#1 (backend-dev) → worker-seat-20261004-0714-backend-1-h1
+2026-10-04T07:24:10Z	md-done	T-01 reviewer#1: T-01 re-review: approve
+2026-10-04T07:24:10Z	review	T-01 reviewer approve — NBSP blocker resolved in 6caa53a; scope clean, 2 exports, no I/O
+2026-10-04T07:24:11Z	integrate	T-01 merged
+2026-10-04T07:25:02Z	md-done	T-02 backend#1: T-02 attempt 2: 017aa78, explicit \u00a0 NBSP cases
+2026-10-04T07:25:04Z	gate	T-02 PASS
+2026-10-04T07:25:04Z	md-send	T-02 qa#1 (qa-tester) → worker-seat-20261004-0714-qa-1-h1
+2026-10-04T07:25:22Z	md-done	T-02 qa#1: T-02 QA round 2 pass: 8/8 unchanged
+2026-10-04T07:25:23Z	qa	T-02 pass (qa_verify PASS) — round 2: AC-6..9, AC-10, AC-11 pass — 8/8 unchanged against 017aa78
+2026-10-04T07:25:24Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261004-0714-reviewer-1-h1
+2026-10-04T07:25:40Z	md-done	T-02 reviewer#1: T-02 re-review: approve
+2026-10-04T07:25:40Z	review	T-02 reviewer approve — NBSP blocker resolved in 017aa78; scope clean, 2 exports, no I/O
+2026-10-04T07:25:41Z	integrate	T-02 merged
+2026-10-04T07:25:45Z	phase	integrating
+2026-10-04T07:25:46Z	verify-all	PASS
+2026-10-04T07:25:54Z	phase	closing
+2026-10-04T07:25:54Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261004-0714-ba-1-h1
+2026-10-04T07:26:25Z	md-done	closing ba#1: closing: all 11 ACs met, 30/30 tests on job head
+2026-10-04T07:26:41Z	learn	backend: Write invisible characters in tests as escapes (\u00a0, \t), never raw bytes — reviewers can't see raw NBSP
+2026-10-04T07:26:41Z	ship	local merge into main
+2026-10-04T07:26:44Z	md-release	ba#1 → worker-seat-20261004-0714-ba-1-h1
+2026-10-04T07:26:44Z	md-release	backend-lead#1 → worker-seat-20261004-0714-backend-lead-1-h1
+2026-10-04T07:26:44Z	md-release	backend#1 → worker-seat-20261004-0714-backend-1-h1
+2026-10-04T07:26:44Z	md-release	backend#2 → worker-seat-20261004-0714-backend-2-h1
+2026-10-04T07:26:44Z	md-release	qa#1 → worker-seat-20261004-0714-qa-1-h1
+2026-10-04T07:26:44Z	md-release	reviewer#1 → worker-seat-20261004-0714-reviewer-1-h1

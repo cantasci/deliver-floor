@@ -1,0 +1,446 @@
+# gate: T-02  attempt: 1  2026-10-04T17:50:29Z
+ok    on job/JOB-20261004-1732-notch-calculator-and-country-rat--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/**","test/indicators/**"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/*.test.mjs
+TAP version 13
+# Subtest: countryRatingChangeWl
+    # Subtest: AC-10 table
+        # Subtest: BBB+ -> BBB gives 1
+        ok 1 - BBB+ -> BBB gives 1
+          ---
+          duration_ms: 0.803405
+          type: 'test'
+          ...
+        # Subtest: CCC -> CCC- gives 1
+        ok 2 - CCC -> CCC- gives 1
+          ---
+          duration_ms: 0.144956
+          type: 'test'
+          ...
+        # Subtest: BBB+ -> BBB- gives 2
+        ok 3 - BBB+ -> BBB- gives 2
+          ---
+          duration_ms: 0.086112
+          type: 'test'
+          ...
+        # Subtest: BBB+ -> BB+ gives 2
+        ok 4 - BBB+ -> BB+ gives 2
+          ---
+          duration_ms: 0.133734
+          type: 'test'
+          ...
+        # Subtest: AAA -> CCC- gives 2
+        ok 5 - AAA -> CCC- gives 2
+          ---
+          duration_ms: 0.083194
+          type: 'test'
+          ...
+        # Subtest: BBB -> BBB gives 0
+        ok 6 - BBB -> BBB gives 0
+          ---
+          duration_ms: 0.073607
+          type: 'test'
+          ...
+        # Subtest: AAA -> AAA gives 0
+        ok 7 - AAA -> AAA gives 0
+          ---
+          duration_ms: 1.206132
+          type: 'test'
+          ...
+        # Subtest: BBB -> A gives 0
+        ok 8 - BBB -> A gives 0
+          ---
+          duration_ms: 0.11012
+          type: 'test'
+          ...
+        # Subtest: AA+ -> AAA gives 0
+        ok 9 - AA+ -> AAA gives 0
+          ---
+          duration_ms: 0.342348
+          type: 'test'
+          ...
+        # Subtest: CCC- -> AAA gives 0
+        ok 10 - CCC- -> AAA gives 0
+          ---
+          duration_ms: 0.273587
+          type: 'test'
+          ...
+        1..10
+    ok 1 - AC-10 table
+      ---
+      duration_ms: 4.473905
+      type: 'suite'
+      ...
+    # Subtest: AC-11 property over all 361 pairs
+        # Subtest: matches the d thresholds, is a number, and totals 190/18/153
+        ok 1 - matches the d thresholds, is a number, and totals 190/18/153
+          ---
+          duration_ms: 1.189367
+          type: 'test'
+          ...
+        1..1
+    ok 2 - AC-11 property over all 361 pairs
+      ---
+      duration_ms: 1.307391
+      type: 'suite'
+      ...
+    # Subtest: edge cases
+        # Subtest: boundaries of d: -18, -1, 0 -> 0; 1 -> 1; 2, 3, 18 -> 2
+        ok 1 - boundaries of d: -18, -1, 0 -> 0; 1 -> 1; 2, 3, 18 -> 2
+          ---
+          duration_ms: 0.142237
+          type: 'test'
+          ...
+        # Subtest: upgrades and unchanged return +0, never -0
+        ok 2 - upgrades and unchanged return +0, never -0
+          ---
+          duration_ms: 0.111008
+          type: 'test'
+          ...
+        # Subtest: returns a synchronous number, not a Promise or coerced value
+        ok 3 - returns a synchronous number, not a Promise or coerced value
+          ---
+          duration_ms: 0.070615
+          type: 'test'
+          ...
+        # Subtest: both arguments invalid throws RangeError
+        ok 4 - both arguments invalid throws RangeError
+          ---
+          duration_ms: 0.314258
+          type: 'test'
+          ...
+        1..4
+    ok 3 - edge cases
+      ---
+      duration_ms: 0.745142
+      type: 'suite'
+      ...
+    # Subtest: AC-5 normalisation inherited from notchChange
+        # Subtest: ('bbb+', '  bbb ') -> 1
+        ok 1 - ('bbb+', '  bbb ') -> 1
+          ---
+          duration_ms: 0.083109
+          type: 'test'
+          ...
+        # Subtest: (' bbb+ ', 'Bb+') -> 2
+        ok 2 - (' bbb+ ', 'Bb+') -> 2
+          ---
+          duration_ms: 0.043987
+          type: 'test'
+          ...
+        # Subtest: ('\\tA\\n', 'a-') -> 1
+        ok 3 - ('\\tA\\n', 'a-') -> 1
+          ---
+          duration_ms: 0.06513
+          type: 'test'
+          ...
+        1..3
+    ok 4 - AC-5 normalisation inherited from notchChange
+      ---
+      duration_ms: 0.304995
+      type: 'suite'
+      ...
+    # Subtest: AC-6 validation passes through from notchChange
+        # Subtest: throws RangeError for empty string as previous
+        ok 1 - throws RangeError for empty string as previous
+          ---
+          duration_ms: 0.357049
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty string as current
+        ok 2 - throws RangeError for empty string as current
+          ---
+          duration_ms: 0.068205
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for spaces only as previous
+        ok 3 - throws RangeError for spaces only as previous
+          ---
+          duration_ms: 0.044064
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for spaces only as current
+        ok 4 - throws RangeError for spaces only as current
+          ---
+          duration_ms: 0.043208
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for tab and newline only as previous
+        ok 5 - throws RangeError for tab and newline only as previous
+          ---
+          duration_ms: 0.039962
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for tab and newline only as current
+        ok 6 - throws RangeError for tab and newline only as current
+          ---
+          duration_ms: 0.040436
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for D as previous
+        ok 7 - throws RangeError for D as previous
+          ---
+          duration_ms: 0.126983
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for D as current
+        ok 8 - throws RangeError for D as current
+          ---
+          duration_ms: 0.134935
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for SD as previous
+        ok 9 - throws RangeError for SD as previous
+          ---
+          duration_ms: 0.094912
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for SD as current
+        ok 10 - throws RangeError for SD as current
+          ---
+          duration_ms: 0.053024
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for NR as previous
+        ok 11 - throws RangeError for NR as previous
+          ---
+          duration_ms: 0.043356
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for NR as current
+        ok 12 - throws RangeError for NR as current
+          ---
+          duration_ms: 0.041084
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for C as previous
+        ok 13 - throws RangeError for C as previous
+          ---
+          duration_ms: 0.040108
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for C as current
+        ok 14 - throws RangeError for C as current
+          ---
+          duration_ms: 0.113448
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for AAA+ as previous
+        ok 15 - throws RangeError for AAA+ as previous
+          ---
+          duration_ms: 0.105397
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for AAA+ as current
+        ok 16 - throws RangeError for AAA+ as current
+          ---
+          duration_ms: 0.048194
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for CCC-- as previous
+        ok 17 - throws RangeError for CCC-- as previous
+          ---
+          duration_ms: 0.091367
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for CCC-- as current
+        ok 18 - throws RangeError for CCC-- as current
+          ---
+          duration_ms: 0.052524
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for BBB++ as previous
+        ok 19 - throws RangeError for BBB++ as previous
+          ---
+          duration_ms: 0.04565
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for BBB++ as current
+        ok 20 - throws RangeError for BBB++ as current
+          ---
+          duration_ms: 0.046273
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for Baa1 as previous
+        ok 21 - throws RangeError for Baa1 as previous
+          ---
+          duration_ms: 0.071188
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for Baa1 as current
+        ok 22 - throws RangeError for Baa1 as current
+          ---
+          duration_ms: 0.05163
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for inner spaces B B B+ as previous
+        ok 23 - throws RangeError for inner spaces B B B+ as previous
+          ---
+          duration_ms: 0.099467
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for inner spaces B B B+ as current
+        ok 24 - throws RangeError for inner spaces B B B+ as current
+          ---
+          duration_ms: 0.074772
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for space before sign BBB + as previous
+        ok 25 - throws RangeError for space before sign BBB + as previous
+          ---
+          duration_ms: 0.043997
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for space before sign BBB + as current
+        ok 26 - throws RangeError for space before sign BBB + as current
+          ---
+          duration_ms: 0.053431
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for undefined as previous
+        ok 27 - throws RangeError for undefined as previous
+          ---
+          duration_ms: 0.10324
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for undefined as current
+        ok 28 - throws RangeError for undefined as current
+          ---
+          duration_ms: 0.04758
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for null as previous
+        ok 29 - throws RangeError for null as previous
+          ---
+          duration_ms: 0.042965
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for null as current
+        ok 30 - throws RangeError for null as current
+          ---
+          duration_ms: 0.042812
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for number 8 as previous
+        ok 31 - throws RangeError for number 8 as previous
+          ---
+          duration_ms: 0.040895
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for number 8 as current
+        ok 32 - throws RangeError for number 8 as current
+          ---
+          duration_ms: 0.064453
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for boolean true as previous
+        ok 33 - throws RangeError for boolean true as previous
+          ---
+          duration_ms: 0.044488
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for boolean true as current
+        ok 34 - throws RangeError for boolean true as current
+          ---
+          duration_ms: 0.040671
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty object as previous
+        ok 35 - throws RangeError for empty object as previous
+          ---
+          duration_ms: 0.067507
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for empty object as current
+        ok 36 - throws RangeError for empty object as current
+          ---
+          duration_ms: 0.054497
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for array [BBB] as previous
+        ok 37 - throws RangeError for array [BBB] as previous
+          ---
+          duration_ms: 0.047605
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for array [BBB] as current
+        ok 38 - throws RangeError for array [BBB] as current
+          ---
+          duration_ms: 0.041788
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for String wrapper object as previous
+        ok 39 - throws RangeError for String wrapper object as previous
+          ---
+          duration_ms: 0.046288
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for String wrapper object as current
+        ok 40 - throws RangeError for String wrapper object as current
+          ---
+          duration_ms: 0.049519
+          type: 'test'
+          ...
+        # Subtest: throws RangeError for missing arguments
+        ok 41 - throws RangeError for missing arguments
+          ---
+          duration_ms: 0.113013
+          type: 'test'
+          ...
+        # Subtest: error message names the argument
+        ok 42 - error message names the argument
+          ---
+          duration_ms: 0.099953
+          type: 'test'
+          ...
+        # Subtest: the error is the one notchChange throws (same class and message)
+        ok 43 - the error is the one notchChange throws (same class and message)
+          ---
+          duration_ms: 0.105254
+          type: 'test'
+          ...
+        1..43
+    ok 5 - AC-6 validation passes through from notchChange
+      ---
+      duration_ms: 4.577606
+      type: 'suite'
+      ...
+    # Subtest: AC-12 differs from notchCalculator at a 1-notch downgrade (C6)
+        # Subtest: C6: BBB+ -> BBB calculator wl 0, country rating change 1
+        ok 1 - C6: BBB+ -> BBB calculator wl 0, country rating change 1
+          ---
+          duration_ms: 0.134945
+          type: 'test'
+          ...
+        # Subtest: C6: A -> A- calculator wl 0, country rating change 1
+        ok 2 - C6: A -> A- calculator wl 0, country rating change 1
+          ---
+          duration_ms: 0.092248
+          type: 'test'
+          ...
+        1..2
+    ok 6 - AC-12 differs from notchCalculator at a 1-notch downgrade (C6)
+      ---
+      duration_ms: 0.303099
+      type: 'suite'
+      ...
+    1..6
+ok 1 - countryRatingChangeWl
+  ---
+  duration_ms: 12.550011
+  type: 'suite'
+  ...
+1..1
+# tests 63
+# suites 7
+# pass 63
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 110.236501
+ok    verify passed

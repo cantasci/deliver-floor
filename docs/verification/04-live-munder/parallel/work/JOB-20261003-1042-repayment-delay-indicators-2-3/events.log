@@ -1,0 +1,58 @@
+2026-10-03T10:42:01Z	new	Repayment delay indicators 2-3
+2026-10-03T10:42:08Z	jobset	stack: .stack=["javascript"]
+2026-10-03T10:42:09Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/REQ-03-03: domain logic (indicator → WL mapping) in src/indicators"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (plain Node ESM) → stack reviewer"}]
+2026-10-03T10:42:09Z	jobset	assumptions: .assumptions += ["No UI in this slice: the Dropdown requirement is met by the exported *_OPTIONS lists (C4)","Stack is plain Node ESM with node --test and no dependencies (repo CLAUDE.md + request)"]
+2026-10-03T10:42:09Z	roles	ba qa backend-lead backend reviewer
+2026-10-03T10:42:09Z	phase	readiness
+2026-10-03T10:42:58Z	agent	 a8053cba: Reading repo CLAUDE.md and package.json 
+2026-10-03T10:43:29Z	agent	 a4cb2429: Checking README.md and .deliver.json 
+2026-10-03T10:44:08Z	agent	business-analyst aeffcabb: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Add two pure mappings to the Watchlist POC (EPIC-03). Indicator 2 'Days with delay' maps to WL 
+2026-10-03T10:45:57Z	readiness	34 items: 18 decided, 10 n/a, 6 open
+2026-10-03T10:46:09Z	decide	DEL-docs: A: JSDoc on the 4 exports only; no README change. — Request is silent on docs; JSDoc stays inside each dev's own file so the parallel cards never share README.md; no docs role needed.
+2026-10-03T10:46:09Z	decide	X-trim-semantics: A: String.prototype.trim() (both ends, all JS whitespace); internal whitespace never normalised. — Idiomatic JS meaning of 'trimmed' (C1); C5 exact match still rejects internal variants.
+2026-10-03T10:46:09Z	decide	X-options-immutability: A: export the option arrays frozen with Object.freeze. — Prevents a consumer from silently widening the allow-list; contract content and order unchanged.
+2026-10-03T10:46:10Z	decide	X-error-message: A: RangeError message names the received value and lists the allowed options; tests assert the error type only (assert.throws(..., RangeError)). — Type is the contract (C1/C5); a helpful message aids callers; tests stay robust to wording.
+2026-10-03T10:46:10Z	decide	X-parallel-isolation: A: each module self-contained — no shared helper, no index.mjs barrel. — Request says the two requirements are independent and staffed in parallel; zero shared files means no merge conflicts and no dependency between the cards.
+2026-10-03T10:46:10Z	decide	X-qa-test-path: B: QA integration tests in test/integration/indicators/<module>.integration.test.mjs (one file per card). — Disjoint from the devs' test/indicators/ unit tests and per-card files, so the two parallel QA rounds never collide; node --test discovers them.
+2026-10-03T10:46:11Z	jobset	assumptions: .assumptions += ["No security reviewer: the only input is a dropdown label from in-repo callers (no external boundary, auth, secrets or personal data); input validation is covered by the ACs and the stack reviewer"]
+2026-10-03T10:46:21Z	readiness	34 items: 23 decided, 11 n/a, 0 open
+2026-10-03T10:46:22Z	freeze	readiness + architecture frozen (4eadc4a4b441)
+2026-10-03T10:46:22Z	roles	ba qa backend-lead backend reviewer
+2026-10-03T10:46:22Z	phase	planning
+2026-10-03T10:47:01Z	agent	 adc6c659: Running baseline node --test suite 
+2026-10-03T10:47:32Z	agent	 a7d8d7c1: Drafting plan.md acceptance criteria 
+2026-10-03T10:47:57Z	agent	business-analyst abfa463b: # Plan > Produced by the Business Analyst (MODE PLAN), written to this file by Michael. Keep the headings as they are — the ACs are checked one by one at clos
+2026-10-03T10:48:43Z	jobset	assumptions: .assumptions += ["C5 non-string = typeof !== \"string\": String wrapper objects and objects with custom toString are rejected, not unwrapped (BA reading, no scope change)"]
+2026-10-03T10:49:26Z	agent	 ac6ba383: Reading plan.md and readiness.md 
+2026-10-03T10:49:42Z	agent	ecc:architect a72e512e: ```json [ { "tmp_id": "B1", "title": "REQ-03-02 Indicator 2 'Days with delay': DAYS_WITH_DELAY_OPTIONS + daysWithDelayWl (src/indicators/daysWithDelay.mjs)", "r
+2026-10-03T10:51:08Z	agent	 a6e364f3: Inspecting package.json and CLAUDE.md 
+2026-10-03T10:51:50Z	agent	business-analyst ad8599a7: === T-01 === # T-01: REQ-03-02 Indicator 2 "Days with delay": `DAYS_WITH_DELAY_OPTIONS` + `daysWithDelayWl` ## User story As a developer building the Watchlist 
+2026-10-03T10:52:51Z	phase	executing
+2026-10-03T10:52:52Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T10:52:53Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-03T10:53:07Z	md-dispatch	T-01 backend → worker-dl-20261003-1042-T-01-backend-a1 (claude claude-sonnet-5-5)
+2026-10-03T10:53:07Z	md-dispatch	T-02 backend → worker-dl-20261003-1042-T-02-backend-a1 (claude claude-sonnet-5-5)
+2026-10-03T10:54:04Z	gate	T-01 PASS
+2026-10-03T10:54:06Z	gate	T-02 PASS
+2026-10-03T10:54:50Z	agent	 a4bc9ea5: Pushing daysWithDelay integration tests 
+2026-10-03T10:54:57Z	agent	 a8ec599d: Committing delayCount integration tests 
+2026-10-03T10:55:08Z	agent	qa-tester ae2e4913: All eight criteria pass, so the verdict is pass. The one gap is that the push of the card branch was blocked, so the QA commit exists only locally. `qa_verify` 
+2026-10-03T10:55:12Z	agent	qa-tester a629835b: All acceptance criteria pass, but I could not push the card branch. The bash-guard hook blocked every `git push` attempt with "this directory is not a card work
+2026-10-03T10:55:22Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass: list exact/ASCII <=/frozen, mutation TypeError; AC-2 pass: 0,0,2,3,4 + node -e prints 3; AC-3 pass: trim incl NBSP; AC-4 pass: 16 unknown strings RangeError; AC-5 pass: 14 non-strings RangeError; AC-6 pass: consumer [0,0,2,3,4]; AC-13 pass: node --test 15/0, no deps; AC-14 pass: no imports, no post-Node-18 APIs
+2026-10-03T10:55:31Z	qa	T-02 pass (qa_verify PASS) — AC-7 pass: list exact strings/frozen, mutation TypeError; AC-8 pass: 0,1,2 + node -e prints 2; AC-9 pass: trim incl NBSP/CRLF; AC-10 pass: 14 unknown strings RangeError; AC-11 pass: 13 non-strings incl numbers RangeError; AC-12 pass: consumer [0,1,2]; AC-13 pass: node --test 49/0, no deps; AC-14 pass: no imports, no post-Node-18 APIs
+2026-10-03T10:55:57Z	agent	ecc:typescript-reviewer a383ae37: {"verdict":"approve","blocking":[],"nits":["The unit file test/indicators/daysWithDelay.test.mjs has 6 tests, but they cover every spec behaviour. Options list 
+2026-10-03T10:55:57Z	agent	ecc:typescript-reviewer a5dd02de: {"verdict":"approve","blocking":[],"nits":["src/indicators/delayCount.mjs: the JSDoc on DELAY_COUNT_OPTIONS does not mention the return values 0|1|2 or the trim
+2026-10-03T10:56:11Z	review	T-01 reviewer approve — ACs met; indexOf on frozen list (no prototype trap), safe describe() for Symbol/BigInt/null-proto, Node-18-safe, no imports; 6 table-driven unit tests cover all spec behaviours. Nits: unit cases for inner NBSP/ZWSP, \u escapes for invisible chars
+2026-10-03T10:56:12Z	review	T-02 reviewer approve — ACs met; numbers rejected without coercion, no prototype trap, safe message building, Node-18-safe, no imports. Nits: JSDoc on DELAY_COUNT_OPTIONS lacks WL/trim note, [option,wl] pairs vs index coupling, test title overstates case check, \u escapes
+2026-10-03T10:56:13Z	integrate	T-01 merged
+2026-10-03T10:56:14Z	integrate	T-02 merged
+2026-10-03T10:56:19Z	phase	integrating
+2026-10-03T10:56:20Z	verify-all	PASS
+2026-10-03T10:56:25Z	phase	closing
+2026-10-03T10:57:03Z	agent	 a7023950: Rerunning node --test and indicator checks 
+2026-10-03T10:57:34Z	agent	 af52aeab: Spot-checking AC examples in check.mjs 
+2026-10-03T10:57:41Z	agent	business-analyst a5302400: All 14 ACs are met. The integrated job branch is at HEAD `e2f295c`, the same commit the verify-all log ran on. I re-ran `node --test` there on Node v22.22.0 and
+2026-10-03T10:58:12Z	learn	all: Write invisible/look-alike characters in tests and code as \u escapes (\u00A0, \u200B, \u2264), never as literal characters — reviewers flagged it on both parallel cards.
+2026-10-03T10:58:12Z	learn	backend: When two parallel cards build sibling modules, the lead names one shared shape for error messages (how null/Symbol/BigInt render, one message prefix) in both card contexts — the two indicator modules diverged cosmetically.
+2026-10-03T10:58:17Z	ship	local merge into main
+2026-10-03T10:58:40Z	cleanup	

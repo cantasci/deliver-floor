@@ -1,0 +1,41 @@
+2026-10-03T22:02:41Z	new	Rating notch calculator and country indicator
+2026-10-03T22:02:44Z	jobset	stack: .stack=["javascript"]
+2026-10-03T22:02:50Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator domain logic and notch contract"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02/REQ-03-12: implement src/ratings and src/indicators"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer"}]
+2026-10-03T22:02:50Z	jobset	assumptions: .assumptions += ["No UI/CLI/persistence in this slice (C4,C7,C8); pure functions only per CLAUDE.md"]
+2026-10-03T22:02:50Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:02:50Z	phase	readiness
+2026-10-03T22:04:55Z	agent	business-analyst ab80773a: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two pure functions for the Watchlist POC. (1) A notch calculator (REQ-06-02) that takes a previ
+2026-10-03T22:05:32Z	readiness	32 items: 19 decided, 9 n/a, 4 open
+2026-10-03T22:05:32Z	decide	DEL-docs: Code and tests only; short JSDoc on the exports is allowed inside scope files — No README/contract change requested; README.md is outside the card scope and the contract lives in JOB.md
+2026-10-03T22:05:32Z	decide	X-error-message: Tests assert RangeError type only; message includes the offending value — Type is the contract (C1); wording is a debugging detail
+2026-10-03T22:05:32Z	decide	X-trim-semantics: String.prototype.trim — Standard JS meaning of trimmed; no effect on valid set or thresholds
+2026-10-03T22:05:32Z	decide	X-scale-immutability: Object.freeze array — Prevents importers mutating the shared scale; contract unchanged
+2026-10-03T22:05:41Z	readiness	32 items: 22 decided, 10 n/a, 0 open
+2026-10-03T22:05:41Z	freeze	readiness + architecture frozen (0052c4411ae6)
+2026-10-03T22:05:41Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:05:41Z	phase	planning
+2026-10-03T22:07:09Z	agent	business-analyst a367d223: # Plan ## Goal Deliver two pure, dependency-free ES modules for the Watchlist POC. Other POC parts will import them by the exact contract names. 1. **REQ-06-02,
+2026-10-03T22:08:41Z	agent	ecc:architect a1ebc336: ```json [ { "tmp_id": "B1", "title": "Rating scale, notchChange and notchCalculator (REQ-06-02) in src/ratings/notch.mjs", "role": "backend", "component": "watc
+2026-10-03T22:13:08Z	agent	business-analyst a0724ad9: === T-01 === # T-01: Rating scale, notchChange and notchCalculator (REQ-06-02) ## User story As a credit analyst, working through the POC modules that import th
+2026-10-03T22:14:16Z	phase	executing
+2026-10-03T22:14:17Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T22:15:33Z	agent	backend-dev af3202fd: status: done commit: 817ec28 verify: passed (`node --test test/ratings/notch.test.mjs` gave 147 pass, 0 fail) open issues: The push of the card branch was block
+2026-10-03T22:15:36Z	gate	T-01 PASS
+2026-10-03T22:16:43Z	agent	qa-tester ace502ff: All 30 criteria hold and `qa_verify` exits 0 (49 tests, 0 failures). The branch is not pushed. My two push attempts were blocked by the `bash-guard.sh` hook, wh
+2026-10-03T22:16:46Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-7, AC-11, AC-12, AC-13 pass; 49 integration tests, 0 failures
+2026-10-03T22:17:03Z	agent	ecc:typescript-reviewer a79c61c8: {"verdict":"approve","blocking":[],"nits":["test/integration/ratings/notch.int.test.mjs, the AC-13 test: it asserts `assert.notEqual(r.notches, 2)` and `assert.
+2026-10-03T22:17:06Z	review	T-01 reviewer approve — no blocking items; nits only
+2026-10-03T22:17:06Z	integrate	T-01 merged
+2026-10-03T22:17:09Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-03T22:17:57Z	agent	backend-dev a1d1f42a: status: done commit: b507d17 verify: passed. `node --test test/indicators/countryRating.test.mjs` ran 11 tests with 0 failures. The full `node --test` at the wo
+2026-10-03T22:17:59Z	gate	T-02 PASS
+2026-10-03T22:19:13Z	agent	qa-tester aceb936a: All 24 integration tests pass, `qa_verify` exits 0, and the full `node --test` from the worktree root passes (231 tests, 0 fail). I committed the tests as `0e4e
+2026-10-03T22:19:17Z	qa	T-02 pass (qa_verify PASS) — AC-3, AC-8..AC-13 pass; 24 integration tests, 0 failures
+2026-10-03T22:19:39Z	agent	ecc:typescript-reviewer aebf0528: ```json {"verdict":"approve","blocking":[],"nits":["Verified in the T-02 worktree on Node 22.22: `node --test` gives 231 pass, 0 fail, 0 skipped. I did not run 
+2026-10-03T22:19:42Z	review	T-02 reviewer approve — no blocking items; nits only
+2026-10-03T22:19:42Z	integrate	T-02 merged
+2026-10-03T22:19:43Z	phase	integrating
+2026-10-03T22:19:44Z	verify-all	PASS
+2026-10-03T22:19:46Z	phase	closing
+2026-10-03T22:20:53Z	agent	business-analyst aea73bac: All 13 acceptance criteria are met on the job branch `job/JOB-20261003-2202-rating-notch-calculator-and-coun` (HEAD `3363509`, both cards merged). The integrati
+2026-10-03T22:20:59Z	ship	local merge into main

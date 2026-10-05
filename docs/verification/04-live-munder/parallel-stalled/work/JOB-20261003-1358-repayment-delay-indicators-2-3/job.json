@@ -1,0 +1,98 @@
+{
+  "id": "JOB-20261003-1358-repayment-delay-indicators-2-3",
+  "title": "Repayment delay indicators 2-3",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md\nRepayment delay indicators 2 and 3 (Watchlist POC slice, parallel)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool), EPIC-03.\nBuild only these two requirements. They are independent of each other.\n\nStaffing: two backend developers work in parallel, one per requirement.\n\n## Requirements (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-03-02 | Indicator 2 (Days with delay): Dropdown → no delay / ≤3 days / >3 days / >60 days / >90 days | >3 days → WL=2; >60 days → WL=3; >90 days → WL=4 |\n| REQ-03-03 | Indicator 3 (Delays in 12 months): Dropdown → 0 / 1 / >1 | 1 → WL=1; >1 → WL=2 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Dropdown values are exactly these strings: Indicator 2: \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\";\n  Indicator 3: \"0\", \"1\", \">1\". Input is trimmed; any other value throws a RangeError.\n- C2. \"no delay\" and \"<=3 days\" → WL 0; Indicator 3 \"0\" → WL 0.\n- C3. Indicator 1 (repayment delay yes/no) and its collapsing of indicators 2–3 are OUT of scope here.\n- C4. \"Dropdown\" is met by the exported option lists (`*_OPTIONS`) that the POC screens, built later by other parts, render.\n  No UI in this slice.\n- C5. Matching is exact and case-sensitive after trimming (\">3 days\" yes, \">3 Days\" no → RangeError); a non-string input is a RangeError too.\n- C6. The caller counts the delays in the last 12 months and picks the option; this slice only maps the option to a WL.\n\n## Contract\n\n- `src/indicators/daysWithDelay.mjs` → `export const DAYS_WITH_DELAY_OPTIONS` (the 5 strings, in order) and `export function daysWithDelayWl(option)` → 0 | 2 | 3 | 4\n- `src/indicators/delayCount.mjs` → `export const DELAY_COUNT_OPTIONS` (the 3 strings, in order) and `export function delayCountWl(option)` → 0 | 1 | 2\n\nPlain Node ESM, no dependencies; tests with `node --test`.",
+  "created": "2026-10-03T13:58:30Z",
+  "repo": "/tmp/claude-0/e2e-md/munder/repo",
+  "phase": "awaiting_clarification",
+  "stack": [
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-03-02/REQ-03-03: indicator → WL domain logic in src/indicators"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "count": 2,
+      "why": "Staffing: two backend developers work in parallel, one per requirement"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack_reviewers.javascript — plain Node ESM"
+    }
+  ],
+  "assumptions": [
+    "No UI: dropdowns are satisfied by exported *_OPTIONS arrays (C4)",
+    "Indicator 1 and its collapsing are out of scope (C3)",
+    "Security role not added: only input is a fixed dropdown value validated by allow-list (NFR-security); stack reviewer checks it"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261003-1358-repayment-delay-indicators-2-3",
+  "integration_worktree": "/tmp/claude-0/e2e-md/munder/repo/.work/JOB-20261003-1358-repayment-delay-indicators-2-3/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": null,
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "munder",
+    "max_parallel": 2,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "/tmp/claude-0/e2e-md/munder/bin/claude",
+      "model": "claude-sonnet-5-5",
+      "token_cap": 0
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "commit": {
+      "ai_attribution": false,
+      "role_in_message": false
+    }
+  },
+  "pr": null,
+  "shipped": false,
+  "delivery": null
+}

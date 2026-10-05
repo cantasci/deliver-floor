@@ -1,0 +1,149 @@
+# qa_verify: node --test test/integration/ratings/*.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE deep-equals the 19-item list, length 19, frozen
+ok 1 - AC-1: RATING_SCALE deep-equals the 19-item list, length 19, frozen
+  ---
+  duration_ms: 1.641971
+  type: 'test'
+  ...
+# Subtest: AC-1: push and index assignment throw TypeError and leave RATING_SCALE unchanged
+ok 2 - AC-1: push and index assignment throw TypeError and leave RATING_SCALE unchanged
+  ---
+  duration_ms: 0.588375
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange returns index(current) - index(previous) for spec pairs
+ok 3 - AC-2: notchChange returns index(current) - index(previous) for spec pairs
+  ---
+  duration_ms: 0.16616
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange('A','A') is +0 (not -0)
+ok 4 - AC-2: notchChange('A','A') is +0 (not -0)
+  ---
+  duration_ms: 0.113303
+  type: 'test'
+  ...
+# Subtest: AC-2: all 361 pairs yield an integer in -18..18 equal to the index difference
+ok 5 - AC-2: all 361 pairs yield an integer in -18..18 equal to the index difference
+  ---
+  duration_ms: 0.741731
+  type: 'test'
+  ...
+# Subtest: AC-3: case and leading/trailing whitespace are tolerated in notchChange
+ok 6 - AC-3: case and leading/trailing whitespace are tolerated in notchChange
+  ---
+  duration_ms: 0.1266
+  type: 'test'
+  ...
+# Subtest: AC-3: unicode whitespace at either end (NBSP, U+2003) is trimmed
+ok 7 - AC-3: unicode whitespace at either end (NBSP, U+2003) is trimmed
+  ---
+  duration_ms: 0.092983
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator(' bBb+','bbb- ') deep-equals { notches: 2, downgrade, wl: 1 }
+ok 8 - AC-3: notchCalculator(' bBb+','bbb- ') deep-equals { notches: 2, downgrade, wl: 1 }
+  ---
+  duration_ms: 0.256334
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError (not TypeError) for 15 invalid values x 2 positions
+ok 9 - AC-4: notchChange throws RangeError (not TypeError) for 15 invalid values x 2 positions
+  ---
+  duration_ms: 1.184402
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError (not TypeError) for 15 invalid values x 2 positions
+ok 10 - AC-4: notchCalculator throws RangeError (not TypeError) for 15 invalid values x 2 positions
+  ---
+  duration_ms: 0.794154
+  type: 'test'
+  ...
+# Subtest: AC-4 edge: extra invalid inputs (boolean, String object, tabs/newline only, look-alike dashes, other notations)
+ok 11 - AC-4 edge: extra invalid inputs (boolean, String object, tabs/newline only, look-alike dashes, other notations)
+  ---
+  duration_ms: 0.658707
+  type: 'test'
+  ...
+# Subtest: AC-4 edge: both arguments invalid throws RangeError
+ok 12 - AC-4 edge: both arguments invalid throws RangeError
+  ---
+  duration_ms: 0.148914
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator('BBB+','BB+') is { 3, downgrade, wl 2 } with no extra keys
+ok 13 - AC-5: notchCalculator('BBB+','BB+') is { 3, downgrade, wl 2 } with no extra keys
+  ---
+  duration_ms: 0.10898
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator('BBB+','BBB-') is { 2, downgrade, wl 1 }
+ok 14 - AC-5: notchCalculator('BBB+','BBB-') is { 2, downgrade, wl 1 }
+  ---
+  duration_ms: 0.08024
+  type: 'test'
+  ...
+# Subtest: AC-6: downgrade thresholds
+ok 15 - AC-6: downgrade thresholds
+  ---
+  duration_ms: 0.142663
+  type: 'test'
+  ...
+# Subtest: AC-7: upgrades have negative notches, direction upgrade, wl 0
+ok 16 - AC-7: upgrades have negative notches, direction upgrade, wl 0
+  ---
+  duration_ms: 0.071317
+  type: 'test'
+  ...
+# Subtest: AC-8: same rating twice gives { 0, unchanged, 0 } with +0
+ok 17 - AC-8: same rating twice gives { 0, unchanged, 0 } with +0
+  ---
+  duration_ms: 0.093385
+  type: 'test'
+  ...
+# Subtest: AC-9: all 361 pairs - notches, direction and wl are consistent with notchChange
+ok 18 - AC-9: all 361 pairs - notches, direction and wl are consistent with notchChange
+  ---
+  duration_ms: 1.765852
+  type: 'test'
+  ...
+# Subtest: AC-13: module exports exactly RATING_SCALE, notchCalculator, notchChange; no default
+ok 19 - AC-13: module exports exactly RATING_SCALE, notchCalculator, notchChange; no default
+  ---
+  duration_ms: 0.116619
+  type: 'test'
+  ...
+# Subtest: AC-13: results are returned directly, not Promises
+ok 20 - AC-13: results are returned directly, not Promises
+  ---
+  duration_ms: 0.12421
+  type: 'test'
+  ...
+# Subtest: AC-13: console.log/error/warn are never called, for valid and invalid input
+ok 21 - AC-13: console.log/error/warn are never called, for valid and invalid input
+  ---
+  duration_ms: 0.926963
+  type: 'test'
+  ...
+# Subtest: AC-13: notch.mjs source has no import statements (no I/O modules)
+ok 22 - AC-13: notch.mjs source has no import statements (no I/O modules)
+  ---
+  duration_ms: 0.499805
+  type: 'test'
+  ...
+# Subtest: edge: repeated calls are stable and do not mutate RATING_SCALE or return shared objects
+ok 23 - edge: repeated calls are stable and do not mutate RATING_SCALE or return shared objects
+  ---
+  duration_ms: 0.137775
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 84.005535

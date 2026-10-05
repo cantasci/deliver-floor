@@ -1,0 +1,1320 @@
+TAP version 13
+# Subtest: countryRatingChangeWl: mapping
+    # Subtest: normalises input (AC-3)
+    ok 1 - normalises input (AC-3)
+      ---
+      duration_ms: 0.99982
+      type: 'test'
+      ...
+    # Subtest: 1-notch downgrade gives 1, at both ends of the scale (AC-12)
+    ok 2 - 1-notch downgrade gives 1, at both ends of the scale (AC-12)
+      ---
+      duration_ms: 0.154942
+      type: 'test'
+      ...
+    # Subtest: 2+ notch downgrade gives 2 (AC-13)
+    ok 3 - 2+ notch downgrade gives 2 (AC-13)
+      ---
+      duration_ms: 0.186676
+      type: 'test'
+      ...
+    # Subtest: upgrade gives 0 (AC-14)
+    ok 4 - upgrade gives 0 (AC-14)
+      ---
+      duration_ms: 0.198649
+      type: 'test'
+      ...
+    # Subtest: unchanged gives +0 (AC-14)
+    ok 5 - unchanged gives +0 (AC-14)
+      ---
+      duration_ms: 0.129586
+      type: 'test'
+      ...
+    # Subtest: never returns -0 for any pair
+    ok 6 - never returns -0 for any pair
+      ---
+      duration_ms: 0.33939
+      type: 'test'
+      ...
+    # Subtest: ignores a third argument
+    ok 7 - ignores a third argument
+      ---
+      duration_ms: 0.103327
+      type: 'test'
+      ...
+    1..7
+ok 1 - countryRatingChangeWl: mapping
+  ---
+  duration_ms: 3.326412
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: contract
+    # Subtest: has exactly two declared parameters (AC-15)
+    ok 1 - has exactly two declared parameters (AC-15)
+      ---
+      duration_ms: 1.181987
+      type: 'test'
+      ...
+    # Subtest: is synchronous and returns a primitive number (AC-15)
+    ok 2 - is synchronous and returns a primitive number (AC-15)
+      ---
+      duration_ms: 0.319435
+      type: 'test'
+      ...
+    # Subtest: source imports only ../ratings/notch.mjs and does no I/O (AC-15, AC-17)
+    ok 3 - source imports only ../ratings/notch.mjs and does no I/O (AC-15, AC-17)
+      ---
+      duration_ms: 1.353567
+      type: 'test'
+      ...
+    # Subtest: exports exactly countryRatingChangeWl (AC-17)
+    ok 4 - exports exactly countryRatingChangeWl (AC-17)
+      ---
+      duration_ms: 0.246608
+      type: 'test'
+      ...
+    # Subtest: across src/ the only exported names are the four agreed ones (AC-17)
+    ok 5 - across src/ the only exported names are the four agreed ones (AC-17)
+      ---
+      duration_ms: 0.808989
+      type: 'test'
+      ...
+    # Subtest: package.json has no dependencies and test script is node --test (AC-17)
+    ok 6 - package.json has no dependencies and test script is node --test (AC-17)
+      ---
+      duration_ms: 0.176446
+      type: 'test'
+      ...
+    1..6
+ok 2 - countryRatingChangeWl: contract
+  ---
+  duration_ms: 4.527436
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: invalid input (AC-4)
+    # Subtest: rejects "" as previous
+    ok 1 - rejects "" as previous
+      ---
+      duration_ms: 0.610111
+      type: 'test'
+      ...
+    # Subtest: rejects "" as current
+    ok 2 - rejects "" as current
+      ---
+      duration_ms: 0.112562
+      type: 'test'
+      ...
+    # Subtest: rejects "   " as previous
+    ok 3 - rejects "   " as previous
+      ---
+      duration_ms: 0.061137
+      type: 'test'
+      ...
+    # Subtest: rejects "   " as current
+    ok 4 - rejects "   " as current
+      ---
+      duration_ms: 0.052794
+      type: 'test'
+      ...
+    # Subtest: rejects "D" as previous
+    ok 5 - rejects "D" as previous
+      ---
+      duration_ms: 0.073218
+      type: 'test'
+      ...
+    # Subtest: rejects "D" as current
+    ok 6 - rejects "D" as current
+      ---
+      duration_ms: 0.100304
+      type: 'test'
+      ...
+    # Subtest: rejects "NR" as previous
+    ok 7 - rejects "NR" as previous
+      ---
+      duration_ms: 0.064162
+      type: 'test'
+      ...
+    # Subtest: rejects "NR" as current
+    ok 8 - rejects "NR" as current
+      ---
+      duration_ms: 0.09858
+      type: 'test'
+      ...
+    # Subtest: rejects "Baa1" as previous
+    ok 9 - rejects "Baa1" as previous
+      ---
+      duration_ms: 0.147264
+      type: 'test'
+      ...
+    # Subtest: rejects "Baa1" as current
+    ok 10 - rejects "Baa1" as current
+      ---
+      duration_ms: 0.093786
+      type: 'test'
+      ...
+    # Subtest: rejects "AAA+" as previous
+    ok 11 - rejects "AAA+" as previous
+      ---
+      duration_ms: 0.094189
+      type: 'test'
+      ...
+    # Subtest: rejects "AAA+" as current
+    ok 12 - rejects "AAA+" as current
+      ---
+      duration_ms: 0.08217
+      type: 'test'
+      ...
+    # Subtest: rejects "CCC--" as previous
+    ok 13 - rejects "CCC--" as previous
+      ---
+      duration_ms: 0.088846
+      type: 'test'
+      ...
+    # Subtest: rejects "CCC--" as current
+    ok 14 - rejects "CCC--" as current
+      ---
+      duration_ms: 0.145113
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB +" as previous
+    ok 15 - rejects "BBB +" as previous
+      ---
+      duration_ms: 0.07268
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB +" as current
+    ok 16 - rejects "BBB +" as current
+      ---
+      duration_ms: 0.061938
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB−" as previous
+    ok 17 - rejects "BBB−" as previous
+      ---
+      duration_ms: 0.063935
+      type: 'test'
+      ...
+    # Subtest: rejects "BBB−" as current
+    ok 18 - rejects "BBB−" as current
+      ---
+      duration_ms: 0.053076
+      type: 'test'
+      ...
+    # Subtest: rejects null as previous
+    ok 19 - rejects null as previous
+      ---
+      duration_ms: 0.051571
+      type: 'test'
+      ...
+    # Subtest: rejects null as current
+    ok 20 - rejects null as current
+      ---
+      duration_ms: 0.054683
+      type: 'test'
+      ...
+    # Subtest: rejects undefined as previous
+    ok 21 - rejects undefined as previous
+      ---
+      duration_ms: 0.048981
+      type: 'test'
+      ...
+    # Subtest: rejects undefined as current
+    ok 22 - rejects undefined as current
+      ---
+      duration_ms: 0.126597
+      type: 'test'
+      ...
+    # Subtest: rejects 3 as previous
+    ok 23 - rejects 3 as previous
+      ---
+      duration_ms: 0.066106
+      type: 'test'
+      ...
+    # Subtest: rejects 3 as current
+    ok 24 - rejects 3 as current
+      ---
+      duration_ms: 0.930748
+      type: 'test'
+      ...
+    # Subtest: rejects {} as previous
+    ok 25 - rejects {} as previous
+      ---
+      duration_ms: 0.076621
+      type: 'test'
+      ...
+    # Subtest: rejects {} as current
+    ok 26 - rejects {} as current
+      ---
+      duration_ms: 0.054003
+      type: 'test'
+      ...
+    # Subtest: rejects a missing second argument
+    ok 27 - rejects a missing second argument
+      ---
+      duration_ms: 0.160083
+      type: 'test'
+      ...
+    # Subtest: rejects no arguments
+    ok 28 - rejects no arguments
+      ---
+      duration_ms: 0.088987
+      type: 'test'
+      ...
+    # Subtest: rejects SD and boxed strings through notchChange
+    ok 29 - rejects SD and boxed strings through notchChange
+      ---
+      duration_ms: 0.099187
+      type: 'test'
+      ...
+    1..29
+ok 3 - countryRatingChangeWl: invalid input (AC-4)
+  ---
+  duration_ms: 4.496314
+  type: 'suite'
+  ...
+# Subtest: countryRatingChangeWl: exhaustive mapping (AC-16)
+    # Subtest: matches Indicator 12 thresholds for all 361 ordered pairs
+    ok 1 - matches Indicator 12 thresholds for all 361 ordered pairs
+      ---
+      duration_ms: 0.512934
+      type: 'test'
+      ...
+    # Subtest: differs from notchCalculator().wl at the 1- and 2-notch boundaries
+    ok 2 - differs from notchCalculator().wl at the 1- and 2-notch boundaries
+      ---
+      duration_ms: 0.1752
+      type: 'test'
+      ...
+    1..2
+ok 4 - countryRatingChangeWl: exhaustive mapping (AC-16)
+  ---
+  duration_ms: 0.817919
+  type: 'suite'
+  ...
+# Subtest: AC-3: " bbb+" -> "bbb " is normalised and gives WL 1
+ok 5 - AC-3: " bbb+" -> "bbb " is normalised and gives WL 1
+  ---
+  duration_ms: 1.331559
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "" throws RangeError
+ok 6 - AC-4: invalid previous "" throws RangeError
+  ---
+  duration_ms: 3.889349
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "   " throws RangeError
+ok 7 - AC-4: invalid previous "   " throws RangeError
+  ---
+  duration_ms: 0.118583
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "D" throws RangeError
+ok 8 - AC-4: invalid previous "D" throws RangeError
+  ---
+  duration_ms: 0.140964
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "NR" throws RangeError
+ok 9 - AC-4: invalid previous "NR" throws RangeError
+  ---
+  duration_ms: 0.158766
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "Baa1" throws RangeError
+ok 10 - AC-4: invalid previous "Baa1" throws RangeError
+  ---
+  duration_ms: 0.11056
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "AAA+" throws RangeError
+ok 11 - AC-4: invalid previous "AAA+" throws RangeError
+  ---
+  duration_ms: 1.163495
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "CCC--" throws RangeError
+ok 12 - AC-4: invalid previous "CCC--" throws RangeError
+  ---
+  duration_ms: 0.098938
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "BBB +" throws RangeError
+ok 13 - AC-4: invalid previous "BBB +" throws RangeError
+  ---
+  duration_ms: 0.27325
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous "BBB−" throws RangeError
+ok 14 - AC-4: invalid previous "BBB−" throws RangeError
+  ---
+  duration_ms: 0.416554
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous null throws RangeError
+ok 15 - AC-4: invalid previous null throws RangeError
+  ---
+  duration_ms: 0.141504
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous undefined throws RangeError
+ok 16 - AC-4: invalid previous undefined throws RangeError
+  ---
+  duration_ms: 0.067899
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous 3 throws RangeError
+ok 17 - AC-4: invalid previous 3 throws RangeError
+  ---
+  duration_ms: 0.055722
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid previous {} throws RangeError
+ok 18 - AC-4: invalid previous {} throws RangeError
+  ---
+  duration_ms: 0.058821
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "" throws RangeError
+ok 19 - AC-4: invalid current "" throws RangeError
+  ---
+  duration_ms: 0.141294
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "   " throws RangeError
+ok 20 - AC-4: invalid current "   " throws RangeError
+  ---
+  duration_ms: 0.058972
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "D" throws RangeError
+ok 21 - AC-4: invalid current "D" throws RangeError
+  ---
+  duration_ms: 0.052037
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "NR" throws RangeError
+ok 22 - AC-4: invalid current "NR" throws RangeError
+  ---
+  duration_ms: 0.0513
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "Baa1" throws RangeError
+ok 23 - AC-4: invalid current "Baa1" throws RangeError
+  ---
+  duration_ms: 0.049384
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "AAA+" throws RangeError
+ok 24 - AC-4: invalid current "AAA+" throws RangeError
+  ---
+  duration_ms: 0.053851
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "CCC--" throws RangeError
+ok 25 - AC-4: invalid current "CCC--" throws RangeError
+  ---
+  duration_ms: 0.056641
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "BBB +" throws RangeError
+ok 26 - AC-4: invalid current "BBB +" throws RangeError
+  ---
+  duration_ms: 0.049569
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current "BBB−" throws RangeError
+ok 27 - AC-4: invalid current "BBB−" throws RangeError
+  ---
+  duration_ms: 0.055234
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current null throws RangeError
+ok 28 - AC-4: invalid current null throws RangeError
+  ---
+  duration_ms: 0.048518
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current undefined throws RangeError
+ok 29 - AC-4: invalid current undefined throws RangeError
+  ---
+  duration_ms: 0.111931
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current 3 throws RangeError
+ok 30 - AC-4: invalid current 3 throws RangeError
+  ---
+  duration_ms: 0.068138
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid current {} throws RangeError
+ok 31 - AC-4: invalid current {} throws RangeError
+  ---
+  duration_ms: 0.085706
+  type: 'test'
+  ...
+# Subtest: AC-4: missing current argument throws RangeError and never returns a value
+ok 32 - AC-4: missing current argument throws RangeError and never returns a value
+  ---
+  duration_ms: 0.139149
+  type: 'test'
+  ...
+# Subtest: AC-4: the RangeError reaches the caller unchanged (same type as notchChange, not a default WL)
+ok 33 - AC-4: the RangeError reaches the caller unchanged (same type as notchChange, not a default WL)
+  ---
+  duration_ms: 0.518065
+  type: 'test'
+  ...
+# Subtest: AC-12: BBB+ -> BBB (1-notch downgrade) is 1
+ok 34 - AC-12: BBB+ -> BBB (1-notch downgrade) is 1
+  ---
+  duration_ms: 0.07908
+  type: 'test'
+  ...
+# Subtest: AC-12: 1-notch moves at both ends of the scale are 1 (CCC->CCC-, AAA->AA+)
+ok 35 - AC-12: 1-notch moves at both ends of the scale are 1 (CCC->CCC-, AAA->AA+)
+  ---
+  duration_ms: 0.113252
+  type: 'test'
+  ...
+# Subtest: AC-13: BBB+ -> BBB- (2-notch downgrade) is 2
+ok 36 - AC-13: BBB+ -> BBB- (2-notch downgrade) is 2
+  ---
+  duration_ms: 0.110634
+  type: 'test'
+  ...
+# Subtest: AC-13: BBB+ -> BB+ (3 notches) and AAA -> CCC- (18 notches, capped) are 2
+ok 37 - AC-13: BBB+ -> BB+ (3 notches) and AAA -> CCC- (18 notches, capped) are 2
+  ---
+  duration_ms: 0.075986
+  type: 'test'
+  ...
+# Subtest: AC-14: upgrades give 0 (BBB->BBB+, BB+->BBB+, CCC-->AAA)
+ok 38 - AC-14: upgrades give 0 (BBB->BBB+, BB+->BBB+, CCC-->AAA)
+  ---
+  duration_ms: 0.067969
+  type: 'test'
+  ...
+# Subtest: AC-14: unchanged rating gives +0 (not -0)
+ok 39 - AC-14: unchanged rating gives +0 (not -0)
+  ---
+  duration_ms: 0.118583
+  type: 'test'
+  ...
+# Subtest: AC-15: analyst-confirmed values are used as given and there is no override parameter
+ok 40 - AC-15: analyst-confirmed values are used as given and there is no override parameter
+  ---
+  duration_ms: 0.079614
+  type: 'test'
+  ...
+# Subtest: AC-15: returns a primitive number synchronously (not a Promise)
+ok 41 - AC-15: returns a primitive number synchronously (not a Promise)
+  ---
+  duration_ms: 0.079013
+  type: 'test'
+  ...
+# Subtest: AC-15: source imports only ../ratings/notch.mjs and does no I/O
+ok 42 - AC-15: source imports only ../ratings/notch.mjs and does no I/O
+  ---
+  duration_ms: 0.98454
+  type: 'test'
+  ...
+# Subtest: AC-16: all 361 ordered pairs map d<=0 -> 0, d===1 -> 1, d>=2 -> 2 (counts 190/18/153)
+ok 43 - AC-16: all 361 ordered pairs map d<=0 -> 0, d===1 -> 1, d>=2 -> 2 (counts 190/18/153)
+  ---
+  duration_ms: 1.433244
+  type: 'test'
+  ...
+# Subtest: AC-16: Indicator 12 and notchCalculator().wl are separate mappings
+ok 44 - AC-16: Indicator 12 and notchCalculator().wl are separate mappings
+  ---
+  duration_ms: 0.232166
+  type: 'test'
+  ...
+# Subtest: AC-17: module exports exactly countryRatingChangeWl and imports notchChange from ../ratings/notch.mjs
+ok 45 - AC-17: module exports exactly countryRatingChangeWl and imports notchChange from ../ratings/notch.mjs
+  ---
+  duration_ms: 0.35335
+  type: 'test'
+  ...
+# Subtest: AC-17 (job): across src/ the only exports are RATING_SCALE, notchChange, notchCalculator, countryRatingChangeWl; no Indicator 13 export
+ok 46 - AC-17 (job): across src/ the only exports are RATING_SCALE, notchChange, notchCalculator, countryRatingChangeWl; no Indicator 13 export
+  ---
+  duration_ms: 1.311695
+  type: 'test'
+  ...
+# Subtest: AC-17 (job): package.json has no dependencies/devDependencies and scripts.test is "node --test"
+ok 47 - AC-17 (job): package.json has no dependencies/devDependencies and scripts.test is "node --test"
+  ---
+  duration_ms: 0.169915
+  type: 'test'
+  ...
+# Subtest: AC-17 (job): node --test test/indicators/*.test.mjs exits 0
+ok 48 - AC-17 (job): node --test test/indicators/*.test.mjs exits 0
+  ---
+  duration_ms: 53.640235
+  type: 'test'
+  ...
+# Subtest: AC-17 (job): full suite `node --test` exits 0 at the repository root
+ok 49 - AC-17 (job): full suite `node --test` exits 0 at the repository root
+  ---
+  duration_ms: 54.035011
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE deep-equals the 19 grades, is an array of length 19
+ok 50 - AC-1: RATING_SCALE deep-equals the 19 grades, is an array of length 19
+  ---
+  duration_ms: 3.279504
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is frozen and cannot be mutated by consumers
+ok 51 - AC-1: RATING_SCALE is frozen and cannot be mutated by consumers
+  ---
+  duration_ms: 0.653157
+  type: 'test'
+  ...
+# Subtest: AC-2: BBB+ -> BB+ is 3
+ok 52 - AC-2: BBB+ -> BB+ is 3
+  ---
+  duration_ms: 0.309725
+  type: 'test'
+  ...
+# Subtest: AC-2: BBB+ -> BBB- is 2
+ok 53 - AC-2: BBB+ -> BBB- is 2
+  ---
+  duration_ms: 0.137765
+  type: 'test'
+  ...
+# Subtest: AC-2: BBB+ -> BBB is 1
+ok 54 - AC-2: BBB+ -> BBB is 1
+  ---
+  duration_ms: 0.211708
+  type: 'test'
+  ...
+# Subtest: AC-2: BB+ -> BBB+ is -3
+ok 55 - AC-2: BB+ -> BBB+ is -3
+  ---
+  duration_ms: 0.102801
+  type: 'test'
+  ...
+# Subtest: AC-2: BBB -> BBB+ is -1
+ok 56 - AC-2: BBB -> BBB+ is -1
+  ---
+  duration_ms: 0.266625
+  type: 'test'
+  ...
+# Subtest: AC-2: AAA -> CCC- is 18 (not clamped)
+ok 57 - AC-2: AAA -> CCC- is 18 (not clamped)
+  ---
+  duration_ms: 0.1298
+  type: 'test'
+  ...
+# Subtest: AC-2: CCC- -> AAA is -18 (not clamped)
+ok 58 - AC-2: CCC- -> AAA is -18 (not clamped)
+  ---
+  duration_ms: 0.419286
+  type: 'test'
+  ...
+# Subtest: AC-2: A -> A is +0, not -0
+ok 59 - AC-2: A -> A is +0, not -0
+  ---
+  duration_ms: 0.59821
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange normalises whitespace and case
+ok 60 - AC-3: notchChange normalises whitespace and case
+  ---
+  duration_ms: 0.276981
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator("bbb+", " bb+") normalises input
+ok 61 - AC-3: notchCalculator("bbb+", " bb+") normalises input
+  ---
+  duration_ms: 0.263322
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "" as previous
+ok 62 - AC-4: notchChange throws RangeError for "" as previous
+  ---
+  duration_ms: 0.204772
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "" as current
+ok 63 - AC-4: notchChange throws RangeError for "" as current
+  ---
+  duration_ms: 0.134912
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "" as previous
+ok 64 - AC-4: notchCalculator throws RangeError for "" as previous
+  ---
+  duration_ms: 0.115046
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "" as current
+ok 65 - AC-4: notchCalculator throws RangeError for "" as current
+  ---
+  duration_ms: 0.315757
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "   " as previous
+ok 66 - AC-4: notchChange throws RangeError for "   " as previous
+  ---
+  duration_ms: 0.128045
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "   " as current
+ok 67 - AC-4: notchChange throws RangeError for "   " as current
+  ---
+  duration_ms: 0.094356
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "   " as previous
+ok 68 - AC-4: notchCalculator throws RangeError for "   " as previous
+  ---
+  duration_ms: 0.235689
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "   " as current
+ok 69 - AC-4: notchCalculator throws RangeError for "   " as current
+  ---
+  duration_ms: 0.121342
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "D" as previous
+ok 70 - AC-4: notchChange throws RangeError for "D" as previous
+  ---
+  duration_ms: 0.111149
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "D" as current
+ok 71 - AC-4: notchChange throws RangeError for "D" as current
+  ---
+  duration_ms: 0.134484
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "D" as previous
+ok 72 - AC-4: notchCalculator throws RangeError for "D" as previous
+  ---
+  duration_ms: 1.562212
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "D" as current
+ok 73 - AC-4: notchCalculator throws RangeError for "D" as current
+  ---
+  duration_ms: 0.11334
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "NR" as previous
+ok 74 - AC-4: notchChange throws RangeError for "NR" as previous
+  ---
+  duration_ms: 0.104234
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "NR" as current
+ok 75 - AC-4: notchChange throws RangeError for "NR" as current
+  ---
+  duration_ms: 0.133944
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "NR" as previous
+ok 76 - AC-4: notchCalculator throws RangeError for "NR" as previous
+  ---
+  duration_ms: 0.086656
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "NR" as current
+ok 77 - AC-4: notchCalculator throws RangeError for "NR" as current
+  ---
+  duration_ms: 0.067173
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "Baa1" as previous
+ok 78 - AC-4: notchChange throws RangeError for "Baa1" as previous
+  ---
+  duration_ms: 0.06778
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "Baa1" as current
+ok 79 - AC-4: notchChange throws RangeError for "Baa1" as current
+  ---
+  duration_ms: 0.066334
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "Baa1" as previous
+ok 80 - AC-4: notchCalculator throws RangeError for "Baa1" as previous
+  ---
+  duration_ms: 0.060528
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "Baa1" as current
+ok 81 - AC-4: notchCalculator throws RangeError for "Baa1" as current
+  ---
+  duration_ms: 0.069251
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "AAA+" as previous
+ok 82 - AC-4: notchChange throws RangeError for "AAA+" as previous
+  ---
+  duration_ms: 0.074983
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "AAA+" as current
+ok 83 - AC-4: notchChange throws RangeError for "AAA+" as current
+  ---
+  duration_ms: 0.162707
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "AAA+" as previous
+ok 84 - AC-4: notchCalculator throws RangeError for "AAA+" as previous
+  ---
+  duration_ms: 0.2238
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "AAA+" as current
+ok 85 - AC-4: notchCalculator throws RangeError for "AAA+" as current
+  ---
+  duration_ms: 0.934798
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "CCC--" as previous
+ok 86 - AC-4: notchChange throws RangeError for "CCC--" as previous
+  ---
+  duration_ms: 0.107683
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "CCC--" as current
+ok 87 - AC-4: notchChange throws RangeError for "CCC--" as current
+  ---
+  duration_ms: 0.101153
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "CCC--" as previous
+ok 88 - AC-4: notchCalculator throws RangeError for "CCC--" as previous
+  ---
+  duration_ms: 0.084094
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "CCC--" as current
+ok 89 - AC-4: notchCalculator throws RangeError for "CCC--" as current
+  ---
+  duration_ms: 0.069419
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "BBB +" as previous
+ok 90 - AC-4: notchChange throws RangeError for "BBB +" as previous
+  ---
+  duration_ms: 0.071633
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "BBB +" as current
+ok 91 - AC-4: notchChange throws RangeError for "BBB +" as current
+  ---
+  duration_ms: 0.071323
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "BBB +" as previous
+ok 92 - AC-4: notchCalculator throws RangeError for "BBB +" as previous
+  ---
+  duration_ms: 0.078895
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "BBB +" as current
+ok 93 - AC-4: notchCalculator throws RangeError for "BBB +" as current
+  ---
+  duration_ms: 0.087071
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "BBB−" as previous
+ok 94 - AC-4: notchChange throws RangeError for "BBB−" as previous
+  ---
+  duration_ms: 0.143692
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for "BBB−" as current
+ok 95 - AC-4: notchChange throws RangeError for "BBB−" as current
+  ---
+  duration_ms: 0.084148
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "BBB−" as previous
+ok 96 - AC-4: notchCalculator throws RangeError for "BBB−" as previous
+  ---
+  duration_ms: 0.091032
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for "BBB−" as current
+ok 97 - AC-4: notchCalculator throws RangeError for "BBB−" as current
+  ---
+  duration_ms: 0.089623
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for null as previous
+ok 98 - AC-4: notchChange throws RangeError for null as previous
+  ---
+  duration_ms: 0.077156
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for null as current
+ok 99 - AC-4: notchChange throws RangeError for null as current
+  ---
+  duration_ms: 0.096682
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for null as previous
+ok 100 - AC-4: notchCalculator throws RangeError for null as previous
+  ---
+  duration_ms: 0.085741
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for null as current
+ok 101 - AC-4: notchCalculator throws RangeError for null as current
+  ---
+  duration_ms: 0.090492
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for undefined as previous
+ok 102 - AC-4: notchChange throws RangeError for undefined as previous
+  ---
+  duration_ms: 0.116394
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for undefined as current
+ok 103 - AC-4: notchChange throws RangeError for undefined as current
+  ---
+  duration_ms: 0.082669
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for undefined as previous
+ok 104 - AC-4: notchCalculator throws RangeError for undefined as previous
+  ---
+  duration_ms: 0.071359
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for undefined as current
+ok 105 - AC-4: notchCalculator throws RangeError for undefined as current
+  ---
+  duration_ms: 0.071962
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for 3 as previous
+ok 106 - AC-4: notchChange throws RangeError for 3 as previous
+  ---
+  duration_ms: 0.072843
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for 3 as current
+ok 107 - AC-4: notchChange throws RangeError for 3 as current
+  ---
+  duration_ms: 0.070515
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for 3 as previous
+ok 108 - AC-4: notchCalculator throws RangeError for 3 as previous
+  ---
+  duration_ms: 0.078512
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for 3 as current
+ok 109 - AC-4: notchCalculator throws RangeError for 3 as current
+  ---
+  duration_ms: 0.089243
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for {} as previous
+ok 110 - AC-4: notchChange throws RangeError for {} as previous
+  ---
+  duration_ms: 0.162383
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange throws RangeError for {} as current
+ok 111 - AC-4: notchChange throws RangeError for {} as current
+  ---
+  duration_ms: 0.138146
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for {} as previous
+ok 112 - AC-4: notchCalculator throws RangeError for {} as previous
+  ---
+  duration_ms: 0.10729
+  type: 'test'
+  ...
+# Subtest: AC-4: notchCalculator throws RangeError for {} as current
+ok 113 - AC-4: notchCalculator throws RangeError for {} as current
+  ---
+  duration_ms: 0.083468
+  type: 'test'
+  ...
+# Subtest: AC-4: missing argument throws RangeError in both functions
+ok 114 - AC-4: missing argument throws RangeError in both functions
+  ---
+  duration_ms: 0.281919
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid input never yields a value (no 0/NaN/undefined fallback)
+ok 115 - AC-4: invalid input never yields a value (no 0/NaN/undefined fallback)
+  ---
+  duration_ms: 1.195542
+  type: 'test'
+  ...
+# Subtest: AC-4 edge: look-alike, inner whitespace and unmapped notations are rejected
+ok 116 - AC-4 edge: look-alike, inner whitespace and unmapped notations are rejected
+  ---
+  duration_ms: 0.426698
+  type: 'test'
+  ...
+# Subtest: AC-4 edge: boxed string is rejected with RangeError
+ok 117 - AC-4 edge: boxed string is rejected with RangeError
+  ---
+  duration_ms: 0.18504
+  type: 'test'
+  ...
+# Subtest: AC-5: BBB+ -> BB+ is { 3, downgrade, 2 } (corrected POC example)
+ok 118 - AC-5: BBB+ -> BB+ is { 3, downgrade, 2 } (corrected POC example)
+  ---
+  duration_ms: 0.148108
+  type: 'test'
+  ...
+# Subtest: AC-6: BBB+ -> BBB- is { 2, downgrade, 1 }
+ok 119 - AC-6: BBB+ -> BBB- is { 2, downgrade, 1 }
+  ---
+  duration_ms: 0.127844
+  type: 'test'
+  ...
+# Subtest: AC-7: BBB+ -> BBB is { 1, downgrade, 0 } (1-notch downgrade gives calculator WL 0)
+ok 120 - AC-7: BBB+ -> BBB is { 1, downgrade, 0 } (1-notch downgrade gives calculator WL 0)
+  ---
+  duration_ms: 0.172568
+  type: 'test'
+  ...
+# Subtest: AC-8: AAA -> CCC- is { 18, downgrade, 2 }
+ok 121 - AC-8: AAA -> CCC- is { 18, downgrade, 2 }
+  ---
+  duration_ms: 0.148506
+  type: 'test'
+  ...
+# Subtest: AC-8: A -> BBB+ is WL 1 and A -> BBB is WL 2 (2->3 boundary)
+ok 122 - AC-8: A -> BBB+ is WL 1 and A -> BBB is WL 2 (2->3 boundary)
+  ---
+  duration_ms: 0.138912
+  type: 'test'
+  ...
+# Subtest: AC-9: BB -> BBB is { -3, upgrade, 0 }
+ok 123 - AC-9: BB -> BBB is { -3, upgrade, 0 }
+  ---
+  duration_ms: 0.210571
+  type: 'test'
+  ...
+# Subtest: AC-9: BBB -> BBB+ is -1 and CCC- -> AAA is -18, both upgrade WL 0
+ok 124 - AC-9: BBB -> BBB+ is -1 and CCC- -> AAA is -18, both upgrade WL 0
+  ---
+  duration_ms: 0.213489
+  type: 'test'
+  ...
+# Subtest: AC-10: A -> A is { +0, unchanged, 0 }
+ok 125 - AC-10: A -> A is { +0, unchanged, 0 }
+  ---
+  duration_ms: 0.190177
+  type: 'test'
+  ...
+# Subtest: AC-10: " a" -> "A " is the same unchanged result with +0
+ok 126 - AC-10: " a" -> "A " is the same unchanged result with +0
+  ---
+  duration_ms: 0.139091
+  type: 'test'
+  ...
+# Subtest: AC-11: result is a plain object with exactly notches, direction, wl
+ok 127 - AC-11: result is a plain object with exactly notches, direction, wl
+  ---
+  duration_ms: 0.154089
+  type: 'test'
+  ...
+# Subtest: AC-11: result is synchronous, not a Promise
+ok 128 - AC-11: result is synchronous, not a Promise
+  ---
+  duration_ms: 0.124251
+  type: 'test'
+  ...
+# Subtest: AC-11: each call returns a fresh object (mutation does not leak)
+ok 129 - AC-11: each call returns a fresh object (mutation does not leak)
+  ---
+  duration_ms: 0.277505
+  type: 'test'
+  ...
+# Subtest: AC-16: all 361 ordered pairs, notches equals notchChange and is an integer (+0 for unchanged)
+ok 130 - AC-16: all 361 ordered pairs, notches equals notchChange and is an integer (+0 for unchanged)
+  ---
+  duration_ms: 1.096906
+  type: 'test'
+  ...
+# Subtest: AC-16: all 361 ordered pairs, direction follows the sign of d
+ok 131 - AC-16: all 361 ordered pairs, direction follows the sign of d
+  ---
+  duration_ms: 0.90962
+  type: 'test'
+  ...
+# Subtest: AC-16: all 361 ordered pairs, wl follows Indicator 13 thresholds; counts 208/17/136
+ok 132 - AC-16: all 361 ordered pairs, wl follows Indicator 13 thresholds; counts 208/17/136
+  ---
+  duration_ms: 7.988192
+  type: 'test'
+  ...
+# Subtest: AC-17: module exports exactly RATING_SCALE, notchCalculator, notchChange
+ok 133 - AC-17: module exports exactly RATING_SCALE, notchCalculator, notchChange
+  ---
+  duration_ms: 0.316318
+  type: 'test'
+  ...
+# Subtest: AC-17: notch.mjs has no imports, no console and no stdout/stderr writes
+ok 134 - AC-17: notch.mjs has no imports, no console and no stdout/stderr writes
+  ---
+  duration_ms: 0.721034
+  type: 'test'
+  ...
+# Subtest: AC-17: the dev unit tests under test/ratings exit 0
+ok 135 - AC-17: the dev unit tests under test/ratings exit 0
+  ---
+  duration_ms: 62.974543
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE
+    # Subtest: has the 19 grades, best first
+    ok 1 - has the 19 grades, best first
+      ---
+      duration_ms: 1.273046
+      type: 'test'
+      ...
+    # Subtest: is frozen and cannot be mutated
+    ok 2 - is frozen and cannot be mutated
+      ---
+      duration_ms: 0.428307
+      type: 'test'
+      ...
+    1..2
+ok 136 - RATING_SCALE
+  ---
+  duration_ms: 2.632274
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: BBB+ -> BB+ = 3
+    ok 1 - BBB+ -> BB+ = 3
+      ---
+      duration_ms: 0.510912
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB- = 2
+    ok 2 - BBB+ -> BBB- = 2
+      ---
+      duration_ms: 0.23147
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB = 1
+    ok 3 - BBB+ -> BBB = 1
+      ---
+      duration_ms: 0.145189
+      type: 'test'
+      ...
+    # Subtest: BB+ -> BBB+ = -3
+    ok 4 - BB+ -> BBB+ = -3
+      ---
+      duration_ms: 0.19133
+      type: 'test'
+      ...
+    # Subtest: BBB -> BBB+ = -1
+    ok 5 - BBB -> BBB+ = -1
+      ---
+      duration_ms: 0.27973
+      type: 'test'
+      ...
+    # Subtest: AAA -> CCC- = 18
+    ok 6 - AAA -> CCC- = 18
+      ---
+      duration_ms: 0.369804
+      type: 'test'
+      ...
+    # Subtest: CCC- -> AAA = -18
+    ok 7 - CCC- -> AAA = -18
+      ---
+      duration_ms: 0.324254
+      type: 'test'
+      ...
+    # Subtest: unchanged is +0, never -0
+    ok 8 - unchanged is +0, never -0
+      ---
+      duration_ms: 0.358545
+      type: 'test'
+      ...
+    # Subtest: normalises case and surrounding whitespace
+    ok 9 - normalises case and surrounding whitespace
+      ---
+      duration_ms: 0.180921
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for invalid previous
+    ok 10 - throws RangeError for invalid previous
+      ---
+      duration_ms: 1.695998
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for invalid current
+    ok 11 - throws RangeError for invalid current
+      ---
+      duration_ms: 0.349519
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for missing arguments
+    ok 12 - throws RangeError for missing arguments
+      ---
+      duration_ms: 0.12692
+      type: 'test'
+      ...
+    # Subtest: checks previous before current and names the argument
+    ok 13 - checks previous before current and names the argument
+      ---
+      duration_ms: 0.190824
+      type: 'test'
+      ...
+    1..13
+ok 137 - notchChange
+  ---
+  duration_ms: 5.892311
+  type: 'suite'
+  ...
+# Subtest: notchCalculator
+    # Subtest: "BBB+" -> "BB+"
+    ok 1 - "BBB+" -> "BB+"
+      ---
+      duration_ms: 0.347592
+      type: 'test'
+      ...
+    # Subtest: "BBB+" -> "BBB-"
+    ok 2 - "BBB+" -> "BBB-"
+      ---
+      duration_ms: 0.074445
+      type: 'test'
+      ...
+    # Subtest: "BBB+" -> "BBB"
+    ok 3 - "BBB+" -> "BBB"
+      ---
+      duration_ms: 0.052752
+      type: 'test'
+      ...
+    # Subtest: "AAA" -> "CCC-"
+    ok 4 - "AAA" -> "CCC-"
+      ---
+      duration_ms: 0.047384
+      type: 'test'
+      ...
+    # Subtest: "A" -> "BBB+"
+    ok 5 - "A" -> "BBB+"
+      ---
+      duration_ms: 0.045321
+      type: 'test'
+      ...
+    # Subtest: "A" -> "BBB"
+    ok 6 - "A" -> "BBB"
+      ---
+      duration_ms: 0.044197
+      type: 'test'
+      ...
+    # Subtest: "BB" -> "BBB"
+    ok 7 - "BB" -> "BBB"
+      ---
+      duration_ms: 0.045743
+      type: 'test'
+      ...
+    # Subtest: "BBB" -> "BBB+"
+    ok 8 - "BBB" -> "BBB+"
+      ---
+      duration_ms: 0.099078
+      type: 'test'
+      ...
+    # Subtest: "CCC-" -> "AAA"
+    ok 9 - "CCC-" -> "AAA"
+      ---
+      duration_ms: 0.05716
+      type: 'test'
+      ...
+    # Subtest: "A" -> "A"
+    ok 10 - "A" -> "A"
+      ---
+      duration_ms: 0.049758
+      type: 'test'
+      ...
+    # Subtest: "bbb+" -> " bb+"
+    ok 11 - "bbb+" -> " bb+"
+      ---
+      duration_ms: 0.046941
+      type: 'test'
+      ...
+    # Subtest: unchanged gives +0 notches, also with padded/lower-case input
+    ok 12 - unchanged gives +0 notches, also with padded/lower-case input
+      ---
+      duration_ms: 0.129318
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for invalid previous or current
+    ok 13 - throws RangeError for invalid previous or current
+      ---
+      duration_ms: 0.392123
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for missing arguments
+    ok 14 - throws RangeError for missing arguments
+      ---
+      duration_ms: 0.096712
+      type: 'test'
+      ...
+    # Subtest: result is a plain object with exactly three keys, synchronous
+    ok 15 - result is a plain object with exactly three keys, synchronous
+      ---
+      duration_ms: 0.113281
+      type: 'test'
+      ...
+    # Subtest: returns a fresh object on every call
+    ok 16 - returns a fresh object on every call
+      ---
+      duration_ms: 0.106513
+      type: 'test'
+      ...
+    # Subtest: exhaustive over all 361 ordered pairs
+    ok 17 - exhaustive over all 361 ordered pairs
+      ---
+      duration_ms: 1.02604
+      type: 'test'
+      ...
+    1..17
+ok 138 - notchCalculator
+  ---
+  duration_ms: 3.113277
+  type: 'suite'
+  ...
+# Subtest: module surface
+    # Subtest: exports exactly RATING_SCALE, notchCalculator, notchChange
+    ok 1 - exports exactly RATING_SCALE, notchCalculator, notchChange
+      ---
+      duration_ms: 0.28274
+      type: 'test'
+      ...
+    # Subtest: source has no imports, console output or stdout/stderr writes
+    ok 2 - source has no imports, console output or stdout/stderr writes
+      ---
+      duration_ms: 3.357813
+      type: 'test'
+      ...
+    1..2
+ok 139 - module surface
+  ---
+  duration_ms: 4.500711
+  type: 'suite'
+  ...
+1..139
+# tests 209
+# suites 8
+# pass 209
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 263.968483

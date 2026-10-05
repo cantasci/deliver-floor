@@ -1,0 +1,418 @@
+TAP version 13
+# Subtest: downgrades: 1 notch gives WL 1, 2 or more notches give WL 2
+ok 1 - downgrades: 1 notch gives WL 1, 2 or more notches give WL 2
+  ---
+  duration_ms: 1.661417
+  type: 'test'
+  ...
+# Subtest: Indicator 12 differs on purpose from notchCalculator for (BBB+, BBB)
+ok 2 - Indicator 12 differs on purpose from notchCalculator for (BBB+, BBB)
+  ---
+  duration_ms: 0.318454
+  type: 'test'
+  ...
+# Subtest: upgrades and unchanged ratings give WL 0
+ok 3 - upgrades and unchanged ratings give WL 0
+  ---
+  duration_ms: 0.155334
+  type: 'test'
+  ...
+# Subtest: all 361 ordered pairs follow the Indicator 12 thresholds
+ok 4 - all 361 ordered pairs follow the Indicator 12 thresholds
+  ---
+  duration_ms: 1.358104
+  type: 'test'
+  ...
+# Subtest: input is normalised by notchChange (case and surrounding whitespace)
+ok 5 - input is normalised by notchChange (case and surrounding whitespace)
+  ---
+  duration_ms: 0.195836
+  type: 'test'
+  ...
+# Subtest: invalid previous or current rating throws RangeError, never TypeError
+ok 6 - invalid previous or current rating throws RangeError, never TypeError
+  ---
+  duration_ms: 0.937301
+  type: 'test'
+  ...
+# Subtest: missing argument throws RangeError naming the missing argument
+ok 7 - missing argument throws RangeError naming the missing argument
+  ---
+  duration_ms: 0.372361
+  type: 'test'
+  ...
+# Subtest: error message names the argument and echoes the value
+ok 8 - error message names the argument and echoes the value
+  ---
+  duration_ms: 0.18585
+  type: 'test'
+  ...
+# Subtest: the error passes through unchanged from notchChange
+ok 9 - the error passes through unchanged from notchChange
+  ---
+  duration_ms: 1.800741
+  type: 'test'
+  ...
+# Subtest: pure: repeated calls agree and an edited rating just changes the result
+ok 10 - pure: repeated calls agree and an edited rating just changes the result
+  ---
+  duration_ms: 0.356059
+  type: 'test'
+  ...
+# Subtest: returns a plain number, never -0 or NaN
+ok 11 - returns a plain number, never -0 or NaN
+  ---
+  duration_ms: 0.227398
+  type: 'test'
+  ...
+# Subtest: a child process importing the module is silent and exits 0, even after a caught RangeError
+ok 12 - a child process importing the module is silent and exits 0, even after a caught RangeError
+  ---
+  duration_ms: 32.848516
+  type: 'test'
+  ...
+# Subtest: source: only import is notchChange from ../ratings/notch.mjs, no I/O, no output
+ok 13 - source: only import is notchChange from ../ratings/notch.mjs, no I/O, no output
+  ---
+  duration_ms: 0.461283
+  type: 'test'
+  ...
+# Subtest: source: does not repeat the scale or normalise input itself
+ok 14 - source: does not repeat the scale or normalise input itself
+  ---
+  duration_ms: 0.120016
+  type: 'test'
+  ...
+# Subtest: JSDoc names the thresholds, the difference to notchCalculator and RangeError
+ok 15 - JSDoc names the thresholds, the difference to notchCalculator and RangeError
+  ---
+  duration_ms: 0.077664
+  type: 'test'
+  ...
+# Subtest: AC-6: A→A- is 1, BBB+→BBB is 1, A→BBB+ is 2, BBB+→BB+ is 2, AAA→CCC- is 2
+ok 16 - AC-6: A→A- is 1, BBB+→BBB is 1, A→BBB+ is 2, BBB+→BB+ is 2, AAA→CCC- is 2
+  ---
+  duration_ms: 1.505258
+  type: 'test'
+  ...
+# Subtest: AC-6: BBB+→BBB is WL 1 for Indicator 12 while notchCalculator gives wl 0 (C6)
+ok 17 - AC-6: BBB+→BBB is WL 1 for Indicator 12 while notchCalculator gives wl 0 (C6)
+  ---
+  duration_ms: 0.401283
+  type: 'test'
+  ...
+# Subtest: AC-6 edge: BBB-→BB+ is 1 (calculator 0); A+→A- is 2 (calculator 1)
+ok 18 - AC-6 edge: BBB-→BB+ is 1 (calculator 0); A+→A- is 2 (calculator 1)
+  ---
+  duration_ms: 0.314823
+  type: 'test'
+  ...
+# Subtest: AC-7: upgrades and unchanged ratings give 0
+ok 19 - AC-7: upgrades and unchanged ratings give 0
+  ---
+  duration_ms: 0.251366
+  type: 'test'
+  ...
+# Subtest: AC-7: all 361 ordered pairs follow the notch rule; control totals 190/18/153
+ok 20 - AC-7: all 361 ordered pairs follow the notch rule; control totals 190/18/153
+  ---
+  duration_ms: 2.092354
+  type: 'test'
+  ...
+# Subtest: AC-7 edge: boundaries n=0, 1, 2, 18 and negative n of any size; never -0
+ok 21 - AC-7 edge: boundaries n=0, 1, 2, 18 and negative n of any size; never -0
+  ---
+  duration_ms: 0.221213
+  type: 'test'
+  ...
+# Subtest: AC-8: case and surrounding whitespace are ignored: ("a", " A- ") → 1
+ok 22 - AC-8: case and surrounding whitespace are ignored: ("a", " A- ") → 1
+  ---
+  duration_ms: 0.258641
+  type: 'test'
+  ...
+# Subtest: AC-9: every invalid value in either position throws RangeError, never TypeError
+ok 23 - AC-9: every invalid value in either position throws RangeError, never TypeError
+  ---
+  duration_ms: 2.933914
+  type: 'test'
+  ...
+# Subtest: AC-9 edge: new String("BBB") and a missing argument throw RangeError
+ok 24 - AC-9 edge: new String("BBB") and a missing argument throw RangeError
+  ---
+  duration_ms: 0.589368
+  type: 'test'
+  ...
+# Subtest: AC-9 / X-error-message: message names the offending argument and echoes the value
+ok 25 - AC-9 / X-error-message: message names the offending argument and echoes the value
+  ---
+  duration_ms: 0.603378
+  type: 'test'
+  ...
+# Subtest: AC-9 / X-error-message: the error passes through unchanged from notchChange
+ok 26 - AC-9 / X-error-message: the error passes through unchanged from notchChange
+  ---
+  duration_ms: 0.747458
+  type: 'test'
+  ...
+# Subtest: AC-11: repeated calls return the same value; an edited rating just changes the result
+ok 27 - AC-11: repeated calls return the same value; an edited rating just changes the result
+  ---
+  duration_ms: 0.184561
+  type: 'test'
+  ...
+# Subtest: AC-11: child process import + calls (incl. a caught RangeError) is silent and exits 0
+ok 28 - AC-11: child process import + calls (incl. a caught RangeError) is silent and exits 0
+  ---
+  duration_ms: 30.215165
+  type: 'test'
+  ...
+# Subtest: AC-11: source has only the notch import, no I/O modules and no console/process output
+ok 29 - AC-11: source has only the notch import, no I/O modules and no console/process output
+  ---
+  duration_ms: 0.450388
+  type: 'test'
+  ...
+# Subtest: AC-12: source imports notchChange from ../ratings/notch.mjs and exports countryRatingChangeWl as ESM
+ok 30 - AC-12: source imports notchChange from ../ratings/notch.mjs and exports countryRatingChangeWl as ESM
+  ---
+  duration_ms: 0.268724
+  type: 'test'
+  ...
+# Subtest: AC-12: no repeated scale and no own normalisation in the source
+ok 31 - AC-12: no repeated scale and no own normalisation in the source
+  ---
+  duration_ms: 0.17948
+  type: 'test'
+  ...
+# Subtest: AC-12: package.json has no dependencies/devDependencies; notch.mjs is unchanged by this card
+ok 32 - AC-12: package.json has no dependencies/devDependencies; notch.mjs is unchanged by this card
+  ---
+  duration_ms: 7.065891
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE has the 19 ratings in order, is frozen
+ok 33 - AC-1: RATING_SCALE has the 19 ratings in order, is frozen
+  ---
+  duration_ms: 2.710706
+  type: 'test'
+  ...
+# Subtest: AC-1: in strict mode push and index assignment throw TypeError and leave the scale intact
+ok 34 - AC-1: in strict mode push and index assignment throw TypeError and leave the scale intact
+  ---
+  duration_ms: 0.886093
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange = index(current) - index(previous) for the spec data
+ok 35 - AC-2: notchChange = index(current) - index(previous) for the spec data
+  ---
+  duration_ms: 0.496624
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange is an integer in -18..18, sign: positive downgrade, negative upgrade, 0 unchanged
+ok 36 - AC-2: notchChange is an integer in -18..18, sign: positive downgrade, negative upgrade, 0 unchanged
+  ---
+  duration_ms: 1.271841
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator downgrade examples (BBB+ -> BB+ is 3 notches, WL 2)
+ok 37 - AC-3: notchCalculator downgrade examples (BBB+ -> BB+ is 3 notches, WL 2)
+  ---
+  duration_ms: 0.505388
+  type: 'test'
+  ...
+# Subtest: AC-3: the wrong POC example (2 notches / WL 1 for BBB+ -> BB+) does not hold
+ok 38 - AC-3: the wrong POC example (2 notches / WL 1 for BBB+ -> BB+) does not hold
+  ---
+  duration_ms: 0.240573
+  type: 'test'
+  ...
+# Subtest: AC-4: upgrades and unchanged give negative/zero notches and WL 0
+ok 39 - AC-4: upgrades and unchanged give negative/zero notches and WL 0
+  ---
+  duration_ms: 0.286284
+  type: 'test'
+  ...
+# Subtest: AC-4: scale ends are valid in both positions and unchanged at the ends is WL 0
+ok 40 - AC-4: scale ends are valid in both positions and unchanged at the ends is WL 0
+  ---
+  duration_ms: 0.107285
+  type: 'test'
+  ...
+# Subtest: AC-5: all 361 ordered pairs are consistent, with control totals
+ok 41 - AC-5: all 361 ordered pairs are consistent, with control totals
+  ---
+  duration_ms: 1.713248
+  type: 'test'
+  ...
+# Subtest: AC-8: input is trimmed and case-insensitive
+ok 42 - AC-8: input is trimmed and case-insensitive
+  ---
+  duration_ms: 2.713082
+  type: 'test'
+  ...
+# Subtest: AC-8: NBSP is stripped by trim, so " BBB " is valid
+ok 43 - AC-8: NBSP is stripped by trim, so " BBB " is valid
+  ---
+  duration_ms: 0.207908
+  type: 'test'
+  ...
+# Subtest: AC-9: every invalid value throws RangeError (never TypeError) in either position, in both functions
+ok 44 - AC-9: every invalid value throws RangeError (never TypeError) in either position, in both functions
+  ---
+  duration_ms: 2.241109
+  type: 'test'
+  ...
+# Subtest: AC-9: edge inputs (boxed strings, Symbol, null-prototype object, booleans, missing arg, inner whitespace, dashes)
+ok 45 - AC-9: edge inputs (boxed strings, Symbol, null-prototype object, booleans, missing arg, inner whitespace, dashes)
+  ---
+  duration_ms: 0.796486
+  type: 'test'
+  ...
+# Subtest: AC-9: hostile inputs (throwing Proxy, throwing toString/Symbol.toPrimitive, revoked proxy) still end in RangeError
+ok 46 - AC-9: hostile inputs (throwing Proxy, throwing toString/Symbol.toPrimitive, revoked proxy) still end in RangeError
+  ---
+  duration_ms: 0.821825
+  type: 'test'
+  ...
+# Subtest: AC-9: an object with a valid-looking trim/toString is still rejected (only real strings accepted)
+ok 47 - AC-9: an object with a valid-looking trim/toString is still rejected (only real strings accepted)
+  ---
+  duration_ms: 0.123144
+  type: 'test'
+  ...
+# Subtest: AC-10: error message names the offending argument and echoes its value
+ok 48 - AC-10: error message names the offending argument and echoes its value
+  ---
+  duration_ms: 0.602952
+  type: 'test'
+  ...
+# Subtest: AC-10: missing second argument reports current; both invalid reports previous
+ok 49 - AC-10: missing second argument reports current; both invalid reports previous
+  ---
+  duration_ms: 0.146217
+  type: 'test'
+  ...
+# Subtest: AC-11: same arguments give equal results, each a fresh object, no state kept
+ok 50 - AC-11: same arguments give equal results, each a fresh object, no state kept
+  ---
+  duration_ms: 0.125707
+  type: 'test'
+  ...
+# Subtest: AC-11: child process using the module (incl. a caught RangeError) prints nothing and exits 0
+ok 51 - AC-11: child process using the module (incl. a caught RangeError) prints nothing and exits 0
+  ---
+  duration_ms: 39.405641
+  type: 'test'
+  ...
+# Subtest: AC-11: source has no import/require and no console/stdout/stderr usage
+ok 52 - AC-11: source has no import/require and no console/stdout/stderr usage
+  ---
+  duration_ms: 0.447309
+  type: 'test'
+  ...
+# Subtest: AC-12: contract files exist as plain ESM, unit tests pass, package.json clean and unchanged
+ok 53 - AC-12: contract files exist as plain ESM, unit tests pass, package.json clean and unchanged
+  ---
+  duration_ms: 161.3402
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE has the 19 ratings, best first, and is frozen
+ok 54 - RATING_SCALE has the 19 ratings, best first, and is frozen
+  ---
+  duration_ms: 1.614738
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE cannot be mutated (strict mode)
+ok 55 - RATING_SCALE cannot be mutated (strict mode)
+  ---
+  duration_ms: 0.560882
+  type: 'test'
+  ...
+# Subtest: notchChange returns index(current) - index(previous)
+ok 56 - notchChange returns index(current) - index(previous)
+  ---
+  duration_ms: 0.322986
+  type: 'test'
+  ...
+# Subtest: notchCalculator example rows
+ok 57 - notchCalculator example rows
+  ---
+  duration_ms: 0.438458
+  type: 'test'
+  ...
+# Subtest: all 361 ordered pairs are consistent, with the expected control totals
+ok 58 - all 361 ordered pairs are consistent, with the expected control totals
+  ---
+  duration_ms: 2.336204
+  type: 'test'
+  ...
+# Subtest: input is trimmed and upper-cased
+ok 59 - input is trimmed and upper-cased
+  ---
+  duration_ms: 0.174101
+  type: 'test'
+  ...
+# Subtest: invalid input throws RangeError (never TypeError) in either position
+ok 60 - invalid input throws RangeError (never TypeError) in either position
+  ---
+  duration_ms: 1.301385
+  type: 'test'
+  ...
+# Subtest: building the error message never throws, even for hostile values
+ok 61 - building the error message never throws, even for hostile values
+  ---
+  duration_ms: 0.342928
+  type: 'test'
+  ...
+# Subtest: a missing argument reports current
+ok 62 - a missing argument reports current
+  ---
+  duration_ms: 0.468661
+  type: 'test'
+  ...
+# Subtest: error message names the argument and echoes the value
+ok 63 - error message names the argument and echoes the value
+  ---
+  duration_ms: 0.491099
+  type: 'test'
+  ...
+# Subtest: both invalid names previous, not current
+ok 64 - both invalid names previous, not current
+  ---
+  duration_ms: 0.18612
+  type: 'test'
+  ...
+# Subtest: same arguments give equal results, each a fresh object; no state kept
+ok 65 - same arguments give equal results, each a fresh object; no state kept
+  ---
+  duration_ms: 0.141713
+  type: 'test'
+  ...
+# Subtest: module is silent in a child process, including a caught RangeError
+ok 66 - module is silent in a child process, including a caught RangeError
+  ---
+  duration_ms: 30.249541
+  type: 'test'
+  ...
+# Subtest: source is pure: no module imports, no output calls, ESM exports only
+ok 67 - source is pure: no module imports, no output calls, ESM exports only
+  ---
+  duration_ms: 0.531158
+  type: 'test'
+  ...
+# Subtest: package.json declares no dependencies
+ok 68 - package.json declares no dependencies
+  ---
+  duration_ms: 0.199262
+  type: 'test'
+  ...
+1..68
+# tests 68
+# suites 0
+# pass 68
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 348.367088

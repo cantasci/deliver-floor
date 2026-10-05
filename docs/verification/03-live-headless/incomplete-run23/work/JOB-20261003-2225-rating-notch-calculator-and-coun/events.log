@@ -1,0 +1,55 @@
+2026-10-03T22:25:04Z	new	Rating notch calculator and country indicator
+2026-10-03T22:25:11Z	jobset	stack: .stack=["javascript"]
+2026-10-03T22:25:11Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02/REQ-03-12: domain logic modules notch.mjs and countryRating.mjs"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02/REQ-03-12: implements notchCalculator and countryRatingChangeWl"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer for the Node ESM code"}]
+2026-10-03T22:25:11Z	jobset	assumptions: .assumptions += ["Stack is plain Node ESM with no dependencies (CLAUDE.md); no UI/CLI/persistence in this slice (C4,C7,C8)."]
+2026-10-03T22:25:11Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:25:11Z	phase	readiness
+2026-10-03T22:28:16Z	agent	business-analyst ab2aaebc: ```json { "items": [ { "id": "PRD-goal", "status": "decided", "answer": "The analyst gets two things. First, a notch calculator helper: give it a previous and a
+2026-10-03T22:28:51Z	readiness	31 items: 19 decided, 8 n/a, 4 open
+2026-10-03T22:28:55Z	decide	DEL-docs: C: no documentation beyond tests; a short JSDoc on each export is allowed but not required — Request asks for none; the contract is in the job file and affects no behaviour.
+2026-10-03T22:28:55Z	decide	X-scale-shape: A: RATING_SCALE is Object.freeze'd; notchCalculator returns a fresh plain object per call — Protects the shared scale from consumer mutation at no cost; the returned object keys and values are unchanged.
+2026-10-03T22:28:55Z	decide	X-error-message: A: RangeError message names the argument (previous/current) and quotes the received value; previous is validated first; tests assert only the error type — Debuggability; message text is not contract (C1 fixes only the type).
+2026-10-03T22:29:03Z	readiness	31 items: 21 decided, 9 n/a, 1 open
+2026-10-03T22:29:03Z	phase	awaiting_clarification
+2026-10-03T22:29:10Z	clarify	CON-interface: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-03T22:29:28Z	freeze	readiness + architecture frozen (b9310a41096b)
+2026-10-03T22:29:28Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:29:28Z	phase	planning
+2026-10-03T22:30:47Z	agent	business-analyst ac83674e: # Plan ## Goal Deliver the two Watchlist POC requirements of this slice as pure Node ESM library functions that other POC parts will import: - **REQ-06-02**, th
+2026-10-03T22:32:07Z	agent	ecc:architect aa08d6a0: [{"tmp_id":"B1","title":"Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs (REQ-06-02)","role":"backend","component":"ratings-notch","conte
+2026-10-03T22:33:56Z	agent	business-analyst a7c5bd21: === T-01 === # T-01: Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs (REQ-06-02) ## What to build Create `src/ratings/notch.mjs`, a pure 
+2026-10-03T22:34:42Z	phase	executing
+2026-10-03T22:34:46Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T22:36:18Z	agent	backend-dev a6f0abe1: status: done (not pushed) commit: d056568 verify: passed on Node 20, failed on Node 22. `node --test test/ratings/` run with `/usr/local/bin/node` (v20.20.0) gi
+2026-10-03T22:36:22Z	gate	T-01 FAIL
+2026-10-03T22:36:27Z	gate	T-01 FAIL
+2026-10-03T22:36:42Z	state	T-01=blocked
+2026-10-03T22:36:43Z	note	T-01: verify/qa_verify used a directory arg that fails on Node 22 (contract defect, code is fine: 34/34 on node 20)
+2026-10-03T22:36:43Z	card-set	T-01.verify = "node --test test/ratings/*.test.mjs" — Node 22 rejects a directory argument to node --test; use a glob
+2026-10-03T22:36:43Z	card-set	T-01.qa_verify = "node --test test/integration/ratings/*.test.mjs" — Node 22 rejects a directory argument to node --test; use a glob
+2026-10-03T22:36:44Z	card-set	T-02.verify = "node --test test/indicators/*.test.mjs" — Node 22 rejects a directory argument to node --test; use a glob
+2026-10-03T22:36:44Z	card-set	T-02.qa_verify = "node --test test/integration/indicators/*.test.mjs" — Node 22 rejects a directory argument to node --test; use a glob
+2026-10-03T22:36:44Z	state	T-01=ready
+2026-10-03T22:36:53Z	assign	T-01 → backend-dev (backend#1) attempt=2
+2026-10-03T22:36:54Z	gate	T-01 PASS
+2026-10-03T22:38:02Z	agent	qa-tester ac3c2bc7: All 86 integration tests pass and `qa_verify` exits 0, but the push of the card branch was blocked. The tests are committed locally as 70bfb4f, and the worktree
+2026-10-03T22:38:05Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-11, AC-16(calc), AC-17(notch) pass; 86 integration tests, qa_verify exit 0
+2026-10-03T22:38:24Z	agent	ecc:typescript-reviewer ab33122f: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs:15: `to - from + 0` is redundant, because `to - from` of two equal integers is already +0. The
+2026-10-03T22:38:27Z	review	T-01 reviewer approve — no blocking items; nits only (redundant +0, received formatting)
+2026-10-03T22:38:27Z	integrate	T-01 merged
+2026-10-03T22:38:31Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-03T22:39:20Z	agent	backend-dev a38227bc: status: done commit: 4240791 verify: passed (`node --test test/indicators/*.test.mjs` gave 44/44; the full `node --test` gave 164/164) open issues: - I wrote th
+2026-10-03T22:39:23Z	gate	T-02 PASS
+2026-10-03T22:40:14Z	agent	qa-tester a1463c38: ```json {"verdict":"pass", "tests":["test/integration/indicators/countryRating.int.test.mjs"], "criteria":[ {"ac":"AC-3","status":"pass","evidence":"AC-3: \" bb
+2026-10-03T22:40:17Z	qa	T-02 pass (qa_verify PASS) — AC-3/4/12-17 indicator+job parts pass; 45 integration tests, qa_verify exit 0
+2026-10-03T22:40:32Z	agent	ecc:typescript-reviewer af3a95bb: {"verdict":"approve","blocking":[],"nits":["src/indicators/countryRating.mjs: The implementation matches the spec. It imports only notchChange, has two declared
+2026-10-03T22:40:35Z	review	T-02 reviewer approve — no blocking items; nits only (test duplication, nested spawns)
+2026-10-03T22:40:36Z	integrate	T-02 merged
+2026-10-03T22:40:39Z	phase	integrating
+2026-10-03T22:40:39Z	verify-all	PASS
+2026-10-03T22:40:42Z	phase	closing
+2026-10-03T22:42:03Z	agent	business-analyst a3690159: ## Closing check: JOB-20261003-2225 (rating notch calculator and country indicator) All 17 ACs are met. The job branch is at `162e1fd`, and I re-ran `node --tes
+2026-10-03T22:42:15Z	learn	backend: In verify/qa_verify use a file glob (node --test test/x/*.test.mjs), never a directory: Node 22 rejects directory args.
+2026-10-03T22:42:16Z	learn	all: Local merge mode: agents must not git push (the guard blocks it and it is not needed).
+2026-10-03T22:42:16Z	ship	local merge into main
+2026-10-03T22:42:19Z	cleanup	

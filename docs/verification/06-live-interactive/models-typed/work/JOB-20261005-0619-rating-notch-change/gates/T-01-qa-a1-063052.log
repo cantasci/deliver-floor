@@ -1,0 +1,155 @@
+# qa_verify: node --test test/ratings/notch.integration.test.mjs
+TAP version 13
+# Subtest: module has exactly two named exports: RATING_SCALE and notchChange
+ok 1 - module has exactly two named exports: RATING_SCALE and notchChange
+  ---
+  duration_ms: 2.261213
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is the 19-entry list from C1
+ok 2 - AC-1: RATING_SCALE is the 19-entry list from C1
+  ---
+  duration_ms: 0.377987
+  type: 'test'
+  ...
+# Subtest: AC-2: RATING_SCALE is a frozen array and cannot be changed
+ok 3 - AC-2: RATING_SCALE is a frozen array and cannot be changed
+  ---
+  duration_ms: 0.803093
+  type: 'test'
+  ...
+# Subtest: AC-3: BBB+ -> BB+ is a 3-notch downgrade (3)
+ok 4 - AC-3: BBB+ -> BB+ is a 3-notch downgrade (3)
+  ---
+  duration_ms: 0.168471
+  type: 'test'
+  ...
+# Subtest: AC-4: BB+ -> BBB+ is a 3-notch upgrade (-3)
+ok 5 - AC-4: BB+ -> BBB+ is a 3-notch upgrade (-3)
+  ---
+  duration_ms: 0.155216
+  type: 'test'
+  ...
+# Subtest: AC-5: A -> A is +0, not -0, for every rating
+ok 6 - AC-5: A -> A is +0, not -0, for every rating
+  ---
+  duration_ms: 0.384284
+  type: 'test'
+  ...
+# Subtest: AC-6: one-notch steps and the two ends of the scale
+ok 7 - AC-6: one-notch steps and the two ends of the scale
+  ---
+  duration_ms: 0.214037
+  type: 'test'
+  ...
+# Subtest: AC-7: all 361 pairs return j - i, integer in [-18,18], antisymmetric
+ok 8 - AC-7: all 361 pairs return j - i, integer in [-18,18], antisymmetric
+  ---
+  duration_ms: 2.829561
+  type: 'test'
+  ...
+# Subtest: AC-8: whitespace removed by trim() at either end is ignored
+ok 9 - AC-8: whitespace removed by trim() at either end is ignored
+  ---
+  duration_ms: 0.527325
+  type: 'test'
+  ...
+# Subtest: AC-9: case is ignored
+ok 10 - AC-9: case is ignored
+  ---
+  duration_ms: 0.463068
+  type: 'test'
+  ...
+# Subtest: AC-10: unknown ratings throw RangeError in either position
+ok 11 - AC-10: unknown ratings throw RangeError in either position
+  ---
+  duration_ms: 0.726033
+  type: 'test'
+  ...
+# Subtest: AC-11: empty and whitespace-only strings throw RangeError in either position
+ok 12 - AC-11: empty and whitespace-only strings throw RangeError in either position
+  ---
+  duration_ms: 0.309037
+  type: 'test'
+  ...
+# Subtest: AC-12: non-strings, String objects and missing args throw RangeError (never TypeError)
+ok 13 - AC-12: non-strings, String objects and missing args throw RangeError (never TypeError)
+  ---
+  duration_ms: 0.934556
+  type: 'test'
+  ...
+# Subtest: AC-13: error message names the argument and bad value; previous is checked first (via command)
+ok 14 - AC-13: error message names the argument and bad value; previous is checked first (via command)
+  ---
+  duration_ms: 286.210221
+  type: 'test'
+  ...
+# Subtest: AC-13: message building never throws for any AC-12 value, in both positions
+ok 15 - AC-13: message building never throws for any AC-12 value, in both positions
+  ---
+  duration_ms: 1.076727
+  type: 'test'
+  ...
+# Subtest: edge: when both arguments are invalid the error is about previous
+ok 16 - edge: when both arguments are invalid the error is about previous
+  ---
+  duration_ms: 0.26251
+  type: 'test'
+  ...
+# Subtest: edge: extra arguments are ignored
+ok 17 - edge: extra arguments are ignored
+  ---
+  duration_ms: 0.197896
+  type: 'test'
+  ...
+# Subtest: AC-14: 100 calls write nothing to stdout/stderr and each returns 3
+ok 18 - AC-14: 100 calls write nothing to stdout/stderr and each returns 3
+  ---
+  duration_ms: 71.313
+  type: 'test'
+  ...
+# Subtest: AC-14: error paths are also silent (nothing printed when throwing)
+ok 19 - AC-14: error paths are also silent (nothing printed when throwing)
+  ---
+  duration_ms: 57.653007
+  type: 'test'
+  ...
+# Subtest: AC-14: inputs are not mutated and results are repeatable
+ok 20 - AC-14: inputs are not mutated and results are repeatable
+  ---
+  duration_ms: 0.264276
+  type: 'test'
+  ...
+# Subtest: AC-14: source has no I/O imports and no console. call
+ok 21 - AC-14: source has no I/O imports and no console. call
+  ---
+  duration_ms: 0.682299
+  type: 'test'
+  ...
+# Subtest: AC-15: package.json has no dependencies/devDependencies and is otherwise unchanged
+ok 22 - AC-15: package.json has no dependencies/devDependencies and is otherwise unchanged
+  ---
+  duration_ms: 0.30834
+  type: 'test'
+  ...
+# Subtest: AC-15: unit test file exists, uses node:test and node:assert/strict, covers AC-1..AC-12 and AC-14
+ok 23 - AC-15: unit test file exists, uses node:test and node:assert/strict, covers AC-1..AC-12 and AC-14
+  ---
+  duration_ms: 0.655923
+  type: 'test'
+  ...
+# Subtest: AC-15: `node --test` from the repo root exits 0
+ok 24 - AC-15: `node --test` from the repo root exits 0
+  ---
+  duration_ms: 87.686613
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 655.844022

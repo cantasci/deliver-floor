@@ -1,0 +1,426 @@
+{
+ "items": [
+  {
+   "id": "PRD-goal",
+   "status": "decided",
+   "answer": "Deliver two pure mappings for the Watchlist POC (EPIC-03): Indicator 2 'Days with delay' → WL 0/2/3/4 (REQ-03-02, C2) and Indicator 3 'Delays in 12 months' → WL 0/1/2 (REQ-03-03, C2), each with its ordered dropdown option list exported for the later POC screens (C4). Success = both contract functions return the WL per the REQ table + C2 for every option, throw RangeError for anything else (C1, C5), and `node --test` passes. No business KPI beyond this is stated.",
+   "source": "JOB-parallel.md: header (EPIC-03), Requirements table REQ-03-02/REQ-03-03, C2, C4, Contract",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "PRD-users",
+   "status": "n_a",
+   "answer": "No end-user surface in this slice. Consumers are code only: the POC screens built later by other parts import the *_OPTIONS lists and the *Wl functions. No roles/permissions apply to pure mapping functions.",
+   "source": "JOB-parallel.md C4 ('No UI in this slice'), C6; repo CLAUDE.md ('Pure functions, no I/O in src/indicators')",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "PRD-scope",
+   "status": "decided",
+   "answer": "IN: src/indicators/daysWithDelay.mjs (DAYS_WITH_DELAY_OPTIONS, daysWithDelayWl) and src/indicators/delayCount.mjs (DELAY_COUNT_OPTIONS, delayCountWl), plus their unit tests and QA tests. OUT: Indicator 1 (repayment delay yes/no) and its collapsing of indicators 2–3 (C3); any UI/dropdown rendering (C4); counting delays in the last 12 months or deriving the bucket from a raw day/delay number — the caller does that (C6); combining/aggregating WL across indicators; all other EPIC-03 indicators ('Build only these two requirements').",
+   "source": "JOB-parallel.md intro line, C3, C4, C6, Contract",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "PRD-acceptance",
+   "status": "decided",
+   "answer": "Yes, with concrete values once the REQ table is combined with C1/C2/C5. Indicator 2: 'no delay'→0, '<=3 days'→0, '>3 days'→2, '>60 days'→3, '>90 days'→4. Indicator 3: '0'→0, '1'→1, '>1'→2. Inputs with surrounding whitespace (e.g. '  >3 days  ') map as the trimmed value. RangeError examples: '>3 Days', '', '   ', '2', 1 (number), null, undefined. The REQ summaries alone omit the WL-0 cases; C2 supplies them.",
+   "source": "JOB-parallel.md Requirements table, C1, C2, C5",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "PRD-conflicts",
+   "status": "decided",
+   "answer": "(1) REQ-03-02 writes the option as '≤3 days' (U+2264) while C1 fixes the exact string '<=3 days' (ASCII). Resolution: C1 wins; '≤3 days' is not an exact match → RangeError (C5). (2) REQ AC summaries give no WL for 'no delay', '≤3 days' or Indicator 3 '0'; C2 sets them all to 0. (3) Indicator 2 buckets overlap semantically (95 days is also '>3 days' and '>60 days'); the function maps the chosen option string, not a day count, and the caller picks the option (C1 input is the option; C6 states the principle), so each option has exactly one WL. No unresolved contradictions remain.",
+   "source": "JOB-parallel.md Requirements table vs C1, C2, C5, C6, Contract",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "PRD-priority",
+   "status": "decided",
+   "answer": "No MoSCoW given. The slice is exactly two requirements, both delivered; the request states they are independent and staffs one developer each in parallel. Both treated as Must; no ordering dependency between them.",
+   "source": "JOB-parallel.md intro ('Build only these two requirements. They are independent of each other.'), Staffing",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "CON-interface",
+   "status": "decided",
+   "answer": "Module src/indicators/daysWithDelay.mjs: `export const DAYS_WITH_DELAY_OPTIONS` = array of exactly 5 strings in this order ['no delay','<=3 days','>3 days','>60 days','>90 days']; `export function daysWithDelayWl(option)` → number ∈ {0,2,3,4}. Module src/indicators/delayCount.mjs: `export const DELAY_COUNT_OPTIONS` = exactly ['0','1','>1']; `export function delayCountWl(option)` → number ∈ {0,1,2}. Input: one string, trimmed, then matched exactly and case-sensitively (C1, C5). null/undefined/number/other non-string → RangeError (C5). Empty or whitespace-only string → not an option after trimming → RangeError (C1). Units: none (labels in); WL integer 0–4, higher is worse (repo CLAUDE.md). Mutability of the exported arrays and error-message text: see X-options-immutability, X-error-message.",
+   "source": "JOB-parallel.md Contract, C1, C2, C5; repo CLAUDE.md (WL 0–4)",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "CON-errors",
+   "status": "decided",
+   "answer": "Every invalid input throws RangeError synchronously; no fallback value, no default WL. Invalid = any string not equal to an option after trimming (including case variants like '>3 Days', '≤3 days', '2', '01', internal double spaces '>3  days', '' and '   ') and any non-string (number 1, null, undefined, object, array, boolean). Message wording: see X-error-message.",
+   "source": "JOB-parallel.md C1 ('any other value throws a RangeError'), C5",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "CON-compat",
+   "status": "n_a",
+   "answer": "Greenfield addition: the repo has only src/.gitkeep and test/.gitkeep — no existing indicators, APIs or data to keep compatible. No versioning needed (package.json private, 0.1.0).",
+   "source": "repo git ls-files (src/.gitkeep, test/.gitkeep only); package.json",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "ARC-style",
+   "status": "decided",
+   "answer": "Single-repo library of pure functions (Node ESM POC). The change lives in src/indicators/ as two independent modules, one per requirement; unit tests under test/indicators/, QA integration tests under test/integration/indicators/.",
+   "source": "JOB-parallel.md Contract; repo CLAUDE.md, README.md ('Code lives in src/<area>/, tests in test/<area>/*.test.mjs')",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "ARC-components",
+   "status": "decided",
+   "answer": "One component: indicators library (src/indicators/ + test/indicators/ + test/integration/indicators/), Node ESM, owner backend, reviewer role 'reviewer' (agent ecc:typescript-reviewer). Inside it two independent work units, one per backend developer: daysWithDelay.mjs (REQ-03-02) and delayCount.mjs (REQ-03-03). No service/BFF/app/worker/database.",
+   "source": "JOB-parallel.md Contract, Staffing; repo CLAUDE.md",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "ARC-layer",
+   "status": "decided",
+   "answer": "Domain/shared-library layer: pure functions in src/indicators, no I/O. The client (POC screens, later) only renders the *_OPTIONS lists and calls the mapping (C4).",
+   "source": "repo CLAUDE.md ('Pure functions, no I/O in src/ratings and src/indicators'); JOB-parallel.md C4",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "ARC-stack",
+   "status": "decided",
+   "answer": "Plain Node.js 18+ ES modules (.mjs); tests with node:test + node:assert/strict; no npm dependencies (adding any is forbidden), so no licence check. Local runtime Node v22, code must stay Node-18 compatible.",
+   "source": "JOB-parallel.md ('Plain Node ESM, no dependencies; tests with node --test'); repo CLAUDE.md ('No npm dependencies; do not add any')",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "ARC-data",
+   "status": "n_a",
+   "answer": "Nothing is stored; pure functions over constant option lists.",
+   "source": "repo CLAUDE.md (no I/O in src/indicators); JOB-parallel.md Contract",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "ARC-integration",
+   "status": "n_a",
+   "answer": "No external systems; the functions do no I/O.",
+   "source": "repo CLAUDE.md (no I/O in src/indicators)",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "ARC-async",
+   "status": "decided",
+   "answer": "Synchronous: each function returns a plain number (not a Promise) and throws synchronously on invalid input. Deterministic and idempotent: same input, same output.",
+   "source": "JOB-parallel.md Contract (returns 0 | 2 | 3 | 4 / 0 | 1 | 2); repo CLAUDE.md (pure functions)",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "NFR-performance",
+   "status": "n_a",
+   "answer": "No targets; constant-time lookups over ≤5 options.",
+   "source": "JOB-parallel.md (no NFRs stated); Contract",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "NFR-availability",
+   "status": "n_a",
+   "answer": "Library with no runtime dependencies or deployment; nothing to degrade.",
+   "source": "repo CLAUDE.md; JOB-parallel.md Contract",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "NFR-security",
+   "status": "decided",
+   "answer": "No authn/authz/secrets (no I/O, no endpoints). The only security-relevant rule is input validation: allow-list exact match after trimming, RangeError for everything else including non-strings; no coercion of numbers/objects into strings.",
+   "source": "JOB-parallel.md C1, C5; repo CLAUDE.md",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "NFR-privacy",
+   "status": "n_a",
+   "answer": "Inputs are fixed dropdown labels and outputs are WL integers; no client identifiers or personal data reach these functions; nothing is logged or retained.",
+   "source": "JOB-parallel.md C1, Contract; repo CLAUDE.md (no I/O)",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "NFR-audit",
+   "status": "n_a",
+   "answer": "The functions perform no I/O and change no state, so there is nothing to audit here. Auditing a WL assignment for a client belongs to the caller/screens, which are out of scope (C4, C6).",
+   "source": "repo CLAUDE.md (no I/O in src/indicators); JOB-parallel.md C4, C6",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "NFR-observability",
+   "status": "n_a",
+   "answer": "No logging/metrics/tracing; pure functions without I/O by convention.",
+   "source": "repo CLAUDE.md ('Pure functions, no I/O')",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "NFR-compliance",
+   "status": "decided",
+   "answer": "No regulation named. The binding business rules are the WL values in REQ-03-02/REQ-03-03 + C2; the code must not alter them. This is a POC; no model-risk sign-off requested.",
+   "source": "JOB-parallel.md header (POC_Requirements_v0.2, POC), Requirements table, C2",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "TST-strategy",
+   "status": "decided",
+   "answer": "Devs: unit tests TDD with node:test + node:assert/strict, one file per module — test/indicators/daysWithDelay.test.mjs and test/indicators/delayCount.test.mjs — covering every option, *_OPTIONS order, trimming, case-sensitivity, RangeError for non-strings/empty/unknown. QA: integration tests in test/integration/indicators/ that import the public modules as a consumer would, checking every *_OPTIONS entry maps to a valid WL in the contract range and the C1/C5 rejections. No coverage figure required. Test data = C1's literal strings. Environment: local `node --test` only.",
+   "source": "repo CLAUDE.md (test/<area>/<name>.test.mjs, node:test + assert/strict); JOB-parallel.md C1, C5; X-qa-test-path",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "DEL-ci",
+   "status": "decided",
+   "answer": "Merge requires `node --test` (= npm test) green on the whole repo. No lint, typecheck or security scan exists in the repo. Commits carry no AI attribution (the gate rejects it).",
+   "source": ".deliver.json (verify_full: 'node --test'); role card ('Commits: no AI attribution'); package.json scripts",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "DEL-deploy",
+   "status": "n_a",
+   "answer": "No deployment: modules are consumed as in-repo ESM imports by POC screens built later (C4). No feature flags or migrations; rollback = git revert. Merge is local (.deliver.json merge_mode: local).",
+   "source": "JOB-parallel.md C4; .deliver.json",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "DEL-docs",
+   "status": "n_a",
+   "answer": "No documentation deliverable (README/changelog/runbook) is required — the request is silent and README.md stays unchanged. JSDoc on the 4 exports is written by each dev in its own module as part of the code, not as a separate docs card.",
+   "source": "pm: michael 2026-10-03 — Request is silent on docs; JSDoc stays inside each dev's own file so the parallel cards never share README.md; no docs role needed.; PM decision (X-parallel-isolation: no shared files between the parallel cards)",
+   "question": "The request does not ask for documentation. Should README.md list the new indicator modules, or should the modules only carry JSDoc on the exported names?",
+   "options": [
+    "A: JSDoc on the 4 exports only, no README change",
+    "B: JSDoc + short README section listing the indicators and their WL mapping",
+    "C: no docs at all"
+   ],
+   "impact": "Docs only; no observable behaviour or contract change. With B both parallel devs would touch README.md (merge-conflict risk).",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "The request does not ask for documentation. Should README.md list the new indicator modules, or should the modules only carry JSDoc on the exported names?",
+     "at": "2026-10-03T10:46:09.110Z"
+    }
+   ]
+  },
+  {
+   "id": "X-unicode-le",
+   "status": "decided",
+   "answer": "The accepted Indicator 2 value is the ASCII string '<=3 days', not '≤3 days' as typeset in REQ-03-02. '≤3 days' (U+2264) → RangeError. Tests must include both.",
+   "source": "JOB-parallel.md C1 (exact strings) overrides REQ-03-02 typography; C5 (exact match)",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  },
+  {
+   "id": "X-trim-semantics",
+   "status": "decided",
+   "answer": "A: String.prototype.trim() (both ends, all JS whitespace); internal whitespace never normalised.",
+   "source": "pm: michael 2026-10-03 — Idiomatic JS meaning of 'trimmed' (C1); C5 exact match still rejects internal variants.",
+   "question": "Which whitespace does 'trimmed' remove?",
+   "options": [
+    "A: String.prototype.trim() — spaces, tabs, newlines, NBSP and other Unicode whitespace at both ends",
+    "B: ASCII spaces only"
+   ],
+   "impact": "Only exotic inputs ('\\t>3 days\\n', leading NBSP). Internal whitespace is never normalised in either option ('>3  days' → RangeError, C5).",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "Which whitespace does 'trimmed' remove?",
+     "at": "2026-10-03T10:46:09.422Z"
+    }
+   ]
+  },
+  {
+   "id": "X-options-immutability",
+   "status": "decided",
+   "answer": "A: export the option arrays frozen with Object.freeze.",
+   "source": "pm: michael 2026-10-03 — Prevents a consumer from silently widening the allow-list; contract content and order unchanged.",
+   "question": "Should DAYS_WITH_DELAY_OPTIONS and DELAY_COUNT_OPTIONS be frozen (Object.freeze)?",
+   "options": [
+    "A: Object.freeze the arrays",
+    "B: plain arrays"
+   ],
+   "impact": "Internal robustness; contract content/order unchanged. Without freezing, a consumer push() could silently widen accepted inputs.",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "Should DAYS_WITH_DELAY_OPTIONS and DELAY_COUNT_OPTIONS be frozen (Object.freeze)?",
+     "at": "2026-10-03T10:46:09.723Z"
+    }
+   ]
+  },
+  {
+   "id": "X-error-message",
+   "status": "decided",
+   "answer": "A: RangeError message names the received value and lists the allowed options; tests assert the error type only (assert.throws(..., RangeError)).",
+   "source": "pm: michael 2026-10-03 — Type is the contract (C1/C5); a helpful message aids callers; tests stay robust to wording.",
+   "question": "What should the RangeError message say, and what do tests assert?",
+   "options": [
+    "A: message names the received value and lists the allowed options; tests assert type only",
+    "B: free-form message; tests assert type only"
+   ],
+   "impact": "Developer/caller ergonomics only; the type is the contract.",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "What should the RangeError message say, and what do tests assert?",
+     "at": "2026-10-03T10:46:10.184Z"
+    }
+   ]
+  },
+  {
+   "id": "X-parallel-isolation",
+   "status": "decided",
+   "answer": "A: each module self-contained — no shared helper, no index.mjs barrel.",
+   "source": "pm: michael 2026-10-03 — Request says the two requirements are independent and staffed in parallel; zero shared files means no merge conflicts and no dependency between the cards.",
+   "question": "Do the two devs share code (common normalise/validate helper, an index.mjs barrel) or keep each module self-contained?",
+   "options": [
+    "A: each module self-contained, no shared helper or barrel",
+    "B: shared helper module owned by one card, the other depends on it"
+   ],
+   "impact": "File layout and merge order only. B adds a dependency between the parallel cards and a likely merge conflict.",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "Do the two devs share code (common normalise/validate helper, an index.mjs barrel) or keep each module self-contained?",
+     "at": "2026-10-03T10:46:10.477Z"
+    }
+   ]
+  },
+  {
+   "id": "X-qa-test-path",
+   "status": "decided",
+   "answer": "B: QA integration tests in test/integration/indicators/<module>.integration.test.mjs (one file per card).",
+   "source": "pm: michael 2026-10-03 — Disjoint from the devs' test/indicators/ unit tests and per-card files, so the two parallel QA rounds never collide; node --test discovers them.",
+   "question": "Where do QA's integration tests live so they never collide with the devs' unit test files?",
+   "options": [
+    "A: test/indicators/indicators.integration.test.mjs",
+    "B: test/integration/indicators/*.test.mjs"
+   ],
+   "impact": "Layout only; node --test discovers both. Must be disjoint from the devs' scope.",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "Where do QA's integration tests live so they never collide with the devs' unit test files?",
+     "at": "2026-10-03T10:46:10.783Z"
+    }
+   ]
+  },
+  {
+   "id": "X-indicator2-bucket-choice",
+   "status": "decided",
+   "answer": "daysWithDelayWl takes the option string, not a number of days. Choosing the bucket for a real delay (e.g. 75 days → '>60 days', not '>3 days') belongs to the caller/screen and is out of scope; this slice only maps option → WL ('>90 days' → 4 even though 90+ is also '>3 days').",
+   "source": "JOB-parallel.md Contract (daysWithDelayWl(option)), C1 (input is a dropdown value), C4, C6",
+   "question": "",
+   "options": [],
+   "impact": "",
+   "owner": ""
+  }
+ ],
+ "architecture": {
+  "style": "library",
+  "components": [
+   {
+    "id": "indicators-lib",
+    "kind": "library",
+    "stack": [
+     "javascript",
+     "node-esm"
+    ],
+    "path": [
+     "src/indicators/",
+     "test/indicators/",
+     "test/integration/indicators/"
+    ],
+    "owner": "backend",
+    "reviewer": "reviewer",
+    "notes": "Pure, synchronous, no I/O, no dependencies (Node 18+ ESM, node:test). Two independent modules, one per parallel backend card: src/indicators/daysWithDelay.mjs (REQ-03-02; unit tests test/indicators/daysWithDelay.test.mjs) and src/indicators/delayCount.mjs (REQ-03-03; unit tests test/indicators/delayCount.test.mjs). QA integration tests in test/integration/indicators/. Reviewer agent ecc:typescript-reviewer. Consumed later by POC screens (C4)."
+   }
+  ]
+ }
+}

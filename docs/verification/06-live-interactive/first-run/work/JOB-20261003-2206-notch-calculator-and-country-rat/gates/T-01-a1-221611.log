@@ -1,0 +1,1100 @@
+# gate: T-01  attempt: 1  2026-10-03T22:16:11Z
+ok    on job/JOB-20261003-2206-notch-calculator-and-country-rat--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/**","test/ratings/notch.test.mjs"] (+ QA tests ["test/ratings/integration/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE (AC-1)
+    # Subtest: has the 19 ratings, best first
+    ok 1 - has the 19 ratings, best first
+      ---
+      duration_ms: 1.374041
+      type: 'test'
+      ...
+    # Subtest: is frozen
+    ok 2 - is frozen
+      ---
+      duration_ms: 0.238139
+      type: 'test'
+      ...
+    # Subtest: push and index assignment throw TypeError and leave it unchanged
+    ok 3 - push and index assignment throw TypeError and leave it unchanged
+      ---
+      duration_ms: 0.414523
+      type: 'test'
+      ...
+    1..3
+ok 1 - RATING_SCALE (AC-1)
+  ---
+  duration_ms: 3.052039
+  type: 'suite'
+  ...
+# Subtest: notchChange (AC-2, AC-3, AC-4)
+    # Subtest: BBB+ -> BB+ = 3
+    ok 1 - BBB+ -> BB+ = 3
+      ---
+      duration_ms: 0.463791
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB- = 2
+    ok 2 - BBB+ -> BBB- = 2
+      ---
+      duration_ms: 0.089687
+      type: 'test'
+      ...
+    # Subtest: A -> A- = 1
+    ok 3 - A -> A- = 1
+      ---
+      duration_ms: 0.079069
+      type: 'test'
+      ...
+    # Subtest: BB+ -> BBB+ = -3
+    ok 4 - BB+ -> BBB+ = -3
+      ---
+      duration_ms: 0.151664
+      type: 'test'
+      ...
+    # Subtest: A- -> A = -1
+    ok 5 - A- -> A = -1
+      ---
+      duration_ms: 0.318857
+      type: 'test'
+      ...
+    # Subtest: BBB- -> BBB+ = -2
+    ok 6 - BBB- -> BBB+ = -2
+      ---
+      duration_ms: 0.192834
+      type: 'test'
+      ...
+    # Subtest: AAA -> CCC- = 18
+    ok 7 - AAA -> CCC- = 18
+      ---
+      duration_ms: 0.220325
+      type: 'test'
+      ...
+    # Subtest: CCC- -> AAA = -18
+    ok 8 - CCC- -> AAA = -18
+      ---
+      duration_ms: 0.069969
+      type: 'test'
+      ...
+    # Subtest: unchanged ("A", "A") is +0, never -0
+    ok 9 - unchanged ("A", "A") is +0, never -0
+      ---
+      duration_ms: 0.279053
+      type: 'test'
+      ...
+    # Subtest: unchanged ("AAA", "AAA") is +0, never -0
+    ok 10 - unchanged ("AAA", "AAA") is +0, never -0
+      ---
+      duration_ms: 0.061494
+      type: 'test'
+      ...
+    # Subtest: unchanged ("CCC-", "CCC-") is +0, never -0
+    ok 11 - unchanged ("CCC-", "CCC-") is +0, never -0
+      ---
+      duration_ms: 0.047661
+      type: 'test'
+      ...
+    # Subtest: unchanged ("bbb", " BBB ") is +0, never -0
+    ok 12 - unchanged ("bbb", " BBB ") is +0, never -0
+      ---
+      duration_ms: 1.046342
+      type: 'test'
+      ...
+    # Subtest: ignores case and surrounding whitespace
+    ok 13 - ignores case and surrounding whitespace
+      ---
+      duration_ms: 0.104024
+      type: 'test'
+      ...
+    1..13
+ok 2 - notchChange (AC-2, AC-3, AC-4)
+  ---
+  duration_ms: 3.715767
+  type: 'suite'
+  ...
+# Subtest: invalid input (AC-5)
+    # Subtest: notchChange throws RangeError for invalid previous ""
+    ok 1 - notchChange throws RangeError for invalid previous ""
+      ---
+      duration_ms: 1.12387
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current ""
+    ok 2 - notchChange throws RangeError for invalid current ""
+      ---
+      duration_ms: 0.16011
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions ""
+    ok 3 - notchChange throws RangeError for invalid in both positions ""
+      ---
+      duration_ms: 0.092357
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "   "
+    ok 4 - notchChange throws RangeError for invalid previous "   "
+      ---
+      duration_ms: 0.058994
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "   "
+    ok 5 - notchChange throws RangeError for invalid current "   "
+      ---
+      duration_ms: 0.054991
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "   "
+    ok 6 - notchChange throws RangeError for invalid in both positions "   "
+      ---
+      duration_ms: 0.056617
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "CC"
+    ok 7 - notchChange throws RangeError for invalid previous "CC"
+      ---
+      duration_ms: 0.119878
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "CC"
+    ok 8 - notchChange throws RangeError for invalid current "CC"
+      ---
+      duration_ms: 0.284489
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "CC"
+    ok 9 - notchChange throws RangeError for invalid in both positions "CC"
+      ---
+      duration_ms: 0.193681
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "C"
+    ok 10 - notchChange throws RangeError for invalid previous "C"
+      ---
+      duration_ms: 0.080041
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "C"
+    ok 11 - notchChange throws RangeError for invalid current "C"
+      ---
+      duration_ms: 0.084083
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "C"
+    ok 12 - notchChange throws RangeError for invalid in both positions "C"
+      ---
+      duration_ms: 0.108154
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "D"
+    ok 13 - notchChange throws RangeError for invalid previous "D"
+      ---
+      duration_ms: 0.149182
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "D"
+    ok 14 - notchChange throws RangeError for invalid current "D"
+      ---
+      duration_ms: 0.092507
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "D"
+    ok 15 - notchChange throws RangeError for invalid in both positions "D"
+      ---
+      duration_ms: 0.065383
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "SD"
+    ok 16 - notchChange throws RangeError for invalid previous "SD"
+      ---
+      duration_ms: 0.065947
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "SD"
+    ok 17 - notchChange throws RangeError for invalid current "SD"
+      ---
+      duration_ms: 0.111502
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "SD"
+    ok 18 - notchChange throws RangeError for invalid in both positions "SD"
+      ---
+      duration_ms: 0.080275
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "NR"
+    ok 19 - notchChange throws RangeError for invalid previous "NR"
+      ---
+      duration_ms: 0.067056
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "NR"
+    ok 20 - notchChange throws RangeError for invalid current "NR"
+      ---
+      duration_ms: 0.073756
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "NR"
+    ok 21 - notchChange throws RangeError for invalid in both positions "NR"
+      ---
+      duration_ms: 0.063562
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "Baa1"
+    ok 22 - notchChange throws RangeError for invalid previous "Baa1"
+      ---
+      duration_ms: 0.065183
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "Baa1"
+    ok 23 - notchChange throws RangeError for invalid current "Baa1"
+      ---
+      duration_ms: 0.061895
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "Baa1"
+    ok 24 - notchChange throws RangeError for invalid in both positions "Baa1"
+      ---
+      duration_ms: 0.065106
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "BBB +"
+    ok 25 - notchChange throws RangeError for invalid previous "BBB +"
+      ---
+      duration_ms: 0.116796
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "BBB +"
+    ok 26 - notchChange throws RangeError for invalid current "BBB +"
+      ---
+      duration_ms: 0.067449
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "BBB +"
+    ok 27 - notchChange throws RangeError for invalid in both positions "BBB +"
+      ---
+      duration_ms: 0.06156
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "B BB"
+    ok 28 - notchChange throws RangeError for invalid previous "B BB"
+      ---
+      duration_ms: 0.088496
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "B BB"
+    ok 29 - notchChange throws RangeError for invalid current "B BB"
+      ---
+      duration_ms: 0.066248
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "B BB"
+    ok 30 - notchChange throws RangeError for invalid in both positions "B BB"
+      ---
+      duration_ms: 0.061402
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "BBB−"
+    ok 31 - notchChange throws RangeError for invalid previous "BBB−"
+      ---
+      duration_ms: 0.071128
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "BBB−"
+    ok 32 - notchChange throws RangeError for invalid current "BBB−"
+      ---
+      duration_ms: 0.064946
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "BBB−"
+    ok 33 - notchChange throws RangeError for invalid in both positions "BBB−"
+      ---
+      duration_ms: 0.061462
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "BBB–"
+    ok 34 - notchChange throws RangeError for invalid previous "BBB–"
+      ---
+      duration_ms: 0.139614
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "BBB–"
+    ok 35 - notchChange throws RangeError for invalid current "BBB–"
+      ---
+      duration_ms: 0.076048
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "BBB–"
+    ok 36 - notchChange throws RangeError for invalid in both positions "BBB–"
+      ---
+      duration_ms: 0.073566
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "AAA+"
+    ok 37 - notchChange throws RangeError for invalid previous "AAA+"
+      ---
+      duration_ms: 0.059821
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "AAA+"
+    ok 38 - notchChange throws RangeError for invalid current "AAA+"
+      ---
+      duration_ms: 0.083698
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "AAA+"
+    ok 39 - notchChange throws RangeError for invalid in both positions "AAA+"
+      ---
+      duration_ms: 0.069996
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "CCC--"
+    ok 40 - notchChange throws RangeError for invalid previous "CCC--"
+      ---
+      duration_ms: 0.064797
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "CCC--"
+    ok 41 - notchChange throws RangeError for invalid current "CCC--"
+      ---
+      duration_ms: 0.065727
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "CCC--"
+    ok 42 - notchChange throws RangeError for invalid in both positions "CCC--"
+      ---
+      duration_ms: 0.066283
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous null
+    ok 43 - notchChange throws RangeError for invalid previous null
+      ---
+      duration_ms: 0.065277
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current null
+    ok 44 - notchChange throws RangeError for invalid current null
+      ---
+      duration_ms: 0.060333
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions null
+    ok 45 - notchChange throws RangeError for invalid in both positions null
+      ---
+      duration_ms: 0.059782
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous undefined
+    ok 46 - notchChange throws RangeError for invalid previous undefined
+      ---
+      duration_ms: 0.08207
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current undefined
+    ok 47 - notchChange throws RangeError for invalid current undefined
+      ---
+      duration_ms: 0.119797
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions undefined
+    ok 48 - notchChange throws RangeError for invalid in both positions undefined
+      ---
+      duration_ms: 0.130338
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous 7
+    ok 49 - notchChange throws RangeError for invalid previous 7
+      ---
+      duration_ms: 0.075708
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current 7
+    ok 50 - notchChange throws RangeError for invalid current 7
+      ---
+      duration_ms: 0.065869
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions 7
+    ok 51 - notchChange throws RangeError for invalid in both positions 7
+      ---
+      duration_ms: 0.065182
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous {}
+    ok 52 - notchChange throws RangeError for invalid previous {}
+      ---
+      duration_ms: 0.060491
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current {}
+    ok 53 - notchChange throws RangeError for invalid current {}
+      ---
+      duration_ms: 0.064018
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions {}
+    ok 54 - notchChange throws RangeError for invalid in both positions {}
+      ---
+      duration_ms: 0.060122
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous ["BBB"]
+    ok 55 - notchChange throws RangeError for invalid previous ["BBB"]
+      ---
+      duration_ms: 0.058783
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current ["BBB"]
+    ok 56 - notchChange throws RangeError for invalid current ["BBB"]
+      ---
+      duration_ms: 0.065046
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions ["BBB"]
+    ok 57 - notchChange throws RangeError for invalid in both positions ["BBB"]
+      ---
+      duration_ms: 0.168631
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous "BBB"
+    ok 58 - notchChange throws RangeError for invalid previous "BBB"
+      ---
+      duration_ms: 1.082119
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current "BBB"
+    ok 59 - notchChange throws RangeError for invalid current "BBB"
+      ---
+      duration_ms: 0.075515
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions "BBB"
+    ok 60 - notchChange throws RangeError for invalid in both positions "BBB"
+      ---
+      duration_ms: 0.049627
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous true
+    ok 61 - notchChange throws RangeError for invalid previous true
+      ---
+      duration_ms: 0.048238
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current true
+    ok 62 - notchChange throws RangeError for invalid current true
+      ---
+      duration_ms: 0.048788
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions true
+    ok 63 - notchChange throws RangeError for invalid in both positions true
+      ---
+      duration_ms: 0.046164
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid previous Symbol
+    ok 64 - notchChange throws RangeError for invalid previous Symbol
+      ---
+      duration_ms: 0.049168
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid current Symbol
+    ok 65 - notchChange throws RangeError for invalid current Symbol
+      ---
+      duration_ms: 0.054456
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for invalid in both positions Symbol
+    ok 66 - notchChange throws RangeError for invalid in both positions Symbol
+      ---
+      duration_ms: 0.082336
+      type: 'test'
+      ...
+    # Subtest: notchChange throws RangeError for mixed invalid pairs
+    ok 67 - notchChange throws RangeError for mixed invalid pairs
+      ---
+      duration_ms: 0.216701
+      type: 'test'
+      ...
+    # Subtest: notchChange error message names the offending value
+    ok 68 - notchChange error message names the offending value
+      ---
+      duration_ms: 0.147099
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous ""
+    ok 69 - notchCalculator throws RangeError for invalid previous ""
+      ---
+      duration_ms: 0.096329
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current ""
+    ok 70 - notchCalculator throws RangeError for invalid current ""
+      ---
+      duration_ms: 0.055956
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions ""
+    ok 71 - notchCalculator throws RangeError for invalid in both positions ""
+      ---
+      duration_ms: 0.058076
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "   "
+    ok 72 - notchCalculator throws RangeError for invalid previous "   "
+      ---
+      duration_ms: 0.083941
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "   "
+    ok 73 - notchCalculator throws RangeError for invalid current "   "
+      ---
+      duration_ms: 0.086302
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "   "
+    ok 74 - notchCalculator throws RangeError for invalid in both positions "   "
+      ---
+      duration_ms: 0.065055
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "CC"
+    ok 75 - notchCalculator throws RangeError for invalid previous "CC"
+      ---
+      duration_ms: 0.047364
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "CC"
+    ok 76 - notchCalculator throws RangeError for invalid current "CC"
+      ---
+      duration_ms: 0.158026
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "CC"
+    ok 77 - notchCalculator throws RangeError for invalid in both positions "CC"
+      ---
+      duration_ms: 0.060782
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "C"
+    ok 78 - notchCalculator throws RangeError for invalid previous "C"
+      ---
+      duration_ms: 0.045809
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "C"
+    ok 79 - notchCalculator throws RangeError for invalid current "C"
+      ---
+      duration_ms: 0.049863
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "C"
+    ok 80 - notchCalculator throws RangeError for invalid in both positions "C"
+      ---
+      duration_ms: 0.076469
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "D"
+    ok 81 - notchCalculator throws RangeError for invalid previous "D"
+      ---
+      duration_ms: 0.048431
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "D"
+    ok 82 - notchCalculator throws RangeError for invalid current "D"
+      ---
+      duration_ms: 0.043999
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "D"
+    ok 83 - notchCalculator throws RangeError for invalid in both positions "D"
+      ---
+      duration_ms: 0.042492
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "SD"
+    ok 84 - notchCalculator throws RangeError for invalid previous "SD"
+      ---
+      duration_ms: 0.045043
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "SD"
+    ok 85 - notchCalculator throws RangeError for invalid current "SD"
+      ---
+      duration_ms: 0.100627
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "SD"
+    ok 86 - notchCalculator throws RangeError for invalid in both positions "SD"
+      ---
+      duration_ms: 0.053744
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "NR"
+    ok 87 - notchCalculator throws RangeError for invalid previous "NR"
+      ---
+      duration_ms: 0.054553
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "NR"
+    ok 88 - notchCalculator throws RangeError for invalid current "NR"
+      ---
+      duration_ms: 0.053023
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "NR"
+    ok 89 - notchCalculator throws RangeError for invalid in both positions "NR"
+      ---
+      duration_ms: 0.076527
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "Baa1"
+    ok 90 - notchCalculator throws RangeError for invalid previous "Baa1"
+      ---
+      duration_ms: 0.056383
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "Baa1"
+    ok 91 - notchCalculator throws RangeError for invalid current "Baa1"
+      ---
+      duration_ms: 0.054018
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "Baa1"
+    ok 92 - notchCalculator throws RangeError for invalid in both positions "Baa1"
+      ---
+      duration_ms: 0.049799
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "BBB +"
+    ok 93 - notchCalculator throws RangeError for invalid previous "BBB +"
+      ---
+      duration_ms: 0.049963
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "BBB +"
+    ok 94 - notchCalculator throws RangeError for invalid current "BBB +"
+      ---
+      duration_ms: 0.049873
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "BBB +"
+    ok 95 - notchCalculator throws RangeError for invalid in both positions "BBB +"
+      ---
+      duration_ms: 0.188977
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "B BB"
+    ok 96 - notchCalculator throws RangeError for invalid previous "B BB"
+      ---
+      duration_ms: 0.065395
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "B BB"
+    ok 97 - notchCalculator throws RangeError for invalid current "B BB"
+      ---
+      duration_ms: 0.056181
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "B BB"
+    ok 98 - notchCalculator throws RangeError for invalid in both positions "B BB"
+      ---
+      duration_ms: 0.050606
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "BBB−"
+    ok 99 - notchCalculator throws RangeError for invalid previous "BBB−"
+      ---
+      duration_ms: 0.054021
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "BBB−"
+    ok 100 - notchCalculator throws RangeError for invalid current "BBB−"
+      ---
+      duration_ms: 0.090121
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "BBB−"
+    ok 101 - notchCalculator throws RangeError for invalid in both positions "BBB−"
+      ---
+      duration_ms: 0.064057
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "BBB–"
+    ok 102 - notchCalculator throws RangeError for invalid previous "BBB–"
+      ---
+      duration_ms: 0.051897
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "BBB–"
+    ok 103 - notchCalculator throws RangeError for invalid current "BBB–"
+      ---
+      duration_ms: 0.050435
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "BBB–"
+    ok 104 - notchCalculator throws RangeError for invalid in both positions "BBB–"
+      ---
+      duration_ms: 0.049614
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "AAA+"
+    ok 105 - notchCalculator throws RangeError for invalid previous "AAA+"
+      ---
+      duration_ms: 0.049082
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "AAA+"
+    ok 106 - notchCalculator throws RangeError for invalid current "AAA+"
+      ---
+      duration_ms: 0.048236
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "AAA+"
+    ok 107 - notchCalculator throws RangeError for invalid in both positions "AAA+"
+      ---
+      duration_ms: 0.047822
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "CCC--"
+    ok 108 - notchCalculator throws RangeError for invalid previous "CCC--"
+      ---
+      duration_ms: 0.050864
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "CCC--"
+    ok 109 - notchCalculator throws RangeError for invalid current "CCC--"
+      ---
+      duration_ms: 0.049604
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "CCC--"
+    ok 110 - notchCalculator throws RangeError for invalid in both positions "CCC--"
+      ---
+      duration_ms: 0.046998
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous null
+    ok 111 - notchCalculator throws RangeError for invalid previous null
+      ---
+      duration_ms: 0.04758
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current null
+    ok 112 - notchCalculator throws RangeError for invalid current null
+      ---
+      duration_ms: 0.05197
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions null
+    ok 113 - notchCalculator throws RangeError for invalid in both positions null
+      ---
+      duration_ms: 0.050856
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous undefined
+    ok 114 - notchCalculator throws RangeError for invalid previous undefined
+      ---
+      duration_ms: 0.093016
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current undefined
+    ok 115 - notchCalculator throws RangeError for invalid current undefined
+      ---
+      duration_ms: 0.060539
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions undefined
+    ok 116 - notchCalculator throws RangeError for invalid in both positions undefined
+      ---
+      duration_ms: 0.04983
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous 7
+    ok 117 - notchCalculator throws RangeError for invalid previous 7
+      ---
+      duration_ms: 0.050114
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current 7
+    ok 118 - notchCalculator throws RangeError for invalid current 7
+      ---
+      duration_ms: 0.051206
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions 7
+    ok 119 - notchCalculator throws RangeError for invalid in both positions 7
+      ---
+      duration_ms: 0.053962
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous {}
+    ok 120 - notchCalculator throws RangeError for invalid previous {}
+      ---
+      duration_ms: 0.085529
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current {}
+    ok 121 - notchCalculator throws RangeError for invalid current {}
+      ---
+      duration_ms: 0.050645
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions {}
+    ok 122 - notchCalculator throws RangeError for invalid in both positions {}
+      ---
+      duration_ms: 0.049338
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous ["BBB"]
+    ok 123 - notchCalculator throws RangeError for invalid previous ["BBB"]
+      ---
+      duration_ms: 0.049282
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current ["BBB"]
+    ok 124 - notchCalculator throws RangeError for invalid current ["BBB"]
+      ---
+      duration_ms: 0.047894
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions ["BBB"]
+    ok 125 - notchCalculator throws RangeError for invalid in both positions ["BBB"]
+      ---
+      duration_ms: 0.049997
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous "BBB"
+    ok 126 - notchCalculator throws RangeError for invalid previous "BBB"
+      ---
+      duration_ms: 0.047987
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current "BBB"
+    ok 127 - notchCalculator throws RangeError for invalid current "BBB"
+      ---
+      duration_ms: 0.157729
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions "BBB"
+    ok 128 - notchCalculator throws RangeError for invalid in both positions "BBB"
+      ---
+      duration_ms: 0.063763
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous true
+    ok 129 - notchCalculator throws RangeError for invalid previous true
+      ---
+      duration_ms: 0.051908
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current true
+    ok 130 - notchCalculator throws RangeError for invalid current true
+      ---
+      duration_ms: 0.049128
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions true
+    ok 131 - notchCalculator throws RangeError for invalid in both positions true
+      ---
+      duration_ms: 0.051416
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid previous Symbol
+    ok 132 - notchCalculator throws RangeError for invalid previous Symbol
+      ---
+      duration_ms: 0.048187
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid current Symbol
+    ok 133 - notchCalculator throws RangeError for invalid current Symbol
+      ---
+      duration_ms: 0.048664
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for invalid in both positions Symbol
+    ok 134 - notchCalculator throws RangeError for invalid in both positions Symbol
+      ---
+      duration_ms: 0.0467
+      type: 'test'
+      ...
+    # Subtest: notchCalculator throws RangeError for mixed invalid pairs
+    ok 135 - notchCalculator throws RangeError for mixed invalid pairs
+      ---
+      duration_ms: 0.07219
+      type: 'test'
+      ...
+    # Subtest: notchCalculator error message names the offending value
+    ok 136 - notchCalculator error message names the offending value
+      ---
+      duration_ms: 0.057332
+      type: 'test'
+      ...
+    1..136
+ok 3 - invalid input (AC-5)
+  ---
+  duration_ms: 15.055756
+  type: 'suite'
+  ...
+# Subtest: notchCalculator (AC-6, AC-7, AC-8)
+    # Subtest: "BBB+" -> "BB+"
+    ok 1 - "BBB+" -> "BB+"
+      ---
+      duration_ms: 0.369608
+      type: 'test'
+      ...
+    # Subtest: "BBB+" -> "BBB-"
+    ok 2 - "BBB+" -> "BBB-"
+      ---
+      duration_ms: 0.13247
+      type: 'test'
+      ...
+    # Subtest: "A" -> "A-"
+    ok 3 - "A" -> "A-"
+      ---
+      duration_ms: 0.049323
+      type: 'test'
+      ...
+    # Subtest: "AAA" -> "CCC-"
+    ok 4 - "AAA" -> "CCC-"
+      ---
+      duration_ms: 0.040489
+      type: 'test'
+      ...
+    # Subtest: "A-" -> "A"
+    ok 5 - "A-" -> "A"
+      ---
+      duration_ms: 0.050777
+      type: 'test'
+      ...
+    # Subtest: "BBB-" -> "BBB+"
+    ok 6 - "BBB-" -> "BBB+"
+      ---
+      duration_ms: 0.042936
+      type: 'test'
+      ...
+    # Subtest: "BB+" -> "BBB+"
+    ok 7 - "BB+" -> "BBB+"
+      ---
+      duration_ms: 0.040402
+      type: 'test'
+      ...
+    # Subtest: "CCC-" -> "AAA"
+    ok 8 - "CCC-" -> "AAA"
+      ---
+      duration_ms: 0.09792
+      type: 'test'
+      ...
+    # Subtest: "A" -> "A"
+    ok 9 - "A" -> "A"
+      ---
+      duration_ms: 0.075602
+      type: 'test'
+      ...
+    # Subtest: "bbb+" -> "bb+"
+    ok 10 - "bbb+" -> "bb+"
+      ---
+      duration_ms: 0.050008
+      type: 'test'
+      ...
+    # Subtest: "\\tBbB+\\n" -> "bb+"
+    ok 11 - "\\tBbB+\\n" -> "bb+"
+      ---
+      duration_ms: 0.073854
+      type: 'test'
+      ...
+    # Subtest: unchanged notches is +0, never -0
+    ok 12 - unchanged notches is +0, never -0
+      ---
+      duration_ms: 0.080974
+      type: 'test'
+      ...
+    1..12
+ok 4 - notchCalculator (AC-6, AC-7, AC-8)
+  ---
+  duration_ms: 3.429634
+  type: 'suite'
+  ...
+# Subtest: exhaustive 19 x 19 (AC-9)
+    # Subtest: every pair is consistent
+    ok 1 - every pair is consistent
+      ---
+      duration_ms: 1.540998
+      type: 'test'
+      ...
+    1..1
+ok 5 - exhaustive 19 x 19 (AC-9)
+  ---
+  duration_ms: 1.615791
+  type: 'suite'
+  ...
+# Subtest: purity and contract (AC-9, AC-13, AC-14)
+    # Subtest: writes nothing to stdout or stderr
+    ok 1 - writes nothing to stdout or stderr
+      ---
+      duration_ms: 0.233792
+      type: 'test'
+      ...
+    # Subtest: source has no console, process, node: or import
+    ok 2 - source has no console, process, node: or import
+      ---
+      duration_ms: 0.459269
+      type: 'test'
+      ...
+    # Subtest: both functions take exactly two parameters
+    ok 3 - both functions take exactly two parameters
+      ---
+      duration_ms: 0.084217
+      type: 'test'
+      ...
+    # Subtest: is stateless
+    ok 4 - is stateless
+      ---
+      duration_ms: 0.084987
+      type: 'test'
+      ...
+    # Subtest: returns a fresh object per call
+    ok 5 - returns a fresh object per call
+      ---
+      duration_ms: 0.060479
+      type: 'test'
+      ...
+    # Subtest: exports exactly RATING_SCALE, notchCalculator, notchChange
+    ok 6 - exports exactly RATING_SCALE, notchCalculator, notchChange
+      ---
+      duration_ms: 0.267041
+      type: 'test'
+      ...
+    1..6
+ok 6 - purity and contract (AC-9, AC-13, AC-14)
+  ---
+  duration_ms: 1.348939
+  type: 'suite'
+  ...
+# Subtest: package.json (AC-15)
+    # Subtest: has no dependencies or devDependencies
+    ok 1 - has no dependencies or devDependencies
+      ---
+      duration_ms: 0.184381
+      type: 'test'
+      ...
+    1..1
+ok 7 - package.json (AC-15)
+  ---
+  duration_ms: 0.234703
+  type: 'suite'
+  ...
+1..7
+# tests 172
+# suites 7
+# pass 172
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 166.122079
+ok    verify passed

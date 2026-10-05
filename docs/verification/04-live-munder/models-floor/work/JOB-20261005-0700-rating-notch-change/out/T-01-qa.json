@@ -1,0 +1,18 @@
+{
+  "verdict": "pass",
+  "tests": ["test/ratings/integration/notch.int.test.mjs"],
+  "criteria": [
+    {"ac": "AC-1", "result": "pass", "test": "AC-1: RATING_SCALE is exported as immutable array of 19 ratings in order"},
+    {"ac": "AC-2", "result": "pass", "test": "AC-2: notchChange returns index difference for valid ratings"},
+    {"ac": "AC-3", "result": "pass", "test": "AC-3: Downgrade (worse rating) returns positive integer"},
+    {"ac": "AC-4", "result": "pass", "test": "AC-4: Upgrade (better rating) returns negative integer"},
+    {"ac": "AC-5", "result": "pass", "test": "AC-5: Same rating returns exactly 0"},
+    {"ac": "AC-6", "result": "pass", "test": "AC-6: Leading and trailing whitespace is trimmed"},
+    {"ac": "AC-7", "result": "pass", "test": "AC-7: Case-insensitive input normalization"},
+    {"ac": "AC-8", "result": "pass", "test": "AC-8: Unknown rating throws RangeError"},
+    {"ac": "AC-9", "result": "pass", "test": "AC-9: Empty string (before or after trim) throws RangeError"},
+    {"ac": "AC-10", "result": "pass", "test": "AC-10: Non-string primitives throw RangeError"},
+    {"ac": "AC-11", "result": "pass", "test": "AC-11: String objects (not primitive strings) throw RangeError"}
+  ],
+  "notes": "All 18 integration tests pass (11 ACs + comprehensive test data + edge cases). Tests import RATING_SCALE and notchChange from src/ratings/notch.mjs (public surface). Verified: RATING_SCALE immutability, signed integer convention (positive downgrade, negative upgrade, zero unchanged), whitespace trimming (spaces, tabs, newlines), case-insensitivity, comprehensive input validation (unknown ratings, empty strings, non-strings, String objects). No failures."
+}

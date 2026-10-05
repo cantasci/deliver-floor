@@ -1,0 +1,207 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Implement the notch change calculation (REQ-06-02 part) that computes the rating change between previous and current ratings. Success is measured by correct calculation of notch differences (e.g., BBB+ → BB+ = 3-notch downgrade, A → A = 0 change). This enables Indicators 11, 12, 13 and the notch calculator in the larger Watchlist POC.",
+      "source": "JOB-models-plain.md: Requirement section",
+      "quote": "Given a previous and a current rating, the system computes the notch change between them"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "Internal API consumers: other parts of the Watchlist POC (Indicators 11, 12, 13 and the notch calculator) that import and call the notchChange function. End users are not direct consumers of this slice.",
+      "source": "JOB-models-plain.md Clarification C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: implement notchChange(previous, current) function and RATING_SCALE constant. Out of scope: UI, CLI, printed output, integration with indicators, database, external systems.",
+      "source": "JOB-models-plain.md Clarification C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Yes. Every criterion is testable with concrete input/output pairs: (BBB+, BB+) → 3; (BB+, BBB+) → -3; (A, A) → 0. Additional cases from C1, C2, C3 are testable (case-insensitivity, trimming, RangeError on invalid input, sign convention).",
+      "source": "JOB-models-plain.md Requirement table",
+      "quote": "BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "No contradictions. The requirement is internally consistent: rating scale order (C1), error handling (C2), sign convention (C3), and scope (C4) align. String trimming and case-insensitivity are clearly specified.",
+      "source": "JOB-models-plain.md Clarifications C1-C3",
+      "quote": "Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-."
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Single requirement, single card, one task. No prioritization needed within this job; this is a Must for the POC.",
+      "source": "JOB-models-plain.md header",
+      "quote": "It is small: one card."
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "All public interfaces fully specified: function name notchChange, parameters (previous: string, current: string), return type (integer), RATING_SCALE (array of 19 strings in order best→worst). Sign convention: downgrade positive, upgrade negative, unchanged 0 (C3). Trimming and case-insensitive handling specified (C1).",
+      "source": "JOB-models-plain.md Contract section",
+      "quote": "`RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer (C3)."
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Invalid input (unknown rating, empty string, non-string, String objects like new String('A')) throws RangeError. Error type and reason are specified (C2). No other fallback behavior.",
+      "source": "JOB-models-plain.md Clarification C2",
+      "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError."
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "This is a new function; no backward compatibility concerns apply.",
+      "source": "Job nature: new slice of POC, greenfield implementation",
+      "quote": "one-requirement slice of that document"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Library / pure function module. Single-component architecture: ratings calculation library (src/ratings/). No services, APIs, or distributed components.",
+      "source": "JOB-models-plain.md Contract and request",
+      "quote": "Plain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`."
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "One component: ratings (calculation library). Stack: JavaScript (Node 18+ ESM). Paths: src/ratings/ (source), test/ratings/ (tests per CLAUDE.md). Owner: backend. Reviewer: reviewer (per role card instructions).",
+      "source": "CLAUDE.md project conventions",
+      "quote": "Plain Node.js 18+ ES modules (`.mjs`). Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`."
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Core/domain layer: pure calculation function. No BFF, API gateway, or client involvement. The function is consumed as a library by other POC modules (Indicators 11, 12, 13).",
+      "source": "JOB-models-plain.md Clarification C4",
+      "quote": "other parts of the POC import the function."
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "JavaScript (Node 18+ ESM). No dependencies allowed per project conventions (CLAUDE.md: 'no npm dependencies; do not add any'). No version compatibility concerns; tests run with node --test.",
+      "source": "CLAUDE.md project conventions",
+      "quote": "No npm dependencies; do not add any."
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No data storage. The function is stateless and operates on string inputs only. RATING_SCALE is a constant array, not persistent data.",
+      "source": "Function nature: pure calculation",
+      "quote": "`notchChange(previous, current)` → integer"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems. Pure calculation function with no I/O, network calls, or dependencies.",
+      "source": "CLAUDE.md project conventions",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous only. Pure function, no async operations, no queues or events.",
+      "source": "Function nature",
+      "quote": "`notchChange(previous, current)` → integer"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No latency, throughput, or load targets specified. Lookup operation on a 19-element array; performance is inherent to the implementation.",
+      "source": "Job request silent on performance",
+      "quote": ""
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "Not applicable. Library function with no dependencies or failure modes. Always available.",
+      "source": "Function nature: no external dependencies",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Input validation: case-insensitive, trimmed strings only; unknown ratings throw RangeError. No authentication, authorization, or secrets handling required. No sensitive data processed.",
+      "source": "JOB-models-plain.md Clarification C2",
+      "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError."
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "No personal or sensitive data involved. Pure calculation on currency rating symbols.",
+      "source": "Function operates on rating enums only",
+      "quote": "AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "No audit logging required. Pure calculation function; no state changes or user actions to audit.",
+      "source": "Function nature: stateless calculation",
+      "quote": "`notchChange(previous, current)` → integer"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "No logging, metrics, tracing, or alerting specified. Library function; calling code may add observability.",
+      "source": "Job request silent on observability",
+      "quote": ""
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "No banking regulation or internal-policy constraint applies to this slice (per C2). Plain financial rating calculation with no special compliance burden.",
+      "source": "JOB-models-plain.md Clarification C2",
+      "quote": "No banking-regulation or internal-policy constraint applies to this slice."
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests with node:test and node:assert/strict (per CLAUDE.md). Test files in test/ratings/notch.test.mjs. Concrete test cases from requirement (BBB+→BB+=3, BB+→BBB+=-3, A→A=0) plus edge cases: trimming, case-insensitivity, empty string, non-string, String object (all RangeError). Boundary cases: first rating (AAA) to last (CCC-), invalid rating lookup.",
+      "source": "CLAUDE.md and JOB-models-plain.md",
+      "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`."
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "Full verification: `node --test` (per CLAUDE.md). No other checks (lint, typecheck, security scans) mentioned; assume standard project checks if configured. No git commit attribution rules ('no Co-Authored-By' per role card).",
+      "source": "CLAUDE.md project conventions",
+      "quote": "Full verification of the job: `node --test`"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "n_a",
+      "answer": "No deployment. Library function imported by other POC modules. No feature flags, rollback, or migration needed.",
+      "source": "JOB-models-plain.md Clarification C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "The request does not mention documentation, changelog, or runbook updates. No docs role required for this slice.",
+      "source": "JOB-models-plain.md silent on documentation",
+      "quote": ""
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "ratings",
+        "kind": "library",
+        "stack": ["javascript", "node-18-esm"],
+        "path": ["src/ratings/", "test/ratings/"],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Pure calculation library. Single exported function notchChange(previous, current) with RATING_SCALE constant. No dependencies, no I/O, no async operations."
+      }
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+
+● Agent "BA readiness analysis" finished · 2m 19s
+
+● Write(.work/JOB-20261003-2206-notch-calculator-and-country-rat/readiness.json)
+  ⎿  Wrote 38 lines to .work/JOB-20261003-2206-notch-calculator-and-country-rat/readiness.json
+      1 {"items":[
+      2 {"id":"PRD-goal","status":"decided","answer":"Two parts go into the Watchlist POC. (1) A rating notch calculator (REQ-06-02): given a previous and a current rating, it returns the notch
+        e, notchCalculator, countryRatingChangeWl) behave as C1-C8 describe and `node --test` passes on the job branch.","source":"JOB.md title and Requirements table (REQ-06-02, REQ-03-12); JO
+        B.md 'Contract'","question":"","options":[],"impact":"","owner":""},
+      3 {"id":"PRD-users","status":"decided","answer":"The analyst is the end user only indirectly: they pick or edit the previous and current rating. The direct consumers are other POC modules
+      4 {"id":"PRD-scope","status":"decided","answer":"IN: src/ratings/notch.mjs (RATING_SCALE, notchChange, notchCalculator -> {notches, direction, wl} with Indicator 13 thresholds, C2/C3/C5/C
+        6); src/indicators/countryRating.mjs (countryRatingChangeWl -> 0|1|2, built on notchChange); unit tests under test/. OUT: fetching/pre-filling ratings from a public source (C4); overrid
+        e parameter, persistence, audit trail (C7); any UI/CLI/printed output (C8); an Indicator 13 function; other POC requirements; ratings outside the 19-step scale (rejected, C1).","source"
+      5 {"id":"PRD-acceptance","status":"decided","answer":"Yes. BBB+ -> BB+ = notches 3, 'downgrade', wl 2. BBB+ -> BBB- = notches 2, wl 1 (C2). 1-notch downgrade: calculator wl 0, Ind.12 WL 1
+         (C6). 2+ notch downgrade: Ind.12 WL 2. Upgrades/unchanged: WL 0 for
+     … +77 lines (ctrl+o to expand)
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" readiness 2>&1 | tail -30)
+  ⎿  ERROR DEL-docs is decided ("JSDoc on the exported functions and constant only; no README") → role 'docs' must be on the job (dl jobset, see roles.yaml)
+     WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+     OPEN  NFR-compliance: Is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off, a required traceability document) a constraint on thi
+     s POC slice beyond the business-confirmed rules in C1-C8? The request is silent.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; F=.work/JOB-*/readiness.json; node -e '
+      const…)
+  ⎿  WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+     OPEN  NFR-compliance: Is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off, a required traceability document) a constraint on thi
+     s POC slice beyond the business-confirmed rules in C1-C8? The request is silent.
+     readiness: 33 item(s), 1 open for the human, 0 for the PM → /tmp/claude-0/e2e-ia/interactive/repo/.work/JOB-20261003-2206-notch-calculator-and-country-rat/readiness.md
+
+● One business item is open, so I'm moving to awaiting clarification and asking you.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" phase awaiting_clarification 2>&1 | tail…)
+  ⎿  phase: awaiting_clarification
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ☐ Compliance
+
+│ NFR-compliance: is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off, a required traceability document) a constraint on this slice beyond
+│ the business-confirmed rules C1–C8?
+
+❯ 1. None for the POC
+     The thresholds confirmed in C1–C8 are enough; no code or scope change.
+  2. A named policy applies
+     You supply it; its documentation or sign-off becomes part of this delivery and closing may be gated on it.
+  3. Type something.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  4. Chat about this
+
+Enter to select · ↑/↓ to navigate · Esc to cancel
+

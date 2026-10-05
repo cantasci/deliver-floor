@@ -1,0 +1,32 @@
+[
+  {
+    "tmp_id": "B1",
+    "title": "Implement notchChange rating calculation function",
+    "role": "backend",
+    "component": "ratings",
+    "context": "Implement the notchChange pure function in src/ratings/notch.mjs and export RATING_SCALE constant for the Watchlist POC. This function calculates the credit rating change between two ratings using a signed integer convention: positive for downgrade, negative for upgrade, zero for no change.\n\nContract:\n- Export RATING_SCALE: array of 19 credit ratings in order (best to worst): ['AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+', 'BB', 'BB-', 'B+', 'B', 'B-', 'CCC+', 'CCC', 'CCC-']\n- Export notchChange(previous, current): given two rating strings, return their index difference in RATING_SCALE\n\nRules (C1-C3 from the requirement):\n- C1: Trim whitespace from both inputs using String.prototype.trim(); handle case-insensitivity by normalizing to uppercase\n- C2: Throw RangeError for invalid input: unknown rating (not in RATING_SCALE after trim/normalize), empty string, non-string primitive (number, boolean, null, undefined, symbol), or String objects (new String('X'))\n- C3: Return integer = index(current) - index(previous). Downgrade (worse rating, higher index) returns positive; upgrade (better rating, lower index) returns negative; same rating returns 0\n\nNo external dependencies allowed per project conventions. Pure function with no I/O, async operations, or state mutations. Use Node 18+ ESM syntax (.mjs). Testing framework: node:test and node:assert/strict per CLAUDE.md.",
+    "depends_on": [],
+    "scope": [
+      "src/ratings/notch.mjs",
+      "test/ratings/notch.test.mjs"
+    ],
+    "verify": "node --test test/ratings/notch.test.mjs",
+    "qa_scope": [
+      "test/ratings/integration/**"
+    ],
+    "qa_verify": "node --test test/ratings/integration/",
+    "acceptance": [
+      "AC-1: RATING_SCALE is exported as an array containing all 19 credit ratings in order from best (index 0) to worst (index 18): ['AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+', 'BB', 'BB-', 'B+', 'B', 'B-', 'CCC+', 'CCC', 'CCC-']. Each rating appears exactly once.",
+      "AC-2: Given two valid ratings, notchChange(previous, current) returns integer = current_index - previous_index. Example: notchChange('BBB+', 'BB+') returns 3.",
+      "AC-3: Given a downgrade (worse rating, higher index), notchChange() returns positive integer. Example: notchChange('BBB+', 'BB+') returns +3.",
+      "AC-4: Given an upgrade (better rating, lower index), notchChange() returns negative integer. Example: notchChange('BB+', 'BBB+') returns -3.",
+      "AC-5: Given same rating for both parameters, notchChange() returns 0. Example: notchChange('A', 'A') returns 0.",
+      "AC-6: Given input with leading/trailing whitespace, input is trimmed using String.prototype.trim() before processing. Example: notchChange('  BBB+  ', 'BB+') returns 3.",
+      "AC-7: Given input with different letter case, input is compared case-insensitively. Example: notchChange('bbb+', 'bb+') returns 3.",
+      "AC-8: Given a rating string not in RATING_SCALE (after trim and case normalization), notchChange() throws RangeError. Example: notchChange('XYZ', 'BBB+') throws RangeError.",
+      "AC-9: Given an empty string (even after trim), notchChange() throws RangeError. Example: notchChange('', 'BBB+') throws RangeError.",
+      "AC-10: Given a non-string primitive (number, boolean, null, undefined, symbol), notchChange() throws RangeError. Example: notchChange(123, 'BBB+') throws RangeError; notchChange(undefined, 'BBB+') throws RangeError.",
+      "AC-11: Given a String object (e.g., new String('A')), notchChange() throws RangeError. String objects are non-string primitives. Example: notchChange(new String('A'), 'BBB+') throws RangeError."
+    ]
+  }
+]

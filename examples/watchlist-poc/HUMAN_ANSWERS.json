@@ -1,0 +1,81 @@
+[
+  {
+    "topic": "what 'displayed' means (C8)",
+    "match": "display|presentation|\\bUI\\b|\\bCLI\\b|screen",
+    "answer": "C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice."
+  },
+  {
+    "topic": "the miscounted POC example (C2)",
+    "match": "miscount|BBB\\+ → BB\\+|BBB\\+ -> BB\\+|example .*(wrong|count)|which part of the example",
+    "answer": "C2 stands: the POC example miscounts. BBB+ → BB+ is 3 notches → calculator WL 2; the 2-notch example is BBB+ → BBB- → WL 1."
+  },
+  {
+    "topic": "which thresholds give the calculator's WL (C2/C6)",
+    "match": "threshold|Indicator 13|resultant WL|WL basis|disagree",
+    "answer": "C2/C6 stand: the calculator uses the Indicator 13 thresholds (2 notches → WL 1, 3+ → WL 2); Indicator 12 keeps its own (1 → 1, 2+ → 2). The difference is intended."
+  },
+  {
+    "topic": "rating scale coverage (C1)",
+    "match": "scale|Moody|\\bCC\\b|\\bNR\\b|SD/D",
+    "answer": "C1 stands: only the 19-step S&P-style scale in this slice; anything else is rejected with a RangeError."
+  },
+  {
+    "topic": "sign of notchCalculator().notches",
+    "match": "sign|signed|negative|upgrade|absolute|direction",
+    "answer": "notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.",
+    "ids": [
+      "CON-interface"
+    ]
+  },
+  {
+    "topic": "1-notch WL of the calculator",
+    "match": "1.notch|one notch|1-notch|single notch",
+    "answer": "A 1-notch downgrade gives calculator WL 0 (Indicator 13 starts at 2 notches); Indicator 12 stays 1 notch → WL 1."
+  },
+  {
+    "topic": "editable auto-filled value",
+    "match": "editab|override|\\bedit",
+    "answer": "The caller passes the rating the analyst confirmed or edited. No override parameter, no persistence, no audit trail in this slice."
+  },
+  {
+    "topic": "which requirement comes first if both cannot ship (PRD-priority)",
+    "match": "priority|ship together|comes first|first if|cut short|cannot ship",
+    "answer": "REQ-06-02 comes first (Must); REQ-03-12 follows (Should).",
+    "source": "the user, 2026-10-03, answering Michael's question in live run 20",
+    "ids": [
+      "PRD-priority"
+    ]
+  },
+  {
+    "topic": "error type for non-string input (CON-errors)",
+    "match": "TypeError|non-string|not a string|null|undefined|error type",
+    "answer": "RangeError for every invalid input, strings and non-strings alike (null, undefined, 42, {} included).",
+    "source": "the user, 2026-10-03, answering Michael's question in live run 20",
+    "ids": [
+      "CON-errors"
+    ]
+  },
+  {
+    "topic": "what 'Input is trimmed' means for ratings (C1)",
+    "match": "trim|whitespace|stripped|which characters",
+    "answer": "Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.",
+    "source": "the user, 2026-10-04, answering Michael's question (X-trim-whitespace) in the R3 run"
+  },
+  {
+    "topic": "is a String object (new String('A')) a non-string (C2)",
+    "ids": [
+      "X-string-object"
+    ],
+    "match": "new String|boxed|String object|wrapper|typeof 'object'",
+    "answer": "Rejected with a RangeError: only a primitive string (typeof 'string') is accepted; new String('BBB+') is a non-string.",
+    "source": "the user, 2026-10-05, answering Michael's question (X-string-object) in the models runs"
+  },
+  {
+    "topic": "banking regulation or internal policy constraints (NFR-compliance) — the one-task models slice only",
+    "ids": [
+      "NFR-compliance"
+    ],
+    "answer": "No: the one-task notch-change slice (JOB-models*.md) has no banking-regulation or internal-policy constraint beyond its clarifications.",
+    "source": "the user, 2026-10-05, answering Michael's question (NFR-compliance) in the floor models run. Given for that slice only, so it answers by item id only, never by keywords"
+  }
+]

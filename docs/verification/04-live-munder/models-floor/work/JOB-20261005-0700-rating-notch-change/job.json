@@ -1,0 +1,181 @@
+{
+  "id": "JOB-20261005-0700-rating-notch-change",
+  "title": "Rating notch change",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-models-plain.md\nRating notch change (Watchlist POC — one task)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch\ncalculator (REQ-06-02) are built on. It is small: one card.\n\n## Requirement\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 (part) | Given a previous and a current rating, the system computes the notch change between them | BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.\n  A notch is one step on this scale. Input is trimmed with `String.prototype.trim()` and case-insensitive (\"bbb+\" = \"BBB+\").\n- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object\n  such as `new String('A')` is a non-string. No banking-regulation or internal-policy constraint applies to this slice.\n- C3. The result is signed: downgrade positive, upgrade negative, unchanged 0.\n- C4. No UI, CLI or printed output; other parts of the POC import the function.\n\n## Contract\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer (C3).\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.\nTeam instruction: the backend developer works on the sonnet model.",
+  "created": "2026-10-05T07:00:31Z",
+  "repo": "/tmp/claude-0/e2e-mC2/munder/repo",
+  "phase": "done",
+  "stack": [
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-06-02: domain logic notchChange in src/ratings/notch.mjs"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "model": "sonnet",
+      "why": "builds REQ-06-02 notchChange; request: the backend developer works on the sonnet model"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack javascript (plain Node ESM)"
+    }
+  ],
+  "assumptions": [
+    "No security/a11y/perf specialists: pure in-process function, no UI, no external I/O (C4)."
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261005-0700-rating-notch-change",
+  "integration_worktree": "/tmp/claude-0/e2e-mC2/munder/repo/.work/JOB-20261005-0700-rating-notch-change/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "aa9928b3e2a7d293cd88772a6cede8dff338d67e",
+    "log": "/tmp/claude-0/e2e-mC2/munder/repo/.work/JOB-20261005-0700-rating-notch-change/gates/verify-all-071734.log",
+    "at": "2026-10-05T07:17:35Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "munder",
+    "max_parallel": 2,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "/tmp/claude-0/e2e-mC2/munder/bin/claude",
+      "model": "claude-haiku-4-5-20251001",
+      "token_cap": 0
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "commit": {
+      "ai_attribution": false,
+      "role_in_message": false
+    }
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "04ad5401bad1b08e841ef9c896440c6dd1eed8a0",
+    "at": "2026-10-05T07:18:53Z"
+  },
+  "munder": {
+    "seats": {
+      "ba#1": {
+        "role": "ba",
+        "worker": "worker-seat-20261005-0700-ba-1-h1",
+        "hires": 1,
+        "character": "pam",
+        "hired_at": "2026-10-05T07:00:36Z",
+        "task": null,
+        "orders": 5,
+        "since": null,
+        "last_done": "2026-10-05T07:18:41Z"
+      },
+      "backend-lead#1": {
+        "role": "backend-lead",
+        "worker": "worker-seat-20261005-0700-backend-lead-1-h1",
+        "hires": 1,
+        "character": "oscar",
+        "hired_at": "2026-10-05T07:00:36Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-05T07:08:51Z"
+      },
+      "backend#1": {
+        "role": "backend",
+        "worker": "worker-seat-20261005-0700-backend-1-h1",
+        "hires": 1,
+        "character": "dwight",
+        "hired_at": "2026-10-05T07:00:36Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-05T07:11:36Z"
+      },
+      "qa#1": {
+        "role": "qa",
+        "worker": "worker-seat-20261005-0700-qa-1-h1",
+        "hires": 1,
+        "character": "angela",
+        "hired_at": "2026-10-05T07:00:36Z",
+        "task": null,
+        "orders": 3,
+        "since": null,
+        "last_done": "2026-10-05T07:17:18Z"
+      },
+      "reviewer#1": {
+        "role": "reviewer",
+        "worker": "worker-seat-20261005-0700-reviewer-1-h1",
+        "hires": 1,
+        "character": "toby",
+        "hired_at": "2026-10-05T07:00:37Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-05T07:16:00Z"
+      }
+    }
+  },
+  "frozen": {
+    "readiness_sha256": "a6118c7a440a8e486e5f40bc376ae28a2bb23f1b66929b8a284fb2a55e6d27fa",
+    "at": "2026-10-05T07:05:54Z"
+  },
+  "pm_decisions": [
+    {
+      "at": "2026-10-05T07:05:59Z",
+      "what": "No security reviewer role",
+      "why": "Pure in-process function, no external I/O, auth, secrets or personal data; input validation is fully specified by C2 and covered by QA + the stack reviewer"
+    },
+    {
+      "at": "2026-10-05T07:15:49Z",
+      "what": "T-01 qa_verify corrected to a glob; QA commit re-sequenced",
+      "why": "Lead's qa_verify passed a directory to node --test (Node 22 'Cannot find module'), so dl rejected a QA pass whose 18 tests actually pass; QA reverts and re-applies its own commit so gate→QA order holds. No code or test content changes.",
+      "card": "T-01"
+    }
+  ]
+}

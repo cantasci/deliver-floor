@@ -1,0 +1,54 @@
+2026-10-03T22:06:06Z	new	Notch calculator and country rating
+2026-10-03T22:06:06Z	jobset	stack: .stack=["javascript"]
+2026-10-03T22:06:13Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: pure domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02, REQ-03-12: implements notchChange, notchCalculator, countryRatingChangeWl"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack (.mjs) reviewer"}]
+2026-10-03T22:06:13Z	jobset	assumptions: .assumptions += ["No UI/CLI/persistence in this slice (C4,C7,C8); no tech-lead: two small modules in one area"]
+2026-10-03T22:06:13Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:06:13Z	phase	readiness
+2026-10-03T22:06:53Z	agent	 a6b2542f: Reading README.md and .deliver.json 
+2026-10-03T22:07:55Z	agent	 a8137dba: Checking Node version and .gitignore 
+2026-10-03T22:08:41Z	agent	business-analyst aa2be73e: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two parts go into the Watchlist POC. (1) A rating notch calculator (REQ-06-02): given a previou
+2026-10-03T22:09:20Z	readiness	33 items: 26 decided, 6 n/a, 1 open
+2026-10-03T22:09:22Z	phase	awaiting_clarification
+2026-10-03T22:09:35Z	clarify	NFR-compliance: C2/C6 stand: the calculator uses the Indicator 13 thresholds (2 notches → WL 1, 3+ → WL 2); Indicator 12 keeps its own (1 → 1, 2+ → 2). The difference is intended.
+2026-10-03T22:09:38Z	readiness	33 items: 27 decided, 6 n/a, 0 open
+2026-10-03T22:09:39Z	freeze	readiness + architecture frozen (74979f3704ad)
+2026-10-03T22:09:39Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T22:09:39Z	phase	planning
+2026-10-03T22:10:13Z	agent	 a9282dab: Testing node --test dot-directory discovery 
+2026-10-03T22:10:44Z	agent	 afffd7ee: Confirming node --test skips .work 
+2026-10-03T22:11:12Z	agent	business-analyst a69d8101: # Plan ## Goal Build two things for the Watchlist POC. Other POC modules will import them, so the contract in JOB.md is fixed: 1. **REQ-06-02, the rating notch 
+2026-10-03T22:12:12Z	agent	 a4434b01: Reading plan.md and readiness.md 
+2026-10-03T22:12:27Z	agent	ecc:architect ac988f03: [ {"tmp_id":"B1","title":"Ratings module: RATING_SCALE, notchChange, notchCalculator (REQ-06-02)","role":"backend","component":"watchlist-ratings-lib","context"
+2026-10-03T22:13:40Z	agent	 acbc1b8a: Reading readiness.md decisions and package.json 
+2026-10-03T22:14:16Z	agent	business-analyst a8dbf66e: === T-01 === # T-01: Ratings module: RATING_SCALE, notchChange, notchCalculator (REQ-06-02) ## User story As a POC module that needs to read rating changes (and
+2026-10-03T22:14:56Z	phase	executing
+2026-10-03T22:14:59Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T22:15:39Z	agent	 ae18e429: Running notch.test.mjs RED check 
+2026-10-03T22:16:09Z	agent	backend-dev ae8e60e9: status: done commit: 92ac919 verify: passed (`node --test test/ratings/notch.test.mjs` runs 172 tests with 0 failures; `node --test` from the repo root also pas
+2026-10-03T22:16:12Z	gate	T-01 PASS
+2026-10-03T22:16:49Z	agent	 ae59aaa2: Reading notch.mjs source 
+2026-10-03T22:17:20Z	agent	 afb72c54: Committing notch.int.test.mjs tests 
+2026-10-03T22:17:40Z	agent	qa-tester ab664e9c: Every acceptance criterion passes, and `qa_verify` exits 0 with 102 tests passing and 0 failing. The tests are committed locally on the card branch, but I could
+2026-10-03T22:18:12Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-9, AC-13, AC-14, AC-15 pass: 102 integration tests in test/ratings/integration/notch.int.test.mjs, qa_verify green
+2026-10-03T22:18:33Z	agent	ecc:typescript-reviewer a258fc08: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: the two RangeError throws in ratingIndex repeat the same message template. Building the messa
+2026-10-03T22:23:34Z	review	T-01 reviewer approve — approve, no blocking; nits: duplicated RangeError message template, describeValue on hostile toStringTag
+2026-10-03T22:23:34Z	integrate	T-01 merged
+2026-10-03T22:23:38Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-03T22:24:17Z	agent	 ae1bf260: Reading T-02 handoff template 
+2026-10-03T22:24:20Z	agent	backend-dev a78b6d7b: status: done commit: b59bfef verify: passed (`node --test test/indicators/countryRating.test.mjs` passes 50 of 50; full `node --test` passes 324 of 324) open is
+2026-10-03T22:24:23Z	gate	T-02 PASS
+2026-10-03T22:24:58Z	agent	 ab57a019: Checking TAP output for countryRating tests 
+2026-10-03T22:25:29Z	agent	 a1994ca7: Diagnosing TAP parsing in countryRating.int.test.mjs 
+2026-10-03T22:25:47Z	agent	qa-tester ae5b0d08: ```json {"verdict":"pass", "tests":["test/indicators/integration/countryRating.int.test.mjs"], "criteria":[ {"ac":"AC-10","status":"pass","evidence":"AC-10: A->
+2026-10-03T22:29:21Z	qa	T-02 pass (qa_verify PASS) — AC-4,5,10-15 pass: 94 integration tests in test/indicators/integration/countryRating.int.test.mjs; root suite 418 green
+2026-10-03T22:29:38Z	agent	ecc:typescript-reviewer a47bb1a9: {"verdict":"approve","blocking":[],"nits":["The dev commit and the QA commit each touch only their own files. src/ratings/** and package.json are untouched. Com
+2026-10-03T22:34:12Z	review	T-02 reviewer approve — approve, no blocking items; nits only
+2026-10-03T22:34:13Z	integrate	T-02 merged
+2026-10-03T22:34:15Z	phase	integrating
+2026-10-03T22:34:17Z	verify-all	PASS
+2026-10-03T22:34:17Z	phase	closing
+2026-10-03T22:34:52Z	agent	 a8a1be00: Reading AC-15 checks in countryRating.int.test.mjs 
+2026-10-03T22:35:23Z	agent	 a08b3ae7: Re-running the full node --test suite 
+2026-10-03T22:35:30Z	agent	business-analyst a9f31114: All 15 acceptance criteria are met on the job branch (integration HEAD `c32c44b`). The verify-all log shows 418 tests, 418 pass, 0 fail. I re-ran `node --test` 
+2026-10-03T22:35:42Z	learn	qa: Repo-level checks in tests (commit-message greps) must be limited to main..HEAD and attribution lines, not /claude/i over full history (CLAUDE.md mentions break them)
+2026-10-03T22:35:42Z	ship	local merge into main

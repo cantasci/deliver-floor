@@ -1,0 +1,41 @@
+# qa_verify: node --test test/indicators/integration/delayCount.c5.integration.test.mjs
+TAP version 13
+# Subtest: AC-8/C5: BigInt input throws RangeError, not TypeError
+ok 1 - AC-8/C5: BigInt input throws RangeError, not TypeError
+  ---
+  duration_ms: 1.184592
+  type: 'test'
+  ...
+# Subtest: AC-8/C5: circular object throws RangeError, not TypeError
+ok 2 - AC-8/C5: circular object throws RangeError, not TypeError
+  ---
+  duration_ms: 0.213906
+  type: 'test'
+  ...
+# Subtest: AC-8/C5: other non-string inputs (symbol, function, no-toString object) throw RangeError
+ok 3 - AC-8/C5: other non-string inputs (symbol, function, no-toString object) throw RangeError
+  ---
+  duration_ms: 0.31422
+  type: 'test'
+  ...
+# Subtest: AC-8/C5: error message still names the allowed list for BigInt input
+ok 4 - AC-8/C5: error message still names the allowed list for BigInt input
+  ---
+  duration_ms: 5.560172
+  type: 'test'
+  ...
+# Subtest: AC-6..9: valid options and string RangeErrors are unchanged
+ok 5 - AC-6..9: valid options and string RangeErrors are unchanged
+  ---
+  duration_ms: 0.29765
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 159.300065

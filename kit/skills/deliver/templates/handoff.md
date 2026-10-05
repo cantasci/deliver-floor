@@ -26,6 +26,10 @@
 
 -
 
+## QA
+
+<!-- The QA/Test role's verdict per acceptance criterion is appended here (by Michael). -->
+
 ## Review
 
 <!-- The Lead reviewer's verdict is appended here (by Michael). -->

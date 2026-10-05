@@ -1,0 +1,50 @@
+       4 As a POC module that needs to read rating changes (and as the analyst who picks the previous and current rating), I want a pure notch calculator over the 19-step rating scale, so that
+         every rating change gives the same signed notch count, direction and WL.
+       6 ## Traces to
+       7 AC-1, AC-2, AC-3, AC-4 (notch part), AC-5 (notch part), AC-6, AC-7, AC-8, AC-9, AC-13 (notch part), AC-14 (notch part), AC-15 (partial). REQ-06-02. Clarifications C1, C2, C3, C5, C6, C
+       8
+       9 ## What to build
+      10 - `src/ratings/notch.mjs`: pure and synchronous, no imports, no I/O, no `console`. Exports exactly `RATING_SCALE`, `notchChange`, `notchCalculator`, each with inline JSDoc. One private
+         , e.g. `Unknown rating: "BB "`.
+     … +71 lines (ctrl+o to expand)
+
+● Write(.work/JOB-20261003-2206-notch-calculator-and-country-rat/specs/T-02.md)
+  ⎿  Wrote 55 lines to .work/JOB-20261003-2206-notch-calculator-and-country-rat/specs/T-02.md
+       1 # T-02: Indicator 12: countryRatingChangeWl built on notchChange (REQ-03-12)
+       3 ## User story
+       4 As a POC module that scores the Watchlist (and as the analyst who enters or edits the previous and current country rating), I want Indicator 12 to map a country rating change to WL 0,
+         1 or 2, so that a sovereign downgrade raises the client's Watchlist level by its own thresholds.
+       6 ## Traces to
+       7 AC-4 (indicator part), AC-5 (indicator part), AC-10, AC-11, AC-12, AC-13, AC-14 (indicator part), AC-15. REQ-03-12. Clarifications C1, C3, C6, C7, C8. Depends on T-01 (the card context
+       8
+       9 ## What to build
+      10 - `src/indicators/countryRating.mjs`: pure, synchronous, inline JSDoc. Exports exactly `countryRatingChangeWl(previous, current)`. Only import: `import { notchChange } from "../ratings
+         `.
+     … +56 lines (ctrl+o to expand)
+
+● Now I'll set each card's acceptance lines from its spec and validate the board.
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; J=$(ls -d $PWD/.work/JOB-*); node -e '
+      const f…)
+  ⎿  T-01 15
+     T-02 11
+     board valid: 2 card(s).
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; "$DL" phase executing 2>&1 | tail -3; "$DL" ne…)
+  ⎿  phase: executing
+     DISPATCH T-01
+
+● Bash(cd /tmp/claude-0/e2e-ia/interactive/repo; DL=/tmp/claude-0/e2e-ia/interactive/home/.claude/skills/deliver/bin/dl; WT=$("$DL" wt add T-01 2>&1 | tail -1); echo "…)
+  ⎿  WT=/tmp/claude-0/e2e-ia/interactive/repo/.work/JOB-20261003-2206-notch-calculator-and-country-rat/wt/T-01
+     board.json
+     handoff.md
+     … +10 lines (ctrl+o to expand)
+
+· Misting… (44s · ↓ 7.5k tokens · thinking)
+  ⎿  Tip: Use /btw to ask a quick side question without interrupting Claude's current work
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for agents                                                                             ✘ Auto-update failed · Run claude doctor
+

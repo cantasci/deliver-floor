@@ -1,0 +1,55 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Rating scale + notch calculator (REQ-06-02)",
+      "role": "backend",
+      "agent": "backend-dev",
+      "state": "ready",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/**",
+        "test/unit/ratings/**"
+      ],
+      "acceptance": [
+        "AC-1: notchChange on the 19-step scale, RangeError on unknown",
+        "AC-2: notchCalculator returns notches, direction, wl (Ind. 13 thresholds)"
+      ],
+      "verify": "node --test test/unit/ratings/*.test.mjs",
+      "context": "Create src/ratings/notch.mjs exporting RATING_SCALE, notchChange(previous, current) and notchCalculator(previous, current) exactly as in JOB.md 'Contract'. Scale and rules: JOB.md C1–C3 (BBB+ → BB+ is 3 notches → WL 2). Pure functions, no deps. T-02 imports notchChange.",
+      "attempts": 0,
+      "notes": [],
+      "qa_scope": [
+        "test/integration/ratings/**"
+      ],
+      "qa_verify": "node --test test/integration/ratings/*.test.mjs",
+      "component": "watchlist-core"
+    },
+    {
+      "id": "T-02",
+      "title": "Indicator 12: country rating change → WL (REQ-03-12)",
+      "role": "backend",
+      "agent": "backend-dev",
+      "state": "ready",
+      "depends_on": [
+        "T-01"
+      ],
+      "scope": [
+        "src/indicators/**",
+        "test/unit/indicators/**"
+      ],
+      "acceptance": [
+        "AC-3: 1 notch → WL1, 2+ → WL2, upgrade/unchanged → WL0"
+      ],
+      "verify": "node --test test/unit/indicators/*.test.mjs",
+      "context": "Create src/indicators/countryRating.mjs exporting countryRatingChangeWl(previous, current) → 0|1|2, built on notchChange from src/ratings/notch.mjs (T-01, already merged into your base). Unknown ratings propagate the RangeError.",
+      "attempts": 0,
+      "notes": [],
+      "qa_scope": [
+        "test/integration/indicators/**"
+      ],
+      "qa_verify": "node --test test/integration/indicators/*.test.mjs",
+      "component": "watchlist-core"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+2026-10-04T17:55:17Z	new	Rating notch calculator + country indicator
+2026-10-04T17:55:20Z	jobset	stack: .stack=["javascript"]
+2026-10-04T17:55:26Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"builds notchChange/notchCalculator and countryRatingChangeWl"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack reviewer"}]
+2026-10-04T17:55:26Z	jobset	assumptions: .assumptions += ["Pure-function slice: no UI/CLI/I/O (C4, C7, C8)"]
+2026-10-04T17:55:26Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T17:55:26Z	phase	readiness
+2026-10-04T17:58:29Z	agent	business-analyst ac481768: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"This job delivers two pure functions for the Watchlist POC. (1) A rating notch calculator (REQ-
+2026-10-04T17:59:10Z	decide	DEL-docs: JSDoc on the four exports only — Contract is imported by other parts; short JSDoc documents it at no scope or behaviour cost
+2026-10-04T17:59:10Z	decide	X-scale-immutability: Object.freeze the RATING_SCALE array — Shared import must not be mutable by consumers; reads are unchanged
+2026-10-04T17:59:10Z	decide	X-error-message: Message includes the rejected input — Easier debugging; the contract only fixes the RangeError type
+2026-10-04T17:59:10Z	decide	X-coverage: Every AC and edge case has at least one test; no numeric threshold — No coverage tooling is configured and no dependencies are allowed
+2026-10-04T17:59:24Z	decide	DEL-docs: No extra docs: tests serve as the specification — The request does not ask for documentation; a docs role would add cost without behavioural gain
+2026-10-04T17:59:29Z	readiness	32 items: 24 decided, 8 n/a, 0 open
+2026-10-04T17:59:29Z	freeze	readiness + architecture frozen (5d59b4a1878a)
+2026-10-04T17:59:29Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T17:59:29Z	phase	planning
+2026-10-04T18:00:53Z	agent	business-analyst a542abfc: ## Goal Deliver two pure-function ES modules for the Watchlist POC: 1. **Rating notch calculator (REQ-06-02).** It takes a previous and a current rating and ret
+2026-10-04T18:02:22Z	agent	ecc:architect a0d8a014: ```json [ { "tmp_id": "B1", "title": "Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs", "role": "backend", "component": "ratings-notch", 
+2026-10-04T18:04:25Z	agent	business-analyst a76e9521: === T-01 === # T-01: Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs ## User story As a developer of another POC part (Indicator 12, Indi
+2026-10-04T18:05:31Z	phase	executing
+2026-10-04T18:05:35Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T18:06:51Z	agent	backend-dev a903be8e: Status: done, but the push to origin was blocked, so the commit exists only locally. commit: 187f8f7 (branch `job/JOB-20261004-1755-rating-notch-calculator-coun
+2026-10-04T18:06:58Z	pm-decision	T-01: Spec AC-5 example ('A','BBB+') is wrong: A→BBB+ is 2 notches (WL 1), A→BBB is 3 (WL 2). The scale (C1) and AC-2/AC-8 govern; dev's test follows the scale; QA is told in its prompt — The AC-5 example contradicts the frozen scale; the rule-based ACs are authoritative
+2026-10-04T18:06:58Z	gate	T-01 PASS
+2026-10-04T18:08:06Z	agent	qa-tester a37001eb: ```json {"verdict":"pass", "tests":["test/integration/ratings/notch.int.test.mjs"], "criteria":[ {"ac":"AC-1","status":"pass","evidence":"'AC-1: RATING_SCALE is
+2026-10-04T18:08:10Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-9 and AC-15 pass (16/16 integration tests); AC-5 uses the PM-corrected A→BBB+ values
+2026-10-04T18:08:25Z	agent	ecc:typescript-reviewer abf079b5: {"verdict":"approve","blocking":[],"nits":["The wl thresholds (2 and 3) and the 'downgrade'/'upgrade'/'unchanged' strings are inline magic values in src/ratings
+2026-10-04T18:08:28Z	review	T-01 reviewer approve — No blocking items; nits only (magic values, overlapping test suites)
+2026-10-04T18:08:29Z	integrate	T-01 merged
+2026-10-04T18:08:32Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-04T18:09:12Z	agent	backend-dev adc89a29: status: done commit: 2dd3007 verify: passed (`node --test test/indicators/countryRating.test.mjs`, 11 of 11 pass) open issues: - (AC-16 is job level and gets ch
+2026-10-04T18:09:14Z	gate	T-02 PASS
+2026-10-04T18:09:55Z	agent	qa-tester a55ff879: ```json {"verdict":"pass", "tests":["test/integration/indicators/countryRating.int.test.mjs"], "criteria":[ {"ac":"AC-10","status":"pass","evidence":"AC-10 down
+2026-10-04T18:09:59Z	qa	T-02 pass (qa_verify PASS) — AC-10..AC-15 pass (13/13 integration); full node --test in worktree: 56 pass, 0 fail
+2026-10-04T18:10:10Z	agent	ecc:typescript-reviewer a48daed1: {"verdict":"approve","blocking":[],"nits":["src/indicators/countryRating.mjs: the implementation matches the spec. It has one named export, imports notchChange,
+2026-10-04T18:10:12Z	review	T-02 reviewer approve — No blocking items; nits only (overlapping tests, fragile stdout monkeypatch)
+2026-10-04T18:10:13Z	integrate	T-02 merged
+2026-10-04T18:10:16Z	phase	integrating
+2026-10-04T18:10:16Z	verify-all	PASS
+2026-10-04T18:10:16Z	phase	closing
+2026-10-04T18:11:18Z	agent	business-analyst abb9b7a7: # Closing check: JOB-20261004-1755-rating-notch-calculator-country All 16 acceptance criteria are met. AC-5 is met against the corrected example, not the plan's
+2026-10-04T18:11:30Z	learn	ba: When writing example pairs in ACs, compute notches from the scale index; a wrong example (A→BBB+ as 3 notches) reached the dev and had to be corrected.
+2026-10-04T18:11:30Z	ship	local merge into main

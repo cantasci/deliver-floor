@@ -1,0 +1,493 @@
+# gate: T-02  attempt: 1  2026-10-04T17:47:20Z
+ok    on job/JOB-20261004-1732-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: AC-7: WL from the notch change
+    # Subtest: (BBB+, BBB) -> 1
+    ok 1 - (BBB+, BBB) -> 1
+      ---
+      duration_ms: 0.962397
+      type: 'test'
+      ...
+    # Subtest: (BBB+, BBB-) -> 2
+    ok 2 - (BBB+, BBB-) -> 2
+      ---
+      duration_ms: 0.145704
+      type: 'test'
+      ...
+    # Subtest: (BBB+, BB+) -> 2
+    ok 3 - (BBB+, BB+) -> 2
+      ---
+      duration_ms: 0.142607
+      type: 'test'
+      ...
+    # Subtest: (AAA, CCC-) -> 2
+    ok 4 - (AAA, CCC-) -> 2
+      ---
+      duration_ms: 1.096642
+      type: 'test'
+      ...
+    # Subtest: (CCC, CCC-) -> 1
+    ok 5 - (CCC, CCC-) -> 1
+      ---
+      duration_ms: 0.166672
+      type: 'test'
+      ...
+    # Subtest: (CCC+, CCC-) -> 2
+    ok 6 - (CCC+, CCC-) -> 2
+      ---
+      duration_ms: 0.081479
+      type: 'test'
+      ...
+    # Subtest: (BBB, BBB+) -> 0
+    ok 7 - (BBB, BBB+) -> 0
+      ---
+      duration_ms: 0.132377
+      type: 'test'
+      ...
+    # Subtest: (CCC-, AAA) -> 0
+    ok 8 - (CCC-, AAA) -> 0
+      ---
+      duration_ms: 0.206719
+      type: 'test'
+      ...
+    # Subtest: (A, A) -> 0
+    ok 9 - (A, A) -> 0
+      ---
+      duration_ms: 0.214011
+      type: 'test'
+      ...
+    # Subtest: (AAA, AAA) -> 0
+    ok 10 - (AAA, AAA) -> 0
+      ---
+      duration_ms: 0.361115
+      type: 'test'
+      ...
+    # Subtest: (CCC-, CCC-) -> 0
+    ok 11 - (CCC-, CCC-) -> 0
+      ---
+      duration_ms: 0.086146
+      type: 'test'
+      ...
+    # Subtest: all 361 pairs follow notchChange (>=2 -> 2, 1 -> 1, else 0)
+    ok 12 - all 361 pairs follow notchChange (>=2 -> 2, 1 -> 1, else 0)
+      ---
+      duration_ms: 0.557996
+      type: 'test'
+      ...
+    1..12
+ok 1 - AC-7: WL from the notch change
+  ---
+  duration_ms: 5.544339
+  type: 'suite'
+  ...
+# Subtest: AC-3: input normalisation
+    # Subtest: case and surrounding whitespace are accepted
+    ok 1 - case and surrounding whitespace are accepted
+      ---
+      duration_ms: 0.098908
+      type: 'test'
+      ...
+    # Subtest: BOM in front of the rating is accepted
+    ok 2 - BOM in front of the rating is accepted
+      ---
+      duration_ms: 0.064186
+      type: 'test'
+      ...
+    1..2
+ok 2 - AC-3: input normalisation
+  ---
+  duration_ms: 0.251451
+  type: 'suite'
+  ...
+# Subtest: AC-4: invalid input throws RangeError
+    # Subtest: empty as previous
+    ok 1 - empty as previous
+      ---
+      duration_ms: 0.753321
+      type: 'test'
+      ...
+    # Subtest: empty as current
+    ok 2 - empty as current
+      ---
+      duration_ms: 0.1418
+      type: 'test'
+      ...
+    # Subtest: blank (3 spaces) as previous
+    ok 3 - blank (3 spaces) as previous
+      ---
+      duration_ms: 0.055061
+      type: 'test'
+      ...
+    # Subtest: blank (3 spaces) as current
+    ok 4 - blank (3 spaces) as current
+      ---
+      duration_ms: 0.043223
+      type: 'test'
+      ...
+    # Subtest: blank (1 space) as previous
+    ok 5 - blank (1 space) as previous
+      ---
+      duration_ms: 0.040313
+      type: 'test'
+      ...
+    # Subtest: blank (1 space) as current
+    ok 6 - blank (1 space) as current
+      ---
+      duration_ms: 0.040544
+      type: 'test'
+      ...
+    # Subtest: internal whitespace BBB + as previous
+    ok 7 - internal whitespace BBB + as previous
+      ---
+      duration_ms: 0.040404
+      type: 'test'
+      ...
+    # Subtest: internal whitespace BBB + as current
+    ok 8 - internal whitespace BBB + as current
+      ---
+      duration_ms: 0.0413
+      type: 'test'
+      ...
+    # Subtest: internal whitespace B BB+ as previous
+    ok 9 - internal whitespace B BB+ as previous
+      ---
+      duration_ms: 0.042477
+      type: 'test'
+      ...
+    # Subtest: internal whitespace B BB+ as current
+    ok 10 - internal whitespace B BB+ as current
+      ---
+      duration_ms: 0.044255
+      type: 'test'
+      ...
+    # Subtest: internal whitespace BB B as previous
+    ok 11 - internal whitespace BB B as previous
+      ---
+      duration_ms: 0.130333
+      type: 'test'
+      ...
+    # Subtest: internal whitespace BB B as current
+    ok 12 - internal whitespace BB B as current
+      ---
+      duration_ms: 0.052411
+      type: 'test'
+      ...
+    # Subtest: AAA+ as previous
+    ok 13 - AAA+ as previous
+      ---
+      duration_ms: 0.044601
+      type: 'test'
+      ...
+    # Subtest: AAA+ as current
+    ok 14 - AAA+ as current
+      ---
+      duration_ms: 0.041062
+      type: 'test'
+      ...
+    # Subtest: CCC-- as previous
+    ok 15 - CCC-- as previous
+      ---
+      duration_ms: 0.170743
+      type: 'test'
+      ...
+    # Subtest: CCC-- as current
+    ok 16 - CCC-- as current
+      ---
+      duration_ms: 0.059274
+      type: 'test'
+      ...
+    # Subtest: BBB++ as previous
+    ok 17 - BBB++ as previous
+      ---
+      duration_ms: 0.056313
+      type: 'test'
+      ...
+    # Subtest: BBB++ as current
+    ok 18 - BBB++ as current
+      ---
+      duration_ms: 0.043333
+      type: 'test'
+      ...
+    # Subtest: D as previous
+    ok 19 - D as previous
+      ---
+      duration_ms: 0.046402
+      type: 'test'
+      ...
+    # Subtest: D as current
+    ok 20 - D as current
+      ---
+      duration_ms: 0.041685
+      type: 'test'
+      ...
+    # Subtest: SD as previous
+    ok 21 - SD as previous
+      ---
+      duration_ms: 0.077497
+      type: 'test'
+      ...
+    # Subtest: SD as current
+    ok 22 - SD as current
+      ---
+      duration_ms: 0.052672
+      type: 'test'
+      ...
+    # Subtest: NR as previous
+    ok 23 - NR as previous
+      ---
+      duration_ms: 0.041698
+      type: 'test'
+      ...
+    # Subtest: NR as current
+    ok 24 - NR as current
+      ---
+      duration_ms: 0.040803
+      type: 'test'
+      ...
+    # Subtest: Baa1 as previous
+    ok 25 - Baa1 as previous
+      ---
+      duration_ms: 0.040651
+      type: 'test'
+      ...
+    # Subtest: Baa1 as current
+    ok 26 - Baa1 as current
+      ---
+      duration_ms: 0.041067
+      type: 'test'
+      ...
+    # Subtest: Unicode minus as previous
+    ok 27 - Unicode minus as previous
+      ---
+      duration_ms: 0.047731
+      type: 'test'
+      ...
+    # Subtest: Unicode minus as current
+    ok 28 - Unicode minus as current
+      ---
+      duration_ms: 0.1208
+      type: 'test'
+      ...
+    # Subtest: full-width BBB as previous
+    ok 29 - full-width BBB as previous
+      ---
+      duration_ms: 0.048836
+      type: 'test'
+      ...
+    # Subtest: full-width BBB as current
+    ok 30 - full-width BBB as current
+      ---
+      duration_ms: 0.046265
+      type: 'test'
+      ...
+    # Subtest: zero-width space as previous
+    ok 31 - zero-width space as previous
+      ---
+      duration_ms: 0.042218
+      type: 'test'
+      ...
+    # Subtest: zero-width space as current
+    ok 32 - zero-width space as current
+      ---
+      duration_ms: 0.040626
+      type: 'test'
+      ...
+    # Subtest: null as previous
+    ok 33 - null as previous
+      ---
+      duration_ms: 0.104367
+      type: 'test'
+      ...
+    # Subtest: null as current
+    ok 34 - null as current
+      ---
+      duration_ms: 0.043386
+      type: 'test'
+      ...
+    # Subtest: undefined as previous
+    ok 35 - undefined as previous
+      ---
+      duration_ms: 0.096801
+      type: 'test'
+      ...
+    # Subtest: undefined as current
+    ok 36 - undefined as current
+      ---
+      duration_ms: 0.052223
+      type: 'test'
+      ...
+    # Subtest: number 7 as previous
+    ok 37 - number 7 as previous
+      ---
+      duration_ms: 0.042933
+      type: 'test'
+      ...
+    # Subtest: number 7 as current
+    ok 38 - number 7 as current
+      ---
+      duration_ms: 0.079333
+      type: 'test'
+      ...
+    # Subtest: object {} as previous
+    ok 39 - object {} as previous
+      ---
+      duration_ms: 0.054457
+      type: 'test'
+      ...
+    # Subtest: object {} as current
+    ok 40 - object {} as current
+      ---
+      duration_ms: 0.046194
+      type: 'test'
+      ...
+    # Subtest: array [BBB] as previous
+    ok 41 - array [BBB] as previous
+      ---
+      duration_ms: 0.11562
+      type: 'test'
+      ...
+    # Subtest: array [BBB] as current
+    ok 42 - array [BBB] as current
+      ---
+      duration_ms: 0.064485
+      type: 'test'
+      ...
+    # Subtest: String object as previous
+    ok 43 - String object as previous
+      ---
+      duration_ms: 0.045691
+      type: 'test'
+      ...
+    # Subtest: String object as current
+    ok 44 - String object as current
+      ---
+      duration_ms: 0.041592
+      type: 'test'
+      ...
+    # Subtest: both invalid throws RangeError
+    ok 45 - both invalid throws RangeError
+      ---
+      duration_ms: 0.090876
+      type: 'test'
+      ...
+    # Subtest: missing arguments throw RangeError
+    ok 46 - missing arguments throw RangeError
+      ---
+      duration_ms: 0.076287
+      type: 'test'
+      ...
+    # Subtest: the error is not a TypeError
+    ok 47 - the error is not a TypeError
+      ---
+      duration_ms: 0.324022
+      type: 'test'
+      ...
+    # Subtest: previous is checked first
+    ok 48 - previous is checked first
+      ---
+      duration_ms: 0.102119
+      type: 'test'
+      ...
+    1..48
+ok 3 - AC-4: invalid input throws RangeError
+  ---
+  duration_ms: 5.501677
+  type: 'suite'
+  ...
+# Subtest: AC-8: intended difference to notchCalculator
+    # Subtest: C6: a 1-notch downgrade is wl 0 in notchCalculator but WL 1 in Indicator 12 (intended)
+    ok 1 - C6: a 1-notch downgrade is wl 0 in notchCalculator but WL 1 in Indicator 12 (intended)
+      ---
+      duration_ms: 0.137845
+      type: 'test'
+      ...
+    1..1
+ok 4 - AC-8: intended difference to notchCalculator
+  ---
+  duration_ms: 0.229808
+  type: 'suite'
+  ...
+# Subtest: AC-9: two parameters, no state
+    # Subtest: C7: length is 2
+    ok 1 - C7: length is 2
+      ---
+      duration_ms: 0.116006
+      type: 'test'
+      ...
+    # Subtest: C7: repeated calls do not influence each other
+    ok 2 - C7: repeated calls do not influence each other
+      ---
+      duration_ms: 0.08523
+      type: 'test'
+      ...
+    # Subtest: a third argument is ignored (no override)
+    ok 3 - a third argument is ignored (no override)
+      ---
+      duration_ms: 0.060178
+      type: 'test'
+      ...
+    1..3
+ok 5 - AC-9: two parameters, no state
+  ---
+  duration_ms: 0.419765
+  type: 'suite'
+  ...
+# Subtest: AC-10 / AC-11: source and module shape
+    # Subtest: only static import is notchChange from ../ratings/notch.mjs
+    ok 1 - only static import is notchChange from ../ratings/notch.mjs
+      ---
+      duration_ms: 0.521318
+      type: 'test'
+      ...
+    # Subtest: no copy of the rating list
+    ok 2 - no copy of the rating list
+      ---
+      duration_ms: 0.105009
+      type: 'test'
+      ...
+    # Subtest: no externalRatingChangeWl, node:, fs, http, console., process.
+    ok 3 - no externalRatingChangeWl, node:, fs, http, console., process.
+      ---
+      duration_ms: 0.100473
+      type: 'test'
+      ...
+    # Subtest: exports countryRatingChangeWl only (no externalRatingChangeWl, no default)
+    ok 4 - exports countryRatingChangeWl only (no externalRatingChangeWl, no default)
+      ---
+      duration_ms: 0.066504
+      type: 'test'
+      ...
+    # Subtest: is synchronous
+    ok 5 - is synchronous
+      ---
+      duration_ms: 0.064346
+      type: 'test'
+      ...
+    # Subtest: package.json has no dependencies or devDependencies
+    ok 6 - package.json has no dependencies or devDependencies
+      ---
+      duration_ms: 0.156634
+      type: 'test'
+      ...
+    1..6
+ok 6 - AC-10 / AC-11: source and module shape
+  ---
+  duration_ms: 1.151786
+  type: 'suite'
+  ...
+1..6
+# tests 72
+# suites 6
+# pass 72
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 127.090404
+ok    verify passed

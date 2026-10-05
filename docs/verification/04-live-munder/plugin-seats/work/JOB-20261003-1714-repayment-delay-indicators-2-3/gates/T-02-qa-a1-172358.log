@@ -1,0 +1,77 @@
+# qa_verify: node --test test/integration/indicators/delayCount.test.mjs
+TAP version 13
+# Subtest: AC-9: options list is ["0","1",">1"] in order and frozen
+ok 1 - AC-9: options list is ["0","1",">1"] in order and frozen
+  ---
+  duration_ms: 2.980466
+  type: 'test'
+  ...
+# Subtest: AC-10: "0" returns 0
+ok 2 - AC-10: "0" returns 0
+  ---
+  duration_ms: 0.244751
+  type: 'test'
+  ...
+# Subtest: AC-11: "1" returns 1
+ok 3 - AC-11: "1" returns 1
+  ---
+  duration_ms: 0.115625
+  type: 'test'
+  ...
+# Subtest: AC-12: ">1" returns 2
+ok 4 - AC-12: ">1" returns 2
+  ---
+  duration_ms: 0.101436
+  type: 'test'
+  ...
+# Subtest: AC-13: surrounding whitespace is trimmed
+ok 5 - AC-13: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.125235
+  type: 'test'
+  ...
+# Subtest: AC-14: unlisted, malformed, empty and prototype-key strings throw RangeError
+ok 6 - AC-14: unlisted, malformed, empty and prototype-key strings throw RangeError
+  ---
+  duration_ms: 0.569337
+  type: 'test'
+  ...
+# Subtest: AC-15: non-strings (incl. numbers 0/1/2) throw RangeError
+ok 7 - AC-15: non-strings (incl. numbers 0/1/2) throw RangeError
+  ---
+  duration_ms: 0.257557
+  type: 'test'
+  ...
+# Subtest: AC-16: RangeError names the function, quotes strings, message building never throws
+ok 8 - AC-16: RangeError names the function, quotes strings, message building never throws
+  ---
+  duration_ms: 0.219057
+  type: 'test'
+  ...
+# Subtest: AC-17: mapping all options gives [0,1,2]; frozen list cannot be mutated
+ok 9 - AC-17: mapping all options gives [0,1,2]; frozen list cannot be mutated
+  ---
+  duration_ms: 0.445076
+  type: 'test'
+  ...
+# Subtest: AC-18: plain ESM, no imports/I-O/logging, no index or helper files
+ok 10 - AC-18: plain ESM, no imports/I-O/logging, no index or helper files
+  ---
+  duration_ms: 0.961983
+  type: 'test'
+  ...
+# Subtest: no default WL: every result is a plain number in {0,1,2}
+ok 11 - no default WL: every result is a plain number in {0,1,2}
+  ---
+  duration_ms: 0.214749
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 92.884035

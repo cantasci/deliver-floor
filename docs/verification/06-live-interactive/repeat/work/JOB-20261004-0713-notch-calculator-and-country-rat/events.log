@@ -1,0 +1,61 @@
+2026-10-04T07:13:49Z	new	Notch calculator and country rating
+2026-10-04T07:14:01Z	jobset	stack: .stack=["javascript"]
+2026-10-04T07:14:01Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: pure domain logic modules under src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02: notchCalculator; REQ-03-12: countryRatingChangeWl"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript ESM code per stack_reviewers"}]
+2026-10-04T07:14:01Z	jobset	assumptions: .assumptions += ["Scale/threshold ambiguities settled by clarifications C1-C8 in the request; the POC example BBB+ to BB+ is treated as 3 notches (C2)"]
+2026-10-04T07:14:02Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T07:14:02Z	phase	readiness
+2026-10-04T07:14:46Z	agent	 a137ed76: Reading README.md and .deliver.json 
+2026-10-04T07:15:17Z	agent	 a7871347: Reading ROLES.md and job.json 
+2026-10-04T07:15:48Z	agent	 a3d4566d: Running baseline node --test suite 
+2026-10-04T07:16:42Z	agent	business-analyst aef49c76: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two pure library functions that other POC parts import. (1) A notch calculator (REQ-06-02) that
+2026-10-04T07:17:17Z	readiness	31 items: 18 decided, 8 n/a, 5 open
+2026-10-04T07:17:22Z	decide	DEL-docs: A: JSDoc on the four exports only — Documents sign convention and the two threshold sets at the import point; no README/CHANGELOG asked for.
+2026-10-04T07:17:23Z	decide	X-rating-scale-immutability: A: Object.freeze the exported array; notchChange uses a private lookup map — Prevents consumer mutation from silently changing notch results; content unchanged.
+2026-10-04T07:17:23Z	decide	X-error-message: A: validate previous then current; message names parameter and value — C1 fixes only the type; useful messages; tests assert RangeError type.
+2026-10-04T07:17:23Z	decide	X-normalisation: A: String.prototype.trim(), toUpperCase(), exact match — Standard JS meaning of trimmed; internal spaces and look-alikes rejected per C1.
+2026-10-04T07:17:23Z	decide	X-test-layout: A: test/unit/<area>/ for dev, test/integration/<area>/ for QA — Keeps dev and QA files apart; node --test finds them at any depth; <name>.test.mjs naming kept.
+2026-10-04T07:17:41Z	readiness	31 items: 22 decided, 9 n/a, 0 open
+2026-10-04T07:17:44Z	freeze	readiness + architecture frozen (d2dcbaa22b43)
+2026-10-04T07:17:44Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T07:17:44Z	phase	planning
+2026-10-04T07:18:20Z	agent	 a6fe21e8: Reading README.md and .deliver.json 
+2026-10-04T07:18:51Z	agent	 a7d73ef5: Checking Node version against requirements 
+2026-10-04T07:19:41Z	agent	business-analyst aedfd28c: ## Goal Ship two pure ES-module functions that other parts of the Watchlist POC will import. 1. **Notch calculator (REQ-06-02).** Takes a previous and a current
+2026-10-04T07:20:46Z	agent	 aa8d0eab: Reading package.json scripts and deps 
+2026-10-04T07:21:18Z	agent	ecc:architect ac867ce8: ```json [ { "tmp_id": "B1", "title": "Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs", "role": "backend", "component": "ratings-notch", 
+2026-10-04T07:22:23Z	agent	 ab79de98: Checking package.json and tracked files 
+2026-10-04T07:22:55Z	agent	 ad39681a: Drafting T-01 and T-02 card specs 
+2026-10-04T07:23:26Z	agent	 a6bcd3ed: Verifying frozen RATING_SCALE behaviour 
+2026-10-04T07:23:57Z	agent	 af555884: Checking sloppy-mode frozen array assignment 
+2026-10-04T07:24:59Z	agent	business-analyst a5503989: === T-01 === # T-01: Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs ## User story As a credit analyst (through later POC screens) and as
+2026-10-04T07:25:53Z	phase	executing
+2026-10-04T07:25:57Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T07:26:37Z	agent	 ac508b56: Checking worktree and handoff template 
+2026-10-04T07:27:08Z	agent	 ae65d7a2: Committing notch.mjs and unit tests 
+2026-10-04T07:27:31Z	agent	backend-dev acfd2087: status: done (committed locally, not pushed) commit: bdf54a1 verify: passed (`node --test test/unit/ratings/*.test.mjs`: 156 pass, 0 fail) open issues: The push
+2026-10-04T07:27:35Z	gate	T-01 PASS
+2026-10-04T07:28:13Z	agent	 ac5b7dd9: Creating test/integration/ratings directory 
+2026-10-04T07:28:44Z	agent	 ab0cf5ae: Diagnosing failure in notch.int.test.mjs 
+2026-10-04T07:29:11Z	agent	qa-tester ac18fc7f: The tests are committed in the T-01 worktree and the worktree is clean, but I could not push the card branch. The bash-guard hook blocked every `git push origin
+2026-10-04T07:29:57Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-13 pass, AC-19 child-process silence pass, AC-20 exports pass, AC-21 repo-root node --test 358/358 pass; qa_verify 202/202
+2026-10-04T07:30:25Z	agent	ecc:typescript-reviewer a939e1c2: {"verdict":"approve","blocking":[],"nits":["I found no blocking defects. `node --test` in the T-01 worktree gives 358/358 passing. Only `src/ratings/notch.mjs`,
+2026-10-04T07:38:39Z	review	T-01 reviewer approve — No blocking items; nits: add unit assertions for BOM/ideographic/zero-width trim edges, integration file overlaps unit tests
+2026-10-04T07:38:39Z	integrate	T-01 merged
+2026-10-04T07:38:43Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-04T07:39:22Z	agent	 a7cd0c92: Writing countryRating.test.mjs 
+2026-10-04T07:39:50Z	agent	backend-dev a01998c4: status: done commit: fbf22d0 verify: passed (`node --test test/unit/indicators/*.test.mjs` gives 14/14; the whole worktree `node --test` gives 372/372) open iss
+2026-10-04T07:39:53Z	gate	T-02 PASS
+2026-10-04T07:40:32Z	agent	 a1122576: Reading notch.int.test.mjs patterns 
+2026-10-04T07:41:03Z	agent	 a2fea75a: Verifying guarded root node --test 
+2026-10-04T07:41:25Z	agent	qa-tester a68b7d19: All 16 spec criteria are covered and pass, and `qa_verify` exits 0 (114 tests). The commit is made, but the push did not happen. The bash-guard hook rejected `g
+2026-10-04T07:41:42Z	qa	T-02 pass (qa_verify PASS) — AC-5,7,8,9,14-18 pass via public API; AC-19 silence, AC-20 exports, AC-21 four folders + repo-root node --test pass; qa_verify 114 tests
+2026-10-04T07:41:59Z	agent	ecc:typescript-reviewer a605d95a: {"verdict":"approve","blocking":[],"nits":["src/indicators/countryRating.mjs: The JSDoc says previous is 'checked first'. That is true of notchChange today, but
+2026-10-04T07:45:21Z	review	T-02 reviewer approve — No blocking items; nit: JSDoc 'previous checked first' mirrors T-01 internals
+2026-10-04T07:45:21Z	integrate	T-02 merged
+2026-10-04T07:45:25Z	phase	integrating
+2026-10-04T07:45:25Z	verify-all	PASS
+2026-10-04T07:45:29Z	phase	closing
+2026-10-04T07:46:06Z	agent	 a8738632: Checking skipped test in countryRating.test.mjs 
+2026-10-04T07:46:37Z	agent	 a8a88e5f: Confirming git-dependent skip in countryRating.test.mjs 
+2026-10-04T07:46:37Z	agent	business-analyst a40ddad2: I checked all 21 ACs and all of them are **met**. On the job branch, `node --test` passes 486 tests with 0 failures and 0 skipped (`verify-all-074525.log`). Bot
+2026-10-04T07:46:55Z	ship	local merge into main

@@ -1,0 +1,192 @@
+{
+  "id": "JOB-20261004-0714-repayment-delay-indicators-2-3",
+  "title": "Repayment delay indicators 2-3",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md\nRepayment delay indicators 2 and 3 (Watchlist POC slice, parallel)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool), EPIC-03.\nBuild only these two requirements. They are independent of each other.\n\nStaffing: two backend developers work in parallel, one per requirement.\n\n## Requirements (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-03-02 | Indicator 2 (Days with delay): Dropdown → no delay / ≤3 days / >3 days / >60 days / >90 days | >3 days → WL=2; >60 days → WL=3; >90 days → WL=4 |\n| REQ-03-03 | Indicator 3 (Delays in 12 months): Dropdown → 0 / 1 / >1 | 1 → WL=1; >1 → WL=2 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Dropdown values are exactly these strings: Indicator 2: \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\";\n  Indicator 3: \"0\", \"1\", \">1\". Input is trimmed; any other value throws a RangeError.\n- C2. \"no delay\" and \"<=3 days\" → WL 0; Indicator 3 \"0\" → WL 0.\n- C3. Indicator 1 (repayment delay yes/no) and its collapsing of indicators 2–3 are OUT of scope here.\n- C4. \"Dropdown\" is met by the exported option lists (`*_OPTIONS`) that the POC screens, built later by other parts, render.\n  No UI in this slice.\n- C5. Matching is exact and case-sensitive after trimming (\">3 days\" yes, \">3 Days\" no → RangeError); a non-string input is a RangeError too.\n  Trimming means `String.prototype.trim()`: leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode\n  spaces such as NBSP) is removed; whitespace inside the value is never changed or collapsed (\">3  days\" → RangeError).\n- C6. The caller counts the delays in the last 12 months and picks the option; this slice only maps the option to a WL.\n\n## Contract\n\n- `src/indicators/daysWithDelay.mjs` → `export const DAYS_WITH_DELAY_OPTIONS` (the 5 strings, in order) and `export function daysWithDelayWl(option)` → 0 | 2 | 3 | 4\n- `src/indicators/delayCount.mjs` → `export const DELAY_COUNT_OPTIONS` (the 3 strings, in order) and `export function delayCountWl(option)` → 0 | 1 | 2\n\nPlain Node ESM, no dependencies; tests with `node --test`.",
+  "created": "2026-10-04T07:14:41Z",
+  "repo": "/tmp/claude-0/e2e-l3/munder/repo",
+  "phase": "done",
+  "stack": [
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-03-02/REQ-03-03: domain logic (indicator → WL mapping)"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "count": 2,
+      "why": "Staffing: two backend developers work in parallel, one per requirement"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack javascript (plain Node ESM) → stack reviewer"
+    }
+  ],
+  "assumptions": [
+    "No UI and no security reviewer: pure functions mapping fixed dropdown strings to WL (C4); input validation is a RangeError covered by ACs"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261004-0714-repayment-delay-indicators-2-3",
+  "integration_worktree": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "734b3f6f88e880562f4bcc24e36c90b114c3d012",
+    "log": "/tmp/claude-0/e2e-l3/munder/repo/.work/JOB-20261004-0714-repayment-delay-indicators-2-3/gates/verify-all-072545.log",
+    "at": "2026-10-04T07:25:46Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "munder",
+    "max_parallel": 2,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "/tmp/claude-0/e2e-l3/munder/bin/claude",
+      "model": "claude-sonnet-5-5",
+      "token_cap": 0
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "commit": {
+      "ai_attribution": false,
+      "role_in_message": false
+    }
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "945656b1fc1de18bccdad5b3aff75a893b57cadc",
+    "at": "2026-10-04T07:26:41Z"
+  },
+  "munder": {
+    "seats": {
+      "ba#1": {
+        "role": "ba",
+        "worker": "worker-seat-20261004-0714-ba-1-h1",
+        "hires": 1,
+        "character": "pam",
+        "hired_at": "2026-10-04T07:14:50Z",
+        "task": null,
+        "orders": 4,
+        "since": null,
+        "last_done": "2026-10-04T07:26:25Z"
+      },
+      "backend-lead#1": {
+        "role": "backend-lead",
+        "worker": "worker-seat-20261004-0714-backend-lead-1-h1",
+        "hires": 1,
+        "character": "oscar",
+        "hired_at": "2026-10-04T07:14:50Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-04T07:18:38Z"
+      },
+      "backend#1": {
+        "role": "backend",
+        "worker": "worker-seat-20261004-0714-backend-1-h1",
+        "hires": 1,
+        "character": "dwight",
+        "hired_at": "2026-10-04T07:14:51Z",
+        "task": null,
+        "orders": 3,
+        "since": null,
+        "last_done": "2026-10-04T07:25:02Z"
+      },
+      "backend#2": {
+        "role": "backend",
+        "worker": "worker-seat-20261004-0714-backend-2-h1",
+        "hires": 1,
+        "character": "jim",
+        "hired_at": "2026-10-04T07:14:51Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-04T07:20:43Z"
+      },
+      "qa#1": {
+        "role": "qa",
+        "worker": "worker-seat-20261004-0714-qa-1-h1",
+        "hires": 1,
+        "character": "angela",
+        "hired_at": "2026-10-04T07:14:51Z",
+        "task": null,
+        "orders": 4,
+        "since": null,
+        "last_done": "2026-10-04T07:25:22Z"
+      },
+      "reviewer#1": {
+        "role": "reviewer",
+        "worker": "worker-seat-20261004-0714-reviewer-1-h1",
+        "hires": 1,
+        "character": "toby",
+        "hired_at": "2026-10-04T07:14:51Z",
+        "task": null,
+        "orders": 5,
+        "since": null,
+        "last_done": "2026-10-04T07:25:40Z"
+      }
+    }
+  },
+  "frozen": {
+    "readiness_sha256": "95b1b17cab8b9884d5c2801abfceeea81a3d2cd9f1c6e9b8c778412e31a73063",
+    "at": "2026-10-04T07:16:19Z"
+  },
+  "pm_decisions": [
+    {
+      "at": "2026-10-04T07:16:24Z",
+      "what": "No security reviewer seat",
+      "why": "Only 'external input' is a fixed dropdown string validated by strict type/value check with RangeError (C1, C5), fully covered by ACs and the stack reviewer; no auth, secrets, I/O or personal data"
+    },
+    {
+      "at": "2026-10-04T07:23:46Z",
+      "what": "T-02: accept reviewer's NBSP blocker instead of overruling it",
+      "why": "Line 22 already had raw U+00A0 bytes, but explicit \\u00a0 escapes are clearer and match T-01; a one-line fix is cheaper than a dispute",
+      "card": "T-02"
+    }
+  ]
+}

@@ -1,0 +1,221 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Notch calculator helper: RATING_SCALE, notchChange, notchCalculator (src/ratings/notch.mjs) with unit tests",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "watchlist-domain-lib",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "context": "WHY: REQ-06-02 asks for a notch calculator helper. The analyst gives a previous and a current rating and gets back the signed notch change, the direction and the resulting Watchlist level (WL 0-4, higher is worse). Other parts of the Watchlist POC import this module, so the export names and signatures below are a fixed contract. T-02 (Indicator 12, src/indicators/countryRating.mjs) is built on notchChange from this file. REPO STATE: the repo is empty apart from src/.gitkeep and test/.gitkeep. package.json has \"type\":\"module\" and scripts.test = \"node --test\". CONVENTIONS (CLAUDE.md): plain Node 18+ ESM (.mjs). Do not add npm dependencies. Code in src/ratings must be pure functions with no I/O: no imports at all (no node:fs, node:http/https, fetch or process) and no console.* calls. Unit tests use node:test and node:assert/strict and go in test/ratings/notch.test.mjs. Write them test-first. FILE TO CREATE: src/ratings/notch.mjs, exporting exactly: (1) RATING_SCALE = Object.freeze([\"AAA\",\"AA+\",\"AA\",\"AA-\",\"A+\",\"A\",\"A-\",\"BBB+\",\"BBB\",\"BBB-\",\"BB+\",\"BB\",\"BB-\",\"B+\",\"B\",\"B-\",\"CCC+\",\"CCC\",\"CCC-\"]): 19 entries, best first, frozen (push or index assignment throws TypeError in strict ESM). (2) export function notchChange(previous, current) returns the integer index(current) - index(previous) on RATING_SCALE. Positive = downgrade, negative = upgrade, 0 = unchanged. Never return -0. (3) export function notchCalculator(previous, current) returns a new plain object with exactly the keys { notches, direction, wl }. notches === notchChange(previous, current), signed the same way (human decision CON-interface: BB -> BBB gives -3). direction is \"downgrade\" if notches > 0, \"upgrade\" if notches < 0, otherwise \"unchanged\". wl uses the Indicator 13 thresholds (C2, C6): notches >= 3 -> 2, notches === 2 -> 1, otherwise 0 (a 1-notch downgrade, any upgrade and unchanged all give 0). Both functions take exactly 2 declared parameters (fn.length === 2); no override, options or default parameter (C7). VALIDATION (C1, CON-errors): one shared internal helper, e.g. normalizeRating(value, argName). Check typeof value === 'string' first; a non-string (null, undefined, 42, {}) must throw a RangeError, never a TypeError, so do not call .trim() before the check. Then trim and upper-case and look it up in RATING_SCALE. Anything not found throws a RangeError (\"\", \"   \", \"BBB +\", \"CC\", \"D\", \"NR\", \"AAA+\", \"Baa1\"). Applies to both arguments. notchCalculator gets the same RangeError by calling notchChange or the shared helper; do not wrap or translate it. The message should name the argument (previous/current) and the offending value and list the valid ratings; tests assert the RangeError type only. Do not change inputs; write nothing to stdout/stderr. OUT OF SCOPE: a separate Indicator 13 function; ratings outside the 19 steps; fetching ratings; UI, CLI or logging. WARNING: the original POC example 'BBB+ -> BB+ = 2 notches -> WL=1' is miscounted; the correct result is 3 notches -> WL=2 (C2). Do not copy it into tests. TESTS MUST COVER: every value in AC-1, AC-2, AC-5, AC-6, AC-7, AC-8; the AC-3 normalisation cases for notchChange and notchCalculator; the AC-4 invalid list in both argument positions (other arg \"BBB\") for notchChange and notchCalculator; the AC-9 exhaustive loop over all 361 pairs; and the notch.mjs part of AC-13 (.length === 2, inputs unchanged, no stdout/stderr output; the no-imports/no-console rule may be checked by reading the source text with node:fs inside the test only).",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/integration/ratings/**"
+      ],
+      "qa_verify": "node --test test/integration/ratings/notch.integration.test.mjs",
+      "acceptance": [
+        "1. (AC-1) Given `src/ratings/notch.mjs` is imported, when `RATING_SCALE` is read, then it deep-equals `[\"AAA\",\"AA+\",\"AA\",\"AA-\",\"A+\",\"A\",\"A-\",\"BBB+\",\"BBB\",\"BBB-\",\"BB+\",\"BB\",\"BB-\",\"B+\",\"B\",\"B-\",\"CCC+\",\"CCC\",\"CCC-\"]` and `RATING_SCALE.length === 19`.",
+        "2. (AC-1, X-scale-immutability) Given the imported `RATING_SCALE`, when `Object.isFrozen(RATING_SCALE)` is checked, `RATING_SCALE.push(\"CC\")` is run and `RATING_SCALE[0] = \"X\"` is run (strict ESM), then `isFrozen` is `true`, both writes throw `TypeError`, `length` stays `19` and `RATING_SCALE[0]` stays `\"AAA\"`.",
+        "3. (AC-2) Given valid ratings, when `notchChange(previous, current)` is called, then it returns `index(current) − index(previous)`: `(\"BBB+\",\"BB+\")`→`3`, `(\"BBB+\",\"BBB-\")`→`2`, `(\"A\",\"A-\")`→`1`, `(\"AAA\",\"CCC-\")`→`18`, `(\"BB\",\"BBB\")`→`-3`, `(\"CCC-\",\"AAA\")`→`-18`, `(\"BBB\",\"BBB\")`→`0`.",
+        "4. (AC-2) Given any of the results in criterion 3, when it is checked, then `Number.isInteger(result) === true`, and for `(\"BBB\",\"BBB\")` `Object.is(result, 0) === true` (never `-0`).",
+        "5. (AC-3, C1) Given input with surrounding whitespace or a different letter case, when `notchChange` is called, then `notchChange(\" bbb+ \",\"bb+\")`→`3` and `notchChange(\"\\tAa-\\n\",\"a+\")`→`1`.",
+        "6. (AC-3, C1) Given lower-case input, when `notchCalculator(\"bbb+\",\"BB+\")` is called, then it deep-equals `{notches:3,direction:\"downgrade\",wl:2}`.",
+        "7. (AC-4, CON-errors) Given each invalid value `\"CC\"`, `\"D\"`, `\"NR\"`, `\"AAA+\"`, `\"Baa1\"`, `\"\"`, `\"   \"`, `\"BBB +\"`, `null`, `undefined`, `42`, `{}` as `previous` (with `current = \"BBB\"`) and then as `current` (with `previous = \"BBB\"`), when `notchChange` is called, then `assert.throws(fn, RangeError)` passes. That is 24 cases, none of which may throw `TypeError` or return a value.",
+        "8. (AC-4, CON-errors) Given the same 12 invalid values in both positions, when `notchCalculator` is called, then `assert.throws(fn, RangeError)` passes for all 24 cases. The error is the validation `RangeError`, not wrapped or translated.",
+        "9. (AC-5, C2) Given a downgrade of 2 or more notches, when `notchCalculator` is called, then `(\"BBB+\",\"BBB-\")`→`{notches:2,direction:\"downgrade\",wl:1}`, `(\"BBB+\",\"BB+\")`→`{notches:3,direction:\"downgrade\",wl:2}`, `(\"BB\",\"B\")`→`{notches:3,direction:\"downgrade\",wl:2}` and `(\"AAA\",\"CCC-\")`→`{notches:18,direction:\"downgrade\",wl:2}`.",
+        "10. (AC-6, C6) Given a 1-notch downgrade, when `notchCalculator` is called, then `(\"A\",\"A-\")` and `(\"CCC\",\"CCC-\")` each deep-equal `{notches:1,direction:\"downgrade\",wl:0}`.",
+        "11. (AC-7, C3, CON-interface) Given an upgrade, when `notchCalculator` is called, then `(\"BB\",\"BBB\")`→`{notches:-3,direction:\"upgrade\",wl:0}`, `(\"BBB-\",\"BBB+\")`→`{notches:-2,direction:\"upgrade\",wl:0}`, `(\"A-\",\"A\")`→`{notches:-1,direction:\"upgrade\",wl:0}` and `(\"CCC-\",\"AAA\")`→`{notches:-18,direction:\"upgrade\",wl:0}`.",
+        "12. (AC-8, C3) Given an unchanged rating, when `notchCalculator(\"BBB\",\"BBB\")` and `notchCalculator(\"aaa\",\" AAA \")` are called, then each deep-equals `{notches:0,direction:\"unchanged\",wl:0}` and `Object.is(r.notches, 0) === true`.",
+        "13. (AC-9) Given all 361 pairs `(p, c)` of `RATING_SCALE × RATING_SCALE`, when `r = notchCalculator(p, c)` and `n = notchChange(p, c)` are computed, then for every pair `Object.keys(r).sort()` deep-equals `[\"direction\",\"notches\",\"wl\"]`, `r.notches === n`, `r.direction` is `\"downgrade\"`/`\"upgrade\"`/`\"unchanged\"` for `n > 0`/`n < 0`/`n === 0`, and `r.wl === (n >= 3 ? 2 : n === 2 ? 1 : 0)`.",
+        "14. (AC-13, C7) Given the module, when the function arity is read, then `notchChange.length === 2` and `notchCalculator.length === 2` (no override, options or default parameter).",
+        "15. (AC-13, C4, C8, CLAUDE.md) Given the source text of `src/ratings/notch.mjs` (the test may read it with `node:fs`), when it is inspected, then it has no `import` statement, no `require(`, no `fetch`, no `process`, no `node:fs`/`node:http`/`node:https` reference and no `console.` call.",
+        "16. (AC-13) Given variables `p = \" bbb+ \"` and `c = \"bb+\"`, and separately `o = {}`, when `notchChange(p, c)` and `notchCalculator(p, c)` are called (and `notchChange(o, \"BBB\")` throws), then `p === \" bbb+ \"`, `c === \"bb+\"` and `Object.keys(o).length === 0` afterwards. No call writes anything to stdout or stderr.",
+        "17. (TST-strategy, card verify) Given the card branch, when `node --test test/ratings/notch.test.mjs` runs from the repo root, then it exits `0` and the file contains tests for criteria 1–16."
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T14:05:44Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e/incomplete/repo/.work/JOB-20261003-1355-notch-calculator-and-country-rat/wt/T-01",
+      "branch": "job/JOB-20261003-1355-notch-calculator-and-country-rat--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "64f1c1599befbd54b49c47ee93c10cfd0722b346",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e/incomplete/repo/.work/JOB-20261003-1355-notch-calculator-and-country-rat/gates/T-01-a1-140649.log",
+        "at": "2026-10-03T14:06:49Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T14:06:50.107Z",
+          "author": "gate",
+          "text": "PASS — 12 checks ok, 0 failed (T-01-a1-140649.log)"
+        },
+        {
+          "at": "2026-10-03T14:08:05.451Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-13 pass (87 integration tests)"
+        },
+        {
+          "at": "2026-10-03T14:08:27.370Z",
+          "author": "reviewer",
+          "text": "approve — approve, no blocking items; 4 nits (naming, comment, regex word boundaries, stdout stub)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "17c85f78a8f35f6427ab320fbe74e4b7f2d2b474",
+        "gate_head": "64f1c1599befbd54b49c47ee93c10cfd0722b346",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e/incomplete/repo/.work/JOB-20261003-1355-notch-calculator-and-country-rat/gates/T-01-qa-a1-140804.log",
+        "summary": "AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-13 pass (87 integration tests)",
+        "at": "2026-10-03T14:08:05Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "17c85f78a8f35f6427ab320fbe74e4b7f2d2b474",
+          "qa_verify": "PASS",
+          "summary": "AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-13 pass (87 integration tests)",
+          "at": "2026-10-03T14:08:05Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "17c85f78a8f35f6427ab320fbe74e4b7f2d2b474",
+          "summary": "approve, no blocking items; 4 nits (naming, comment, regex word boundaries, stdout stub)",
+          "at": "2026-10-03T14:08:27Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "17c85f78a8f35f6427ab320fbe74e4b7f2d2b474",
+        "summary": "reviewer: approve — approve, no blocking items; 4 nits (naming, comment, regex word boundaries, stdout stub)",
+        "pending": [],
+        "at": "2026-10-03T14:08:27Z"
+      }
+    },
+    {
+      "id": "T-02",
+      "title": "Indicator 12 country rating change WL: countryRatingChangeWl (src/indicators/countryRating.mjs) with unit tests",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "watchlist-domain-lib",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "context": "WHY: REQ-03-12 defines Indicator 12 (Country rating change). It turns the notch change between the previous and current country rating into a Watchlist level of 0, 1 or 2. Other parts of the POC import this function, so its name and signature are a fixed contract. The contract says it is 'built on notchChange'. PREREQUISITE (T-01): src/ratings/notch.mjs already exists and exports RATING_SCALE (frozen array of 19 ratings, AAA..CCC-, best first), notchChange(previous, current) and notchCalculator(previous, current). notchChange returns the integer index(current) - index(previous): positive = downgrade, negative = upgrade, 0 = unchanged. It trims and upper-cases its inputs and throws a RangeError for anything that is not one of the 19 ratings, including non-strings (null, undefined, 42, {}). Do not edit notch.mjs or its tests (out of this card's scope); if you find a defect there, report it. CONVENTIONS (CLAUDE.md): plain Node 18+ ESM (.mjs), no npm dependencies, pure functions with no I/O in src/indicators, no console.* calls. Unit tests use node:test and node:assert/strict in test/indicators/countryRating.test.mjs. Write them test-first. FILE TO CREATE: src/indicators/countryRating.mjs. Its only import is import { notchChange } from '../ratings/notch.mjs'. No other imports and no use of node:fs, http/https, fetch or process. It exports function countryRatingChangeWl(previous, current), exactly 2 declared parameters (.length === 2), no override or edit parameter (C7). It computes n = notchChange(previous, current) and returns n >= 2 ? 2 : n === 1 ? 1 : 0 (1-notch downgrade gives 1, 2+ gives 2, upgrade or unchanged gives 0). Validation comes from notchChange: let its RangeError reach the caller unchanged (do not catch or wrap it). DELIBERATE DIFFERENCE (C6, PRD-conflicts): Indicator 12 thresholds (1 -> 1, 2+ -> 2) are NOT the notchCalculator thresholds (Indicator 13: 1 -> 0, 2 -> 1, 3+ -> 2). Do not harmonise them. AC-12 pins both side by side, so this card's tests must import notchCalculator as well. OUT OF SCOPE: fetching or pre-filling the country rating (C4); override, persistence or audit trail (C7); UI, CLI or logging (C8). WARNING: BBB+ -> BB+ is 3 notches, not 2. FINAL CARD: this card also closes AC-14. From the repo root, `node --test` (= npm test) must exit 0 and run both test/ratings/notch.test.mjs and test/indicators/countryRating.test.mjs. package.json must still have no dependencies or devDependencies.",
+      "depends_on": [
+        "T-01"
+      ],
+      "scope": [
+        "src/indicators/countryRating.mjs",
+        "test/indicators/countryRating.test.mjs"
+      ],
+      "verify": "node --test test/indicators/countryRating.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/**"
+      ],
+      "qa_verify": "node --test test/integration/indicators/countryRating.integration.test.mjs",
+      "acceptance": [
+        "1. (AC-10, REQ-03-12) Given a downgrade, when `countryRatingChangeWl` is called, then `(\"A\",\"A-\")`→`1`, `(\"CCC\",\"CCC-\")`→`1`, `(\"BBB+\",\"BBB-\")`→`2`, `(\"BBB+\",\"BB+\")`→`2` and `(\"AAA\",\"CCC-\")`→`2`, each with `typeof result === \"number\"`.",
+        "2. (AC-11, C3) Given an upgrade or an unchanged rating, when `countryRatingChangeWl` is called, then `(\"BB\",\"BBB\")`, `(\"A-\",\"A\")`, `(\"CCC-\",\"AAA\")` and `(\"BBB\",\"BBB\")` each return `0`.",
+        "3. (AC-11) Given all 361 pairs `(p, c)` of `RATING_SCALE × RATING_SCALE`, when `w = countryRatingChangeWl(p, c)` and `n = notchChange(p, c)` are computed, then for every pair `w === (n >= 2 ? 2 : n === 1 ? 1 : 0)`.",
+        "4. (AC-12, C2, C6, PRD-conflicts) Given the same downgrade input, when `notchCalculator(p, c).wl` and `countryRatingChangeWl(p, c)` are both computed, then they are `0` / `1` for `(\"A\",\"A-\")`, `1` / `2` for `(\"BBB+\",\"BBB-\")` and `2` / `2` for `(\"BBB+\",\"BB+\")`.",
+        "5. (AC-3, C1) Given input with surrounding whitespace or a different letter case, when `countryRatingChangeWl(\"  a \",\"a-\")` is called, then it returns `1`.",
+        "6. (AC-4, CON-errors) Given each invalid value `\"CC\"`, `\"D\"`, `\"NR\"`, `\"AAA+\"`, `\"Baa1\"`, `\"\"`, `\"   \"`, `\"BBB +\"`, `null`, `undefined`, `42`, `{}` as `previous` (with `current = \"BBB\"`) and then as `current` (with `previous = \"BBB\"`), when `countryRatingChangeWl` is called, then `assert.throws(fn, RangeError)` passes in all 24 cases. Nothing may throw `TypeError` or return `0`, `NaN` or `undefined`, and the `RangeError` from `notchChange` must reach the caller unchanged (not caught or wrapped).",
+        "7. (AC-13, \"built on notchChange\") Given the source text of `src/indicators/countryRating.mjs`, when it is inspected, then it has exactly one `import` statement, `import { notchChange } from '../ratings/notch.mjs'`, and no `require(`, `fetch`, `process`, `node:fs`/`node:http`/`node:https` reference or `console.` call.",
+        "8. (AC-13, C7) Given the module, when the function arity is read, then `countryRatingChangeWl.length === 2` (no override, edit or options parameter).",
+        "9. (AC-13, C8) Given variables `p = \"  a \"` and `c = \"a-\"`, and separately `o = {}`, when `countryRatingChangeWl(p, c)` is called (and `countryRatingChangeWl(o, \"BBB\")` throws), then `p === \"  a \"`, `c === \"a-\"` and `Object.keys(o).length === 0` afterwards. Nothing is written to stdout or stderr.",
+        "10. (AC-14, DEL-ci, TST-strategy) Given the job branch with T-01 and T-02 merged, when `node --test` (equivalently `npm test`) runs from the repo root, then it exits `0`, and its output shows tests from both `test/ratings/notch.test.mjs` and `test/indicators/countryRating.test.mjs`, with `# fail 0`.",
+        "11. (AC-14) Given the two test files, when they are reviewed against the plan, then together they cover every value of AC-1 to AC-13. This is a reviewer/QA trace check: each AC maps to at least one named test.",
+        "12. (AC-14, ARC-stack) Given `package.json` after this card, when it is read, then it has no `dependencies` or `devDependencies` key and `scripts.test` is still `\"node --test\"`."
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-03T14:08:31Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e/incomplete/repo/.work/JOB-20261003-1355-notch-calculator-and-country-rat/wt/T-02",
+      "branch": "job/JOB-20261003-1355-notch-calculator-and-country-rat--T-02",
+      "gate": {
+        "result": "PASS",
+        "head": "f8a406d7f5afffc318e1b6619d87f1235da204c4",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e/incomplete/repo/.work/JOB-20261003-1355-notch-calculator-and-country-rat/gates/T-02-a1-140914.log",
+        "at": "2026-10-03T14:09:14Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-03T14:09:15.102Z",
+          "author": "gate",
+          "text": "PASS — 8 checks ok, 0 failed (T-02-a1-140914.log)"
+        },
+        {
+          "at": "2026-10-03T14:10:50.078Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-3 pass; AC-4 pass; AC-10 pass; AC-11 pass; AC-12 pass; AC-13 pass; AC-14 pass (53 integration tests)"
+        },
+        {
+          "at": "2026-10-03T14:11:10.773Z",
+          "author": "reviewer",
+          "text": "approve — approve, no blocking; nits on nested node --test (TAP parsing, env inheritance) and comment-matching regexes"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "73427a4011ff8a0fab697ec98466275df4182c1b",
+        "gate_head": "f8a406d7f5afffc318e1b6619d87f1235da204c4",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e/incomplete/repo/.work/JOB-20261003-1355-notch-calculator-and-country-rat/gates/T-02-qa-a1-141048.log",
+        "summary": "AC-3 pass; AC-4 pass; AC-10 pass; AC-11 pass; AC-12 pass; AC-13 pass; AC-14 pass (53 integration tests)",
+        "at": "2026-10-03T14:10:49Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "73427a4011ff8a0fab697ec98466275df4182c1b",
+          "qa_verify": "PASS",
+          "summary": "AC-3 pass; AC-4 pass; AC-10 pass; AC-11 pass; AC-12 pass; AC-13 pass; AC-14 pass (53 integration tests)",
+          "at": "2026-10-03T14:10:49Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "73427a4011ff8a0fab697ec98466275df4182c1b",
+          "summary": "approve, no blocking; nits on nested node --test (TAP parsing, env inheritance) and comment-matching regexes",
+          "at": "2026-10-03T14:11:10Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "73427a4011ff8a0fab697ec98466275df4182c1b",
+        "summary": "reviewer: approve — approve, no blocking; nits on nested node --test (TAP parsing, env inheritance) and comment-matching regexes",
+        "pending": [],
+        "at": "2026-10-03T14:11:10Z"
+      }
+    }
+  ]
+}

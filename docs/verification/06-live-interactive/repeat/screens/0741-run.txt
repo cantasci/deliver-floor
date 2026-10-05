@@ -1,0 +1,50 @@
+         + only"]}
+      16 +]}
+
+● business-analyst(BA card specs)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The BA is writing the card specs in the background. When it finishes I'll save them, replace each card's acceptance lines with the spec's criteria, and run validate.
+
+● Agent "BA card specs" finished · 3m 6s
+
+● The BA's specs are back. I'm saving them as the per-card spec files, with the &gt;/&lt; escapes turned back into > and <.
+
+● Write(.work/JOB-20261004-0713-notch-calculator-and-country-rat/specs/T-01.md)
+  ⎿  Wrote 91 lines to .work/JOB-20261004-0713-notch-calculator-and-country-rat/specs/T-01.md
+      1 # T-01: Rating scale, notchChange and notchCalculator in src/ratings/notch.mjs
+      3 ## User story
+      4 As a credit analyst (through later POC screens) and as the Indicator 12 module, I want to give a previous and a current rating and get back the signed notch change, its direction and th
+        e resulting WL under the Indicator 13 thresholds, so that a rating move turns into a Watchlist level the same way every time (REQ-06-02, REQ-03-13, C2, C6).
+      6 What to build: create `src/ratings/notch.mjs`, a pure ES module with exactly three named exports: `RATING_SCALE`, `notchChange(previous, current)` and `notchCalculator(previous, current
+        )`. A single private helper validates and normalises the inputs, looking them up in a private module-level `Map` built from the scale. Dev unit tests go in `test/unit/ratings/*.test.mjs
+      7
+      8 ## Traces to
+      9 AC-1, AC-2, AC-3, AC-4, AC-5 (notchChange and notchCalculator parts), AC-6, AC-7 (notch parts), AC-8, AC-9 (notchChange and notchCalculator), AC-10, AC-11, AC-12, AC-13, AC-19 (notch.mj
+        ity, X-error-message, X-normalisation, X-test-layout.
+     … +103 lines (ctrl+o to expand)
+
+● Write(.work/JOB-20261004-0713-notch-calculator-and-country-rat/specs/T-02.md)
+  ⎿  Wrote 62 lines to .work/JOB-20261004-0713-notch-calculator-and-country-rat/specs/T-02.md
+      1 # T-02: Indicator 12 countryRatingChangeWl in src/indicators/countryRating.mjs
+      2
+      4 As a credit analyst (through later POC screens) and as the Watchlist indicator engine, I want to give a previous and a current country rating and get the Indicator 12 WL (0, 1 or 2), so
+         that a country downgrade raises the watchlist level by its own thresholds, not by the calculator's (REQ-03-12, C3).
+      5
+        orted from `'../ratings/notch.mjs'`) and returns the literal `0` when n <= 0, `1` when n === 1 and `2` when n >= 2. No rating list, no map, no validation of its own, no catching or wrap
+        ping of errors. Dev unit tests in `test/unit/indicators/*.test.mjs`; QA integration tests in `test/integration/indicators/*.test.mjs`. `src/ratings/` must not be modified.
+      7
+      9 AC-5 (countryRatingChangeWl part), AC-7 (example), AC-8, AC-9 (countryRatingChangeWl), AC-14, AC-15, AC-16, AC-17, AC-18, AC-19 (countryRating.mjs, plus both modules together), AC-20 (c
+        ountryRating namespace), AC-21 (whole repo). REQ-03-12, C1, C3, C4, C5, C7, C8. Readiness: CON-interface, CON-errors, PRD-conflicts, X-error-message, X-normalisation, X-test-layout.
+     … +70 lines (ctrl+o to expand)
+
+● Both specs are saved. Next I'm copying each spec's numbered criteria into the card's acceptance list, then running dl validate.
+
+✢ Forging… (49s · ↓ 8.8k tokens)
+  ⎿  Tip: Use /btw to ask a quick side question without interrupting Claude's current work
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for agents                                                                             ✘ Auto-update failed · Run claude doctor
+

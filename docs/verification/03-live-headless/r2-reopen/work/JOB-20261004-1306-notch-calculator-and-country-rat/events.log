@@ -1,0 +1,47 @@
+2026-10-04T13:06:58Z	new	Notch calculator and country rating
+2026-10-04T13:07:12Z	jobset	stack: .stack=["javascript"]
+2026-10-04T13:07:12Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02/REQ-03-12: domain logic for notch calculation and indicator rule"},{"role":"backend","agent":"backend-dev","why":"builds src/ratings/notch.mjs and src/indicators/countryRating.mjs"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"JavaScript ESM code"}]
+2026-10-04T13:07:12Z	jobset	assumptions: .assumptions += ["C5 is missing from the clarifications; the sign of notchCalculator().notches is unspecified and is raised as a readiness question"]
+2026-10-04T13:07:13Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T13:07:13Z	phase	readiness
+2026-10-04T13:12:07Z	agent	business-analyst a3804f2a: {"items":[ {"id":"PRD-goal","status":"decided","answer":"This delivers two pure functions that analysts' screens will use. (1) A notch calculator (REQ-06-02): i
+2026-10-04T13:12:52Z	readiness	31 items: 18 decided, 7 n/a, 6 open
+2026-10-04T13:12:58Z	decide	PRD-priority: Both Must, one delivery; build order notchChange/RATING_SCALE → notchCalculator → countryRatingChangeWl — The request says to build only these two requirements as one slice; countryRatingChangeWl depends on notchChange anyway
+2026-10-04T13:12:58Z	decide	X-input-trim: Use String.prototype.trim() (all leading/trailing whitespace); internal whitespace is not removed, so 'BBB +' throws RangeError — Standard meaning of 'trimmed' in JS; the strictest reading that still honours C1
+2026-10-04T13:12:58Z	decide	DEL-docs: JSDoc on the exported functions and constant only; no README or changelog, no docs role — Request asks for no docs; the contract is already written in the request
+2026-10-04T13:12:59Z	decide	X-scale-immutability: Object.freeze RATING_SCALE — Other POC parts import it; freezing prevents accidental corruption and does not change values or order
+2026-10-04T13:12:59Z	decide	X-error-message: RangeError message names the offending input; tests assert the error type only — Request fixes only the type; a descriptive message helps diagnosis
+2026-10-04T13:13:04Z	readiness	31 items: 22 decided, 8 n/a, 1 open
+2026-10-04T13:13:08Z	phase	awaiting_clarification
+2026-10-04T13:13:16Z	clarify	CON-interface: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-04T13:13:30Z	reopen	CON-interface: The recorded answer is about C8 (what 'displayed' means), not the question asked: the sign convention of notchCalculator(previous, current).notches (options A/B/C).
+2026-10-04T13:13:37Z	clarify	CON-interface: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-04T13:13:55Z	freeze	readiness + architecture frozen (330dcd012b02)
+2026-10-04T13:13:55Z	roles	ba backend-lead backend qa reviewer
+2026-10-04T13:13:55Z	phase	planning
+2026-10-04T13:15:41Z	agent	business-analyst aab3a907: # Plan ## Goal Deliver two pure, dependency-free ES-module functions that later screens of the Watchlist POC will import: - **REQ-06-02, notch calculator.** Tak
+2026-10-04T13:17:02Z	agent	ecc:architect ad817511: [{"tmp_id":"B1","title":"ratings-lib: RATING_SCALE, notchChange and notchCalculator (REQ-06-02)","role":"backend","component":"ratings-lib","context":"WHY: REQ-
+2026-10-04T13:21:15Z	agent	business-analyst aa9b6124: I have no open questions for either card. Before you use these specs, though, two of the commands need changing. **1. Both QA verify commands fail on Node 22.22
+2026-10-04T13:22:15Z	phase	executing
+2026-10-04T13:22:19Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-04T13:23:33Z	agent	backend-dev a5c08d39: status: done (not pushed, see open issues) commit: 9659b67 verify: passed (`node --test test/ratings/notch.test.mjs` ran 64 tests: 64 pass, 0 fail) open issues:
+2026-10-04T13:23:37Z	gate	T-01 PASS
+2026-10-04T13:25:00Z	agent	qa-tester a5512aab: All 23 acceptance criteria pass, but I could not push the card branch. `qa_verify` exits 0 with 28 tests, 28 passed and 0 failed. The tests are committed as `c9
+2026-10-04T13:25:04Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-12 pass, AC-18 pass, AC-19 pass; 28 QA tests green
+2026-10-04T13:25:21Z	agent	ecc:typescript-reviewer a2388cb7: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: for non-string input the RangeError message names only the type (e.g. 'previous must be a rat
+2026-10-04T13:25:24Z	review	T-01 reviewer approve — approve, nits only
+2026-10-04T13:25:25Z	integrate	T-01 merged
+2026-10-04T13:25:28Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-04T13:26:09Z	agent	backend-dev ad382254: status: done commit: 41e2fa4 verify: passed (`node --test test/indicators/countryRating.test.mjs`: 9 tests, 0 fail) open issues: - - **Files:** I created `src/i
+2026-10-04T13:26:13Z	gate	T-02 PASS
+2026-10-04T13:27:11Z	agent	qa-tester a4bc2776: ```json {"verdict":"pass", "tests":["test/integration/indicators/countryRating.int.test.mjs"], "criteria":[ {"ac":"AC-13","status":"pass","evidence":"AC-13: one
+2026-10-04T13:27:15Z	qa	T-02 pass (qa_verify PASS) — AC-5,6,13-19 pass; 22 QA tests green
+2026-10-04T13:27:33Z	agent	ecc:typescript-reviewer a41f10f3: {"verdict":"approve","blocking":[],"nits":["test/indicators/countryRating.test.mjs: the AC-5 test repeats the assertion wl(\" A-\\t\", \"bb+\") === 2 twice. Rem
+2026-10-04T13:27:36Z	review	T-02 reviewer approve — approve, nits only
+2026-10-04T13:27:37Z	integrate	T-02 merged
+2026-10-04T13:27:37Z	phase	integrating
+2026-10-04T13:27:38Z	verify-all	PASS
+2026-10-04T13:27:41Z	phase	closing
+2026-10-04T13:28:53Z	agent	business-analyst a1816c46: I checked all 19 ACs in plan.md and all 19 are met. I re-ran `node --test` in the integration worktree (Node v22.22.0) at commit `0bdd900` on `job/JOB-20261004-
+2026-10-04T13:29:09Z	ship	local merge into main
+2026-10-04T13:29:12Z	cleanup	

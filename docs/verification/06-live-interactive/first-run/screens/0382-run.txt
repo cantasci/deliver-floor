@@ -1,0 +1,50 @@
+         +2, direction:"downgrade", wl:1}.
+      37 +- AC-7 (REQ-06-02, C2, C6): Given downgrades of 1, 2, 3 and 18 notches, when `notchCalculator` is called, then A→A- = {1,"downgrade",wl 0}; BBB+→BBB- = {2,"downgrade",wl 1}; BBB+→BB+
+         += {3,"downgrade",wl 2}; AAA→CCC- = {18,"downgrade",wl 2}.
+      38 +- AC-8 (REQ-06-02, C3, C5): Given an upgrade or unchanged rating, when `notchCalculator` is called, then ("A-","A") = {-1,"upgrade",0}; ("BBB-","BBB+") = {-2,"upgrade",0}; ("BB+","BBB
+         ++") = {-3,"upgrade",0}; ("CCC-","AAA") = {-18,"upgrade",0}; ("A","A") = {0,"unchanged",0} with `Object.is(r.notches,0)`.
+      39 +- AC-9 (REQ-06-02, C5, C8): Given any of the 361 pairs, when `r = notchCalculator(p,c)`, then keys sorted are ["direction","notches","wl"]; `r.notches === notchChange(p,c)`; direction
+         + matches the sign; `r.wl === (n<=1?0:n===2?1:2)`; nothing is written to stdout/stderr.
+      40 +- AC-10 (REQ-03-12): Given a country rating downgrade, when `countryRatingChangeWl` is called, then ("A","A-") = 1; ("BBB+","BBB-") = 2; ("BBB+","BB+") = 2; ("AAA","CCC-") = 2; the re
+         +sult is always 0, 1 or 2.
+      41 +- AC-11 (REQ-03-12, C3): Given an upgrade or unchanged rating, when `countryRatingChangeWl` is called, then ("A-","A"), ("BB+","BBB+"), ("CCC-","AAA"), ("A","A"), ("CCC-","CCC-") all
+         +return 0.
+      42 +- AC-12 (C6): Given the same pair, when both `notchCalculator(p,c).wl` and `countryRatingChangeWl(p,c)` are called, then A→A- gives 0 and 1; BBB+→BBB- gives 1 and 2; BBB+→BB+ gives 2
+         +and 2; AAA→CCC- gives 2 and 2; BB+→BBB+ gives 0 and 0; A→A gives 0 and 0; and over all 361 pairs `countryRatingChangeWl(p,c) === (n<=0?0:n===1?1:2)` with n = `notchChange(p,c)`.
+      43 +- AC-13 (REQ-03-12 editable, C7): Given a pre-filled pair ("BBB","BBB-") giving WL 1 and the analyst edits current to "BB", when `countryRatingChangeWl("BBB","BB")` is called, then it
+         + returns 2; calling the original pair again still returns 1 (pure, no state); `notchChange.length`, `notchCalculator.length` and `countryRatingChangeWl.length` are all 2 (no override
+         +parameter).
+      44 +- AC-14 (Contract, CLAUDE.md): Given the two modules, when imported dynamically, then `Object.keys` of notch.mjs sorted is ["RATING_SCALE","notchCalculator","notchChange"]; of country
+         +Rating.mjs is ["countryRatingChangeWl"]; notch.mjs imports nothing; countryRating.mjs imports only `../ratings/notch.mjs`; no `node:` modules, `console` or I/O in either source file.
+      45 +- AC-15 (DEL-ci, ARC-stack): Given the job branch with both test files, when `node --test` runs from the repo root, then exit code 0, 0 failures, tests from both files run; package.js
+         +on still has no dependencies/devDependencies; commits carry no AI attribution.
+      46 +
+      47  ## Risks and assumptions
+      48 +- The POC example for REQ-06-02 miscounts (3 notches, not 2); C2 resolves it, AC-6 tests the corrected values.
+      49 +- The two WL rules differ on purpose (C6, confirmed by the business). Risk: a dev derives Ind. 12 from `notchCalculator().wl`; AC-12 and AC-14 guard it.
+      50 +- Non-strings must throw RangeError, not TypeError (a naive `.trim()` throws TypeError on null).
+      51 +- Only ASCII `+`/`-` valid; U+2212 and en dash rejected; `String.prototype.trim` semantics for whitespace.
+      52 +- -0 can appear if direction/wl are computed with arithmetic; AC-3/AC-8 catch it.
+      53 +- Local runtime is Node v22; code must use no API newer than Node 18.
+      54 +- Ratings module comes before the indicators module (dependency).
+      55
+      56  ## Open questions
+      18 -<!-- Questions whose answers would change the scope. Asked to the human at plan approval. -->
+      57 +None. Readiness has 0 open items.
+
+● ecc:architect(Backend lead cards)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The plan is saved to plan.md. The backend lead is now breaking it into cards, and I'll continue when it reports back.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents · ↓ to manage                                                                                  ✘ Auto-update failed · Run claude doctor
+
+  ● main
+  ◯ ecc:architect  Backend lead cards                                                                                                                                             28s · ↓ 19.5k tokens
+
+
+
+

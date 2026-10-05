@@ -1,0 +1,249 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Deliver the option→Watchlist-level mapping for Indicator 2 (days with delay) and Indicator 3 (delays in 12 months) as pure functions plus exported dropdown option lists. Success = every option maps to the WL in REQ-03-02/03 and invalid input throws RangeError, verified by node --test.",
+      "source": "job.json request: REQ-03-02, REQ-03-03, Clarifications C1–C2, C4"
+    },
+    {
+      "id": "PRD-users",
+      "status": "n_a",
+      "answer": "No end users or roles in this slice; consumers are later POC screens/code that import the modules. No role-based visibility.",
+      "source": "Request C4 (no UI in this slice)"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In: src/indicators/daysWithDelay.mjs (DAYS_WITH_DELAY_OPTIONS, daysWithDelayWl) and src/indicators/delayCount.mjs (DELAY_COUNT_OPTIONS, delayCountWl) with unit tests. Out: Indicator 1 and its collapsing of 2–3 (C3), any UI/dropdown rendering (C4), counting delays in 12 months (C6), other indicators.",
+      "source": "Request C3, C4, C6, Contract"
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Yes. Every option has a fixed WL: Ind.2 'no delay'→0, '<=3 days'→0, '>3 days'→2, '>60 days'→3, '>90 days'→4; Ind.3 '0'→0, '1'→1, '>1'→2. Edges from C1/C5: trimming accepted (' >3 days ' valid), other strings/case variants/non-strings → RangeError.",
+      "source": "REQ-03-02, REQ-03-03, C1, C2, C5"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "Only apparent differences, all resolved explicitly by the request: (a) POC dropdown text '≤3 days' vs C1 string '<=3 days' — C1 (ASCII) is binding; (b) POC AC lists WL only for >3/>60/>90 and 1/>1, while 'no delay', '<=3 days' and '0' → WL 0 comes from C2; (c) option labels look cumulative ('>3', '>60', '>90') but the caller picks exactly one option, so each maps to one WL, no overlap logic needed.",
+      "source": "REQ-03-02, REQ-03-03, C1, C2, C6"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Both requirements are Must and independent; no ordering needed. They may be built and merged in any order, in parallel (one backend dev each).",
+      "source": "Request header: 'independent of each other', 'Staffing: two backend developers work in parallel'"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "daysWithDelay.mjs: export const DAYS_WITH_DELAY_OPTIONS = ['no delay','<=3 days','>3 days','>60 days','>90 days'] (this order); export function daysWithDelayWl(option: string) → 0|2|3|4. delayCount.mjs: export const DELAY_COUNT_OPTIONS = ['0','1','>1'] (this order); export function delayCountWl(option: string) → 0|1|2. Input is trimmed, exact case-sensitive match; non-string → RangeError. Returns a number (WL 0–4, higher is worse).",
+      "source": "Request 'Contract', C1, C2, C5; CLAUDE.md (WL 0–4)"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Unknown value (incl. empty string, whitespace-only, wrong case like '>3 Days', spacing variants like '> 3 days') and any non-string (undefined, null, number, array, object) → throw RangeError. No fallback WL, no coercion.",
+      "source": "C1, C5"
+    },
+    {
+      "id": "X-errors-message",
+      "status": "decided",
+      "question": "Exact RangeError message text is not specified. Options: (a) no contract on the message, tests assert only the error class; (b) fixed message format such as 'Invalid <indicator> option: <value>'.",
+      "options": [
+        "Assert only RangeError class (recommended)",
+        "Fix a message format"
+      ],
+      "impact": "Only affects test strictness and caller logging; no scope or behavioural change.",
+      "owner": "pm",
+      "answer": "(a) Only the error class is contract: throw RangeError; message is free text that includes the offending value. Tests assert instanceof RangeError only.",
+      "source": "pm: michael 2026-10-03 — C1/C5 fix only the type; a message format would be an un-asked public contract. Including the value helps debugging.",
+      "history": [
+        {
+          "status": "open",
+          "question": "Exact RangeError message text is not specified. Options: (a) no contract on the message, tests assert only the error class; (b) fixed message format such as 'Invalid <indicator> option: <value>'.",
+          "at": "2026-10-03T16:43:20.914Z"
+        }
+      ]
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "New files in an otherwise empty src/ (only .gitkeep); no existing API, data or versioning to keep compatible.",
+      "source": "Repo: src/ and test/ contain only .gitkeep"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Single-package library of pure functions (no I/O) in src/indicators; consumed later by rating/screen code.",
+      "source": "CLAUDE.md ('Pure functions, no I/O in src/ratings and src/indicators'); package.json"
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "One component: indicators library (src/indicators + tests), split into two independent modules, one per requirement, owned by the two backend devs. See architecture block.",
+      "source": "Request Contract; CLAUDE.md"
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Shared domain library layer (pure domain logic); no BFF/API/client in this slice.",
+      "source": "C4, CLAUDE.md"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ES modules (.mjs), tests with node:test + node:assert/strict, run via `node --test` / `npm test`. No npm dependencies may be added.",
+      "source": "CLAUDE.md; package.json (type: module); Request 'Plain Node ESM, no dependencies'"
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No persistence; mapping is a constant lookup in code.",
+      "source": "Request Contract (pure functions)"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems.",
+      "source": "Request Contract; CLAUDE.md (no I/O)"
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous, stateless, idempotent pure functions.",
+      "source": "Request Contract"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No targets; O(1) lookup over at most 5 options.",
+      "source": "Request (none stated)"
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "In-process functions; no dependencies to degrade.",
+      "source": "Request Contract"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Only input validation applies: strict whitelist of option strings after trim, RangeError otherwise (non-strings included). Avoid lookup via plain-object keys that could match inherited names (e.g. 'constructor', '__proto__') — use Map/array/switch so such strings throw RangeError.",
+      "source": "C1, C5; ba derivation (prototype-key edge case is a test case, not new scope)"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "No personal data handled; only dropdown labels.",
+      "source": "Request Contract"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "No auditing in this slice.",
+      "source": "Request (none stated)"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "No logging/metrics; pure functions.",
+      "source": "CLAUDE.md (no I/O)"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "n_a",
+      "answer": "No regulatory constraint stated for this slice beyond the POC's WL semantics.",
+      "source": "Request (none stated)"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Dev: TDD unit tests test/indicators/daysWithDelay.test.mjs and test/indicators/delayCount.test.mjs (node:test + node:assert/strict) covering every option→WL, option-list contents/order, trimming, case sensitivity, invalid strings, non-strings. QA: independent integration check that both modules import together and satisfy the contract. Full run: `node --test`. No coverage threshold stated.",
+      "source": "CLAUDE.md (test/<area>/<name>.test.mjs); job.json settings.verify_full"
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "`node --test` must pass; commits carry no AI attribution (gate rejects). No lint/typecheck/security scan configured in the repo.",
+      "source": "Role card; package.json scripts"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "n_a",
+      "answer": "No deployment; merged to job branch/main locally and consumed by later slices. No flags or migrations.",
+      "source": "job.json settings.merge_mode=local; Request C4"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No docs/changelog required by the request; the exported names in the Contract are the documentation.",
+      "source": "Request (none stated)"
+    },
+    {
+      "id": "X-option-immutability",
+      "status": "decided",
+      "question": "Should DAYS_WITH_DELAY_OPTIONS / DELAY_COUNT_OPTIONS be frozen (Object.freeze) so consumers cannot mutate the shared list?",
+      "options": [
+        "Frozen arrays (recommended; harmless to consumers who read/render)",
+        "Plain mutable arrays"
+      ],
+      "impact": "Internal robustness only; reading, ordering and values identical either way.",
+      "owner": "pm",
+      "answer": "Export the option arrays frozen (Object.freeze); tests assert content+order with deepStrictEqual and that the arrays are frozen.",
+      "source": "pm: michael 2026-10-03 — Shared module-level constants rendered by later screens must not be mutable by a consumer; freezing changes no observable value or contract.",
+      "history": [
+        {
+          "status": "open",
+          "question": "Should DAYS_WITH_DELAY_OPTIONS / DELAY_COUNT_OPTIONS be frozen (Object.freeze) so consumers cannot mutate the shared list?",
+          "at": "2026-10-03T16:43:21.298Z"
+        }
+      ]
+    },
+    {
+      "id": "X-trim-whitespace",
+      "status": "decided",
+      "answer": "'Trim' means String.prototype.trim() semantics. Whitespace-only and empty string trim to '' and throw RangeError. Internal spacing is not normalised ('> 3 days' → RangeError). The function returns a WL only, never the trimmed string.",
+      "source": "C1, C5 (exact match after trimming)"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "indicators-days-with-delay",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "nodejs-esm"
+        ],
+        "path": [
+          "src/indicators/daysWithDelay.mjs",
+          "test/indicators/daysWithDelay.test.mjs",
+          "test/integration/indicators/daysWithDelay.int.test.mjs"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "REQ-03-02, Indicator 2. Pure function, no I/O, no dependencies. Independent of the other module."
+      },
+      {
+        "id": "indicators-delay-count",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "nodejs-esm"
+        ],
+        "path": [
+          "src/indicators/delayCount.mjs",
+          "test/indicators/delayCount.test.mjs",
+          "test/integration/indicators/delayCount.int.test.mjs"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "REQ-03-03, Indicator 3. Pure function, no I/O, no dependencies. Independent of the other module; same directory as the first but disjoint files, so no merge conflicts expected."
+      }
+    ]
+  }
+}

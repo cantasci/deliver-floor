@@ -1,0 +1,1424 @@
+TAP version 13
+# Subtest: normalises case and whitespace (AC-3)
+ok 1 - normalises case and whitespace (AC-3)
+  ---
+  duration_ms: 2.097039
+  type: 'test'
+  ...
+# Subtest: unchanged rating or upgrade gives WL 0 (AC-8, C3)
+ok 2 - unchanged rating or upgrade gives WL 0 (AC-8, C3)
+  ---
+  duration_ms: 0.322089
+  type: 'test'
+  ...
+# Subtest: 1-notch downgrade gives WL 1 (AC-8)
+ok 3 - 1-notch downgrade gives WL 1 (AC-8)
+  ---
+  duration_ms: 0.150071
+  type: 'test'
+  ...
+# Subtest: downgrade of 2 or more notches gives WL 2 (AC-8)
+ok 4 - downgrade of 2 or more notches gives WL 2 (AC-8)
+  ---
+  duration_ms: 0.129322
+  type: 'test'
+  ...
+# Subtest: all 361 pairs follow the threshold rule on notchChange (AC-8)
+ok 5 - all 361 pairs follow the threshold rule on notchChange (AC-8)
+  ---
+  duration_ms: 1.307153
+  type: 'test'
+  ...
+# Subtest: differs from notchCalculator only for 1 and 2 notch downgrades (AC-9, C6)
+ok 6 - differs from notchCalculator only for 1 and 2 notch downgrades (AC-9, C6)
+  ---
+  duration_ms: 0.682444
+  type: 'test'
+  ...
+# Subtest: has exactly two parameters, is stateless and ignores extra arguments (AC-10, C7)
+ok 7 - has exactly two parameters, is stateless and ignores extra arguments (AC-10, C7)
+  ---
+  duration_ms: 0.140028
+  type: 'test'
+  ...
+# Subtest: exports only countryRatingChangeWl
+ok 8 - exports only countryRatingChangeWl
+  ---
+  duration_ms: 0.261521
+  type: 'test'
+  ...
+# Subtest: invalid ratings throw RangeError in either position (AC-11, C1)
+ok 9 - invalid ratings throw RangeError in either position (AC-11, C1)
+  ---
+  duration_ms: 2.369099
+  type: 'test'
+  ...
+# Subtest: missing arguments throw RangeError (AC-11)
+ok 10 - missing arguments throw RangeError (AC-11)
+  ---
+  duration_ms: 0.526875
+  type: 'test'
+  ...
+# Subtest: errors are never swallowed (AC-11)
+ok 11 - errors are never swallowed (AC-11)
+  ---
+  duration_ms: 0.220371
+  type: 'test'
+  ...
+# Subtest: AC-3: previous "a" and current " A- " is a 1-notch downgrade, WL 1
+ok 12 - AC-3: previous "a" and current " A- " is a 1-notch downgrade, WL 1
+  ---
+  duration_ms: 1.135544
+  type: 'test'
+  ...
+# Subtest: AC-3: case/whitespace variants give the same WL as the canonical values
+ok 13 - AC-3: case/whitespace variants give the same WL as the canonical values
+  ---
+  duration_ms: 0.245411
+  type: 'test'
+  ...
+# Subtest: AC-8: unchanged rating or upgrade returns 0 (C3)
+ok 14 - AC-8: unchanged rating or upgrade returns 0 (C3)
+  ---
+  duration_ms: 0.162384
+  type: 'test'
+  ...
+# Subtest: AC-8: 1-notch downgrade returns 1 (REQ-03-12)
+ok 15 - AC-8: 1-notch downgrade returns 1 (REQ-03-12)
+  ---
+  duration_ms: 0.13866
+  type: 'test'
+  ...
+# Subtest: AC-8: downgrade of 2 or more notches returns 2 (REQ-03-12)
+ok 16 - AC-8: downgrade of 2 or more notches returns 2 (REQ-03-12)
+  ---
+  duration_ms: 0.191208
+  type: 'test'
+  ...
+# Subtest: AC-8: boundaries n = -1, 0, 1, 2 and scale ends
+ok 17 - AC-8: boundaries n = -1, 0, 1, 2 and scale ends
+  ---
+  duration_ms: 0.125472
+  type: 'test'
+  ...
+# Subtest: AC-8: all 361 pairs follow the threshold rule applied to notchChange
+ok 18 - AC-8: all 361 pairs follow the threshold rule applied to notchChange
+  ---
+  duration_ms: 1.772638
+  type: 'test'
+  ...
+# Subtest: AC-8: distribution over the 361 pairs is wl0 = 190, wl1 = 18, wl2 = 153
+ok 19 - AC-8: distribution over the 361 pairs is wl0 = 190, wl1 = 18, wl2 = 153
+  ---
+  duration_ms: 0.946437
+  type: 'test'
+  ...
+# Subtest: AC-9 (C6): calculator WL is 0 and Indicator 12 is 1 for BBB+ -> BBB
+ok 20 - AC-9 (C6): calculator WL is 0 and Indicator 12 is 1 for BBB+ -> BBB
+  ---
+  duration_ms: 0.351278
+  type: 'test'
+  ...
+# Subtest: AC-9: calculator and Indicator 12 differ only for 1 notch (18 pairs) and 2 notches (17 pairs)
+ok 21 - AC-9: calculator and Indicator 12 differ only for 1 notch (18 pairs) and 2 notches (17 pairs)
+  ---
+  duration_ms: 0.770206
+  type: 'test'
+  ...
+# Subtest: AC-10 (C7): countryRatingChangeWl takes exactly two parameters
+ok 22 - AC-10 (C7): countryRatingChangeWl takes exactly two parameters
+  ---
+  duration_ms: 0.163026
+  type: 'test'
+  ...
+# Subtest: AC-10 (C7): no state, no caching - repeated calls in alternating order
+ok 23 - AC-10 (C7): no state, no caching - repeated calls in alternating order
+  ---
+  duration_ms: 0.104197
+  type: 'test'
+  ...
+# Subtest: Scope: the module exports only countryRatingChangeWl
+ok 24 - Scope: the module exports only countryRatingChangeWl
+  ---
+  duration_ms: 0.075503
+  type: 'test'
+  ...
+# Subtest: AC-11 (C1): every invalid value throws RangeError in either position
+ok 25 - AC-11 (C1): every invalid value throws RangeError in either position
+  ---
+  duration_ms: 0.95414
+  type: 'test'
+  ...
+# Subtest: AC-11: missing arguments throw RangeError
+ok 26 - AC-11: missing arguments throw RangeError
+  ---
+  duration_ms: 0.114164
+  type: 'test'
+  ...
+# Subtest: AC-11: ratings outside the 19-step scale are never swallowed (no 0/null/undefined)
+ok 27 - AC-11: ratings outside the 19-step scale are never swallowed (no 0/null/undefined)
+  ---
+  duration_ms: 0.141879
+  type: 'test'
+  ...
+# Subtest: AC-11: errors are the same RangeError type that notchChange throws (propagated, not wrapped)
+ok 28 - AC-11: errors are the same RangeError type that notchChange throws (propagated, not wrapped)
+  ---
+  duration_ms: 0.46504
+  type: 'test'
+  ...
+# Subtest: AC-12: src/ has no console/process/node:/fetch/require usage
+ok 29 - AC-12: src/ has no console/process/node:/fetch/require usage
+  ---
+  duration_ms: 0.75351
+  type: 'test'
+  ...
+# Subtest: AC-12: countryRating.mjs imports only notchChange from ../ratings/notch.mjs; notch.mjs imports nothing
+ok 30 - AC-12: countryRating.mjs imports only notchChange from ../ratings/notch.mjs; notch.mjs imports nothing
+  ---
+  duration_ms: 0.338287
+  type: 'test'
+  ...
+# Subtest: AC-12: package.json declares no dependencies of any kind
+ok 31 - AC-12: package.json declares no dependencies of any kind
+  ---
+  duration_ms: 0.218954
+  type: 'test'
+  ...
+# Subtest: AC-12 (C8): calling both modules writes nothing to stdout/stderr and exits 0
+ok 32 - AC-12 (C8): calling both modules writes nothing to stdout/stderr and exits 0
+  ---
+  duration_ms: 55.160028
+  type: 'test'
+  ...
+# Subtest: AC-13: node --test from the repo root exits 0, fails nothing, and runs both unit files
+ok 33 - AC-13: node --test from the repo root exits 0, fails nothing, and runs both unit files
+  ---
+  duration_ms: 610.637557
+  type: 'test'
+  ...
+# Subtest: AC-13 (C2): no test or source expects BBB+ -> BB+ to be 2 notches / calculator WL 1
+ok 34 - AC-13 (C2): no test or source expects BBB+ -> BB+ to be 2 notches / calculator WL 1
+  ---
+  duration_ms: 1.522016
+  type: 'test'
+  ...
+# Subtest: AC-13 (C2): behaviourally, BBB+ -> BB+ is 3 notches, calculator WL 2, Indicator 12 WL 2
+ok 35 - AC-13 (C2): behaviourally, BBB+ -> BB+ is 3 notches, calculator WL 2, Indicator 12 WL 2
+  ---
+  duration_ms: 0.132998
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE deep-equals the 19 C1 ratings, best first
+ok 36 - AC-1: RATING_SCALE deep-equals the 19 C1 ratings, best first
+  ---
+  duration_ms: 1.856776
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is immutable (frozen, push/assign throw TypeError)
+ok 37 - AC-1: RATING_SCALE is immutable (frozen, push/assign throw TypeError)
+  ---
+  duration_ms: 0.530394
+  type: 'test'
+  ...
+# Subtest: C2: module exports exactly RATING_SCALE, notchCalculator, notchChange (no Indicator 13 export)
+ok 38 - C2: module exports exactly RATING_SCALE, notchCalculator, notchChange (no Indicator 13 export)
+  ---
+  duration_ms: 0.183267
+  type: 'test'
+  ...
+# Subtest: AC-2: BBB+ -> BB+ is 3, BBB+ -> BBB- is 2, BBB- -> BB+ is 1
+ok 39 - AC-2: BBB+ -> BB+ is 3, BBB+ -> BBB- is 2, BBB- -> BB+ is 1
+  ---
+  duration_ms: 1.326158
+  type: 'test'
+  ...
+# Subtest: AC-2: BB+ -> BBB+ is -3 (upgrade)
+ok 40 - AC-2: BB+ -> BBB+ is -3 (upgrade)
+  ---
+  duration_ms: 0.131155
+  type: 'test'
+  ...
+# Subtest: AC-2: equal ratings give +0, never -0
+ok 41 - AC-2: equal ratings give +0, never -0
+  ---
+  duration_ms: 0.119127
+  type: 'test'
+  ...
+# Subtest: AC-2: scale ends AAA -> CCC- is 18 and CCC- -> AAA is -18
+ok 42 - AC-2: scale ends AAA -> CCC- is 18 and CCC- -> AAA is -18
+  ---
+  duration_ms: 0.33334
+  type: 'test'
+  ...
+# Subtest: AC-2: all 361 pairs return index(current) - index(previous), an integer, antisymmetric
+ok 43 - AC-2: all 361 pairs return index(current) - index(previous), an integer, antisymmetric
+  ---
+  duration_ms: 2.906371
+  type: 'test'
+  ...
+# Subtest: AC-3: lower case, surrounding whitespace and mixed case are normalised
+ok 44 - AC-3: lower case, surrounding whitespace and mixed case are normalised
+  ---
+  duration_ms: 0.393176
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator(" bbb+","BBB- ") deep-strict-equals {2, downgrade, 1}
+ok 45 - AC-3: notchCalculator(" bbb+","BBB- ") deep-strict-equals {2, downgrade, 1}
+  ---
+  duration_ms: 0.522261
+  type: 'test'
+  ...
+# Subtest: AC-3: notchCalculator gives the same result for normalised and canonical input
+ok 46 - AC-3: notchCalculator gives the same result for normalised and canonical input
+  ---
+  duration_ms: 0.193964
+  type: 'test'
+  ...
+# Subtest: AC-3 (X-trim-semantics): Unicode whitespace removed by trim() is valid
+ok 47 - AC-3 (X-trim-semantics): Unicode whitespace removed by trim() is valid
+  ---
+  duration_ms: 0.096867
+  type: 'test'
+  ...
+# Subtest: AC-3: inner whitespace, whitespace-only, zero-width space and "aaa-" are rejected
+ok 48 - AC-3: inner whitespace, whitespace-only, zero-width space and "aaa-" are rejected
+  ---
+  duration_ms: 0.334795
+  type: 'test'
+  ...
+# Subtest: AC-3: look-alikes (U+2212 minus, en dash, full-width letters) are rejected
+ok 49 - AC-3: look-alikes (U+2212 minus, en dash, full-width letters) are rejected
+  ---
+  duration_ms: 0.345134
+  type: 'test'
+  ...
+# Subtest: AC-4: BBB+ -> BB+ is 3 notches, downgrade, WL 2 (C2 corrected example)
+ok 50 - AC-4: BBB+ -> BB+ is 3 notches, downgrade, WL 2 (C2 corrected example)
+  ---
+  duration_ms: 0.092992
+  type: 'test'
+  ...
+# Subtest: AC-4: BBB+ -> BBB- is 2 notches, downgrade, WL 1
+ok 51 - AC-4: BBB+ -> BBB- is 2 notches, downgrade, WL 1
+  ---
+  duration_ms: 0.07235
+  type: 'test'
+  ...
+# Subtest: AC-5: 1-notch downgrades A -> A- and BBB+ -> BBB are WL 0 (C6)
+ok 52 - AC-5: 1-notch downgrades A -> A- and BBB+ -> BBB are WL 0 (C6)
+  ---
+  duration_ms: 0.138955
+  type: 'test'
+  ...
+# Subtest: AC-5: A -> BBB+ is 2 notches, WL 1
+ok 53 - AC-5: A -> BBB+ is 2 notches, WL 1
+  ---
+  duration_ms: 0.083033
+  type: 'test'
+  ...
+# Subtest: AC-5: A -> BBB is 3 notches WL 2; AAA -> CCC- is 18 notches WL 2
+ok 54 - AC-5: A -> BBB is 3 notches WL 2; AAA -> CCC- is 18 notches WL 2
+  ---
+  duration_ms: 0.077415
+  type: 'test'
+  ...
+# Subtest: AC-5: derived data rows (AAA->AA+, CCC->CCC-, A+->A-, CCC+->CCC-, AA-->A-, BB->B-)
+ok 55 - AC-5: derived data rows (AAA->AA+, CCC->CCC-, A+->A-, CCC+->CCC-, AA-->A-, BB->B-)
+  ---
+  duration_ms: 0.135641
+  type: 'test'
+  ...
+# Subtest: AC-6: upgrades give negative notches, direction "upgrade" and WL 0 (C3, C5)
+ok 56 - AC-6: upgrades give negative notches, direction "upgrade" and WL 0 (C3, C5)
+  ---
+  duration_ms: 0.129332
+  type: 'test'
+  ...
+# Subtest: AC-6: unchanged ratings give {0, "unchanged", 0} (not -0)
+ok 57 - AC-6: unchanged ratings give {0, "unchanged", 0} (not -0)
+  ---
+  duration_ms: 0.07769
+  type: 'test'
+  ...
+# Subtest: AC-7: for all 361 pairs the result is a plain {notches, direction, wl} consistent with notchChange
+ok 58 - AC-7: for all 361 pairs the result is a plain {notches, direction, wl} consistent with notchChange
+  ---
+  duration_ms: 8.224217
+  type: 'test'
+  ...
+# Subtest: AC-7: 361-pair totals (downgrade 171 / upgrade 171 / unchanged 19; WL0 208 / WL1 17 / WL2 136)
+ok 59 - AC-7: 361-pair totals (downgrade 171 / upgrade 171 / unchanged 19; WL0 208 / WL1 17 / WL2 136)
+  ---
+  duration_ms: 0.75518
+  type: 'test'
+  ...
+# Subtest: AC-7: calls are deterministic and return a fresh object each time
+ok 60 - AC-7: calls are deterministic and return a fresh object each time
+  ---
+  duration_ms: 0.291632
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "" as previous or current throws RangeError (both functions)
+ok 61 - AC-11: invalid "" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.175844
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "   " as previous or current throws RangeError (both functions)
+ok 62 - AC-11: invalid "   " as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.088014
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "BBB +" as previous or current throws RangeError (both functions)
+ok 63 - AC-11: invalid "BBB +" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.154186
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "BBB++" as previous or current throws RangeError (both functions)
+ok 64 - AC-11: invalid "BBB++" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.124008
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "AA−" as previous or current throws RangeError (both functions)
+ok 65 - AC-11: invalid "AA−" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.097535
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "CC" as previous or current throws RangeError (both functions)
+ok 66 - AC-11: invalid "CC" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.732563
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "C" as previous or current throws RangeError (both functions)
+ok 67 - AC-11: invalid "C" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.138208
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "D" as previous or current throws RangeError (both functions)
+ok 68 - AC-11: invalid "D" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.094349
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "SD" as previous or current throws RangeError (both functions)
+ok 69 - AC-11: invalid "SD" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.096888
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "NR" as previous or current throws RangeError (both functions)
+ok 70 - AC-11: invalid "NR" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.370198
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "Baa1" as previous or current throws RangeError (both functions)
+ok 71 - AC-11: invalid "Baa1" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.134305
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid "AAA-" as previous or current throws RangeError (both functions)
+ok 72 - AC-11: invalid "AAA-" as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.098258
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid null as previous or current throws RangeError (both functions)
+ok 73 - AC-11: invalid null as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.089867
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid undefined as previous or current throws RangeError (both functions)
+ok 74 - AC-11: invalid undefined as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.088058
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid 7 as previous or current throws RangeError (both functions)
+ok 75 - AC-11: invalid 7 as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.137334
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid [object Object] as previous or current throws RangeError (both functions)
+ok 76 - AC-11: invalid [object Object] as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.14239
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid AAA as previous or current throws RangeError (both functions)
+ok 77 - AC-11: invalid AAA as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.104364
+  type: 'test'
+  ...
+# Subtest: AC-11: invalid true as previous or current throws RangeError (both functions)
+ok 78 - AC-11: invalid true as previous or current throws RangeError (both functions)
+  ---
+  duration_ms: 0.084925
+  type: 'test'
+  ...
+# Subtest: AC-11: missing arguments throw RangeError
+ok 79 - AC-11: missing arguments throw RangeError
+  ---
+  duration_ms: 0.399949
+  type: 'test'
+  ...
+# Subtest: AC-11: off-scale ratings and null/number input throw RangeError, never return a value
+ok 80 - AC-11: off-scale ratings and null/number input throw RangeError, never return a value
+  ---
+  duration_ms: 0.20721
+  type: 'test'
+  ...
+# Subtest: AC-11: exotic non-strings and prototype keys throw RangeError, never TypeError
+ok 81 - AC-11: exotic non-strings and prototype keys throw RangeError, never TypeError
+  ---
+  duration_ms: 0.567305
+  type: 'test'
+  ...
+# Subtest: AC-12: calling the functions writes nothing to stdout/stderr and exits 0 (fresh process)
+ok 82 - AC-12: calling the functions writes nothing to stdout/stderr and exits 0 (fresh process)
+  ---
+  duration_ms: 35.932207
+  type: 'test'
+  ...
+# Subtest: AC-12: src/ratings has no imports and no I/O, process or network access
+ok 83 - AC-12: src/ratings has no imports and no I/O, process or network access
+  ---
+  duration_ms: 0.797445
+  type: 'test'
+  ...
+# Subtest: AC-13 (C2): the old miscounted example is not what the library returns
+ok 84 - AC-13 (C2): the old miscounted example is not what the library returns
+  ---
+  duration_ms: 0.154441
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE
+    # Subtest: deep-equals the 19 C1 ratings, best first
+    ok 1 - deep-equals the 19 C1 ratings, best first
+      ---
+      duration_ms: 2.022322
+      type: 'test'
+      ...
+    # Subtest: is frozen and cannot be mutated
+    ok 2 - is frozen and cannot be mutated
+      ---
+      duration_ms: 0.662109
+      type: 'test'
+      ...
+    # Subtest: module exports exactly three names (no Indicator 13 export)
+    ok 3 - module exports exactly three names (no Indicator 13 export)
+      ---
+      duration_ms: 0.292463
+      type: 'test'
+      ...
+    1..3
+ok 85 - RATING_SCALE
+  ---
+  duration_ms: 8.043102
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: positive for downgrades
+    ok 1 - positive for downgrades
+      ---
+      duration_ms: 0.652809
+      type: 'test'
+      ...
+    # Subtest: negative for upgrades
+    ok 2 - negative for upgrades
+      ---
+      duration_ms: 0.273014
+      type: 'test'
+      ...
+    # Subtest: equal ratings give +0, never -0
+    ok 3 - equal ratings give +0, never -0
+      ---
+      duration_ms: 0.589831
+      type: 'test'
+      ...
+    # Subtest: scale ends
+    ok 4 - scale ends
+      ---
+      duration_ms: 0.239648
+      type: 'test'
+      ...
+    # Subtest: table data
+    ok 5 - table data
+      ---
+      duration_ms: 0.368828
+      type: 'test'
+      ...
+    # Subtest: all 361 pairs: integer, index difference, antisymmetric
+    ok 6 - all 361 pairs: integer, index difference, antisymmetric
+      ---
+      duration_ms: 0.75969
+      type: 'test'
+      ...
+    # Subtest: normalises case and surrounding whitespace
+    ok 7 - normalises case and surrounding whitespace
+      ---
+      duration_ms: 0.268442
+      type: 'test'
+      ...
+    # Subtest: trim semantics: ideographic space and BOM are trimmed
+    ok 8 - trim semantics: ideographic space and BOM are trimmed
+      ---
+      duration_ms: 0.103817
+      type: 'test'
+      ...
+    1..8
+ok 86 - notchChange
+  ---
+  duration_ms: 3.803781
+  type: 'suite'
+  ...
+# Subtest: notchCalculator
+    # Subtest: table data
+    ok 1 - table data
+      ---
+      duration_ms: 1.396404
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BB+ is 3 notches, WL 2 (C2)
+    ok 2 - BBB+ -> BB+ is 3 notches, WL 2 (C2)
+      ---
+      duration_ms: 0.105619
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB- is 2 notches, WL 1
+    ok 3 - BBB+ -> BBB- is 2 notches, WL 1
+      ---
+      duration_ms: 0.078763
+      type: 'test'
+      ...
+    # Subtest: one-notch downgrades give WL 0 (C6)
+    ok 4 - one-notch downgrades give WL 0 (C6)
+      ---
+      duration_ms: 0.072021
+      type: 'test'
+      ...
+    # Subtest: upgrades give WL 0 with negative notches (C3, C5)
+    ok 5 - upgrades give WL 0 with negative notches (C3, C5)
+      ---
+      duration_ms: 0.07326
+      type: 'test'
+      ...
+    # Subtest: unchanged ratings give +0 notches and WL 0
+    ok 6 - unchanged ratings give +0 notches and WL 0
+      ---
+      duration_ms: 0.071674
+      type: 'test'
+      ...
+    # Subtest: normalised input
+    ok 7 - normalised input
+      ---
+      duration_ms: 0.085806
+      type: 'test'
+      ...
+    # Subtest: all 361 pairs satisfy the shape and WL rules
+    ok 8 - all 361 pairs satisfy the shape and WL rules
+      ---
+      duration_ms: 1.306938
+      type: 'test'
+      ...
+    # Subtest: returns a fresh object on every call
+    ok 9 - returns a fresh object on every call
+      ---
+      duration_ms: 0.184007
+      type: 'test'
+      ...
+    1..9
+ok 87 - notchCalculator
+  ---
+  duration_ms: 3.647463
+  type: 'suite'
+  ...
+# Subtest: validation (RangeError)
+    # Subtest: notchChange rejects "" as previous
+    ok 1 - notchChange rejects "" as previous
+      ---
+      duration_ms: 1.208657
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "" as current
+    ok 2 - notchChange rejects "" as current
+      ---
+      duration_ms: 0.144492
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "   " as previous
+    ok 3 - notchChange rejects "   " as previous
+      ---
+      duration_ms: 0.07019
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "   " as current
+    ok 4 - notchChange rejects "   " as current
+      ---
+      duration_ms: 0.06717
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "BBB +" as previous
+    ok 5 - notchChange rejects "BBB +" as previous
+      ---
+      duration_ms: 0.066149
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "BBB +" as current
+    ok 6 - notchChange rejects "BBB +" as current
+      ---
+      duration_ms: 0.10342
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "BBB++" as previous
+    ok 7 - notchChange rejects "BBB++" as previous
+      ---
+      duration_ms: 0.07181
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "BBB++" as current
+    ok 8 - notchChange rejects "BBB++" as current
+      ---
+      duration_ms: 0.117604
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "AA−" as previous
+    ok 9 - notchChange rejects "AA−" as previous
+      ---
+      duration_ms: 0.078855
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "AA−" as current
+    ok 10 - notchChange rejects "AA−" as current
+      ---
+      duration_ms: 0.122298
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "CC" as previous
+    ok 11 - notchChange rejects "CC" as previous
+      ---
+      duration_ms: 0.073981
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "CC" as current
+    ok 12 - notchChange rejects "CC" as current
+      ---
+      duration_ms: 0.061233
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "C" as previous
+    ok 13 - notchChange rejects "C" as previous
+      ---
+      duration_ms: 0.14839
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "C" as current
+    ok 14 - notchChange rejects "C" as current
+      ---
+      duration_ms: 0.071903
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "D" as previous
+    ok 15 - notchChange rejects "D" as previous
+      ---
+      duration_ms: 0.108992
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "D" as current
+    ok 16 - notchChange rejects "D" as current
+      ---
+      duration_ms: 0.073769
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "SD" as previous
+    ok 17 - notchChange rejects "SD" as previous
+      ---
+      duration_ms: 0.063336
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "SD" as current
+    ok 18 - notchChange rejects "SD" as current
+      ---
+      duration_ms: 0.057603
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "NR" as previous
+    ok 19 - notchChange rejects "NR" as previous
+      ---
+      duration_ms: 0.062468
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "NR" as current
+    ok 20 - notchChange rejects "NR" as current
+      ---
+      duration_ms: 0.099713
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "Baa1" as previous
+    ok 21 - notchChange rejects "Baa1" as previous
+      ---
+      duration_ms: 0.066745
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "Baa1" as current
+    ok 22 - notchChange rejects "Baa1" as current
+      ---
+      duration_ms: 0.059952
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "AAA-" as previous
+    ok 23 - notchChange rejects "AAA-" as previous
+      ---
+      duration_ms: 0.057519
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "AAA-" as current
+    ok 24 - notchChange rejects "AAA-" as current
+      ---
+      duration_ms: 0.063471
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects null as previous
+    ok 25 - notchChange rejects null as previous
+      ---
+      duration_ms: 0.062141
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects null as current
+    ok 26 - notchChange rejects null as current
+      ---
+      duration_ms: 0.058104
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects undefined as previous
+    ok 27 - notchChange rejects undefined as previous
+      ---
+      duration_ms: 0.094236
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects undefined as current
+    ok 28 - notchChange rejects undefined as current
+      ---
+      duration_ms: 0.071253
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects 7 as previous
+    ok 29 - notchChange rejects 7 as previous
+      ---
+      duration_ms: 0.053533
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects 7 as current
+    ok 30 - notchChange rejects 7 as current
+      ---
+      duration_ms: 0.051156
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects {} as previous
+    ok 31 - notchChange rejects {} as previous
+      ---
+      duration_ms: 0.06619
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects {} as current
+    ok 32 - notchChange rejects {} as current
+      ---
+      duration_ms: 0.052853
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects ["AAA"] as previous
+    ok 33 - notchChange rejects ["AAA"] as previous
+      ---
+      duration_ms: 0.05339
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects ["AAA"] as current
+    ok 34 - notchChange rejects ["AAA"] as current
+      ---
+      duration_ms: 2.313366
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects true as previous
+    ok 35 - notchChange rejects true as previous
+      ---
+      duration_ms: 0.123418
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects true as current
+    ok 36 - notchChange rejects true as current
+      ---
+      duration_ms: 0.088879
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "AAA" as previous
+    ok 37 - notchChange rejects "AAA" as previous
+      ---
+      duration_ms: 0.059202
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "AAA" as current
+    ok 38 - notchChange rejects "AAA" as current
+      ---
+      duration_ms: 0.052676
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects Symbol(AAA) as previous
+    ok 39 - notchChange rejects Symbol(AAA) as previous
+      ---
+      duration_ms: 0.04683
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects Symbol(AAA) as current
+    ok 40 - notchChange rejects Symbol(AAA) as current
+      ---
+      duration_ms: 0.048054
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects 1n as previous
+    ok 41 - notchChange rejects 1n as previous
+      ---
+      duration_ms: 0.045917
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects 1n as current
+    ok 42 - notchChange rejects 1n as current
+      ---
+      duration_ms: 0.045583
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects null as previous
+    ok 43 - notchChange rejects null as previous
+      ---
+      duration_ms: 0.045426
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects null as current
+    ok 44 - notchChange rejects null as current
+      ---
+      duration_ms: 0.044938
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects {} as previous
+    ok 45 - notchChange rejects {} as previous
+      ---
+      duration_ms: 0.072959
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects {} as current
+    ok 46 - notchChange rejects {} as current
+      ---
+      duration_ms: 0.053971
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "constructor" as previous
+    ok 47 - notchChange rejects "constructor" as previous
+      ---
+      duration_ms: 0.049276
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "constructor" as current
+    ok 48 - notchChange rejects "constructor" as current
+      ---
+      duration_ms: 0.048307
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "__proto__" as previous
+    ok 49 - notchChange rejects "__proto__" as previous
+      ---
+      duration_ms: 0.044481
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "__proto__" as current
+    ok 50 - notchChange rejects "__proto__" as current
+      ---
+      duration_ms: 0.045024
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "toString" as previous
+    ok 51 - notchChange rejects "toString" as previous
+      ---
+      duration_ms: 0.092974
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "toString" as current
+    ok 52 - notchChange rejects "toString" as current
+      ---
+      duration_ms: 0.059773
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "hasOwnProperty" as previous
+    ok 53 - notchChange rejects "hasOwnProperty" as previous
+      ---
+      duration_ms: 0.048293
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "hasOwnProperty" as current
+    ok 54 - notchChange rejects "hasOwnProperty" as current
+      ---
+      duration_ms: 0.047507
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "​BBB+" as previous
+    ok 55 - notchChange rejects "​BBB+" as previous
+      ---
+      duration_ms: 0.051035
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "​BBB+" as current
+    ok 56 - notchChange rejects "​BBB+" as current
+      ---
+      duration_ms: 1.223933
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "aaa-" as previous
+    ok 57 - notchChange rejects "aaa-" as previous
+      ---
+      duration_ms: 0.08579
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "aaa-" as current
+    ok 58 - notchChange rejects "aaa-" as current
+      ---
+      duration_ms: 0.064005
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "BBB–" as previous
+    ok 59 - notchChange rejects "BBB–" as previous
+      ---
+      duration_ms: 0.139635
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "BBB–" as current
+    ok 60 - notchChange rejects "BBB–" as current
+      ---
+      duration_ms: 0.130834
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "ＡＡＡ" as previous
+    ok 61 - notchChange rejects "ＡＡＡ" as previous
+      ---
+      duration_ms: 0.114329
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects "ＡＡＡ" as current
+    ok 62 - notchChange rejects "ＡＡＡ" as current
+      ---
+      duration_ms: 0.066549
+      type: 'test'
+      ...
+    # Subtest: notchChange rejects missing arguments
+    ok 63 - notchChange rejects missing arguments
+      ---
+      duration_ms: 0.15199
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "" as previous
+    ok 64 - notchCalculator rejects "" as previous
+      ---
+      duration_ms: 0.056665
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "" as current
+    ok 65 - notchCalculator rejects "" as current
+      ---
+      duration_ms: 0.053103
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "   " as previous
+    ok 66 - notchCalculator rejects "   " as previous
+      ---
+      duration_ms: 0.064946
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "   " as current
+    ok 67 - notchCalculator rejects "   " as current
+      ---
+      duration_ms: 0.086389
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "BBB +" as previous
+    ok 68 - notchCalculator rejects "BBB +" as previous
+      ---
+      duration_ms: 0.079094
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "BBB +" as current
+    ok 69 - notchCalculator rejects "BBB +" as current
+      ---
+      duration_ms: 0.074532
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "BBB++" as previous
+    ok 70 - notchCalculator rejects "BBB++" as previous
+      ---
+      duration_ms: 0.104561
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "BBB++" as current
+    ok 71 - notchCalculator rejects "BBB++" as current
+      ---
+      duration_ms: 0.105554
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "AA−" as previous
+    ok 72 - notchCalculator rejects "AA−" as previous
+      ---
+      duration_ms: 0.096882
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "AA−" as current
+    ok 73 - notchCalculator rejects "AA−" as current
+      ---
+      duration_ms: 0.091216
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "CC" as previous
+    ok 74 - notchCalculator rejects "CC" as previous
+      ---
+      duration_ms: 0.092263
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "CC" as current
+    ok 75 - notchCalculator rejects "CC" as current
+      ---
+      duration_ms: 0.074641
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "C" as previous
+    ok 76 - notchCalculator rejects "C" as previous
+      ---
+      duration_ms: 0.086284
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "C" as current
+    ok 77 - notchCalculator rejects "C" as current
+      ---
+      duration_ms: 0.106233
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "D" as previous
+    ok 78 - notchCalculator rejects "D" as previous
+      ---
+      duration_ms: 0.062057
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "D" as current
+    ok 79 - notchCalculator rejects "D" as current
+      ---
+      duration_ms: 0.089442
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "SD" as previous
+    ok 80 - notchCalculator rejects "SD" as previous
+      ---
+      duration_ms: 0.092401
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "SD" as current
+    ok 81 - notchCalculator rejects "SD" as current
+      ---
+      duration_ms: 0.125005
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "NR" as previous
+    ok 82 - notchCalculator rejects "NR" as previous
+      ---
+      duration_ms: 0.098828
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "NR" as current
+    ok 83 - notchCalculator rejects "NR" as current
+      ---
+      duration_ms: 0.091933
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "Baa1" as previous
+    ok 84 - notchCalculator rejects "Baa1" as previous
+      ---
+      duration_ms: 0.090567
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "Baa1" as current
+    ok 85 - notchCalculator rejects "Baa1" as current
+      ---
+      duration_ms: 0.165829
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "AAA-" as previous
+    ok 86 - notchCalculator rejects "AAA-" as previous
+      ---
+      duration_ms: 0.07738
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "AAA-" as current
+    ok 87 - notchCalculator rejects "AAA-" as current
+      ---
+      duration_ms: 0.057935
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects null as previous
+    ok 88 - notchCalculator rejects null as previous
+      ---
+      duration_ms: 0.053041
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects null as current
+    ok 89 - notchCalculator rejects null as current
+      ---
+      duration_ms: 0.102414
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects undefined as previous
+    ok 90 - notchCalculator rejects undefined as previous
+      ---
+      duration_ms: 0.089257
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects undefined as current
+    ok 91 - notchCalculator rejects undefined as current
+      ---
+      duration_ms: 0.08562
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects 7 as previous
+    ok 92 - notchCalculator rejects 7 as previous
+      ---
+      duration_ms: 0.053099
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects 7 as current
+    ok 93 - notchCalculator rejects 7 as current
+      ---
+      duration_ms: 0.052025
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects {} as previous
+    ok 94 - notchCalculator rejects {} as previous
+      ---
+      duration_ms: 3.696117
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects {} as current
+    ok 95 - notchCalculator rejects {} as current
+      ---
+      duration_ms: 0.076253
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects ["AAA"] as previous
+    ok 96 - notchCalculator rejects ["AAA"] as previous
+      ---
+      duration_ms: 0.055535
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects ["AAA"] as current
+    ok 97 - notchCalculator rejects ["AAA"] as current
+      ---
+      duration_ms: 0.049914
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects true as previous
+    ok 98 - notchCalculator rejects true as previous
+      ---
+      duration_ms: 0.050622
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects true as current
+    ok 99 - notchCalculator rejects true as current
+      ---
+      duration_ms: 0.047411
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "AAA" as previous
+    ok 100 - notchCalculator rejects "AAA" as previous
+      ---
+      duration_ms: 0.062273
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "AAA" as current
+    ok 101 - notchCalculator rejects "AAA" as current
+      ---
+      duration_ms: 0.048851
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects Symbol(AAA) as previous
+    ok 102 - notchCalculator rejects Symbol(AAA) as previous
+      ---
+      duration_ms: 0.052088
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects Symbol(AAA) as current
+    ok 103 - notchCalculator rejects Symbol(AAA) as current
+      ---
+      duration_ms: 0.050203
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects 1n as previous
+    ok 104 - notchCalculator rejects 1n as previous
+      ---
+      duration_ms: 0.049528
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects 1n as current
+    ok 105 - notchCalculator rejects 1n as current
+      ---
+      duration_ms: 0.046817
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects null as previous
+    ok 106 - notchCalculator rejects null as previous
+      ---
+      duration_ms: 0.045751
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects null as current
+    ok 107 - notchCalculator rejects null as current
+      ---
+      duration_ms: 1.007106
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects {} as previous
+    ok 108 - notchCalculator rejects {} as previous
+      ---
+      duration_ms: 0.062336
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects {} as current
+    ok 109 - notchCalculator rejects {} as current
+      ---
+      duration_ms: 0.048084
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "constructor" as previous
+    ok 110 - notchCalculator rejects "constructor" as previous
+      ---
+      duration_ms: 0.043812
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "constructor" as current
+    ok 111 - notchCalculator rejects "constructor" as current
+      ---
+      duration_ms: 0.042141
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "__proto__" as previous
+    ok 112 - notchCalculator rejects "__proto__" as previous
+      ---
+      duration_ms: 0.040348
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "__proto__" as current
+    ok 113 - notchCalculator rejects "__proto__" as current
+      ---
+      duration_ms: 0.043138
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "toString" as previous
+    ok 114 - notchCalculator rejects "toString" as previous
+      ---
+      duration_ms: 0.040545
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "toString" as current
+    ok 115 - notchCalculator rejects "toString" as current
+      ---
+      duration_ms: 0.088504
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "hasOwnProperty" as previous
+    ok 116 - notchCalculator rejects "hasOwnProperty" as previous
+      ---
+      duration_ms: 0.045089
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "hasOwnProperty" as current
+    ok 117 - notchCalculator rejects "hasOwnProperty" as current
+      ---
+      duration_ms: 0.050895
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "​BBB+" as previous
+    ok 118 - notchCalculator rejects "​BBB+" as previous
+      ---
+      duration_ms: 0.044218
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "​BBB+" as current
+    ok 119 - notchCalculator rejects "​BBB+" as current
+      ---
+      duration_ms: 0.044686
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "aaa-" as previous
+    ok 120 - notchCalculator rejects "aaa-" as previous
+      ---
+      duration_ms: 0.041427
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "aaa-" as current
+    ok 121 - notchCalculator rejects "aaa-" as current
+      ---
+      duration_ms: 0.042188
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "BBB–" as previous
+    ok 122 - notchCalculator rejects "BBB–" as previous
+      ---
+      duration_ms: 0.040706
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "BBB–" as current
+    ok 123 - notchCalculator rejects "BBB–" as current
+      ---
+      duration_ms: 0.040041
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "ＡＡＡ" as previous
+    ok 124 - notchCalculator rejects "ＡＡＡ" as previous
+      ---
+      duration_ms: 0.039351
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects "ＡＡＡ" as current
+    ok 125 - notchCalculator rejects "ＡＡＡ" as current
+      ---
+      duration_ms: 0.039191
+      type: 'test'
+      ...
+    # Subtest: notchCalculator rejects missing arguments
+    ok 126 - notchCalculator rejects missing arguments
+      ---
+      duration_ms: 0.054217
+      type: 'test'
+      ...
+    # Subtest: invalid pairs never return a partial result
+    ok 127 - invalid pairs never return a partial result
+      ---
+      duration_ms: 0.116104
+      type: 'test'
+      ...
+    1..127
+ok 88 - validation (RangeError)
+  ---
+  duration_ms: 22.595936
+  type: 'suite'
+  ...
+1..88
+# tests 231
+# suites 4
+# pass 231
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 774.300918

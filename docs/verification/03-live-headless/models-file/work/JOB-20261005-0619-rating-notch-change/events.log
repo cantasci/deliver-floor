@@ -1,0 +1,39 @@
+2026-10-05T06:19:14Z	new	Rating notch change
+2026-10-05T06:19:23Z	jobset	stack: .stack=["javascript"]
+2026-10-05T06:19:23Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notch calculator domain logic"},{"role":"backend","agent":"backend-dev","model":"haiku","why":"REQ-06-02: implement notchChange in src/ratings/notch.mjs; Staffing: backend dev on haiku"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"JavaScript ESM module review"}]
+2026-10-05T06:19:23Z	jobset	assumptions: .assumptions += ["Single component: Node ESM library (src/ratings, test/); no UI/CLI/service"]
+2026-10-05T06:19:23Z	roles	ba qa backend-lead backend reviewer
+2026-10-05T06:19:23Z	phase	readiness
+2026-10-05T06:22:51Z	agent	business-analyst a3fffb7e: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Deliver the shared notch-change primitive that Indicators 11, 12 and 13 and the REQ-06-02 notch
+2026-10-05T06:23:34Z	readiness	31 items: 19 decided, 10 n/a, 2 open
+2026-10-05T06:23:41Z	decide	X-error-message: Only the RangeError type is contractual; message is free text, tests assert instanceof RangeError only. — C2 specifies the error type only; no consumer relies on message text.
+2026-10-05T06:23:42Z	decide	X-scale-immutability: Export Object.freeze([...19 ratings]); notchChange reads from it. — Prevents consumers from corrupting results; contents/order fixed by C1; no extra cost.
+2026-10-05T06:23:45Z	freeze	readiness + architecture frozen (8dcadf0a761e)
+2026-10-05T06:23:45Z	roles	ba qa backend-lead backend reviewer
+2026-10-05T06:23:45Z	phase	planning
+2026-10-05T06:24:40Z	agent	business-analyst ae0825a9: ## Goal Ship `src/ratings/notch.mjs`, a pure library module that exports the 19-step rating scale (`RATING_SCALE`) and `notchChange(previous, current)`. The fun
+2026-10-05T06:25:35Z	agent	ecc:architect a853e535: [{"tmp_id":"B1","title":"ratings-lib: add src/ratings/notch.mjs with frozen RATING_SCALE and notchChange(previous, current), plus TDD unit tests","role":"backen
+2026-10-05T06:26:58Z	agent	business-analyst a98cb47b: === T-01 === # T-01: ratings-lib: add `src/ratings/notch.mjs` with a frozen `RATING_SCALE` and `notchChange(previous, current)`, plus TDD unit tests ## What to 
+2026-10-05T06:27:34Z	phase	executing
+2026-10-05T06:27:35Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T06:30:32Z	agent	backend-dev a452053f: Perfect! All verification checks pass. Let me create a summary of the completed work: ## Summary **Status:** done **Commit:** e917904 **Verify:** passed (53 tes
+2026-10-05T06:30:36Z	gate	T-01 PASS
+2026-10-05T06:35:54Z	agent	qa-tester aee7ff7b: The tests are written and `qa_verify` exits 0 (23 of 23 pass), so the verdict is pass. The commit is local only, because the bash-guard hook blocked my push. **
+2026-10-05T06:36:00Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-13 pass: 23 integration tests, root node --test 76/76
+2026-10-05T06:36:22Z	agent	ecc:typescript-reviewer a9f3c599: ```json {"verdict":"changes","blocking":[{"file":"test/ratings/notch.test.mjs","line":0,"issue":"The spec assigns the AC-12 checks to the dev unit tests, and th
+2026-10-05T06:36:27Z	review	T-01 reviewer changes — dev unit tests miss AC-12 checks and U+FEFF in AC-7
+2026-10-05T06:36:28Z	assign	T-01 → backend-dev (backend#1) attempt=2
+2026-10-05T06:39:39Z	agent	backend-dev a5810a53: ```text status: done commit: 1bd6d0d verify: passed (57 tests pass, 0 fail) open issues: - ``` ## Summary Resolved all feedback from the review round: **Feedbac
+2026-10-05T06:39:45Z	gate	T-01 PASS
+2026-10-05T06:40:08Z	agent	qa-tester a287dc82: ```json {"verdict":"pass", "tests":["test/integration/ratings/notch.int.test.mjs"], "criteria":[ {"ac":"AC-1","status":"pass","evidence":"AC-1 tests (2) → ok;
+2026-10-05T06:40:13Z	qa	T-01 pass (qa_verify PASS) — round 2: AC-1..AC-13 pass; 23 integration tests, root node --test 80/80; no test changes needed
+2026-10-05T06:40:32Z	agent	ecc:typescript-reviewer aa1c2ab8: ```json {"verdict":"approve","blocking":[],"nits":["Both round 1 items are fixed. The unit tests in /tmp/claude-0/e2e-mA/models/repo/.work/JOB-20261005-0619-rat
+2026-10-05T06:40:35Z	review	T-01 reviewer approve — round 2: both blocking items fixed; nits only (literal invisible chars)
+2026-10-05T06:40:36Z	integrate	T-01 merged
+2026-10-05T06:40:40Z	phase	integrating
+2026-10-05T06:40:42Z	verify-all	PASS
+2026-10-05T06:40:45Z	phase	closing
+2026-10-05T06:41:31Z	agent	business-analyst acec799c: All 13 acceptance criteria are met. The merged job branch is at commit `553ac10` (`job/JOB-20261005-0619-rating-notch-change`). I re-ran `node --test` in the in
+2026-10-05T06:41:38Z	learn	backend: In test data, write invisible/special characters (U+FEFF, U+00A0, U+2212) as \u escapes, never as literal characters.
+2026-10-05T06:41:39Z	ship	local merge into main
+2026-10-05T06:41:41Z	cleanup	

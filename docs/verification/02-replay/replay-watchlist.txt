@@ -1,0 +1,252 @@
+
+━━ 0 · sandbox repo from examples/watchlist-poc/seed
+    sandbox ready: /tmp/watchlist-replay.TleN9n/repo
+    job request:   /home/user/skills-shop/examples/watchlist-poc/JOB.md
+
+━━ 0 · INTAKE — Michael opens the job and picks the roles
+you: /deliver Rating notch calculator + country rating change indicator (Watchlist POC slice)
+    job: JOB-20261003-2001-notch-calculator-ind-12
+    ba → business-analyst  (always)
+    backend-lead → ecc:architect  (pure domain modules (ratings, indicators))
+    backend → backend-dev  (backend-lead selected)
+    qa → qa-tester  (always: tests every card against its ACs)
+    reviewer → ecc:typescript-reviewer  (stack: javascript)
+
+━━ 1 · ROLES — the project's role cards are generated (rules + company standards + project facts)
+  $ dl phase readiness
+    phase: readiness
+    # Roles for JOB-20261003-2001-notch-calculator-ind-12
+    
+    | Role | Agent | Kind | Why | Rules |
+    | --- | --- | --- | --- | --- |
+    | ba | `business-analyst` | ba | always | roles/ba.md |
+    | backend-lead | `ecc:architect` | lead | pure domain modules (ratings, indicators) | roles/backend-lead.md |
+    | backend | `backend-dev` | dev | backend-lead selected | roles/backend.md |
+    | qa | `qa-tester` | qa | always: tests every card against its ACs | roles/qa.md |
+    | reviewer | `ecc:typescript-reviewer` | review | stack: javascript | roles/reviewer.md |
+    
+    
+    --- excerpt of roles/qa.md:
+    ## Rules
+    
+    1. You work on exactly one job. Your input is the prompt you were given plus the files it names; nothing else is assumed.
+    2. Never run state-changing dl commands (new, phase, roles, wt, card, gate, qa, review, integrate, ship, learn, cleanup). Michael owns the flow.
+    3. Push only your own card branch (never main/master, never the job branch, never force); never delete .work/ or job/* branches; never write in the main checkout.
+    4. Answer in exactly the output format the prompt asks for. Put details in files (handoff, plan), not in your reply.
+    5. If something is unclear and it changes scope, say so under open questions / open issues. Do not guess scope.
+    6. Write the card's integration and/or end-to-end tests — at least one per acceptance criterion of the spec, named after it, using the spec's test data.
+    7. Write only inside the card's qa_scope. Never change product code or the dev's unit tests.
+    8. Test through the public surface (exported API, endpoint, CLI, UI flow), the way the rest of the system or a user uses it.
+    9. Run qa_verify, commit only your tests ('<CARD-ID> QA: …'), leave the worktree clean.
+    10. If a criterion fails, keep the failing test committed as evidence and report it — do not fix the code.
+    11. Every AC gets a verdict, pass or fail, with the test that shows it.
+    
+    ## This project
+
+━━ 1 · READINESS — the BA checks every requirement and decision before anything is planned
+  business-analyst: 27 items + the architecture — 1 open (the request does not say whether notches is signed)
+  $ dl readiness
+    WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+    OPEN  CON-interface: Is notchCalculator().notches signed like notchChange (upgrade negative) or an absolute count?
+    readiness: 27 item(s), 1 open for the human, 0 for the PM → /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/readiness.md
+  $ dl next
+    PHASE   dl phase awaiting_clarification
+    ASK     human: CON-interface — Is notchCalculator().notches signed like notchChange (upgrade negative) or an absolute count?  (record: dl clarify CON-interface "<answer>")
+  $ dl phase planning
+    WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+    OPEN  CON-interface: Is notchCalculator().notches signed like notchChange (upgrade negative) or an absolute count?
+    readiness: 27 item(s), 1 open for the human, 0 for the PM → /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/readiness.md
+    dl: REFUSED — the requirements are not ready: open questions for the human remain (QUESTIONS.md) — ask, record with dl clarify
+  $ dl phase awaiting_clarification
+    phase: awaiting_clarification
+you: signed, like notchChange (downgrade positive, upgrade negative)
+  $ dl clarify CON-interface signed, like notchChange (downgrade positive, upgrade negative)
+    CON-interface: decided — signed, like notchChange (downgrade positive, upgrade negative)
+  $ dl readiness
+    WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+    readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/readiness.md
+    | **PRD-conflicts** Do any requirements, examples or clarifications contradict each other? How is each resolved? | decided | REQ-06-02's example (BBB+→BB+ = 2 notches) contradicts the scale; resolve
+    | **CON-interface** Are all public interfaces fully specified — names, inputs, outputs, types, units, signs, ranges, null/empty handling? | decided | signed, like notchChange (downgrade positive, up
+    | **ARC-layer** Which layer owns the logic: BFF/API gateway, core/domain service, shared library, client? | decided | Core/domain logic; no BFF/API in this slice. | JOB.md C4; CLAUDE.md 'pure function
+    | **NFR-privacy** Personal or sensitive data involved (KVKK/GDPR)? Retention, masking, logging rules? | n_a | Ratings are public data; no personal data. | POC_Requirements_v0.2_EN.md §3 |
+  $ dl phase planning
+    WARN  NFR-security is decided → consider role 'security' (its 'when' rule in roles.yaml decides)
+    readiness: 27 item(s), 0 open for the human, 0 for the PM → /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/readiness.md
+    phase: planning
+
+━━ 1 · BUSINESS ANALYST (business-analyst) turns the requirements into a traceable plan
+    - AC-1: `notchChange` counts steps on the 19-step scale; downgrade positive, upgrade negative; unknown ratings throw RangeError; input trimmed/case-insensitive.
+    - AC-2: `notchCalculator("BBB+","BB+")` → `{notches:3, direction:"downgrade", wl:2}`; 2 notches → WL1; upgrades/unchanged → WL0.
+    - AC-3: `countryRatingChangeWl`: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0.
+
+━━ 2 · LEAD (ecc:architect) turns the plan into cards
+
+━━ 2 · BUSINESS ANALYST writes a spec per card (user story, Given/When/Then, edge cases, test data)
+    ## Acceptance criteria
+    1. Given the scale of C1, when `RATING_SCALE` is read, then it has 19 entries, `AAA` first and `CCC-` last.
+    2. Given "BBB+" and "BB+", when `notchChange` runs, then it returns 3 (downgrade is positive).
+    3. Given "BB+" and "BBB+", when `notchChange` runs, then it returns -3.
+    4. Given " bbb+ " and "BB+", when `notchChange` runs, then it returns 3 (trimmed, case-insensitive).
+    5. Given an unknown rating ("ZZZ" or ""), when `notchChange` runs, then it throws `RangeError`.
+  $ dl validate
+    board valid: 2 card(s).
+  $ dl board
+    ID    STATE  ROLE     AGENT        TRIES  DEPENDS  TITLE
+    T-01  ready  backend  backend-dev  0      -        Rating scale + notch calculator (REQ-06-02)
+    T-02  ready  backend  backend-dev  0      T-01     Indicator 12: country rating change → WL (REQ-03-12)
+    
+    summary: ready=2
+
+━━ 3 · EXECUTE — no human stop before code (plan gate off); the human is next at the PR
+  $ dl phase executing
+    phase: executing
+
+━━ 3 · EXECUTE — wave 1
+  $ dl next
+    DISPATCH T-01
+  bash-guard/dl: T-02 must wait for T-01:
+  $ dl wt add T-02
+    dl: REFUSED — T-02 depends on unmerged card(s): T-01
+    T-01 worktree: .work/JOB-20261003-2001-notch-calculator-ind-12/wt/T-01
+  T-01 dev: attempt 1 — TDD: unit tests + code, but also 'tidies' README.md (outside its scope)
+
+━━ 4 · GATE + REVIEW — T-01
+  $ dl gate T-01
+    GATE FAILED: T-01  (log: /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/gates/T-01-a1-200134.log)
+    FAIL  out-of-scope file: README.md
+  $ dl next
+    REDISPATCH T-01  (gate failed — feedback: /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/gates/T-01-a1-200134.log)
+Michael: re-dispatch T-01 with the FAIL lines as feedback
+  T-01 dev: attempt 2 — reverted README.md, verify passed
+  $ dl gate T-01
+    GATE PASSED: T-01  (log: /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/gates/T-01-a2-200136.log)
+  $ dl next
+    QA      T-01  (QA/Test role writes + runs the integration/e2e tests for the ACs → dl qa T-01 pass|fail)
+  qa-tester T-01: writes integration tests for the spec's ACs in test/integration/ratings/**
+      ✔ AC-2: BBB+ → BB+ = {"notches":3,"direction":"downgrade","wl":2} (2.680929ms)
+      ✔ AC-2: BBB+ → BBB- = {"notches":2,"direction":"downgrade","wl":1} (0.356083ms)
+      ✔ AC-2: BBB+ → BBB = {"notches":1,"direction":"downgrade","wl":0} (0.237056ms)
+      ✔ AC-2: BB → BBB = {"notches":-3,"direction":"upgrade","wl":0} (2.027135ms)
+      ✔ AC-2: AA → AA = {"notches":0,"direction":"unchanged","wl":0} (0.358625ms)
+      ✔ AC-1: the module exports the contract (1.26439ms)
+      ✔ AC-1: trimmed, case-insensitive; unknown → RangeError (1.072338ms)
+  $ dl qa T-01 pass AC-1 pass, AC-2 pass (test/integration/ratings)
+    qa: T-01 pass  (qa_verify: PASS)
+  ecc:typescript-reviewer: {"verdict":"approve","blocking":[],"nits":[]}
+  $ dl review T-01 approve AC-1, AC-2 covered by tests
+    review: T-01 reviewer approve  (card: approve)
+  $ dl integrate T-01
+    MERGED: T-01 → job/JOB-20261003-2001-notch-calculator-ind-12
+
+━━ 3 · EXECUTE — wave 2 (T-02 branches from the job branch, so it sees T-01)
+  $ dl next
+    DISPATCH T-02
+    T-02 worktree: .work/JOB-20261003-2001-notch-calculator-ind-12/wt/T-02
+  T-02 dev: status: done · commit 76de2e6 · verify: passed
+  $ dl gate T-02
+    GATE PASSED: T-02  (log: /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/gates/T-02-a1-200141.log)
+  qa-tester T-02: writes integration tests for the spec's ACs in test/integration/indicators/**
+      ✔ AC-3: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0 (every adjacent pair of the scale) (1.406315ms)
+      ✔ AC-3: unknown ratings propagate RangeError (0.480548ms)
+  $ dl qa T-02 pass AC-3 pass (test/integration/indicators)
+    qa: T-02 pass  (qa_verify: PASS)
+  ecc:typescript-reviewer: {"verdict":"approve","blocking":[],"nits":["name the thresholds"]}
+  $ dl review T-02 approve AC-3 covered
+    review: T-02 reviewer approve  (card: approve)
+  $ dl integrate T-02
+    MERGED: T-02 → job/JOB-20261003-2001-notch-calculator-ind-12
+
+━━ 5 · INTEGRATE — full verify on the job branch
+  $ dl next
+    PHASE   dl phase integrating
+  $ dl phase integrating
+    phase: integrating
+  $ dl verify-all
+    verify_full: node --test  (log: /tmp/watchlist-replay.TleN9n/repo/.work/JOB-20261003-2001-notch-calculator-ind-12/gates/verify-all-200145.log)
+    PASSED
+  $ dl phase closing
+    phase: closing
+
+━━ 6 · CLOSE — BA checks every AC against the evidence, writes report.md (also the PR body)
+    # Delivery report
+    
+    | AC | Status | Evidence |
+    | --- | --- | --- |
+    | AC-1 | ✅ | QA T-01: notchChange checks; gate log |
+    | AC-2 | ✅ | QA T-01: notchCalculator BBB+→BB+ = 3/WL2 |
+    | AC-3 | ✅ | QA T-02: Ind. 12 thresholds |
+  $ dl next
+    SHIP    dl ship  (merge_mode=local)
+
+━━ 7 · SHIP — merge_mode=local (with a remote: human → PR for you · semi → PR + auto-merge on approval · auto → merge on green CI)
+  $ dl ship
+    SHIPPED: job/JOB-20261003-2001-notch-calculator-ind-12 merged into main (local). Phase: done — dl cleanup
+    *   3674c89 Merge job/JOB-20261003-2001-notch-calculator-ind-12: Notch calculator + Ind. 12
+    |\  
+    | *   d09afdc Merge T-02: Indicator 12: country rating change → WL (REQ-03-12)
+    | |\  
+    | | * 47cfcd3 T-02 QA: integration tests
+    | | * 76de2e6 T-02: Indicator 12: country rating change → WL (REQ-03-12)
+    | |/  
+    | * 99877e0 Merge T-01: Rating scale + notch calculator (REQ-06-02)
+    |/| 
+    | * 824ea77 T-01 QA: integration tests
+    | * a228c9e T-01: revert out-of-scope README change
+    | * 4d93565 T-01: notch calculator
+    |/  
+  $ dl cleanup
+    cleaned up: JOB-20261003-2001-notch-calculator-ind-12 (branches kept)
+
+━━ 8 · ORACLE — hidden acceptance tests judge the delivered code
+    oracle: watchlist-poc/watchlist.oracle.test.mjs against main (3674c89)
+    ✔ C1: the rating scale has 19 steps, AAA best, CCC- worst (1.251165ms)
+    ✔ notchChange: downgrade positive, upgrade negative, unchanged zero (0.350835ms)
+    ✔ C1: input is trimmed and case-insensitive; unknown ratings throw RangeError (0.737313ms)
+    ✔ REQ-06-02 + C2: calculator reports notches, direction and WL (Indicator 13 thresholds) (3.523532ms)
+    ✔ REQ-03-12: country rating change — 1 notch → WL1, 2+ → WL2, upgrade/unchanged → WL0 (0.473227ms)
+    ℹ tests 5
+    ℹ suites 0
+    ℹ pass 5
+    ℹ fail 0
+    ℹ cancelled 0
+    ℹ skipped 0
+    ℹ todo 0
+    ℹ duration_ms 121.297949
+
+━━ timeline (.work/JOB-20261003-2001-notch-calculator-ind-12/events.log)
+    new	Notch calculator + Ind. 12
+    jobset	stack,roles: .stack=["javascript"] | .roles=[
+      {"role":"ba","agent":"business-analyst","why":"always"},
+      {"role":"backend-lead","agent":"ecc:architect","why":"pure domain modules (ratings, indicators)"},
+      {"role":"backend","agent":"backend-dev","why":"backend-lead selected"},
+      {"role":"qa","agent":"qa-tester","why":"always: tests every card against its ACs"},
+      {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack: javascript"}]
+    roles	ba backend-lead backend qa reviewer
+    phase	readiness
+    readiness	27 items: 16 decided, 10 n/a, 1 open
+    phase	awaiting_clarification
+    clarify	CON-interface: signed, like notchChange (downgrade positive, upgrade negative)
+    readiness	27 items: 17 decided, 10 n/a, 0 open
+    freeze	readiness + architecture frozen (0d9ab52d7d0d)
+    roles	ba backend-lead backend qa reviewer
+    phase	planning
+    phase	executing
+    assign	T-01 → backend-dev (backend#1) attempt=1
+    gate	T-01 FAIL
+    assign	T-01 → backend-dev (backend#1) attempt=2
+    gate	T-01 PASS
+    qa	T-01 pass (qa_verify PASS) — AC-1 pass, AC-2 pass (test/integration/ratings)
+    review	T-01 reviewer approve — AC-1, AC-2 covered by tests
+    integrate	T-01 merged
+    assign	T-02 → backend-dev (backend#1) attempt=1
+    gate	T-02 PASS
+    qa	T-02 pass (qa_verify PASS) — AC-3 pass (test/integration/indicators)
+    review	T-02 reviewer approve — AC-3 covered
+    integrate	T-02 merged
+    phase	integrating
+    verify-all	PASS
+    phase	closing
+    ship	local merge into main
+    cleanup	
+
+✔ replay finished: the job went intake → done and the oracle passed.

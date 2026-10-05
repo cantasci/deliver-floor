@@ -1,0 +1,24 @@
+{
+  "title": "Notch calculator module (re-run of T-01 with portable verify)",
+  "role": "backend",
+  "agent": "backend-dev",
+  "component": "watchlist-ratings",
+  "context": "PREVIOUS WORK EXISTS: card T-01 (blocked only because its verify command failed on Node 22) produced a passing implementation in commit 8b71c33 on branch job/JOB-20261004-1255-rating-notch-calculator-and-coun--T-01. FIRST run `git cherry-pick 8b71c33` in your worktree, review it against the spec, fix anything wrong, and re-run verify. Do not rewrite from scratch unless the cherry-pick is unusable.\n\nWHY: REQ-06-02 needs a pure, synchronous notch calculator. Other POC parts import it, and Indicator 12 (card T-02) builds on its notchChange. Project rules (CLAUDE.md): plain Node 18+ ESM (.mjs), no npm dependencies, pure functions with no I/O in src/ratings, tests use node:test + node:assert/strict. No APIs newer than Node 18.\n\nFILES: src/ratings/notch.mjs and test/ratings/notch.test.mjs.\n\nCONTRACT (module exports exactly these three): RATING_SCALE = Object.freeze of the 19 ratings AAA..CCC- (best first, index AAA=0 ... CCC-=18); notchChange(previous, current) -> integer index(current)-index(previous), +0 when unchanged; notchCalculator(previous, current) -> { notches, direction, wl } exactly these keys, direction downgrade/upgrade/unchanged by sign, wl 0 if n<=1, 1 if n===2, 2 if n>=3 (Ind. 13 thresholds). Synchronous, no console output, no I/O imports.\n\nINPUT VALIDATION (C1): internal non-exported helper; typeof value !== 'string' -> RangeError BEFORE .trim(); then value.trim().toUpperCase() looked up in RATING_SCALE, else RangeError naming the argument and value. ASCII hyphen only; inner whitespace not stripped.\n\nBINDING DECISION (C2): BBB+ -> BB+ is 3 notches / WL 2 (the POC text saying 2 / WL 1 is wrong). Do not share threshold code with Indicator 12.\n\nUNIT TESTS: cover every acceptance item including the 361-pair loop and every invalid input of AC-4 as previous and as current.\n\nOUT OF SCOPE: Indicator 13 as an export, ratings outside the scale, override/persistence/logging, any change to package.json.",
+  "depends_on": [],
+  "scope": ["src/ratings/**", "test/ratings/**"],
+  "verify": "node --test test/ratings/notch.test.mjs",
+  "qa_scope": ["test/integration/ratings/**"],
+  "qa_verify": "node --test test/integration/ratings/*.test.mjs",
+  "acceptance": [
+    "AC-1: RATING_SCALE deep-equals the 19-item list AAA..CCC-, is frozen, push and index assignment throw TypeError and leave it unchanged",
+    "AC-2: notchChange returns index(current) − index(previous) as an integer in -18..18; A→A is +0 (Object.is)",
+    "AC-3: input differing only by case or leading/trailing whitespace (incl. NBSP) is accepted; notchCalculator(' bBb+','bbb- ') deep-equals { notches: 2, direction: 'downgrade', wl: 1 }",
+    "AC-4: the 15 invalid values ('', '   ', 'BBB++', 'D', 'NR', 'Baa1', 'AAA+', 'CCC--', 'BBB +', 'B B', null, undefined, 7, {}, []) as previous or as current make notchChange and notchCalculator throw RangeError, not TypeError",
+    "AC-5: notchCalculator('BBB+','BB+') deep-strict-equals { notches: 3, direction: 'downgrade', wl: 2 } with no extra keys; ('BBB+','BBB-') gives { notches: 2, direction: 'downgrade', wl: 1 }",
+    "AC-6: BBB+→BBB = {1,'downgrade',0}; A→BBB+ = {2,'downgrade',1}; A→BBB = {3,'downgrade',2}; AAA→CCC- = {18,'downgrade',2}",
+    "AC-7: BBB→BBB+ = {-1,'upgrade',0}; BB+→BBB+ = {-3,'upgrade',0}; CCC-→AAA = {-18,'upgrade',0}",
+    "AC-8: ('A','a '), ('AAA','AAA'), ('CCC-','CCC-') → { notches: 0, direction: 'unchanged', wl: 0 }",
+    "AC-9: for all 361 pairs notches === notchChange, direction by sign, wl 0 if n<=1, 1 if n===2, 2 if n>=3",
+    "AC-13: notch.mjs exports exactly RATING_SCALE, notchChange, notchCalculator; results are not Promises; no imports at all; console.log/error/warn never called"
+  ]
+}

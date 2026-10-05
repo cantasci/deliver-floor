@@ -1,0 +1,61 @@
+# gate: T-02  attempt: 1  2026-10-03T17:21:51Z
+ok    on job/JOB-20261003-1714-repayment-delay-indicators-2-3--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/delayCount.mjs","test/indicators/delayCount.test.mjs"] (+ QA tests ["test/integration/indicators/delayCount.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/delayCount.test.mjs
+TAP version 13
+# Subtest: DELAY_COUNT_OPTIONS is the frozen ordered list
+ok 1 - DELAY_COUNT_OPTIONS is the frozen ordered list
+  ---
+  duration_ms: 5.75461
+  type: 'test'
+  ...
+# Subtest: maps options to WL
+ok 2 - maps options to WL
+  ---
+  duration_ms: 0.25297
+  type: 'test'
+  ...
+# Subtest: trims surrounding whitespace
+ok 3 - trims surrounding whitespace
+  ---
+  duration_ms: 0.320746
+  type: 'test'
+  ...
+# Subtest: rejects invalid strings
+ok 4 - rejects invalid strings
+  ---
+  duration_ms: 8.412715
+  type: 'test'
+  ...
+# Subtest: error message quotes string values
+ok 5 - error message quotes string values
+  ---
+  duration_ms: 0.37929
+  type: 'test'
+  ...
+# Subtest: rejects non-strings without throwing other errors
+ok 6 - rejects non-strings without throwing other errors
+  ---
+  duration_ms: 0.27147
+  type: 'test'
+  ...
+# Subtest: every listed option maps to [0,1,2]; list is immutable
+ok 7 - every listed option maps to [0,1,2]; list is immutable
+  ---
+  duration_ms: 0.343335
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 172.606535
+ok    verify passed

@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="10"><title>JOB-20261003-1042-repayment-delay-indicators-2-3 kanban</title><style>
+:root{--bg:#f6f7f9;--col:#eceef2;--card:#fff;--ink:#1d2330;--mute:#5d6678;--line:#d8dce4}
+@media (prefers-color-scheme:dark){:root{--bg:#14171d;--col:#1c2028;--card:#252a34;--ink:#e7eaf0;--mute:#9aa3b5;--line:#323846}}
+body{margin:0;padding:16px;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,sans-serif}
+h1{font-size:16px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 16px}
+.board{display:flex;gap:12px;overflow-x:auto;align-items:flex-start}
+section{flex:0 0 240px;background:var(--col);border-radius:8px;padding:8px}
+section h2{font-size:13px;margin:4px 4px 8px;color:var(--mute)}
+article{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:8px}
+article h3{font-size:13px;margin:0 0 4px}.meta,.checks,.note{margin:2px 0;color:var(--mute);font-size:12px}
+a{color:inherit}</style></head><body>
+<h1>Repayment delay indicators 2-3</h1><p class="sub">JOB-20261003-1042-repayment-delay-indicators-2-3 · phase executing · refreshes every 10 s</p>
+<p class="sub">Seats: backend#1 IDLE · backend#2 IDLE</p>
+<div class="board"><section><h2>To Do (0)</h2></section><section><h2>In Progress (0)</h2></section><section><h2>QA (0)</h2></section><section><h2>Code Review (0)</h2></section><section><h2>Done (2)</h2><article><h3>T-01 · REQ-03-02 Indicator 2 'Days with delay': DAYS_WITH_DELAY_OPTIONS + daysWithDelayWl</h3>
+    <p class="meta">indicators-lib · backend#1 → backend-dev · attempt 1</p>
+    <p class="meta">branch <code>job/JOB-20261003-1042-repayment-delay-indicators-2-3--T-01</code></p>
+    <p class="checks">gate PASS · QA pass · review approve</p>
+    <p class="note"><b>qa-tester</b> pass (qa_verify PASS): AC-1 pass: list exact/ASCII &lt;=/frozen, mutation TypeError; AC-2 pass: 0,0,2,3,4 + node -e prints 3; AC-3 pass: trim incl NBSP; AC-4 pass: 16 unknown strings RangeError; AC-5 pass: 14 non-strings RangeError; AC-6 pass: consumer [0,0,2,3,4]; AC-13 pass: node --test 15/0, no deps; AC-14 pass: no imports, no post-Node-18 APIs</p><p class="note"><b>reviewer</b> approve — ACs met; indexOf on frozen list (no prototype trap), safe describe() for Symbol/BigInt/null-proto, Node-18-safe, no imports; 6 table-driven unit tests cover all spec behaviours. Nits: unit cases for inner NBSP/ZWSP, \u escapes for invisible chars</p></article><article><h3>T-02 · REQ-03-03 Indicator 3 'Delays in 12 months': DELAY_COUNT_OPTIONS + delayCountWl</h3>
+    <p class="meta">indicators-lib · backend#2 → backend-dev · attempt 1</p>
+    <p class="meta">branch <code>job/JOB-20261003-1042-repayment-delay-indicators-2-3--T-02</code></p>
+    <p class="checks">gate PASS · QA pass · review approve</p>
+    <p class="note"><b>qa-tester</b> pass (qa_verify PASS): AC-7 pass: list exact strings/frozen, mutation TypeError; AC-8 pass: 0,1,2 + node -e prints 2; AC-9 pass: trim incl NBSP/CRLF; AC-10 pass: 14 unknown strings RangeError; AC-11 pass: 13 non-strings incl numbers RangeError; AC-12 pass: consumer [0,1,2]; AC-13 pass: node --test 49/0, no deps; AC-14 pass: no imports, no post-Node-18 APIs</p><p class="note"><b>reviewer</b> approve — ACs met; numbers rejected without coercion, no prototype trap, safe message building, Node-18-safe, no imports. Nits: JSDoc on DELAY_COUNT_OPTIONS lacks WL/trim note, [option,wl] pairs vs index coupling, test title overstates case check, \u escapes</p></article></section></div>
+</body></html>

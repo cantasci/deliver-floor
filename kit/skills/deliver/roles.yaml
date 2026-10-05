@@ -1,19 +1,71 @@
-# Role catalog — Michael selects roles ONLY from this list (not from all 68 ECC agents).
-# Adding a role = one entry here (+ a file under agents/ if it needs a new agent).
+# Role catalog — Michael selects roles ONLY from this list (not from all of ECC's agents).
+# `dl roles` turns the selected roles into project-specific role cards (.work/<job>/roles/<role>.md); on the Munder
+# Difflin floor every seat of a role is a person (dl md-hire). A role card = rules.all + rules.<kind> + the role's own
+# rules + project facts.
 #
-# kind:     pm | lead | dev | review | qa
+# Format (kept to a small YAML subset so bin/roles.mjs can read it without dependencies):
+#   2-space indentation · `key: value` · `- item` lists · "double-quoted" or bare scalars · `#` comments
+#
+# kind:     ba | lead | dev | review | qa      (Michael himself is the PM/orchestrator)
 # agent:    subagent type to call. "ecc:"-prefixed ones come from the ECC plugin.
-# writes:   can it write files? (ECC planner/architect/reviewers are read-only — on purpose)
+# writes:   can it write files? (ECC architect/reviewers are read-only — on purpose)
 # when:     selection rule (Michael decides at intake from the request + the repo)
 # always:   selected for every job
+# floor:    Munder Difflin look (character + accent) when the role runs on the office floor
+
+rules:
+  all:
+    - "You work on exactly one job. Your input is the prompt you were given plus the files it names; nothing else is assumed."
+    - "Never run state-changing dl commands (new, phase, roles, wt, card, gate, qa, review, integrate, ship, learn, cleanup). Michael owns the flow."
+    - "Push only your own card branch (never main/master, never the job branch, never force); never delete .work/ or job/* branches; never write in the main checkout."
+    - "Answer in exactly the output format the prompt asks for. Put details in files (handoff, plan), not in your reply."
+    - "If something is unclear and it changes scope, say so under open questions / open issues. Do not guess scope."
+  ba:
+    - "Analysis only: do not write code or tests and do not modify files. Return the plan, the card specs or the closing check as text."
+    - "Every acceptance criterion is numbered (AC-1, AC-2, …), traces to a requirement ID or a stated clarification, and is a Given/When/Then with concrete values."
+    - "Cover the edges: boundaries, invalid input, error paths, empty values — say what must happen."
+    - "Write Out of scope explicitly. Ask only open questions whose answer changes the scope."
+    - "When the request contradicts itself, name the contradiction and the resolution you assume."
+    - "A card spec covers every AC the card claims and nothing outside the card's scope."
+  lead:
+    - "Do not write code or modify files. Produce cards only."
+    - "One card = one agent can finish it in one session. Split anything bigger."
+    - "scope = narrow repo-relative globs for the dev: the code and its unit tests. Never '**', never paths outside the repo."
+    - "verify = a command, run from the worktree root, that runs THIS card's unit tests, not the whole suite."
+    - "qa_scope = where the QA role writes the card's integration/e2e tests (e.g. test/integration/<area>/**), separate from scope; qa_verify = the command that runs them."
+    - "context must let a developer who never saw the plan do the card: why, files, decisions, contracts."
+    - "Cards that touch the same files must be ordered with depends_on; parallel cards never share scope."
+  dev:
+    - "Work only inside the card worktree you were given. Every path is relative to it."
+    - "Change only files matching the card's scope. Out-of-scope needs go under 'Open issues' in the handoff."
+    - "TDD: for every behaviour write the unit test first, see it fail, implement, see it pass, refactor. Unit tests live in your scope, next to the code's test folder."
+    - "Never write or change files in the card's qa_scope — those are the QA role's integration/e2e tests. After a QA round they must pass unchanged."
+    - "Done means: the card's verify command (your unit tests) passes in the worktree, everything is committed ('<CARD-ID>: <title>'), the handoff is filled."
+    - "Push only your card branch; no merge (except 'git merge <job branch>' when told to resolve a conflict), no branch switching, no amending others' commits."
+    - "On a retry, resolve every feedback item first and mention each one in the handoff."
+  review:
+    - "Review only; do not modify files."
+    - "Judge the change against the card: acceptance criteria met, correctness, security, test quality, scope."
+    - "'changes' only for blocking defects (an AC not met, a bug, a security hole, missing tests, out-of-scope edits). Style goes to nits."
+    - "Every blocking item names file, line, issue and the fix."
+  qa:
+    - "Write the card's integration and/or end-to-end tests — at least one per acceptance criterion of the spec, named after it, using the spec's test data."
+    - "Write only inside the card's qa_scope. Never change product code or the dev's unit tests."
+    - "Test through the public surface (exported API, endpoint, CLI, UI flow), the way the rest of the system or a user uses it."
+    - "Run qa_verify, commit only your tests ('<CARD-ID> QA: …'), leave the worktree clean."
+    - "If a criterion fails, keep the failing test committed as evidence and report it — do not fix the code."
+    - "Every AC gets a verdict, pass or fail, with the test that shows it."
 
 roles:
-  pm:
-    kind: pm
-    agent: ecc:planner
+  ba:
+    kind: ba
+    agent: business-analyst
     writes: false
     always: true
-    does: "Goal, scope, out of scope, testable acceptance criteria (AC-n). Checks the ACs at closing."
+    does: "Turns the request into a traceable plan (Given/When/Then ACs), writes a spec for every card, checks the ACs at closing."
+    floor:
+      character: pam
+      accent: mint
 
   tech-lead:
     kind: lead
@@ -21,13 +73,23 @@ roles:
     writes: false
     when: "New module, API/schema/data-model change, work touching 2+ areas, or 4+ cards expected"
     does: "Technical approach + cross-area contracts (API schema, types). Produces cards."
+    rules:
+      - "Write cross-area contracts (API shapes, shared types) into the context of every card that uses them."
+    floor:
+      character: jim
+      accent: sky
 
   backend-lead:
     kind: lead
     agent: ecc:architect
     focus: backend
-    when: "Any API, service, DB, queue or integration work"
+    when: "Any API, service, DB, queue, domain logic or integration work"
     does: "Produces backend cards; later reviews backend cards (together with the stack reviewer)."
+    rules:
+      - "Put schema changes and their migrations in the same card; data-changing migrations must be reversible."
+    floor:
+      character: oscar
+      accent: amber
 
   frontend-lead:
     kind: lead
@@ -35,6 +97,11 @@ roles:
     focus: frontend
     when: "Any web UI, component, state or routing work"
     does: "Produces frontend cards; later reviews them."
+    rules:
+      - "Reuse existing components and design tokens; name them in the card context."
+    floor:
+      character: kelly
+      accent: rose
 
   mobile-lead:
     kind: lead
@@ -42,24 +109,58 @@ roles:
     focus: mobile
     when: "Any Android/iOS app work"
     does: "Produces mobile cards; later reviews them."
+    rules:
+      - "Cards that need a device say so in their context; they run one at a time per device."
+    floor:
+      character: ryan
+      accent: violet
 
   backend:
     kind: dev
     agent: backend-dev
     writes: true
     when: "backend-lead was selected"
+    rules:
+      - "Keep public contracts (exports, endpoints, response shapes) exactly as the card states them."
+      - "Validate external input at the boundary; no secrets in code or tests."
+    floor:
+      character: dwight
+      accent: amber
 
   frontend:
     kind: dev
     agent: frontend-dev
     writes: true
     when: "frontend-lead was selected"
+    rules:
+      - "Use the existing components, tokens and data-fetching pattern; no new UI library."
+      - "Interactive elements are keyboard reachable and labelled."
+    floor:
+      character: phyllis
+      accent: rose
 
   mobile:
     kind: dev
     agent: mobile-dev
     writes: true
     when: "mobile-lead was selected"
+    rules:
+      - "Verify UI flows on a device (ARTEMIS) before writing the UI test; record the device serial in the handoff."
+    floor:
+      character: kevin
+      accent: violet
+
+  database:
+    kind: dev
+    agent: database-dev
+    writes: true
+    when: "The database is owned separately: schema, migrations and data changes go through their own cards (readiness ARC-data / architecture has a db component)"
+    rules:
+      - "Every schema change ships with a forward migration and, where data allows, a tested rollback."
+      - "Migrations are backward compatible with the code currently deployed (expand → migrate → contract)."
+    floor:
+      character: stanley
+      accent: slate
 
   security:
     kind: review
@@ -67,23 +168,85 @@ roles:
     writes: false
     when: "auth, permissions, payments, personal data, secrets, file upload, handling external input"
     does: "Reviews the relevant cards IN ADDITION to the stack reviewer."
+    rules:
+      - "Check OWASP Top 10 classes relevant to the change, secrets, authz on every new entry point."
+    floor:
+      character: creed
+      accent: slate
+
+  qa:
+    kind: qa
+    agent: qa-tester
+    writes: false
+    always: true
+    does: "Writes and runs each card's integration/e2e tests for its acceptance criteria (after the gate, before the Lead review)."
+    floor:
+      character: angela
+      accent: mint
+
+  a11y:
+    kind: review
+    agent: ecc:a11y-architect
+    writes: false
+    when: "readiness UX-a11y is decided (there is an accessibility target)"
+    does: "Reviews UI cards against the decided accessibility target, in addition to the stack reviewer."
+    rules:
+      - "Check the decided target (e.g. WCAG 2.1 AA) on every UI element the card adds or changes: names, roles, focus, contrast, motion."
+
+  performance:
+    kind: review
+    agent: ecc:performance-optimizer
+    writes: false
+    when: "readiness NFR-performance is decided (there are latency/throughput/volume targets)"
+    does: "Reviews cards on performance-critical paths against the decided targets."
+    rules:
+      - "Judge against the decided numbers, with evidence (a measurement, a complexity argument) — not taste."
+
+  quality:
+    kind: review
+    agent: ecc:silent-failure-hunter
+    writes: false
+    when: "Error handling or failure paths are central to the change (payments, integrations, data loss risk)"
+    does: "Looks for swallowed errors, silent fallbacks and missing failure paths, in addition to the stack reviewer."
+
+  docs:
+    kind: dev
+    agent: ecc:doc-updater
+    writes: true
+    when: "readiness DEL-docs is decided (documentation, changelog or runbook updates are required)"
+    does: "Writes the documentation cards (README, API docs, changelog, runbooks) in the docs component."
+    rules:
+      - "Document what was built and decided (plan, readiness, report) — nothing speculative."
 
   qa-web:
     kind: qa
     agent: ecc:e2e-runner
     writes: true
     when: "A web user flow changes"
-    does: "Writes/runs end-to-end tests in the integration worktree."
+    does: "Runs end-to-end checks on the integrated job branch; durable e2e tests go through a card."
+    floor:
+      character: andy
+      accent: sky
 
   qa-mobile:
     kind: qa
-    agent: artemis          # not a subagent: Michael drives it himself via the ARTEMIS MCP (mobile_run_task)
+    agent: artemis
     when: "A mobile user flow changes and a device/emulator is connected"
-    does: "Verifies the flow on a device; a separate mobile-dev card is opened for durable test code."
+    does: "Michael drives ARTEMIS himself (mobile_run_task); a separate mobile-dev card is opened for durable test code."
 
-# Stack reviewer used in the Lead review — picked from job.stack.
-# If several match, use the most specific one (e.g. react over typescript).
+# Stack reviewer used in the Lead review — one per component stack (architecture.components[].stack).
+# If several match, use the most specific one (e.g. spring-boot over java, react over typescript).
 stack_reviewers:
+  spring-boot: ecc:java-reviewer
+  go: ecc:go-reviewer
+  golang: ecc:go-reviewer
+  nestjs: ecc:typescript-reviewer
+  node: ecc:typescript-reviewer
+  postgres: ecc:database-reviewer
+  mysql: ecc:database-reviewer
+  android: ecc:kotlin-reviewer
+  ios: ecc:swift-reviewer
+  react-native: ecc:typescript-reviewer
   react: ecc:react-reviewer
   vue: ecc:vue-reviewer
   typescript: ecc:typescript-reviewer
@@ -103,6 +266,31 @@ stack_reviewers:
   database: ecc:database-reviewer
   default: ecc:code-reviewer
 
+# ECC skills each component's developers load (named in the role cards; agents load them with the Skill tool).
+stack_skills:
+  spring-boot: ["ecc:springboot-patterns", "ecc:springboot-tdd", "ecc:springboot-security", "ecc:java-coding-standards"]
+  java: ["ecc:java-coding-standards"]
+  go: ["ecc:golang-patterns", "ecc:golang-testing"]
+  golang: ["ecc:golang-patterns", "ecc:golang-testing"]
+  typescript: ["ecc:backend-patterns", "ecc:tdd-workflow"]
+  javascript: ["ecc:backend-patterns", "ecc:tdd-workflow"]
+  node: ["ecc:backend-patterns", "ecc:tdd-workflow"]
+  nestjs: ["ecc:nestjs-patterns", "ecc:tdd-workflow"]
+  python: ["ecc:python-patterns", "ecc:python-testing"]
+  django: ["ecc:django-patterns", "ecc:django-tdd", "ecc:django-security"]
+  fastapi: ["ecc:fastapi-patterns", "ecc:python-testing"]
+  kotlin: ["ecc:kotlin-patterns", "ecc:kotlin-testing"]
+  android: ["ecc:android-clean-architecture", "ecc:kotlin-coroutines-flows", "ecc:kotlin-testing"]
+  swift: ["ecc:swiftui-patterns", "ecc:swift-protocol-di-testing"]
+  ios: ["ecc:swiftui-patterns", "ecc:swift-concurrency-6-2"]
+  flutter: ["ecc:dart-flutter-patterns"]
+  react: ["ecc:react-patterns", "ecc:react-testing"]
+  react-native: ["ecc:react-native-patterns"]
+  rust: ["ecc:rust-patterns", "ecc:rust-testing"]
+  postgres: ["ecc:postgres-patterns", "ecc:database-migrations"]
+  mysql: ["ecc:database-migrations"]
+  docker: ["ecc:docker-patterns"]
+
 # Stack detection hints (Michael checks these at intake)
 stack_hints:
   package.json: "typescript/javascript — check dependencies for react/vue/next"
@@ -112,4 +300,5 @@ stack_hints:
   pubspec.yaml: flutter (mobile)
   pyproject.toml / requirements.txt: "python — check for django/fastapi"
   go.mod: go
+  pom.xml / build.gradle with spring-boot: "java + spring-boot"
   Cargo.toml: rust

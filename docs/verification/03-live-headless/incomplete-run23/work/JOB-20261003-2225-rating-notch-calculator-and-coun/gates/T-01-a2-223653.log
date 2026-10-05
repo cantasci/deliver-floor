@@ -1,0 +1,251 @@
+# gate: T-01  attempt: 2  2026-10-03T22:36:53Z
+ok    on job/JOB-20261003-2225-rating-notch-calculator-and-coun--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/*.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE
+    # Subtest: has the 19 grades, best first
+    ok 1 - has the 19 grades, best first
+      ---
+      duration_ms: 1.313232
+      type: 'test'
+      ...
+    # Subtest: is frozen and cannot be mutated
+    ok 2 - is frozen and cannot be mutated
+      ---
+      duration_ms: 0.56885
+      type: 'test'
+      ...
+    1..2
+ok 1 - RATING_SCALE
+  ---
+  duration_ms: 2.854905
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: BBB+ -> BB+ = 3
+    ok 1 - BBB+ -> BB+ = 3
+      ---
+      duration_ms: 0.412188
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB- = 2
+    ok 2 - BBB+ -> BBB- = 2
+      ---
+      duration_ms: 0.159295
+      type: 'test'
+      ...
+    # Subtest: BBB+ -> BBB = 1
+    ok 3 - BBB+ -> BBB = 1
+      ---
+      duration_ms: 0.091884
+      type: 'test'
+      ...
+    # Subtest: BB+ -> BBB+ = -3
+    ok 4 - BB+ -> BBB+ = -3
+      ---
+      duration_ms: 0.123007
+      type: 'test'
+      ...
+    # Subtest: BBB -> BBB+ = -1
+    ok 5 - BBB -> BBB+ = -1
+      ---
+      duration_ms: 0.148897
+      type: 'test'
+      ...
+    # Subtest: AAA -> CCC- = 18
+    ok 6 - AAA -> CCC- = 18
+      ---
+      duration_ms: 0.223454
+      type: 'test'
+      ...
+    # Subtest: CCC- -> AAA = -18
+    ok 7 - CCC- -> AAA = -18
+      ---
+      duration_ms: 0.206049
+      type: 'test'
+      ...
+    # Subtest: unchanged is +0, never -0
+    ok 8 - unchanged is +0, never -0
+      ---
+      duration_ms: 0.297218
+      type: 'test'
+      ...
+    # Subtest: normalises case and surrounding whitespace
+    ok 9 - normalises case and surrounding whitespace
+      ---
+      duration_ms: 0.116784
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for invalid previous
+    ok 10 - throws RangeError for invalid previous
+      ---
+      duration_ms: 0.568965
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for invalid current
+    ok 11 - throws RangeError for invalid current
+      ---
+      duration_ms: 0.265861
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for missing arguments
+    ok 12 - throws RangeError for missing arguments
+      ---
+      duration_ms: 0.1098
+      type: 'test'
+      ...
+    # Subtest: checks previous before current and names the argument
+    ok 13 - checks previous before current and names the argument
+      ---
+      duration_ms: 0.146471
+      type: 'test'
+      ...
+    1..13
+ok 2 - notchChange
+  ---
+  duration_ms: 4.766758
+  type: 'suite'
+  ...
+# Subtest: notchCalculator
+    # Subtest: "BBB+" -> "BB+"
+    ok 1 - "BBB+" -> "BB+"
+      ---
+      duration_ms: 0.300678
+      type: 'test'
+      ...
+    # Subtest: "BBB+" -> "BBB-"
+    ok 2 - "BBB+" -> "BBB-"
+      ---
+      duration_ms: 0.064955
+      type: 'test'
+      ...
+    # Subtest: "BBB+" -> "BBB"
+    ok 3 - "BBB+" -> "BBB"
+      ---
+      duration_ms: 0.051332
+      type: 'test'
+      ...
+    # Subtest: "AAA" -> "CCC-"
+    ok 4 - "AAA" -> "CCC-"
+      ---
+      duration_ms: 0.047182
+      type: 'test'
+      ...
+    # Subtest: "A" -> "BBB+"
+    ok 5 - "A" -> "BBB+"
+      ---
+      duration_ms: 0.046137
+      type: 'test'
+      ...
+    # Subtest: "A" -> "BBB"
+    ok 6 - "A" -> "BBB"
+      ---
+      duration_ms: 0.043762
+      type: 'test'
+      ...
+    # Subtest: "BB" -> "BBB"
+    ok 7 - "BB" -> "BBB"
+      ---
+      duration_ms: 0.045994
+      type: 'test'
+      ...
+    # Subtest: "BBB" -> "BBB+"
+    ok 8 - "BBB" -> "BBB+"
+      ---
+      duration_ms: 0.097694
+      type: 'test'
+      ...
+    # Subtest: "CCC-" -> "AAA"
+    ok 9 - "CCC-" -> "AAA"
+      ---
+      duration_ms: 0.063541
+      type: 'test'
+      ...
+    # Subtest: "A" -> "A"
+    ok 10 - "A" -> "A"
+      ---
+      duration_ms: 0.090835
+      type: 'test'
+      ...
+    # Subtest: "bbb+" -> " bb+"
+    ok 11 - "bbb+" -> " bb+"
+      ---
+      duration_ms: 0.055169
+      type: 'test'
+      ...
+    # Subtest: unchanged gives +0 notches, also with padded/lower-case input
+    ok 12 - unchanged gives +0 notches, also with padded/lower-case input
+      ---
+      duration_ms: 0.113946
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for invalid previous or current
+    ok 13 - throws RangeError for invalid previous or current
+      ---
+      duration_ms: 0.347476
+      type: 'test'
+      ...
+    # Subtest: throws RangeError for missing arguments
+    ok 14 - throws RangeError for missing arguments
+      ---
+      duration_ms: 0.092221
+      type: 'test'
+      ...
+    # Subtest: result is a plain object with exactly three keys, synchronous
+    ok 15 - result is a plain object with exactly three keys, synchronous
+      ---
+      duration_ms: 0.104928
+      type: 'test'
+      ...
+    # Subtest: returns a fresh object on every call
+    ok 16 - returns a fresh object on every call
+      ---
+      duration_ms: 0.111218
+      type: 'test'
+      ...
+    # Subtest: exhaustive over all 361 ordered pairs
+    ok 17 - exhaustive over all 361 ordered pairs
+      ---
+      duration_ms: 0.645676
+      type: 'test'
+      ...
+    1..17
+ok 3 - notchCalculator
+  ---
+  duration_ms: 2.733835
+  type: 'suite'
+  ...
+# Subtest: module surface
+    # Subtest: exports exactly RATING_SCALE, notchCalculator, notchChange
+    ok 1 - exports exactly RATING_SCALE, notchCalculator, notchChange
+      ---
+      duration_ms: 0.91384
+      type: 'test'
+      ...
+    # Subtest: source has no imports, console output or stdout/stderr writes
+    ok 2 - source has no imports, console output or stdout/stderr writes
+      ---
+      duration_ms: 0.601598
+      type: 'test'
+      ...
+    1..2
+ok 4 - module surface
+  ---
+  duration_ms: 1.612447
+  type: 'suite'
+  ...
+1..4
+# tests 34
+# suites 4
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 103.272334
+ok    verify passed

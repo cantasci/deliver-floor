@@ -1,0 +1,103 @@
+# gate: T-01  attempt: 2  2026-10-03T15:14:57Z
+ok    on job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-01
+ok    working tree clean
+ok    3 commit(s)
+ok    all changes within scope ["src/indicators/daysWithDelay.mjs","test/indicators/daysWithDelay.test.mjs"] (+ QA tests ["test/indicators/integration/daysWithDelay.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/daysWithDelay.test.mjs
+TAP version 13
+# Subtest: options list is the expected frozen list
+ok 1 - options list is the expected frozen list
+  ---
+  duration_ms: 1.412229
+  type: 'test'
+  ...
+# Subtest: every option maps to its WL
+ok 2 - every option maps to its WL
+  ---
+  duration_ms: 0.373571
+  type: 'test'
+  ...
+# Subtest: surrounding whitespace is trimmed
+ok 3 - surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.123179
+  type: 'test'
+  ...
+# Subtest: invalid input throws RangeError
+ok 4 - invalid input throws RangeError
+  ---
+  duration_ms: 7.002461
+  type: 'test'
+  ...
+# Subtest: throws RangeError (not TypeError) for BigInt, Symbol, circular and unprintable input
+ok 5 - throws RangeError (not TypeError) for BigInt, Symbol, circular and unprintable input
+  ---
+  duration_ms: 0.342249
+  type: 'test'
+  ...
+# Subtest: is pure: no throw, valid WL, stable results, options unchanged
+ok 6 - is pure: no throw, valid WL, stable results, options unchanged
+  ---
+  duration_ms: 0.184388
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 141.202149
+ok    verify passed
+----- qa_verify (QA's integration/e2e tests): node --test test/indicators/integration/daysWithDelay.integration.test.mjs
+TAP version 13
+# Subtest: AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five ASCII labels in order and is frozen
+ok 1 - AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five ASCII labels in order and is frozen
+  ---
+  duration_ms: 1.65521
+  type: 'test'
+  ...
+# Subtest: AC-2: each valid option maps to its WL
+ok 2 - AC-2: each valid option maps to its WL
+  ---
+  duration_ms: 0.262299
+  type: 'test'
+  ...
+# Subtest: AC-3: surrounding whitespace is trimmed first
+ok 3 - AC-3: surrounding whitespace is trimmed first
+  ---
+  duration_ms: 5.737251
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid input throws RangeError naming value and allowed list
+ok 4 - AC-4: invalid input throws RangeError naming value and allowed list
+  ---
+  duration_ms: 0.886337
+  type: 'test'
+  ...
+# Subtest: AC-9: every option is valid, in {0,2,3,4}, repeatable, and the list is unchanged
+ok 5 - AC-9: every option is valid, in {0,2,3,4}, repeatable, and the list is unchanged
+  ---
+  duration_ms: 0.21729
+  type: 'test'
+  ...
+# Subtest: AC-10: unit tests exit 0; card adds only its two files; package.json untouched
+ok 6 - AC-10: unit tests exit 0; card adds only its two files; package.json untouched
+  ---
+  duration_ms: 68.235165
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 227.671554
+ok    QA tests pass

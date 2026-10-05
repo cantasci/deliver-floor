@@ -1,0 +1,181 @@
+{
+  "id": "JOB-20261005-0622-rating-notch-change",
+  "title": "Rating notch change",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-models-plain.md\nRating notch change (Watchlist POC — one task)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch\ncalculator (REQ-06-02) are built on. It is small: one card.\n\n## Requirement\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 (part) | Given a previous and a current rating, the system computes the notch change between them | BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.\n  A notch is one step on this scale. Input is trimmed with `String.prototype.trim()` and case-insensitive (\"bbb+\" = \"BBB+\").\n- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object\n  such as `new String('A')` is a non-string. No banking-regulation or internal-policy constraint applies to this slice.\n- C3. The result is signed: downgrade positive, upgrade negative, unchanged 0.\n- C4. No UI, CLI or printed output; other parts of the POC import the function.\n\n## Contract\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer (C3).\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.\n\nTeam instruction from the human: the backend developer works on the sonnet model.",
+  "created": "2026-10-05T06:22:52Z",
+  "repo": "/tmp/claude-0/e2e-mC/munder/repo",
+  "phase": "done",
+  "stack": [
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-06-02: domain logic notchChange(previous, current) in src/ratings/notch.mjs"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "provider": "claude",
+      "model": "sonnet",
+      "why": "REQ-06-02 contract: RATING_SCALE + notchChange; human: the backend developer works on the sonnet model"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack javascript (plain Node ESM) — stack reviewer"
+    }
+  ],
+  "assumptions": [
+    "One card, as the request states (small, one-requirement slice)."
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261005-0622-rating-notch-change",
+  "integration_worktree": "/tmp/claude-0/e2e-mC/munder/repo/.work/JOB-20261005-0622-rating-notch-change/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "0a68fdda5f09b17bff5d5979bd79a03d2bf6f268",
+    "log": "/tmp/claude-0/e2e-mC/munder/repo/.work/JOB-20261005-0622-rating-notch-change/gates/verify-all-064350.log",
+    "at": "2026-10-05T06:43:50Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "munder",
+    "max_parallel": 2,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "/tmp/claude-0/e2e-mC/munder/bin/claude",
+      "model": "claude-haiku-4-5-20251001",
+      "token_cap": 0
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "commit": {
+      "ai_attribution": false,
+      "role_in_message": false
+    }
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "ac79c8e69e1255734e321db23993601598e489a5",
+    "at": "2026-10-05T06:45:40Z"
+  },
+  "munder": {
+    "seats": {
+      "ba#1": {
+        "role": "ba",
+        "worker": "worker-seat-20261005-0622-ba-1-h1",
+        "hires": 1,
+        "character": "pam",
+        "hired_at": "2026-10-05T06:22:57Z",
+        "task": null,
+        "orders": 6,
+        "since": null,
+        "last_done": "2026-10-05T06:45:39Z"
+      },
+      "backend-lead#1": {
+        "role": "backend-lead",
+        "worker": "worker-seat-20261005-0622-backend-lead-1-h1",
+        "hires": 1,
+        "character": "oscar",
+        "hired_at": "2026-10-05T06:22:57Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-05T06:36:00Z"
+      },
+      "backend#1": {
+        "role": "backend",
+        "worker": "worker-seat-20261005-0622-backend-1-h1",
+        "hires": 1,
+        "character": "dwight",
+        "hired_at": "2026-10-05T06:22:58Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-05T06:39:22Z"
+      },
+      "qa#1": {
+        "role": "qa",
+        "worker": "worker-seat-20261005-0622-qa-1-h1",
+        "hires": 1,
+        "character": "angela",
+        "hired_at": "2026-10-05T06:22:58Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-05T06:42:14Z"
+      },
+      "reviewer#1": {
+        "role": "reviewer",
+        "worker": "worker-seat-20261005-0622-reviewer-1-h1",
+        "hires": 1,
+        "character": "toby",
+        "hired_at": "2026-10-05T06:22:58Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-05T06:43:43Z"
+      }
+    }
+  },
+  "frozen": {
+    "readiness_sha256": "62309880d042fc6e0eae591cfeb01b289d8eec9ab1c0d297aaf5d1b1a45e7ffa",
+    "at": "2026-10-05T06:29:43Z"
+  },
+  "pm_decisions": [
+    {
+      "at": "2026-10-05T06:29:55Z",
+      "what": "No security reviewer role on this job",
+      "why": "NFR-security is input validation only (RangeError on invalid ratings, per C2); the function is called in-process by other POC modules, no auth, secrets, personal data or external entry point — the stack reviewer checks the validation"
+    },
+    {
+      "at": "2026-10-05T06:29:55Z",
+      "what": "Corrected readiness quotes myself (split at markdown backticks into '…' fragments) and set the component reviewer to role 'reviewer'",
+      "why": "The BA's wording was verbatim except across backtick-wrapped tokens; a third BA round trip would add nothing to the analysis"
+    }
+  ]
+}

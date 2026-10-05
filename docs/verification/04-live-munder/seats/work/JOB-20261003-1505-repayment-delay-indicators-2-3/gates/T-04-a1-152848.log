@@ -1,0 +1,44 @@
+# gate: T-04  attempt: 1  2026-10-03T15:28:48Z
+ok    on job/JOB-20261003-1505-repayment-delay-indicators-2-3--T-04
+ok    working tree clean
+ok    2 commit(s)
+ok    all changes within scope ["test/indicators/job.test.mjs"] (+ QA tests ["test/indicators/integration/daysWithDelay.integration.test.mjs","test/indicators/integration/delayCount.integration.test.mjs"])
+FAIL  the dev changed a QA test (qa_scope belongs to the QA role): test/indicators/integration/daysWithDelay.integration.test.mjs
+FAIL  the dev changed a QA test (qa_scope belongs to the QA role): test/indicators/integration/delayCount.integration.test.mjs
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/job.test.mjs
+TAP version 13
+# Subtest: the four indicator files exist
+ok 1 - the four indicator files exist
+  ---
+  duration_ms: 1.229341
+  type: 'test'
+  ...
+# Subtest: every file added since the seed is under src/indicators/ or test/indicators/
+ok 2 - every file added since the seed is under src/indicators/ or test/indicators/
+  ---
+  duration_ms: 7.1985
+  type: 'test'
+  ...
+# Subtest: package.json is unchanged since the seed
+ok 3 - package.json is unchanged since the seed
+  ---
+  duration_ms: 3.375611
+  type: 'test'
+  ...
+# Subtest: package.json declares no dependencies
+ok 4 - package.json declares no dependencies
+  ---
+  duration_ms: 0.245925
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 95.681407
+ok    verify passed

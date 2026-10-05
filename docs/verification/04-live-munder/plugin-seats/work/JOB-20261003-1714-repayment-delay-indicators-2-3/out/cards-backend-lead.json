@@ -1,0 +1,61 @@
+[
+  {
+    "tmp_id": "B1",
+    "title": "Indicator 2 \"Days with delay\": daysWithDelayWl + DAYS_WITH_DELAY_OPTIONS (REQ-03-02)",
+    "role": "backend",
+    "component": "indicators",
+    "context": "Why: Watchlist-level (WL, 0-4, higher is worse) mapping for POC indicator 2 \"Days with delay\"; pure function plus exported dropdown option list that later POC screens render. Plain Node 18+ ESM (.mjs), no npm deps, no imports, no I/O, no logging (CLAUDE.md). Tests: node:test + node:assert/strict. TDD: write the unit test first.\nFiles: create src/indicators/daysWithDelay.mjs and test/indicators/daysWithDelay.test.mjs. Touch nothing else; do NOT create src/indicators/index.mjs or any shared helper (the other indicator is built in parallel by another dev; tiny duplicated trim/validate logic is accepted).\nExports (named): DAYS_WITH_DELAY_OPTIONS = Object.freeze([\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"]) in exactly this order; function daysWithDelayWl(option) -> number in {0, 2, 3, 4}.\nMapping: \"no delay\"->0, \"<=3 days\"->0, \">3 days\"->2, \">60 days\"->3, \">90 days\"->4. Mapping is by option STRING, never by number (labels overlap numerically). WL 1 is intentionally never produced..\nThe requirement table writes unicode \"≤3 days\" but the business-confirmed contract is ASCII \"<=3 days\"; \"≤3 days\" must throw RangeError.\nAlgorithm: (1) if typeof option !== 'string' throw RangeError (BEFORE trimming: String objects, arrays, numbers like 1 must be rejected); (2) t = option.trim() (String.prototype.trim; internal whitespace untouched); (3) exact, case-sensitive match against the option list using an own-property-safe lookup (Map, switch, or Object.hasOwn) - never plain map[option], which would accept 'constructor'/'__proto__'/'toString' (NFR-security); (4) otherwise throw RangeError, never return a default WL. Return plain numbers.\nError message (X-errors-msg): must contain the function name and quote the rejected value for strings, e.g. daysWithDelayWl: invalid option \">3 Days\"; for non-strings describe the type/value safely (e.g. `daysWithDelayWl: invalid option (${typeof option})` or String()-free formatting; must not throw itself for Symbol/object input). Tests assert only instanceof RangeError and message includes 'daysWithDelayWl'.\nInvalid inputs to cover in tests: \">3 Days\", \"NO DELAY\", \"≤3 days\", \"<= 3 days\", \">30 days\", \"\", \"   \", \"constructor\", \"__proto__\", \"toString\", \">3  days\" (internal double space). Non-strings: undefined, null, 3, 0, true, {}, [], [\">3 days\"], new String(\">3 days\"), and call with no argument.\nAlso test: option list equals expected array and Object.isFrozen is true; every entry of the list maps without throwing to [0,0,2,3,4] (map over the list); push on the frozen list throws TypeError (ESM is strict) or leaves it unchanged, and mapping unchanged; whitespace trimming cases \"  >3 days \" -> 2, \"\\t>90 days\\n\" -> 4, \" no delay\" -> 0.",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/daysWithDelay.mjs",
+      "test/indicators/daysWithDelay.test.mjs"
+    ],
+    "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+    "qa_scope": [
+      "test/integration/indicators/daysWithDelay.*"
+    ],
+    "qa_verify": "node --test test/integration/indicators/",
+    "acceptance": [
+      "AC-1: DAYS_WITH_DELAY_OPTIONS equals [\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"] in order and Object.isFrozen → true",
+      "AC-2: \"no delay\" and \"<=3 days\" → 0 (strictly equal number)",
+      "AC-3: \">3 days\" → 2",
+      "AC-4: \">60 days\" → 3",
+      "AC-5: \">90 days\" → 4",
+      "AC-6: \"  >3 days \" → 2, \"\\t>90 days\\n\" → 4, \" no delay\" → 0; \">3  days\" → RangeError",
+      "AC-7: \">3 Days\",\"NO DELAY\",\"≤3 days\",\"<= 3 days\",\">30 days\",\"\",\"   \",\"constructor\",\"__proto__\",\"toString\" → RangeError, no default WL",
+      "AC-8: undefined,null,3,0,true,{},[],[\">3 days\"],new String(\">3 days\"), no argument → RangeError",
+      "AC-16: RangeError message contains \"daysWithDelayWl\" and quotes the rejected string",
+      "AC-17: every entry of DAYS_WITH_DELAY_OPTIONS maps without throwing to [0,0,2,3,4]; mutating the frozen list throws or has no effect and mapping unchanged",
+      "AC-18: module is plain ESM .mjs, no imports, no index.mjs, node --test green"
+    ]
+  },
+  {
+    "tmp_id": "B2",
+    "title": "Indicator 3 \"Delays in 12 months\": delayCountWl + DELAY_COUNT_OPTIONS (REQ-03-03)",
+    "role": "backend",
+    "component": "indicators",
+    "context": "Why: Watchlist-level (WL, 0-4, higher is worse) mapping for POC indicator 3 \"Delays in 12 months\"; pure function plus exported dropdown option list that later POC screens render. Plain Node 18+ ESM (.mjs), no npm deps, no imports, no I/O, no logging (CLAUDE.md). Tests: node:test + node:assert/strict. TDD: write the unit test first.\nFiles: create src/indicators/delayCount.mjs and test/indicators/delayCount.test.mjs. Touch nothing else; do NOT create src/indicators/index.mjs or any shared helper (the other indicator is built in parallel by another dev; tiny duplicated trim/validate logic is accepted).\nExports (named): DELAY_COUNT_OPTIONS = Object.freeze([\"0\",\"1\",\">1\"]) in exactly this order; function delayCountWl(option) -> number in {0, 1, 2}.\nMapping: \"0\"->0, \"1\"->1, \">1\"->2 (more than one delay in 12 months).\nCounting delays in the last 12 months and choosing the option is the CALLER's job (C6); do not implement it. Numbers such as 1 must be rejected even though they look like option \"1\".\nAlgorithm: (1) if typeof option !== 'string' throw RangeError (BEFORE trimming: String objects, arrays, numbers like 1 must be rejected); (2) t = option.trim() (String.prototype.trim; internal whitespace untouched); (3) exact, case-sensitive match against the option list using an own-property-safe lookup (Map, switch, or Object.hasOwn) - never plain map[option], which would accept 'constructor'/'__proto__'/'toString' (NFR-security); (4) otherwise throw RangeError, never return a default WL. Return plain numbers.\nError message (X-errors-msg): must contain the function name and quote the rejected value for strings, e.g. delayCountWl: invalid option \"2\"; for non-strings describe the type/value safely (e.g. `delayCountWl: invalid option (${typeof option})` or String()-free formatting; must not throw itself for Symbol/object input). Tests assert only instanceof RangeError and message includes 'delayCountWl'.\nInvalid inputs to cover in tests: \"2\", \">2\", \"01\", \"1.0\", \"-1\", \"> 1\", \"\", \"   \", \"one\", \"constructor\", \"__proto__\". Non-strings: 0, 1, 2, undefined, null, true, {}, [\"1\"], and call with no argument.\nAlso test: option list equals expected array and Object.isFrozen is true; every entry of the list maps without throwing to [0,1,2] (map over the list); push on the frozen list throws TypeError (ESM is strict) or leaves it unchanged, and mapping unchanged; whitespace trimming cases \" 1 \" -> 1, \"\\t>1\\n\" -> 2, \" 0\" -> 0.",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/delayCount.mjs",
+      "test/indicators/delayCount.test.mjs"
+    ],
+    "verify": "node --test test/indicators/delayCount.test.mjs",
+    "qa_scope": [
+      "test/integration/indicators/delayCount.*"
+    ],
+    "qa_verify": "node --test test/integration/indicators/",
+    "acceptance": [
+      "AC-9: DELAY_COUNT_OPTIONS equals [\"0\",\"1\",\">1\"] in order and Object.isFrozen → true",
+      "AC-10: \"0\" → 0",
+      "AC-11: \"1\" → 1",
+      "AC-12: \">1\" → 2",
+      "AC-13: \" 1 \" → 1, \"\\t>1\\n\" → 2, \" 0\" → 0",
+      "AC-14: \"2\",\">2\",\"01\",\"1.0\",\"-1\",\"> 1\",\"\",\"   \",\"one\",\"constructor\",\"__proto__\" → RangeError",
+      "AC-15: 0,1,2,undefined,null,true,{},[\"1\"], no argument → RangeError (numbers rejected)",
+      "AC-16: RangeError message contains \"delayCountWl\" and quotes the rejected string",
+      "AC-17: every entry of DELAY_COUNT_OPTIONS maps without throwing to [0,1,2]; mutating the frozen list throws or has no effect and mapping unchanged",
+      "AC-18: module is plain ESM .mjs, no imports, no index.mjs, node --test green"
+    ]
+  }
+]

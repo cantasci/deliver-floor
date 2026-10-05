@@ -1,0 +1,53 @@
+[
+  {
+    "tmp_id": "B1",
+    "title": "Indicator 2: daysWithDelay options and daysWithDelayWl (REQ-03-02)",
+    "role": "backend",
+    "component": "indicators-lib",
+    "context": "Why: Watchlist POC needs the WL (0-4, higher is worse) for Indicator 2 'days with delay' as a pure function plus an exported dropdown option list. Plain Node 18+ ESM (.mjs), no npm deps, no I/O (CLAUDE.md). Tests: node:test + node:assert/strict. Do TDD (skills ecc:backend-patterns, ecc:tdd-workflow).\nCreate src/indicators/daysWithDelay.mjs exporting EXACTLY two names: (1) `DAYS_WITH_DELAY_OPTIONS = Object.freeze(['no delay','<=3 days','>3 days','>60 days','>90 days'])` in that order (Object.isFrozen must be true); (2) `daysWithDelayWl(option)` returning an integer WL by option: 'no delay'->0, '<=3 days'->0, '>3 days'->2, '>60 days'->3, '>90 days'->4. Options are mutually exclusive caller selections, not cumulative ranges and not numeric days.\nInput rules: input must be a string, else RangeError (null, undefined, 3, true, {}, ['>3 days']). Apply String.prototype.trim() (leading/trailing whitespace only: space, tab, newline, NBSP...), then require an exact, case-sensitive match against the options; inner whitespace untouched. Anything else throws RangeError: '>3 Days', 'No delay', '>3  days' (two inner spaces), '≤3 days' (Unicode, NOT an alias; only ASCII '<=3 days' is valid), '<=3days', '>30 days', '', '   ', 'unknown'. Never return a fallback WL. Tests assert error type only (RangeError), not the message.\nKeep the module self-contained: do NOT create or import a shared trim/validate helper (the sibling card B2 owns src/indicators/delayCount.mjs; the two cards must share no file). Do not touch package.json. Add short JSDoc. Unit tests go to test/indicators/daysWithDelay.test.mjs and must cover: option list content/order/frozen; each option's WL; trimming with ' ', '\\t', '\\n', NBSP; all invalid strings and non-strings above; round-trip (every option yields an integer in 0..4, none throws); exact export names (Object.keys of the imported namespace sorted equals ['DAYS_WITH_DELAY_OPTIONS','daysWithDelayWl']).",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/daysWithDelay.mjs",
+      "test/indicators/daysWithDelay.test.mjs"
+    ],
+    "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+    "qa_scope": [
+      "test/integration/indicators/daysWithDelay.integration.test.mjs"
+    ],
+    "qa_verify": "node --test test/integration/indicators/daysWithDelay.integration.test.mjs",
+    "acceptance": [
+      "AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals ['no delay','<=3 days','>3 days','>60 days','>90 days'] in order and Object.isFrozen is true",
+      "AC-2: daysWithDelayWl('no delay') and daysWithDelayWl('<=3 days') both return 0",
+      "AC-3: daysWithDelayWl('>3 days') -> 2, ('>60 days') -> 3, ('>90 days') -> 4",
+      "AC-4: daysWithDelayWl('  >60 days  ') -> 3, ('\\t>90 days\\n') -> 4, (' >3 days ') -> 2, (' no delay ') -> 0",
+      "AC-5: '>3 Days', 'No delay', '>3  days', '≤3 days', '<=3days', '>30 days', '', '   ', 'unknown' and non-strings null, undefined, 3, true, {}, ['>3 days'] each throw RangeError; no fallback WL returned",
+      "AC-10 (Indicator 2 part): every option of DAYS_WITH_DELAY_OPTIONS passed to daysWithDelayWl returns an integer in 0..4 and none throws",
+      "AC-11 (Indicator 2 part): module daysWithDelay.mjs performs no I/O, exports exactly DAYS_WITH_DELAY_OPTIONS and daysWithDelayWl, package.json gains no dependencies, and its unit tests pass under node --test"
+    ]
+  },
+  {
+    "tmp_id": "B2",
+    "title": "Indicator 3: delayCount options and delayCountWl (REQ-03-03)",
+    "role": "backend",
+    "component": "indicators-lib",
+    "context": "Why: Watchlist POC needs the WL (0-4, higher is worse) for Indicator 3 'delays in the last 12 months' as a pure function plus an exported dropdown option list. Plain Node 18+ ESM (.mjs), no npm deps, no I/O (CLAUDE.md). Tests: node:test + node:assert/strict. Do TDD (skills ecc:backend-patterns, ecc:tdd-workflow).\nCreate src/indicators/delayCount.mjs exporting EXACTLY two names: (1) `DELAY_COUNT_OPTIONS = Object.freeze(['0','1','>1'])` in that order (Object.isFrozen must be true); (2) `delayCountWl(option)` returning an integer WL by option: '0'->0, '1'->1, '>1'->2. Options are mutually exclusive caller selections; do not count delays or accept numbers.\nInput rules: input must be a string, else RangeError (null, undefined, 0, 1, NaN, {}, ['1']) — note numeric 0 and 1 are NOT valid, only the strings. Apply String.prototype.trim() (leading/trailing whitespace only: space, tab, newline, NBSP...), then require an exact, case-sensitive match against the options; inner whitespace untouched. Anything else throws RangeError: '2', '-1', '01', '> 1' (inner space), '>=1', 'one', '', '   '. Note '>1 ' (trailing space) and ' >1 ' are valid after trim and return 2. Never return a fallback WL. Tests assert error type only (RangeError), not the message.\nKeep the module self-contained: do NOT create or import a shared trim/validate helper (the sibling card B1 owns src/indicators/daysWithDelay.mjs; the two cards must share no file). Do not touch package.json. Add short JSDoc. Unit tests go to test/indicators/delayCount.test.mjs and must cover: option list content/order/frozen; each option's WL; trimming with ' ', '\\t', '\\n', NBSP; all invalid strings and non-strings above; round-trip (every option yields an integer in 0..4, none throws); exact export names (Object.keys of the imported namespace sorted equals ['DELAY_COUNT_OPTIONS','delayCountWl']).",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/delayCount.mjs",
+      "test/indicators/delayCount.test.mjs"
+    ],
+    "verify": "node --test test/indicators/delayCount.test.mjs",
+    "qa_scope": [
+      "test/integration/indicators/delayCount.integration.test.mjs"
+    ],
+    "qa_verify": "node --test test/integration/indicators/delayCount.integration.test.mjs",
+    "acceptance": [
+      "AC-6: DELAY_COUNT_OPTIONS deep-equals ['0','1','>1'] in order and Object.isFrozen is true",
+      "AC-7: delayCountWl('0') -> 0, ('1') -> 1, ('>1') -> 2",
+      "AC-8: delayCountWl(' 1 ') -> 1, ('\\t>1\\n') -> 2, (' 0 ') -> 0",
+      "AC-9: '2', '-1', '01', '> 1', '>=1', 'one', '', '   ' and non-strings null, undefined, 0, 1, NaN, {}, ['1'] each throw RangeError; '>1 ' (trailing space) returns 2",
+      "AC-10 (Indicator 3 part): every option of DELAY_COUNT_OPTIONS passed to delayCountWl returns an integer in 0..4 and none throws",
+      "AC-11 (Indicator 3 part): module delayCount.mjs performs no I/O, exports exactly DELAY_COUNT_OPTIONS and delayCountWl, package.json gains no dependencies, and its unit tests pass under node --test"
+    ]
+  }
+]

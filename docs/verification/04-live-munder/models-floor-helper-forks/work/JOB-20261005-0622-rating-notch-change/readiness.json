@@ -1,0 +1,215 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Deliver the notch change calculator (REQ-06-02) that indicators 11, 12, and 13 depend on. Success is measured by correct computation of notch changes between rating pairs per the 19-step scale.",
+      "source": "JOB-models-plain.md: Requirement section, Clarifications C1",
+      "quote": "Given a previous and a current rating, the system computes the notch change between them"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "Internal API consumers (other functions/indicators within the POC). No end users; no UI, CLI, or printed output.",
+      "source": "JOB-models-plain.md: Clarification C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: notchChange(previous, current) function per REQ-06-02 and clarifications C1–C4. Out of scope: UI, CLI, printed output, banking regulation/policy constraints.",
+      "source": "JOB-models-plain.md: Clarifications C2, C4",
+      "quote": "No banking-regulation or internal-policy constraint applies to this slice … No UI, CLI or printed output"
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Yes. Requirement has testable acceptance criteria with concrete examples: BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0. Clarifications C1–C4 provide complete specifications for input handling, error behavior, and output signing.",
+      "source": "JOB-models-plain.md: Requirement section, Clarifications C1–C4",
+      "quote": "BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "n_a",
+      "answer": "No explicit conflict statement in the request; requirement, clarifications, and examples are internally consistent.",
+      "source": "JOB-models-plain.md: Requirement, Clarifications, Contract",
+      "quote": "The requirement, examples (BBB+ → BB+ = 3-notch downgrade, etc.), and clarifications C1–C4 are mutually consistent"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Single requirement (REQ-06-02 part), single card. Must = implement notchChange function per spec. No prioritization needed; this slice is atomic.",
+      "source": "JOB-models-plain.md: Opening",
+      "quote": "This job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch calculator (REQ-06-02) are built on. It is small: one card"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "Fully specified. Function: notchChange(previous, current) → integer (signed). Inputs: string (rating). Output: notch change (downgrade positive, upgrade negative, unchanged 0). Rating scale: 19 steps best to worst (AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-). Input processing: trimmed and case-insensitive.",
+      "source": "JOB-models-plain.md: Clarifications C1, C3; Contract",
+      "quote": "Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-. A notch is one step on this scale. Input is trimmed … and case-insensitive … The result is signed: downgrade positive, upgrade negative, unchanged 0"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Invalid input rejected with RangeError. Invalid cases: unknown rating, empty string, non-string values (including String objects). Error type: RangeError. No fallback or recovery; rejection is the behavior.",
+      "source": "JOB-models-plain.md: Clarification C2",
+      "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object … is a non-string"
+    },
+    {
+      "id": "CON-compat",
+      "status": "decided",
+      "answer": "N/A. This is new code (one-card addition). No existing APIs or data modified. No backward compatibility concern.",
+      "source": "JOB-models-plain.md: Opening",
+      "quote": "This job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch calculator (REQ-06-02) are built on. It is small: one card"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Library. Single JavaScript module (ESM) exporting a pure calculation function. No BFF, microservices, or separate deployment. Imported by other functions in the POC.",
+      "source": "JOB-models-plain.md: Contract",
+      "quote": "Plain Node ESM, no dependencies; tests with … next to the code under"
+    },
+    {
+      "id": "ARC-components",
+      "status": "n_a",
+      "answer": "Single library component; component role and stack are determined by the job's architecture (library, not a complex system needing component breakdown).",
+      "source": "JOB-models-plain.md: Contract; CLAUDE.md",
+      "quote": "Plain Node ESM, no dependencies … Code lives in src/<area>/, tests in test/<area>/*.test.mjs"
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Core/domain layer. Pure calculation function (no I/O, no side effects).",
+      "source": "CLAUDE.md: Project conventions",
+      "quote": "Pure functions, no I/O in … and …"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Language: JavaScript (Node.js 18+ ESM, .mjs files). Test framework: node:test (built-in). Assert: node:assert/strict (built-in). No external dependencies.",
+      "source": "CLAUDE.md; JOB-models-plain.md: Contract",
+      "quote": "Plain Node.js 18+ ES modules … No npm dependencies; do not add any."
+    },
+    {
+      "id": "ARC-data",
+      "status": "decided",
+      "answer": "N/A. Pure function; no data storage, no database, no state.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in … and …"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "decided",
+      "answer": "N/A. No external systems called. Pure calculation function.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in … and …"
+    },
+    {
+      "id": "ARC-async",
+      "status": "decided",
+      "answer": "Synchronous. Pure function; no queues, events, or async I/O. Idempotent by definition.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in … and …"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No performance targets stated in this slice. Pure in-memory lookup; not a bottleneck for the POC.",
+      "source": "JOB-models-plain.md",
+      "quote": "Requirement section and Clarifications C1–C4 contain no performance targets or SLAs"
+    },
+    {
+      "id": "NFR-availability",
+      "status": "decided",
+      "answer": "N/A. No external dependencies; no failure modes except invalid input (which raises RangeError as specified).",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in … and …"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Input validation: trim and case-normalize ratings; reject unknown ratings, empty strings, and non-strings with RangeError. No authentication, secrets, or sensitive data.",
+      "source": "JOB-models-plain.md: Clarifications C1, C2",
+      "quote": "Input is trimmed … and case-insensitive … Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "No personal or sensitive data. Pure calculation on rating codes.",
+      "source": "JOB-models-plain.md: Clarification C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "decided",
+      "answer": "N/A. Pure function; no state changes or side effects to audit.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in … and …"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "decided",
+      "answer": "N/A. Pure function; no logging, metrics, or tracing required. Function is deterministic and testable.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in … and …"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "N/A. Explicitly excluded by requirement. No banking regulation or internal policy applies to this slice.",
+      "source": "JOB-models-plain.md: Clarification C2",
+      "quote": "No banking-regulation or internal-policy constraint applies to this slice"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests with node:test framework. Dev-driven TDD (developers write tests). Test file: test/ratings/notch.test.mjs. Coverage should include: all 19 ratings as both previous and current, boundaries (AAA, CCC-), invalid inputs (empty string, non-string, unknown rating), unchanged case (A → A).",
+      "source": "CLAUDE.md; README.md",
+      "quote": "Tests: … + … , files …"
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "Passing tests via npm test (= node --test). No lint, typecheck, or security scans specified for this POC.",
+      "source": "README.md; CLAUDE.md",
+      "quote": "Run the tests: … (= …"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "answer": "No deployment/rollout. Library function imported by other POC code. Single card, single requirement; integrated into the codebase when tests pass.",
+      "source": "JOB-models-plain.md: Clarification C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No documentation deliverable required. Function is imported internally; JSDoc is a dev convention, not a docs card.",
+      "source": "JOB-models-plain.md: Contract section",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "notch-change",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node-18+",
+          "esm"
+        ],
+        "path": [
+          "src/ratings/",
+          "test/ratings/",
+          "test/integration/ratings/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Pure function module exporting notchChange(previous, current) and RATING_SCALE. No I/O, no external dependencies. Imported by indicators 11, 12, 13 and other POC modules."
+      }
+    ]
+  }
+}

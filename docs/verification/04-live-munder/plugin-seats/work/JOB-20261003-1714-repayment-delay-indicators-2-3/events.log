@@ -1,0 +1,67 @@
+2026-10-03T17:14:33Z	new	Repayment delay indicators 2-3
+2026-10-03T17:14:39Z	jobset	stack: .stack=["javascript"]
+2026-10-03T17:14:39Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/REQ-03-03: indicator domain logic (WL mapping)"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (Plain Node ESM) → stack reviewer"}]
+2026-10-03T17:14:39Z	jobset	assumptions: .assumptions += ["No security reviewer: pure functions with no auth/personal data; input validation covered by C1/C5 RangeError rules","Unit tests in test/indicators/, QA integration tests in a separate test/integration/indicators/ folder"]
+2026-10-03T17:14:40Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T17:14:40Z	phase	readiness
+2026-10-03T17:14:43Z	md-hire	ba#1 → worker-seat-20261003-1714-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-03T17:14:43Z	md-hire	backend-lead#1 → worker-seat-20261003-1714-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-03T17:14:43Z	md-hire	backend#1 → worker-seat-20261003-1714-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-03T17:14:43Z	md-hire	backend#2 → worker-seat-20261003-1714-backend-2-h1 (claude claude-sonnet-5-5, jim)
+2026-10-03T17:14:44Z	md-hire	qa#1 → worker-seat-20261003-1714-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-03T17:14:44Z	md-hire	reviewer#1 → worker-seat-20261003-1714-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-03T17:15:10Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261003-1714-ba-1-h1
+2026-10-03T17:16:11Z	md-done	readiness ba#1: readiness: 32 items answered, 2 open pm items, 0 business
+2026-10-03T17:16:35Z	md-send	readiness2 ba#1 (business-analyst) → worker-seat-20261003-1714-ba-1-h1
+2026-10-03T17:16:59Z	readiness	33 items: 18 decided, 13 n/a, 2 open
+2026-10-03T17:16:59Z	decide	X-errors-msg: Message must name the indicator and quote the rejected value, e.g. 'daysWithDelayWl: invalid option ">3 Days"'; tests assert only the RangeError type plus that the message contains the function name. — C1/C5 only demand a RangeError; a stable, informative message helps callers debug without making tests brittle.
+2026-10-03T17:17:00Z	decide	X-options-immutable: Yes: both *_OPTIONS arrays are Object.freeze'd; mutating them has no effect on the mapping. — The lists are the single source of truth the POC screens render (C4); freezing prevents a caller from corrupting the shared list at no cost.
+2026-10-03T17:17:00Z	readiness	33 items: 20 decided, 13 n/a, 0 open
+2026-10-03T17:17:01Z	freeze	readiness + architecture frozen (e0bcb3df31a9)
+2026-10-03T17:17:01Z	roles	ba backend-lead backend qa reviewer
+2026-10-03T17:17:01Z	phase	planning
+2026-10-03T17:17:12Z	md-done	readiness2 ba#1: readiness2: readiness-ba.json confirmed on disk
+2026-10-03T17:17:12Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261003-1714-ba-1-h1
+2026-10-03T17:18:32Z	md-done	plan ba#1: plan: 18 ACs, no open questions
+2026-10-03T17:18:32Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261003-1714-backend-lead-1-h1
+2026-10-03T17:19:19Z	md-done	cards-backend-lead backend-lead#1: cards: 2 parallel cards B1 (Ind.2), B2 (Ind.3)
+2026-10-03T17:19:34Z	md-send	spec-cards ba#1 (business-analyst) → worker-seat-20261003-1714-ba-1-h1
+2026-10-03T17:20:41Z	md-done	spec-cards ba#1: spec-cards: specs for T-01, T-02
+2026-10-03T17:20:51Z	phase	executing
+2026-10-03T17:21:02Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-03T17:21:03Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-03T17:21:08Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261003-1714-backend-1-h1
+2026-10-03T17:21:09Z	md-send	T-02 backend#2 (backend-dev) → worker-seat-20261003-1714-backend-2-h1
+2026-10-03T17:21:50Z	md-done	T-01 backend#1: T-01: daysWithDelayWl, commit eb9c87b, verify 7/7
+2026-10-03T17:21:50Z	md-done	T-02 backend#2: T-02: delayCountWl, commit 95b64c3, verify 7/7
+2026-10-03T17:21:51Z	gate	T-01 PASS
+2026-10-03T17:21:52Z	gate	T-02 PASS
+2026-10-03T17:22:02Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261003-1714-qa-1-h1
+2026-10-03T17:23:05Z	md-done	T-01 qa#1: T-01 QA pass 12/12, commit b6c7bcc
+2026-10-03T17:23:06Z	qa	T-01 pass (qa_verify PASS) — AC-1..8, AC-16, AC-17, AC-18 pass (12 integration tests, test/integration/indicators/daysWithDelay.test.mjs)
+2026-10-03T17:23:07Z	md-send	T-02 qa#1 (qa-tester) → worker-seat-20261003-1714-qa-1-h1
+2026-10-03T17:23:08Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261003-1714-reviewer-1-h1
+2026-10-03T17:23:35Z	md-done	T-01 reviewer#1: T-01 review approve, 0 blocking, 2 nits
+2026-10-03T17:23:35Z	review	T-01 reviewer approve — 0 blocking, 2 nits; typeof-before-trim, Map lookup, frozen list, scope OK
+2026-10-03T17:23:36Z	integrate	T-01 merged
+2026-10-03T17:23:58Z	md-done	T-02 qa#1: T-02 QA pass 11/11, commit 8aaa1da
+2026-10-03T17:23:59Z	qa	T-02 pass (qa_verify PASS) — AC-9..15, AC-16, AC-17, AC-18 pass (11 integration tests, test/integration/indicators/delayCount.test.mjs)
+2026-10-03T17:24:08Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261003-1714-reviewer-1-h1
+2026-10-03T17:24:34Z	md-done	T-02 reviewer#1: T-02 review approve, 0 blocking, 2 nits
+2026-10-03T17:24:34Z	review	T-02 reviewer approve — 0 blocking, 2 nits; Map.has lookup, numbers rejected, frozen list, scope OK
+2026-10-03T17:24:35Z	integrate	T-02 merged
+2026-10-03T17:24:40Z	phase	integrating
+2026-10-03T17:24:41Z	verify-all	PASS
+2026-10-03T17:24:47Z	phase	closing
+2026-10-03T17:24:47Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261003-1714-ba-1-h1
+2026-10-03T17:25:48Z	md-done	closing ba#1: closing: 18/18 ACs met
+2026-10-03T17:26:03Z	learn	ba: Verify your output file exists on disk (ls -l) before reporting done — a blocked write once produced a 'done' with no file.
+2026-10-03T17:26:03Z	learn	all: Keep each card's qa_scope/qa_verify to its own test file, not the shared folder, so parallel cards' QA runs stay independent.
+2026-10-03T17:26:04Z	ship	local merge into main
+2026-10-03T17:26:08Z	md-release	ba#1 → worker-seat-20261003-1714-ba-1-h1
+2026-10-03T17:26:08Z	md-release	backend-lead#1 → worker-seat-20261003-1714-backend-lead-1-h1
+2026-10-03T17:26:08Z	md-release	backend#1 → worker-seat-20261003-1714-backend-1-h1
+2026-10-03T17:26:08Z	md-release	backend#2 → worker-seat-20261003-1714-backend-2-h1
+2026-10-03T17:26:08Z	md-release	qa#1 → worker-seat-20261003-1714-qa-1-h1
+2026-10-03T17:26:08Z	md-release	reviewer#1 → worker-seat-20261003-1714-reviewer-1-h1
+2026-10-03T17:26:08Z	cleanup	

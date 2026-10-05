@@ -1,0 +1,378 @@
+# qa_verify: node --test test/integration/indicators/countryRating.integration.test.mjs
+TAP version 13
+# Subtest: AC-10: downgrade WL (REQ-03-12)
+    # Subtest: AC-10: countryRatingChangeWl(A, A-) is 1 and a number
+    ok 1 - AC-10: countryRatingChangeWl(A, A-) is 1 and a number
+      ---
+      duration_ms: 1.407038
+      type: 'test'
+      ...
+    # Subtest: AC-10: countryRatingChangeWl(CCC, CCC-) is 1 and a number
+    ok 2 - AC-10: countryRatingChangeWl(CCC, CCC-) is 1 and a number
+      ---
+      duration_ms: 0.230293
+      type: 'test'
+      ...
+    # Subtest: AC-10: countryRatingChangeWl(BBB+, BBB-) is 2 and a number
+    ok 3 - AC-10: countryRatingChangeWl(BBB+, BBB-) is 2 and a number
+      ---
+      duration_ms: 0.241164
+      type: 'test'
+      ...
+    # Subtest: AC-10: countryRatingChangeWl(BBB+, BB+) is 2 and a number
+    ok 4 - AC-10: countryRatingChangeWl(BBB+, BB+) is 2 and a number
+      ---
+      duration_ms: 0.259438
+      type: 'test'
+      ...
+    # Subtest: AC-10: countryRatingChangeWl(AAA, CCC-) is 2 and a number
+    ok 5 - AC-10: countryRatingChangeWl(AAA, CCC-) is 2 and a number
+      ---
+      duration_ms: 0.177911
+      type: 'test'
+      ...
+    1..5
+ok 1 - AC-10: downgrade WL (REQ-03-12)
+  ---
+  duration_ms: 4.382609
+  type: 'suite'
+  ...
+# Subtest: AC-11: upgrade or unchanged gives 0 (C3)
+    # Subtest: AC-11: countryRatingChangeWl(BB, BBB) is 0 (+0)
+    ok 1 - AC-11: countryRatingChangeWl(BB, BBB) is 0 (+0)
+      ---
+      duration_ms: 1.485324
+      type: 'test'
+      ...
+    # Subtest: AC-11: countryRatingChangeWl(A-, A) is 0 (+0)
+    ok 2 - AC-11: countryRatingChangeWl(A-, A) is 0 (+0)
+      ---
+      duration_ms: 0.260764
+      type: 'test'
+      ...
+    # Subtest: AC-11: countryRatingChangeWl(CCC-, AAA) is 0 (+0)
+    ok 3 - AC-11: countryRatingChangeWl(CCC-, AAA) is 0 (+0)
+      ---
+      duration_ms: 0.289231
+      type: 'test'
+      ...
+    # Subtest: AC-11: countryRatingChangeWl(BBB, BBB) is 0 (+0)
+    ok 4 - AC-11: countryRatingChangeWl(BBB, BBB) is 0 (+0)
+      ---
+      duration_ms: 0.202441
+      type: 'test'
+      ...
+    # Subtest: AC-11: all 361 scale pairs follow n >= 2 ? 2 : n === 1 ? 1 : 0, result in {0,1,2}
+    ok 5 - AC-11: all 361 scale pairs follow n >= 2 ? 2 : n === 1 ? 1 : 0, result in {0,1,2}
+      ---
+      duration_ms: 0.896553
+      type: 'test'
+      ...
+    # Subtest: AC-11 edge: threshold boundaries n=1 -> 1, n=2 -> 2, n=18 capped at 2, n=0/-1/-18 -> 0
+    ok 6 - AC-11 edge: threshold boundaries n=1 -> 1, n=2 -> 2, n=18 capped at 2, n=0/-1/-18 -> 0
+      ---
+      duration_ms: 0.125554
+      type: 'test'
+      ...
+    1..6
+ok 2 - AC-11: upgrade or unchanged gives 0 (C3)
+  ---
+  duration_ms: 3.637581
+  type: 'suite'
+  ...
+# Subtest: AC-12: Ind. 12 vs calculator thresholds differ on purpose (C2, C6)
+    # Subtest: AC-12: (A, A-) is 1 notches, calculator wl 0, Ind. 12 WL 1
+    ok 1 - AC-12: (A, A-) is 1 notches, calculator wl 0, Ind. 12 WL 1
+      ---
+      duration_ms: 0.225747
+      type: 'test'
+      ...
+    # Subtest: AC-12: (BBB+, BBB-) is 2 notches, calculator wl 1, Ind. 12 WL 2
+    ok 2 - AC-12: (BBB+, BBB-) is 2 notches, calculator wl 1, Ind. 12 WL 2
+      ---
+      duration_ms: 0.059178
+      type: 'test'
+      ...
+    # Subtest: AC-12: (BBB+, BB+) is 3 notches, calculator wl 2, Ind. 12 WL 2
+    ok 3 - AC-12: (BBB+, BB+) is 3 notches, calculator wl 2, Ind. 12 WL 2
+      ---
+      duration_ms: 0.052248
+      type: 'test'
+      ...
+    1..3
+ok 3 - AC-12: Ind. 12 vs calculator thresholds differ on purpose (C2, C6)
+  ---
+  duration_ms: 0.444259
+  type: 'suite'
+  ...
+# Subtest: AC-3 (indicator part): whitespace and case normalisation (C1)
+    # Subtest: AC-3: countryRatingChangeWl("  a ", "a-") returns 1
+    ok 1 - AC-3: countryRatingChangeWl("  a ", "a-") returns 1
+      ---
+      duration_ms: 0.092498
+      type: 'test'
+      ...
+    # Subtest: AC-3: normalised input equals canonical input result
+    ok 2 - AC-3: normalised input equals canonical input result
+      ---
+      duration_ms: 0.069321
+      type: 'test'
+      ...
+    1..2
+ok 4 - AC-3 (indicator part): whitespace and case normalisation (C1)
+  ---
+  duration_ms: 0.227597
+  type: 'suite'
+  ...
+# Subtest: AC-4 (indicator part): invalid input throws RangeError (CON-errors)
+    # Subtest: AC-4: invalid previous "CC" throws RangeError
+    ok 1 - AC-4: invalid previous "CC" throws RangeError
+      ---
+      duration_ms: 0.63061
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "CC" throws RangeError
+    ok 2 - AC-4: invalid current "CC" throws RangeError
+      ---
+      duration_ms: 0.114339
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous "D" throws RangeError
+    ok 3 - AC-4: invalid previous "D" throws RangeError
+      ---
+      duration_ms: 0.060639
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "D" throws RangeError
+    ok 4 - AC-4: invalid current "D" throws RangeError
+      ---
+      duration_ms: 0.052594
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous "NR" throws RangeError
+    ok 5 - AC-4: invalid previous "NR" throws RangeError
+      ---
+      duration_ms: 0.052057
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "NR" throws RangeError
+    ok 6 - AC-4: invalid current "NR" throws RangeError
+      ---
+      duration_ms: 0.052998
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous "AAA+" throws RangeError
+    ok 7 - AC-4: invalid previous "AAA+" throws RangeError
+      ---
+      duration_ms: 0.05966
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "AAA+" throws RangeError
+    ok 8 - AC-4: invalid current "AAA+" throws RangeError
+      ---
+      duration_ms: 0.054729
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous "Baa1" throws RangeError
+    ok 9 - AC-4: invalid previous "Baa1" throws RangeError
+      ---
+      duration_ms: 0.05403
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "Baa1" throws RangeError
+    ok 10 - AC-4: invalid current "Baa1" throws RangeError
+      ---
+      duration_ms: 1.03852
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous "" throws RangeError
+    ok 11 - AC-4: invalid previous "" throws RangeError
+      ---
+      duration_ms: 0.117558
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "" throws RangeError
+    ok 12 - AC-4: invalid current "" throws RangeError
+      ---
+      duration_ms: 0.078617
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous "   " throws RangeError
+    ok 13 - AC-4: invalid previous "   " throws RangeError
+      ---
+      duration_ms: 0.060738
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "   " throws RangeError
+    ok 14 - AC-4: invalid current "   " throws RangeError
+      ---
+      duration_ms: 0.059828
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous "BBB +" throws RangeError
+    ok 15 - AC-4: invalid previous "BBB +" throws RangeError
+      ---
+      duration_ms: 0.156044
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current "BBB +" throws RangeError
+    ok 16 - AC-4: invalid current "BBB +" throws RangeError
+      ---
+      duration_ms: 0.063366
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous null throws RangeError
+    ok 17 - AC-4: invalid previous null throws RangeError
+      ---
+      duration_ms: 0.056534
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current null throws RangeError
+    ok 18 - AC-4: invalid current null throws RangeError
+      ---
+      duration_ms: 0.068301
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous undefined throws RangeError
+    ok 19 - AC-4: invalid previous undefined throws RangeError
+      ---
+      duration_ms: 0.149527
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current undefined throws RangeError
+    ok 20 - AC-4: invalid current undefined throws RangeError
+      ---
+      duration_ms: 0.090878
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous 42 throws RangeError
+    ok 21 - AC-4: invalid previous 42 throws RangeError
+      ---
+      duration_ms: 0.059413
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current 42 throws RangeError
+    ok 22 - AC-4: invalid current 42 throws RangeError
+      ---
+      duration_ms: 0.052074
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid previous {} throws RangeError
+    ok 23 - AC-4: invalid previous {} throws RangeError
+      ---
+      duration_ms: 0.053156
+      type: 'test'
+      ...
+    # Subtest: AC-4: invalid current {} throws RangeError
+    ok 24 - AC-4: invalid current {} throws RangeError
+      ---
+      duration_ms: 0.050417
+      type: 'test'
+      ...
+    # Subtest: AC-4: never TypeError, never a returned value, for all 24 cases
+    ok 25 - AC-4: never TypeError, never a returned value, for all 24 cases
+      ---
+      duration_ms: 0.474013
+      type: 'test'
+      ...
+    # Subtest: AC-4: both arguments invalid throws RangeError
+    ok 26 - AC-4: both arguments invalid throws RangeError
+      ---
+      duration_ms: 0.189424
+      type: 'test'
+      ...
+    # Subtest: AC-4: RangeError from notchChange reaches the caller with the same type and message
+    ok 27 - AC-4: RangeError from notchChange reaches the caller with the same type and message
+      ---
+      duration_ms: 1.229253
+      type: 'test'
+      ...
+    1..27
+ok 5 - AC-4 (indicator part): invalid input throws RangeError (CON-errors)
+  ---
+  duration_ms: 5.798477
+  type: 'suite'
+  ...
+# Subtest: AC-13 (indicator part): contract
+    # Subtest: AC-13: exactly one import, notchChange from ../ratings/notch.mjs
+    ok 1 - AC-13: exactly one import, notchChange from ../ratings/notch.mjs
+      ---
+      duration_ms: 0.601206
+      type: 'test'
+      ...
+    # Subtest: AC-13: no require(, fetch, process, node:fs/http/https or console. use
+    ok 2 - AC-13: no require(, fetch, process, node:fs/http/https or console. use
+      ---
+      duration_ms: 0.257675
+      type: 'test'
+      ...
+    # Subtest: AC-13 / C7: countryRatingChangeWl.length === 2 (no override or options parameter)
+    ok 3 - AC-13 / C7: countryRatingChangeWl.length === 2 (no override or options parameter)
+      ---
+      duration_ms: 0.082821
+      type: 'test'
+      ...
+    # Subtest: AC-13 / C8: arguments are not changed and no object is written to
+    ok 4 - AC-13 / C8: arguments are not changed and no object is written to
+      ---
+      duration_ms: 0.150606
+      type: 'test'
+      ...
+    # Subtest: AC-13 / C8: calling the function writes nothing to stdout or stderr (child process)
+    ok 5 - AC-13 / C8: calling the function writes nothing to stdout or stderr (child process)
+      ---
+      duration_ms: 37.377298
+      type: 'test'
+      ...
+    # Subtest: AC-13: importing the module writes nothing to stdout or stderr (child process)
+    ok 6 - AC-13: importing the module writes nothing to stdout or stderr (child process)
+      ---
+      duration_ms: 51.124065
+      type: 'test'
+      ...
+    1..6
+ok 6 - AC-13 (indicator part): contract
+  ---
+  duration_ms: 89.888868
+  type: 'suite'
+  ...
+# Subtest: AC-14: full suite and package.json
+    # Subtest: AC-14: `node --test` from the repo root exits 0, runs both unit test files, fail 0
+    ok 1 - AC-14: `node --test` from the repo root exits 0, runs both unit test files, fail 0
+      ---
+      duration_ms: 525.490904
+      type: 'test'
+      ...
+    # Subtest: AC-14: the two unit test files exist and use node:test and node:assert/strict
+    ok 2 - AC-14: the two unit test files exist and use node:test and node:assert/strict
+      ---
+      duration_ms: 1.261594
+      type: 'test'
+      ...
+    # Subtest: AC-14 / ARC-stack: package.json has no dependencies or devDependencies and scripts.test is "node --test"
+    ok 3 - AC-14 / ARC-stack: package.json has no dependencies or devDependencies and scripts.test is "node --test"
+      ---
+      duration_ms: 0.185825
+      type: 'test'
+      ...
+    # Subtest: AC-14: plan AC trace - each indicator AC maps to a named test in the unit file
+    ok 4 - AC-14: plan AC trace - each indicator AC maps to a named test in the unit file
+      ---
+      duration_ms: 0.193382
+      type: 'test'
+      ...
+    1..4
+ok 7 - AC-14: full suite and package.json
+  ---
+  duration_ms: 527.386003
+  type: 'suite'
+  ...
+1..7
+# tests 53
+# suites 7
+# pass 53
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 783.489068
