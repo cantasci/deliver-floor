@@ -34,6 +34,10 @@ const has = (cmd, args = ["--version"]) => { try { execFileSync(cmd, args, { std
 const version = readJson(join(kit, ".claude-plugin", "plugin.json"), {}).version ?? "dev";
 const marker = join(dataDir, `setup-${version}.done`);
 if (!existsSync(marker)) {
+  // an update: tell the user once what version they are on now and where the changes are listed
+  const prev = (existsSync(dataDir) ? readdirSync(dataDir) : []).map((f) => f.match(/^setup-(.+)\.done$/)?.[1]).filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).pop();
+  if (prev) done.push(`updated to ${version} (was ${prev}) — what changed: https://github.com/cantasci/deliver-floor/blob/main/CHANGELOG.md`);
   const snippet = readJson(join(kit, "settings.hooks.json"), {});
   const settingsPath = join(cfgDir, "settings.json");
   const cur = readJson(settingsPath, {});

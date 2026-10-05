@@ -17,3 +17,9 @@ Practicalities:
 - No AI attribution in commits of delivered work; the gate checks it.
 
 By contributing you agree that your contributions are licensed under the Apache License 2.0 (see `LICENSE`).
+
+## Releasing
+
+Claude Code installs a new version of the plugin only when `version` in `kit/.claude-plugin/plugin.json` changes. A
+change under `kit/` therefore raises it (semver: a fix → patch, a feature → minor) and adds a `## <version>` entry at the top
+of `CHANGELOG.md` saying what users get. `tests/run.sh` fails when `kit/` differs from `origin/main` without both.

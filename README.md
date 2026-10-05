@@ -105,6 +105,18 @@ Then add what only you know, such as models per role:
 wins. `merge_mode` decides who merges: `human` (a PR you merge), `semi` (auto-merge on your approval), `auto` (on green CI),
 `local` (no remote). Every key: [docs/03-settings](docs/03-settings.md).
 
+## Staying up to date
+
+Claude Code updates a plugin only when its version changes, and for a marketplace like this one it does not check by
+itself until you turn that on:
+
+- **Automatically:** in Claude Code, `/plugin` → **Marketplaces** → `deliver-floor` → **Enable auto-update**.
+- **By hand:** `claude plugin update deliver@deliver-floor`, or `/plugin` → **Installed** → `deliver` → **Update now**.
+
+After an update, run `/reload-plugins` (or start a new session). The first session on a new version tells you which version
+you are on now and links to the [CHANGELOG](CHANGELOG.md). Your `.deliver.json` files and `~/.deliver/config.json` are
+never touched by an update.
+
 ## Connect it
 
 `scripts/doctor.sh <repo>` checks everything below for that repo and says what is missing, with the fix.

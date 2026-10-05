@@ -1071,6 +1071,24 @@ OLD="$TMP/oldhome"; mkdir -p "$OLD/.claude"; echo '{"hooks":{"Stop":[{"hooks":[{
 HOME="$OLD" "$HERE/scripts/install.sh" --user >/dev/null 2>&1
 contains "upgrading a copied install replaces the old .sh hook entries (no double guards)" "$(jq -c '[.hooks.Stop[].hooks[].command]' "$OLD/.claude/settings.json")" "[\"node \\\"$OLD/.claude/hooks/deliver\\\"/run.mjs stop-guard\"]"
 
+echo "releases: a change to the plugin raises its version and says what changed"
+V="$(jq -r .version "$HERE/kit/.claude-plugin/plugin.json")"
+grep -q "^## $V\b" "$HERE/CHANGELOG.md" && ok "CHANGELOG.md has an entry for the plugin's version ($V)" || bad "CHANGELOG.md has no '## $V' entry"
+if BASE="$(git -C "$HERE" merge-base HEAD origin/main 2>/dev/null)"; then
+  if git -C "$HERE" diff --quiet "$BASE" -- kit; then ok "kit/ unchanged since origin/main — no new version needed"
+  else
+    BV="$(git -C "$HERE" show "$BASE:kit/.claude-plugin/plugin.json" 2>/dev/null | jq -r .version)"
+    [[ $V != "$BV" && "$(printf '%s\n%s\n' "$BV" "$V" | sort -V | tail -1)" == "$V" ]] \
+      && ok "kit/ changed since origin/main and the version went up ($BV → $V): users get it" \
+      || bad "kit/ changed since origin/main but the plugin version is still $V — raise it in kit/.claude-plugin/plugin.json and add a CHANGELOG.md entry, or installed users never get the change"
+  fi
+else ok "(no origin/main here — version check skipped)"; fi
+UD="$TMP/updatedata"; mkdir -p "$UD" && echo x > "$UD/setup-0.3.0.done"
+out="$(echo '{}' | CLAUDE_CONFIG_DIR="$TMP/updhome" CLAUDE_PLUGIN_ROOT="$HERE/kit" CLAUDE_PLUGIN_DATA="$UD" CLAUDE_PROJECT_DIR="$TMP" node "$HERE/kit/hooks/deliver/setup.mjs")"
+contains "the first session after an update says the new version and where the changes are" "$(jq -r .systemMessage <<<"$out")" "updated to $V (was 0.3.0) — what changed: https://github.com/cantasci/deliver-floor/blob/main/CHANGELOG.md"
+out="$(echo '{}' | CLAUDE_CONFIG_DIR="$TMP/updhome" CLAUDE_PLUGIN_ROOT="$HERE/kit" CLAUDE_PLUGIN_DATA="$UD" CLAUDE_PROJECT_DIR="$TMP" node "$HERE/kit/hooks/deliver/setup.mjs")"
+[[ $out != *"updated to"* ]] && ok "…once" || bad "update notice repeated: $out"
+
 echo "Windows"
 grep -q '^\* text=auto eol=lf' "$HERE/.gitattributes" && ok ".gitattributes keeps LF in every checkout (a CRLF .sh breaks bash on Windows)" || bad ".gitattributes"
 crlf="$(cd "$HERE" && git ls-files kit scripts tests | grep -E '\.(sh|mjs|cjs|json|md)$|/bin/dl$' | xargs grep -lI $'\r' 2>/dev/null | head -3)"
