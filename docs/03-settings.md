@@ -21,7 +21,7 @@ human accepts it with `dl reseal "<reason>"`.
 | `max_parallel` | `3` | Max cards running at once (all roles together). Seats per role are set on the role (`"count": N`) |
 | `max_attempts` | `2` | Tries per card (gate fail, QA fail, review "changes", conflict) before it is `blocked` and the human decides |
 | `gates.plan` | `false` | `true` = the human approves plan + board before any code. Off by default: the human is asked at readiness (only open business questions) and at the PR |
-| `verify_full` | `"npm test"` | The full suite on the job branch after all cards merged (`dl verify-all`). Set it per repo |
+| `verify_full` | `""` | The full suite on the job branch after all cards merged (`dl verify-all`). Detected from the repo (package.json → `npm test`, pyproject → `pytest -q`, go.mod, pom.xml, Cargo.toml) when `.deliver.json` is written; no default language, so a repo without code gets it once the stack is decided |
 | `worktree_setup` | `""` | Runs inside every new card worktree (deps, env) — [02 § 4.1](02-setup.md#41-deliverjson--how-this-repo-is-verified-and-delivered) |
 | `worktree_exclude` | `node_modules, .venv, .env, .claude/settings.local.json` | Paths `worktree_setup` creates that must never count as changes (added to `.git/info/exclude`) |
 | `gate_timeout` | `1800` | Seconds a card's `verify` / `qa_verify` may run in the gate |

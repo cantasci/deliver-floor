@@ -74,7 +74,9 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    default** (not even the language you would write fastest): leave `.stack` empty. The language and runtime are then the
    readiness item `ARC-stack`: decided only by the request (quoted) or by the human at the start, with the options and the
    evidence the request gives (libraries, tools and platforms it names — e.g. `yfinance` or a "Python client" point to
-   Python). Once it is decided, record `.stack` and pick the stack reviewer; `dl` refuses planning before that.
+   Python). Once it is decided, record `.stack`, pick the stack reviewer, and set the full test command for that stack if the
+   repo has none (`"$DL" jobset '.settings.verify_full="pytest -q"'`); `dl` refuses planning without a reviewer and
+   `verify-all` without a test command.
 3. **Select the roles from the request** — read `roles.yaml` (the only catalog). For each role apply its `when` to what the request
    asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer (once the stack is known) from `stack_reviewers`
    (most specific match) as role `reviewer` (a second one, e.g. for a React UI next to a Node API, as `reviewer-ui`).

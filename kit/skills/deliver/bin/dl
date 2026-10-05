@@ -240,7 +240,7 @@ project_config_template() {
   [[ -f $ROOT/pom.xml ]] && verify="mvn -q test"
   [[ -f $ROOT/Cargo.toml ]] && verify="cargo test"
   git -C "$ROOT" remote get-url origin >/dev/null 2>&1 || mm=local
-  jq -n --arg schema "$SCHEMA_URL" --arg v "${verify:-echo 'set verify_full in .deliver.json' && false}" --arg m "$mm" --slurpfile c "$CONFIG" '
+  jq -n --arg schema "$SCHEMA_URL" --arg v "${verify:-}" --arg m "$mm" --slurpfile c "$CONFIG" '
     {"$schema": $schema,
      dispatch: $c[0].dispatch,
      verify_full: $v, worktree_setup: "", merge_mode: $m,
@@ -961,7 +961,7 @@ cmd_integrate() {
 cmd_verify_all() {
   load_job
   local cmd log head; cmd="$(setting verify_full)"; log="$JOB_DIR/gates/verify-all-$(date +%H%M%S).log"
-  [[ -n $cmd ]] || die "verify_full is not set (config.json / .deliver.json)"
+  [[ -n $cmd ]] || refuse 1 "verify_full is not set — it follows the stack (ARC-stack): record the full test command with dl jobset '.settings.verify_full=\"<command>\"' (and in .deliver.json for the next jobs)"
   head="$(branch_head "$JOB_BRANCH")"
   echo "verify_full: $cmd  (log: $log)"
   local result=FAIL

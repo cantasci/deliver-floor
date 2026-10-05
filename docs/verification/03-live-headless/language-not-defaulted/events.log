@@ -1,0 +1,33 @@
+2026-10-05T15:16:01Z	new	Credit Watchlist POC
+2026-10-05T15:16:10Z	jobset	roles: .roles=[
+{"role":"ba","agent":"business-analyst","why":"always"},
+{"role":"qa","agent":"qa-tester","why":"always"},
+{"role":"backend-lead","agent":"ecc:architect","why":"REQ-02-01..09: automated data fetchers (KAP, BDDK, yfinance, Google News RSS) and WL scoring engine REQ-05-01"},
+{"role":"backend","agent":"backend-dev","why":"REQ-02-*, REQ-05-01: fetchers and scoring logic"},
+{"role":"frontend-lead","agent":"ecc:architect","why":"REQ-03-14, REQ-04-02: assessment forms with pre-filled/locked/suggested field states"},
+{"role":"frontend","agent":"frontend-dev","why":"REQ-03-*, REQ-04-*: Hard/Soft Factor forms, news panel, WL colour coding"},
+{"role":"quality","agent":"ecc:silent-failure-hunter","why":"REQ-02-08: fetch failure must fall back to manual with clear error, never silently"}
+]
+2026-10-05T15:16:10Z	jobset	assumptions: .assumptions += ["Stack not yet decided: repo has no code; request names yfinance and a Python KAP client (Python evidence) - to be settled via readiness ARC-stack"]
+2026-10-05T15:16:10Z	roles	ba qa backend-lead backend frontend-lead frontend quality
+2026-10-05T15:16:10Z	phase	readiness
+2026-10-05T15:24:44Z	agent	business-analyst a97bb36f: I did not write `/tmp/claude-0/lang/repo/.work/JOB-20261005-1516-credit-watchlist-poc/out-readiness-ba.json`: my role card says I don't modify files, so please 
+2026-10-05T15:26:20Z	jobset	roles: .roles += [{"role":"performance","agent":"ecc:performance-optimizer","why":"REQ-02-01: Fetch completes within 30 seconds; NFR-performance decided"}]
+2026-10-05T15:26:20Z	roles	ba qa backend-lead backend frontend-lead frontend quality performance
+2026-10-05T15:26:20Z	phase	readiness
+2026-10-05T15:26:33Z	jobset	roles: .roles += [{"role":"reviewer-undecided","agent":"ecc:code-reviewer","why":"stack undecided (ARC-stack open): default reviewer until the stack reviewer is chosen"}]
+2026-10-05T15:26:33Z	roles	ba qa backend-lead backend frontend-lead frontend quality performance reviewer-undecided
+2026-10-05T15:26:33Z	phase	readiness
+2026-10-05T15:26:33Z	readiness	57 items: 10 decided, 1 n/a, 46 open
+2026-10-05T15:26:44Z	decide	ARC-layer: Backend domain module (scoring) is the single source of truth; the UI calls it on each change (debounced) and the backend is authoritative on save — Satisfies REQ-03-14 real-time row WL and A4 (mirror Excel exactly) with one implementation, no rule duplication between UI and backend; observable behaviour is identical under every option.
+2026-10-05T15:26:44Z	decide	ARC-async: Fetchers run in parallel async calls with an overall 30 s deadline; per-field results are returned (value+source, or typed failure); a re-fetch action is idempotent, latest result wins — REQ-02-01 sets the 30 s budget and REQ-02-08 requires partial failure not to block the form; parallel per-field results is the simplest design that meets both for a single-user POC.
+2026-10-05T15:26:44Z	decide	NFR-observability: One structured log line per fetch (source, status, duration, error class) keyed by assessment id; no customer data in logs; no metrics or alerting — Keeps failures visible (REQ-02-08, quality role) with minimal footprint; avoids logging bank-confidential data pending the NFR-privacy answer.
+2026-10-05T15:26:44Z	decide	TST-strategy: TDD unit tests for the scoring engine (full value-to-WL table) and fetch parsers on recorded fixtures; QA integration tests run against fixture-backed fetchers; one opt-in live smoke test per source, excluded from verify; >=80% coverage on the scoring engine — Live sources change and would make gates flaky (e.g. Germany Fitch AAA is live data); fixtures keep gates deterministic while the smoke tests show real-source health.
+2026-10-05T15:26:44Z	decide	DEL-ci: Merge requires: unit tests + QA tests + lint + typecheck per component, wrapped by a single root verify command set once the stack is decided; verify_full updated accordingly — The kit default 'npm test' is not a decision; the right command depends on the human's ARC-stack answer, so it is fixed right after that.
+2026-10-05T15:26:44Z	decide	DEL-docs: README with setup/run/test instructions, the list of sources with known limits, and the scoring table; no other docs — Request asks for none beyond the in-app Data Guide (EPIC-06); a minimal README is needed for the C1 business review and for QA to run the app.
+2026-10-05T15:26:45Z	decide	X-fetch-timeouts: Per-source timeout 10 s, 1 retry with backoff, all sources in parallel within the 30 s overall deadline, in-memory cache per assessment, descriptive User-Agent, no proxy configured by default (configurable) — Fits inside REQ-02-01 30 s budget; implementation detail not constrained by the request.
+2026-10-05T15:26:57Z	jobset	roles: .roles += [{"role":"docs","agent":"ecc:doc-updater","why":"DEL-docs (PM decision): README with setup/run/test, sources and limits, scoring table"}]
+2026-10-05T15:26:57Z	roles	ba qa backend-lead backend frontend-lead frontend quality performance reviewer-undecided docs
+2026-10-05T15:26:57Z	phase	readiness
+2026-10-05T15:26:58Z	readiness	57 items: 17 decided, 1 n/a, 39 open
+2026-10-05T15:26:58Z	phase	awaiting_clarification
