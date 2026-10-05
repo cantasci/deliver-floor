@@ -1,0 +1,213 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Deliver the notch calculator notchChange(previous, current) that Indicators 11, 12, 13 build on. Success = the three REQ-06-02 examples hold: BBB+ to BB+ = +3, BB+ to BBB+ = -3, A to A = 0, plus the C1-C3 rules.",
+      "source": "JOB request, Requirement table (REQ-06-02)",
+      "quote": "Given a previous and a current rating, the system computes the notch change between them"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "No end users or roles; the only consumers are other POC modules that import the function. No role-based visibility applies.",
+      "source": "JOB request, C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: RATING_SCALE and notchChange in src/ratings/notch.mjs with tests under test/. Out of scope: Indicators 11-13, any UI/CLI/printing, other REQ-06 parts.",
+      "source": "JOB request, intro",
+      "quote": "This job is a one-requirement slice of that document"
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Yes: REQ-06-02 gives three concrete examples; C1-C3 give scale, normalisation, error and sign rules that can be turned into Given/When/Then with concrete values.",
+      "source": "JOB request, Requirement table",
+      "quote": "BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "No contradictions found. On the C1 scale BBB+ is index 7 and BB+ index 10, so 3 steps; downgrade = positive (C3) matches the examples; BB+ to BBB+ gives -3; A to A gives 0.",
+      "source": "JOB request, C3 vs Requirement table",
+      "quote": "The result is signed: downgrade positive, upgrade negative, unchanged 0."
+    },
+    {
+      "id": "PRD-priority",
+      "status": "n_a",
+      "answer": "Single card, single requirement: nothing to prioritise or split.",
+      "source": "JOB request, intro",
+      "quote": "It is small: one card."
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "src/ratings/notch.mjs exports RATING_SCALE (the 19 ratings, best first) and notchChange(previous, current) returning an integer = index(current) - index(previous). Inputs trimmed with trim() and case-insensitive; result signed per C3.",
+      "source": "JOB request, Contract",
+      "quote": "`notchChange(previous, current)` → integer (C3)."
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Any unknown rating, empty string or non-string (String object, null, undefined, number) throws RangeError, for either argument. Whitespace-only input trims to empty and is rejected.",
+      "source": "JOB request, C2",
+      "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError."
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "New module; src/ and test/ contain no files yet, so there is no existing behaviour, API or data to keep compatible; no versioning stated.",
+      "source": "JOB request, Contract",
+      "quote": "`RATING_SCALE` — the 19 ratings of C1, best first."
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Plain library module inside a single-component repo with area folders under src/. The change lives in src/ratings/notch.mjs with tests under test/.",
+      "source": "README.md",
+      "quote": "Code lives in `src/<area>/`, tests in `test/<area>/*.test.mjs`."
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "One component: ratings library, stack javascript (Node ESM), paths src/ratings/ and test/ratings/, owner backend, reviewer reviewer-javascript. See architecture block.",
+      "source": "JOB request, Contract",
+      "quote": "Plain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`."
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Shared domain library (pure functions) imported by other POC areas; no BFF, gateway or client layer.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ES modules (.mjs); no new dependencies allowed.",
+      "source": "CLAUDE.md",
+      "quote": "Plain Node.js 18+ ES modules (`.mjs`). No npm dependencies; do not add any."
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No data is stored; pure function over an in-memory constant scale.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems are called.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous pure function; no queues, events or jobs.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No latency/throughput/volume targets stated; 19-element lookup.",
+      "source": "JOB request, Contract",
+      "quote": "`RATING_SCALE` — the 19 ratings of C1, best first."
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "In-process pure function with no dependencies; nothing can be down.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Only input validation applies: strict type check, reject everything that is not a primitive string with RangeError; no auth or secrets.",
+      "source": "JOB request, C2",
+      "quote": "A String object such as `new String('A')` is a non-string."
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "Only rating codes are handled; no personal data, and nothing is logged or printed.",
+      "source": "JOB request, C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "Pure calculation with no state change; no audit requirement stated.",
+      "source": "JOB request, C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "No logging, metrics or tracing: the function prints nothing.",
+      "source": "JOB request, C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "None applies to this slice.",
+      "source": "JOB request, C2",
+      "quote": "No banking-regulation or internal-policy constraint applies to this slice."
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Dev writes unit tests with node:test + node:assert/strict in test/ratings/notch.test.mjs (TDD); QA covers integration/AC checks. Test data: the three REQ-06-02 examples, all 19 scale entries, trim/case variants, C2 invalid inputs (unknown, empty, whitespace-only, null, undefined, number, String object). No coverage threshold stated.",
+      "source": "CLAUDE.md",
+      "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`. `npm test` runs everything."
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "Full verification is node --test (npm test) green; no lint, typecheck or scan is configured in the repo.",
+      "source": "package.json",
+      "quote": "\"test\": \"node --test\""
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "answer": "Not deployed; consumed by import from other POC modules. No flags or migrations; rollback = revert the commit.",
+      "source": "JOB request, C4",
+      "quote": "other parts of the POC import the function"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No documentation, changelog or runbook update is requested; the Contract names only the module and tests.",
+      "source": "JOB request, Contract",
+      "quote": "Plain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`."
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "ratings-lib",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "nodejs-esm"
+        ],
+        "path": [
+          "src/ratings/",
+          "test/ratings/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Single component. src/ratings/notch.mjs exports RATING_SCALE and notchChange; pure functions, no I/O, no dependencies; tests in test/ratings/notch.test.mjs."
+      }
+    ]
+  }
+}

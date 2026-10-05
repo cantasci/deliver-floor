@@ -1,0 +1,33 @@
+== terminal: claude -p '/deliver …' in the repo
+terminal said:
+I did not run the flow in this terminal. This repo runs on the Munder Difflin floor, so I handed the job to Michael there with `dl floor-open`.
+
+- **Job:** the request is the file path `/home/user/skills-shop/examples/watchlist-poc/JOB-models-plain.md`. It asks for one card: the rating notch change, `src/ratings/notch.mjs`, covering REQ-06-02 (part).
+- **Hand-off:** Munder Difflin is starting on `/tmp/claude-0/fo-live/floor`, and the job is in Michael's inbox (`20261005T105504-deliver-31631`).
+- **Your next step:** the app opens on its floor picker with this floor selected. Click **Open** once, and Michael will start and read the job.
+- **Following along:** from here you can use `dl status`, `dl kanban` and `dl md-seats`, which are read-only. Michael in the app drives the job.
+
+app config harnessHome: /tmp/claude-0/fo-live/floor
+20261005T105504-deliver-31631.json
+[20s] no job yet
+[40s] no job yet
+[60s] no job yet
+[80s] phase readiness
+[261s] phase planning
+[481s] phase executing
+[1403s] phase integrating
+[1423s] phase closing
+[1483s] phase done
+== end: phase done
+5
+readiness ba#1: readiness: 28 items answered, no open items, single component ratings-lib
+plan ba#1: plan: 14 ACs (AC-1..AC-14) on REQ-06-02/C1-C4, one card on ratings-lib, no open questions
+cards-backend-lead backend-lead#1: cards: one card B1 (ratings-lib, backend) covering AC-1..AC-14
+spec-T-01 ba#1: spec-T-01: 14 numbered criteria AC-1..AC-14, edge cases, test data table
+T-01 backend#1: T-01 built TDD, commit 66ff20e, unit tests 11/11 green
+T-01 qa#1: T-01 QA pass: AC-1..AC-14, 13 integration tests, commit e270a4d
+T-02 backend#1: T-02: cherry-picked 66ff20e as 03523bf, unit tests 11/11
+T-02 qa#1: T-02 QA pass: AC-1..AC-14, 13/13 integration, commit 6d35bdf
+T-02 reviewer#1: T-02 review: approve, 0 blocking, 4 nits
+closing ba#1: closing: AC-1..AC-14 all met; follow-ups = reviewer nits
+oracle: PASS

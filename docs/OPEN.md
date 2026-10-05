@@ -53,9 +53,10 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | F5 | workers started on the app's default model (no credit), unreported | **Done** — every seat gets an explicit model (`munder.model`, default sonnet); a credit error shows as `failed` (runs 42–43) |
 | F6 | `/deliver` from a separate terminal raced the app's Michael for the inbox | **Done** — a floor job runs only from the app's Michael (run 41); `/deliver` in a terminal now opens the floor (F8) |
 | F7 | the floor is the default; subagents only by hand | **Done** — `dispatch: munder` default; `"dispatch": "subagent"`, `--subagent`, `dl dispatch` (human only) — run 40 |
-| F8 | `/deliver` in a terminal opens Munder Difflin on the repo's floor and hands the job to Michael | **Code + `tests/run.sh` done; live run in progress.** The app shows its floor picker at start: one click on Open (no setting skips it) |
+| F8 | `/deliver` in a terminal opens Munder Difflin on the repo's floor and hands the job to Michael | **Done — verified live** (run 45). One click remains: the app opens on its floor picker, and has no setting to skip it |
 | F9 | plugin setup without scripts (postinstall) | **Done** — SessionStart setup + ECC as a dependency (run 44) |
 | F10 | a config file per project | **Done** — the first `/deliver` writes `.deliver.json` with a schema; per-role defaults reach the job (`tests/run.sh`) |
+| F12 | Munder Difflin restores a previous job's workers when it is reopened (seen in run 45); they idle and take no orders, but crowd the floor | **App behaviour, open** — to raise with Munder Difflin (a released seat should not come back) |
 | F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
 
 ## Verified by the owner, not here
