@@ -1,0 +1,193 @@
+# gate: T-01  attempt: 2  2026-10-05T19:08:35Z
+ok    on job/JOB-20261005-1849-rating-notch-change--T-01
+ok    working tree clean
+ok    4 commit(s)
+ok    all changes within scope ["src/ratings/**","test/ratings/notch.test.mjs"] (+ QA tests ["test/ratings/notch.qa.test.mjs"])
+FAIL  the dev changed a QA test (qa_scope belongs to the QA role): test/ratings/notch.qa.test.mjs
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE is frozen 19-entry array
+ok 1 - AC-1: RATING_SCALE is frozen 19-entry array
+  ---
+  duration_ms: 2.177527
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange(BBB+, BB+) returns 3
+ok 2 - AC-2: notchChange(BBB+, BB+) returns 3
+  ---
+  duration_ms: 0.198461
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange(BB+, BBB+) returns -3
+ok 3 - AC-3: notchChange(BB+, BBB+) returns -3
+  ---
+  duration_ms: 0.090261
+  type: 'test'
+  ...
+# Subtest: AC-4: Same rating returns +0 (not -0)
+ok 4 - AC-4: Same rating returns +0 (not -0)
+  ---
+  duration_ms: 0.211804
+  type: 'test'
+  ...
+# Subtest: AC-5: Adjacent steps return ±1
+ok 5 - AC-5: Adjacent steps return ±1
+  ---
+  duration_ms: 0.127593
+  type: 'test'
+  ...
+# Subtest: AC-6: Extremes return 18 and -18
+ok 6 - AC-6: Extremes return 18 and -18
+  ---
+  duration_ms: 0.077586
+  type: 'test'
+  ...
+# Subtest: AC-7: All 361 pairs return j - i, antisymmetric
+ok 7 - AC-7: All 361 pairs return j - i, antisymmetric
+  ---
+  duration_ms: 0.838959
+  type: 'test'
+  ...
+# Subtest: AC-8: Case-insensitive (toUpperCase, never toLocale*)
+ok 8 - AC-8: Case-insensitive (toUpperCase, never toLocale*)
+  ---
+  duration_ms: 0.086624
+  type: 'test'
+  ...
+# Subtest: AC-9: trim() whitespace including U+00A0 and U+FEFF
+ok 9 - AC-9: trim() whitespace including U+00A0 and U+FEFF
+  ---
+  duration_ms: 1.021792
+  type: 'test'
+  ...
+# Subtest: AC-10: Unknown ratings throw RangeError
+ok 10 - AC-10: Unknown ratings throw RangeError
+  ---
+  duration_ms: 0.684521
+  type: 'test'
+  ...
+# Subtest: AC-11: Empty/whitespace-only throw RangeError
+ok 11 - AC-11: Empty/whitespace-only throw RangeError
+  ---
+  duration_ms: 0.393207
+  type: 'test'
+  ...
+# Subtest: AC-12: Non-string values throw RangeError (never TypeError)
+ok 12 - AC-12: Non-string values throw RangeError (never TypeError)
+  ---
+  duration_ms: 0.745749
+  type: 'test'
+  ...
+# Subtest: AC-13: Pure, silent, no imports, no dependencies
+ok 13 - AC-13: Pure, silent, no imports, no dependencies
+  ---
+  duration_ms: 24.079324
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 93.750054
+ok    verify passed
+----- qa_verify (QA's integration/e2e tests): node --test test/ratings/notch.qa.test.mjs
+TAP version 13
+# Subtest: AC-1: imported from outside the repo, the module has exactly two named exports, no default, frozen scale
+ok 1 - AC-1: imported from outside the repo, the module has exactly two named exports, no default, frozen scale
+  ---
+  duration_ms: 26.383641
+  type: 'test'
+  ...
+# Subtest: AC-1: the scale equals the literal, uses ASCII only, and is a frozen 19-entry array
+ok 2 - AC-1: the scale equals the literal, uses ASCII only, and is a frozen 19-entry array
+  ---
+  duration_ms: 0.862578
+  type: 'test'
+  ...
+# Subtest: AC-1, AC-7: tampering with the frozen scale throws TypeError and changes nothing
+ok 3 - AC-1, AC-7: tampering with the frozen scale throws TypeError and changes nothing
+  ---
+  duration_ms: 0.923255
+  type: 'test'
+  ...
+# Subtest: AC-2, AC-3, AC-4, AC-6: the spec test-data table
+ok 4 - AC-2, AC-3, AC-4, AC-6: the spec test-data table
+  ---
+  duration_ms: 0.119633
+  type: 'test'
+  ...
+# Subtest: AC-5: adjacent steps across letter groups
+ok 5 - AC-5: adjacent steps across letter groups
+  ---
+  duration_ms: 0.177911
+  type: 'test'
+  ...
+# Subtest: AC-7, AC-4, AC-8, AC-9: 361-pair matrix against an independent oracle in four spellings
+ok 6 - AC-7, AC-4, AC-8, AC-9: 361-pair matrix against an independent oracle in four spellings
+  ---
+  duration_ms: 4.447103
+  type: 'test'
+  ...
+# Subtest: AC-7: path additivity holds for all 6859 triples
+ok 7 - AC-7: path additivity holds for all 6859 triples
+  ---
+  duration_ms: 3.085414
+  type: 'test'
+  ...
+# Subtest: AC-9, AC-10: trim removes only outer whitespace, lookalikes and inner whitespace stay unknown
+ok 8 - AC-9, AC-10: trim removes only outer whitespace, lookalikes and inner whitespace stay unknown
+  ---
+  duration_ms: 0.45972
+  type: 'test'
+  ...
+# Subtest: AC-13: silent and without I/O in a child process, over all pairs and all invalid values
+ok 9 - AC-13: silent and without I/O in a child process, over all pairs and all invalid values
+  ---
+  duration_ms: 25.584803
+  type: 'test'
+  ...
+# Subtest: AC-13: the plan one-liner prints nothing and exits 0
+ok 10 - AC-13: the plan one-liner prints nothing and exits 0
+  ---
+  duration_ms: 21.751712
+  type: 'test'
+  ...
+# Subtest: AC-13: package.json is untouched (no dependencies, test script, ESM, no lockfile or node_modules)
+ok 11 - AC-13: package.json is untouched (no dependencies, test script, ESM, no lockfile or node_modules)
+  ---
+  duration_ms: 0.476437
+  type: 'test'
+  ...
+# Subtest: AC-13: the module source has no imports, require, console or process
+ok 12 - AC-13: the module source has no imports, require, console or process
+  ---
+  duration_ms: 0.288852
+  type: 'test'
+  ...
+# Subtest: AC-10, AC-11, AC-12: errors are synchronous RangeErrors named RangeError
+ok 13 - AC-10, AC-11, AC-12: errors are synchronous RangeErrors named RangeError
+  ---
+  duration_ms: 0.345141
+  type: 'test'
+  ...
+# Subtest: AC-10, AC-11, AC-12: every invalid value in both positions, and missing arguments, throw RangeError
+ok 14 - AC-10, AC-11, AC-12: every invalid value in both positions, and missing arguments, throw RangeError
+  ---
+  duration_ms: 1.244846
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 142.70689
+ok    QA tests pass

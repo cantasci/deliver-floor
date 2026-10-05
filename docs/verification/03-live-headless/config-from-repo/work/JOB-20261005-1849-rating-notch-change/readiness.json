@@ -1,0 +1,396 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Deliver the notch-change building block that Ind. 11, 12 and 13 and the REQ-06-02 notch calculator will use. Success is measured by the REQ-06-02 examples: BBB+ -> BB+ = 3 (downgrade), BB+ -> BBB+ = -3 (upgrade), A -> A = 0, plus the rules in C1-C3.",
+      "source": "Request intro + REQ-06-02 (part)",
+      "quote": "the notch change that Indicators 11, 12 and 13 and the notch calculator (REQ-06-02) are built on",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "There are no human users or roles. The consumers are other POC modules, such as the indicators and the notch calculator, and they import the function. Access control does not apply.",
+      "source": "Request C4",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: one card that creates src/ratings/notch.mjs, which exports RATING_SCALE (the 19 ratings of C1, best first) and notchChange(previous, current), plus node:test tests under test/. Out of scope: the rest of REQ-06-02 (the notch calculator itself), Ind. 11-13, any UI, CLI or printed output, ratings outside the 19-step scale (for example CC, C, D, NR, which are rejected as unknown), and other rating-agency scales or outlooks/watches.",
+      "source": "Request: REQ-06-02 (part), C1, C4, Contract",
+      "quote": "It is small: one card.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "The request supports testable criteria with concrete values. REQ-06-02 gives notchChange('BBB+','BB+') === 3, notchChange('BB+','BBB+') === -3 and notchChange('A','A') === 0. C1 gives the scale, trimming and case-insensitivity ('bbb+' equals 'BBB+'). C2 gives the RangeError cases (unknown rating, '', non-string, new String('A')). C3 gives the sign. Boundaries can be derived from the scale: notchChange('AAA','CCC-') === 18 and notchChange('CCC-','AAA') === -18.",
+      "source": "Request REQ-06-02 (part), C1, C2, C3",
+      "quote": "BBB+ → BB+ = 3-notch downgrade",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "There are no contradictions. The examples match C1 and C3: BBB+ is index 7 and BB+ is index 10, so the change is +3 (downgrade positive), the reverse is -3, and A to A is 0. The scale has exactly 19 entries, as the request states. One wording point: 'next to the code under test/' could mean a test file beside src/ratings/notch.mjs. The request itself says 'under test/', and the repo convention is test/<area>/<name>.test.mjs, so the test file is test/ratings/notch.test.mjs.",
+      "source": "Request C1, C3, Contract footer; CLAUDE.md",
+      "quote": "tests with `node --test` next to the code under `test/`",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "This is one card and one requirement, so it ships as a whole. Everything in it is a Must.",
+      "source": "Request intro",
+      "quote": "It is small: one card.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "Module: src/ratings/notch.mjs, ES module, named exports. (1) RATING_SCALE holds the 19 ratings in this order: AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-. These are upper-case ASCII strings with an ASCII hyphen-minus, best first. Its exact JS shape and mutability are in X-scale-shape. (2) notchChange(previous, current) returns a Number integer equal to index(current) - index(previous) on the scale. A downgrade is positive, an upgrade is negative, and no change is 0. The range is -18..18. Each argument must be a primitive string. It is trimmed with String.prototype.trim() and compared case-insensitively. Null, undefined, empty and non-string arguments are covered by C2 and CON-errors.",
+      "source": "Request Contract, C1, C3",
+      "quote": "The result is signed: downgrade positive, upgrade negative, unchanged 0.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Every invalid argument throws a RangeError, never a TypeError and never a return value. This covers: an unknown rating ('D', 'BBB +', 'AAA-'); an empty string ''; a string that is empty after trim ('   '); and any non-string, which includes undefined (a missing argument), null, numbers, booleans, objects, arrays, Symbols and boxed strings such as new String('A'). The type is checked before trim(), so Symbol and null cannot cause a TypeError. If either argument is invalid, the call throws. The message text is not specified (see X-error-message).",
+      "source": "Request C2",
+      "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "This is a new module in an empty codebase: src/ and test/ contain only .gitkeep. No existing API, data or behaviour can break, and no versioning is required.",
+      "source": "Repo: src/.gitkeep, test/.gitkeep (no other source files)",
+      "quote": "",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Library: a pure-function module inside the single-package Watchlist POC, imported by other POC modules. The change lives in src/ratings/.",
+      "source": "Request C4 + Contract; CLAUDE.md",
+      "quote": "other parts of the POC import the function.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "There is one component, ratings-lib: a Node ESM library at src/ratings/ with tests at test/ratings/. It is owned by backend and reviewed by the reviewer role. See architecture.",
+      "source": "Request Contract; README.md",
+      "quote": "Code lives in `src/<area>/`, tests in `test/<area>/*.test.mjs`.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Domain logic in a shared, pure library module (src/ratings), with no I/O.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ES modules (.mjs). No npm dependencies are allowed. Tests use node:test with node:assert/strict.",
+      "source": "Request Contract footer; CLAUDE.md",
+      "quote": "Plain Node.js 18+ ES modules (`.mjs`). No npm dependencies; do not add any.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "Nothing is stored. The module is a pure function plus a constant, with no I/O.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems are called. The module is pure and is consumed only by in-process import.",
+      "source": "Request C4; CLAUDE.md",
+      "quote": "No UI, CLI or printed output; other parts of the POC import the function.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "ARC-async",
+      "status": "decided",
+      "answer": "Synchronous. notchChange returns an integer, not a Promise. It has no queues or events, and it is idempotent and deterministic.",
+      "source": "Request Contract",
+      "quote": "`notchChange(previous, current)` → integer (C3).",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "The request sets no latency or throughput target. The function does a lookup in a 19-entry scale, so performance cannot affect the result.",
+      "source": "Request (no performance requirement); Contract",
+      "quote": "",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "This is an in-process library with no dependencies, so there is nothing to degrade.",
+      "source": "Request C4; CLAUDE.md",
+      "quote": "other parts of the POC import the function.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "No authentication, authorisation or secrets are involved. Input validation is the only security concern: strict type check, trim, case-insensitive match against the 19-entry scale, and a RangeError otherwise (C2).",
+      "source": "Request C2",
+      "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "The function receives only rating symbols such as 'BBB+'. There is no client identity and no personal data, and it does not log.",
+      "source": "Request Contract, C4",
+      "quote": "No UI, CLI or printed output",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "The function is stateless, with no user actions and no persisted changes, so there is nothing to audit.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "No logging, metrics or tracing. Printed output and I/O are excluded.",
+      "source": "Request C4; CLAUDE.md",
+      "quote": "No UI, CLI or printed output",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "No banking-regulation or internal-policy constraint applies.",
+      "source": "Request C2",
+      "quote": "No banking-regulation or internal-policy constraint applies to this slice.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests use node:test with node:assert/strict in test/ratings/notch.test.mjs and run with npm test (node --test). Test data: the three REQ-06-02 examples; the scale (length 19, order, first 'AAA', last 'CCC-'); the extremes +/-18; adjacent steps (+/-1); trimming ('  bbb+ ' equals 'BBB+'); lower and mixed case; and every C2 rejection (unknown, '', '   ', undefined, null, 3, new String('A'), Symbol) asserted with assert.throws(..., RangeError). There is no integration or e2e environment: the module is a pure library. The coverage target is in X-coverage.",
+      "source": "CLAUDE.md; Request Contract footer",
+      "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`. `npm test` runs everything.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "npm test (node --test) must pass. No lint, typecheck or scan scripts exist in package.json.",
+      "source": "CLAUDE.md; package.json; .deliver.json",
+      "quote": "`npm test` runs everything.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "answer": "There is no deployment. Other POC modules consume it by ESM import from src/ratings/notch.mjs. There are no feature flags or migrations, and rollback means reverting the commit.",
+      "source": "Request C4",
+      "quote": "other parts of the POC import the function.",
+      "question": "",
+      "options": [],
+      "impact": "",
+      "owner": ""
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No documentation deliverable is required: JSDoc on RATING_SCALE and notchChange only; no README or changelog change",
+      "source": "pm: michael 2026-10-05 — pure internal helper; the request asks for no docs and C4 says other POC code imports it",
+      "quote": "",
+      "question": "Is any documentation update required, such as a README line for src/ratings, a changelog, or JSDoc on the exports?",
+      "options": [
+        "No doc changes beyond JSDoc on RATING_SCALE and notchChange (recommended)",
+        "Also add a line to README.md describing src/ratings/notch.mjs",
+        "Add a CHANGELOG (none exists today)"
+      ],
+      "impact": "None of these changes behaviour or the contract. Only the files touched and the reviewer's checklist differ.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Is any documentation update required, such as a README line for src/ratings, a changelog, or JSDoc on the exports?",
+          "at": "2026-10-05T18:52:44.742Z"
+        }
+      ]
+    },
+    {
+      "id": "X-scale-shape",
+      "status": "decided",
+      "answer": "RATING_SCALE is a frozen Array (Object.freeze) of the 19 strings, best first",
+      "source": "pm: michael 2026-10-05 — the request says 'best first', which implies an ordered list, and freezing stops a consumer from corrupting the order notchChange relies on",
+      "quote": "",
+      "question": "What exact JS shape and mutability should RATING_SCALE have? The request says only 'the 19 ratings of C1, best first'.",
+      "options": [
+        "A frozen Array of 19 strings (Object.freeze), so consumers cannot change the order notchChange relies on (recommended)",
+        "A plain mutable Array",
+        "Another structure, such as a Map from rating to index (not recommended: the request says 'best first', which implies an ordered list)"
+      ],
+      "impact": "With a frozen array, consumer mutation fails silently in sloppy mode or throws in strict mode, and notchChange cannot be corrupted. A mutable array lets one consumer break every other caller.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "What exact JS shape and mutability should RATING_SCALE have? The request says only 'the 19 ratings of C1, best first'.",
+          "at": "2026-10-05T18:52:44.929Z"
+        }
+      ]
+    },
+    {
+      "id": "X-error-message",
+      "status": "decided",
+      "answer": "RangeError with a descriptive message naming the argument; tests assert the type only",
+      "source": "pm: michael 2026-10-05 — C2 specifies only the error type, so the message is not a contract",
+      "quote": "",
+      "question": "What message should the RangeError carry? C2 specifies only the error type.",
+      "options": [
+        "A descriptive message naming the argument and the value (recommended); tests assert the type only",
+        "An exact fixed message text that tests assert"
+      ],
+      "impact": "Consumers depend only on the RangeError type, and the request does not state a message contract.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "What message should the RangeError carry? C2 specifies only the error type.",
+          "at": "2026-10-05T18:52:45.098Z"
+        }
+      ]
+    },
+    {
+      "id": "X-coverage",
+      "status": "decided",
+      "answer": "No numeric coverage target; every AC and every C2 rejection class gets at least one test",
+      "source": "pm: michael 2026-10-05 — neither the request nor the repo states a target",
+      "quote": "",
+      "question": "Is there a coverage target? Neither the request nor the repo states one.",
+      "options": [
+        "No numeric target. Every AC and every C2 rejection class has at least one test (recommended)",
+        "A line or branch coverage threshold via node --test --experimental-test-coverage"
+      ],
+      "impact": "This affects only the test effort and the QA gate, not behaviour or scope.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Is there a coverage target? Neither the request nor the repo states one.",
+          "at": "2026-10-05T18:52:45.248Z"
+        }
+      ]
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "ratings-lib",
+        "kind": "library",
+        "stack": [
+          "node",
+          "esm"
+        ],
+        "path": [
+          "src/ratings/",
+          "test/ratings/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Pure ES module src/ratings/notch.mjs exporting RATING_SCALE and notchChange. Tests in test/ratings/notch.test.mjs (node:test + node:assert/strict), run by npm test. No dependencies, no I/O. Card scope: src/ratings/** and test/ratings/notch.test.mjs; QA scope: test/ratings/notch.qa.test.mjs."
+      }
+    ]
+  }
+}

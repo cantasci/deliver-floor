@@ -1,0 +1,176 @@
+
+> watchlist-poc@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: AC-1: imported from outside the repo, the module has exactly two named exports, no default, frozen scale
+ok 1 - AC-1: imported from outside the repo, the module has exactly two named exports, no default, frozen scale
+  ---
+  duration_ms: 37.488627
+  type: 'test'
+  ...
+# Subtest: AC-1: the scale equals the literal, uses ASCII only, and is a frozen 19-entry array
+ok 2 - AC-1: the scale equals the literal, uses ASCII only, and is a frozen 19-entry array
+  ---
+  duration_ms: 1.418549
+  type: 'test'
+  ...
+# Subtest: AC-1, AC-7: tampering with the frozen scale throws TypeError and changes nothing
+ok 3 - AC-1, AC-7: tampering with the frozen scale throws TypeError and changes nothing
+  ---
+  duration_ms: 1.560944
+  type: 'test'
+  ...
+# Subtest: AC-2, AC-3, AC-4, AC-6: the spec test-data table
+ok 4 - AC-2, AC-3, AC-4, AC-6: the spec test-data table
+  ---
+  duration_ms: 0.217884
+  type: 'test'
+  ...
+# Subtest: AC-5: adjacent steps across letter groups
+ok 5 - AC-5: adjacent steps across letter groups
+  ---
+  duration_ms: 0.211624
+  type: 'test'
+  ...
+# Subtest: AC-7, AC-4, AC-8, AC-9: 361-pair matrix against an independent oracle in four spellings
+ok 6 - AC-7, AC-4, AC-8, AC-9: 361-pair matrix against an independent oracle in four spellings
+  ---
+  duration_ms: 7.040216
+  type: 'test'
+  ...
+# Subtest: AC-7: path additivity holds for all 6859 triples
+ok 7 - AC-7: path additivity holds for all 6859 triples
+  ---
+  duration_ms: 4.007801
+  type: 'test'
+  ...
+# Subtest: AC-9, AC-10: trim removes only outer whitespace, lookalikes and inner whitespace stay unknown
+ok 8 - AC-9, AC-10: trim removes only outer whitespace, lookalikes and inner whitespace stay unknown
+  ---
+  duration_ms: 0.642202
+  type: 'test'
+  ...
+# Subtest: AC-13: silent and without I/O in a child process, over all pairs and all invalid values
+ok 9 - AC-13: silent and without I/O in a child process, over all pairs and all invalid values
+  ---
+  duration_ms: 36.186635
+  type: 'test'
+  ...
+# Subtest: AC-13: the plan one-liner prints nothing and exits 0
+ok 10 - AC-13: the plan one-liner prints nothing and exits 0
+  ---
+  duration_ms: 33.242959
+  type: 'test'
+  ...
+# Subtest: AC-13: package.json is untouched (no dependencies, test script, ESM, no lockfile or node_modules)
+ok 11 - AC-13: package.json is untouched (no dependencies, test script, ESM, no lockfile or node_modules)
+  ---
+  duration_ms: 0.555446
+  type: 'test'
+  ...
+# Subtest: AC-13: the module source has no imports, require, console or process
+ok 12 - AC-13: the module source has no imports, require, console or process
+  ---
+  duration_ms: 0.525994
+  type: 'test'
+  ...
+# Subtest: AC-10, AC-11, AC-12: errors are synchronous RangeErrors named RangeError
+ok 13 - AC-10, AC-11, AC-12: errors are synchronous RangeErrors named RangeError
+  ---
+  duration_ms: 0.442765
+  type: 'test'
+  ...
+# Subtest: AC-10, AC-11, AC-12: every invalid value in both positions, and missing arguments, throw RangeError
+ok 14 - AC-10, AC-11, AC-12: every invalid value in both positions, and missing arguments, throw RangeError
+  ---
+  duration_ms: 1.825804
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is frozen 19-entry array
+ok 15 - AC-1: RATING_SCALE is frozen 19-entry array
+  ---
+  duration_ms: 2.588172
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange(BBB+, BB+) returns 3
+ok 16 - AC-2: notchChange(BBB+, BB+) returns 3
+  ---
+  duration_ms: 0.178027
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange(BB+, BBB+) returns -3
+ok 17 - AC-3: notchChange(BB+, BBB+) returns -3
+  ---
+  duration_ms: 0.104106
+  type: 'test'
+  ...
+# Subtest: AC-4: Same rating returns +0 (not -0)
+ok 18 - AC-4: Same rating returns +0 (not -0)
+  ---
+  duration_ms: 0.224023
+  type: 'test'
+  ...
+# Subtest: AC-5: Adjacent steps return +/-1
+ok 19 - AC-5: Adjacent steps return +/-1
+  ---
+  duration_ms: 0.114306
+  type: 'test'
+  ...
+# Subtest: AC-6: Extremes return 18 and -18
+ok 20 - AC-6: Extremes return 18 and -18
+  ---
+  duration_ms: 0.083155
+  type: 'test'
+  ...
+# Subtest: AC-7: All 361 pairs return j - i, antisymmetric
+ok 21 - AC-7: All 361 pairs return j - i, antisymmetric
+  ---
+  duration_ms: 0.954372
+  type: 'test'
+  ...
+# Subtest: AC-8: Case-insensitive (toUpperCase, never toLocale*)
+ok 22 - AC-8: Case-insensitive (toUpperCase, never toLocale*)
+  ---
+  duration_ms: 0.117945
+  type: 'test'
+  ...
+# Subtest: AC-9: trim() whitespace including U+00A0 and U+FEFF
+ok 23 - AC-9: trim() whitespace including U+00A0 and U+FEFF
+  ---
+  duration_ms: 1.118861
+  type: 'test'
+  ...
+# Subtest: AC-10: Unknown ratings throw RangeError
+ok 24 - AC-10: Unknown ratings throw RangeError
+  ---
+  duration_ms: 0.638338
+  type: 'test'
+  ...
+# Subtest: AC-11: Empty/whitespace-only throw RangeError
+ok 25 - AC-11: Empty/whitespace-only throw RangeError
+  ---
+  duration_ms: 0.228678
+  type: 'test'
+  ...
+# Subtest: AC-12: Non-string values throw RangeError (never TypeError)
+ok 26 - AC-12: Non-string values throw RangeError (never TypeError)
+  ---
+  duration_ms: 0.440385
+  type: 'test'
+  ...
+# Subtest: AC-13: Pure, silent, no imports, no dependencies
+ok 27 - AC-13: Pure, silent, no imports, no dependencies
+  ---
+  duration_ms: 28.702371
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 210.309651

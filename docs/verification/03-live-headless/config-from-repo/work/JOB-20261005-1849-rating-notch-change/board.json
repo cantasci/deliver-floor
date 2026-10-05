@@ -1,0 +1,248 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "ratings-lib: RATING_SCALE + notchChange(previous, current) in src/ratings/notch.mjs with unit tests",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "ratings-lib",
+      "state": "archived",
+      "attempts": 2,
+      "notes": [
+        {
+          "at": "2026-10-05T19:09:16Z",
+          "note": "attempts 2/2 used; gate refuses because QA re-committed test/ratings/notch.qa.test.mjs in round 2 after the dev's fix (dl compares against the commit recorded at the round-1 dl qa). Work itself passes: 14 QA + 13 dev tests, review had one blocking item (fixed)."
+        }
+      ],
+      "depends_on": [],
+      "context": "WHY: REQ-06-02 (part). Build the notch-change building block. Indicators 11, 12 and 13 and the later REQ-06-02 notch calculator will import it (they are OUT of scope for this card). A notch is one step on a 19-step credit rating scale. A downgrade is positive, an upgrade is negative and no change is 0.\n\nREPO RULES (from CLAUDE.md): plain Node.js 18+ ES modules (.mjs). No npm dependencies: do not touch package.json. Tests use node:test + node:assert/strict and live at test/<area>/<name>.test.mjs. `npm test` runs `node --test`. Code in src/ratings must be pure, with no I/O.\n\nFILES (both are new; create nothing else):\n1. src/ratings/notch.mjs\n2. test/ratings/notch.test.mjs\nsrc/ and test/ hold only .gitkeep today. Do not create test/ratings/notch.qa.test.mjs. QA owns that file.\n\nCONTRACT (named exports only, no default export):\n(a) `export const RATING_SCALE`: a FROZEN Array, made with Object.freeze([...]), of exactly these 19 upper-case ASCII strings in this order (best first, index 0 = best):\n'AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-'\nIndexes: AAA 0, AA+ 1, AA 2, AA- 3, A+ 4, A 5, A- 6, BBB+ 7, BBB 8, BBB- 9, BB+ 10, BB 11, BB- 12, B+ 13, B 14, B- 15, CCC+ 16, CCC 17, CCC- 18.\nUse the ASCII hyphen-minus '-' (U+002D) and the ASCII '+' only. Do not export a mutable copy. notchChange must read from this frozen array or from a lookup built once from it at module load (for example a Map from rating to index).\n(b) `export function notchChange(previous, current)`: synchronous, NOT async, never returns a Promise. It returns a primitive Number integer equal to index(current) - index(previous), in the range -18..18.\n\nINPUT HANDLING. Do these steps in this order for EACH argument (a small internal helper such as `function indexOf(value, name)` is fine, but do not export it):\n 1. `if (typeof value !== 'string') throw new RangeError(name + ' must be a rating string');`. This check comes FIRST, before any .trim(), String(value), template string or concatenation that uses the value. This makes undefined, null, numbers, NaN, bigint 7n, booleans, objects, arrays, new String('A') (typeof 'object'), objects with a custom toString, functions and Symbols throw a RangeError instead of a TypeError.\n 2. `const key = value.trim().toUpperCase();`. Use String.prototype.trim() exactly. It removes leading and trailing whitespace and line terminators, including U+00A0 no-break space, U+FEFF BOM and U+3000. Use toUpperCase(), NEVER toLocaleUpperCase or toLocaleLowerCase. Whitespace INSIDE a rating is not removed ('BBB +' is unknown).\n 3. Look the key up on the scale. If it is not found (this includes '' after trim), `throw new RangeError(name + ' is not a known rating')`.\n- name is the literal string 'previous' or 'current'. NEVER put the raw value into the message: no `${value}`, no '...' + value, no String(value), no JSON.stringify(value). A Symbol in a template string throws a TypeError. The message text is not part of the contract; tests check the type only.\n- If either argument is invalid, throw a RangeError. Missing arguments are undefined and throw a RangeError. Extra arguments are ignored and not tested.\n- Return exactly `indexCurrent - indexPrevious`. This gives +0, not -0, for equal ratings. Do not use Math.sign tricks, negation of a difference or `-(a - b)`, because -(0) is -0.\n- Lookalike characters stay unknown: 'AA\\u2212' (Unicode minus) and '\\u0410AA' (Cyrillic A).\n- No imports at all in notch.mjs: no node:fs, node:process or anything else. No console calls, no logging, no side effects at module load except building the constant.\n- Node 18 APIs only. Do NOT use Array.prototype.toSorted/toReversed/with or Object.groupBy. Keep it simple: Object.freeze, Map or indexOf, trim, toUpperCase.\n- JSDoc on both exports. RATING_SCALE: a frozen list, best first, 19 entries. notchChange: @param {string} previous, @param {string} current, @returns {number} with the signed notches (downgrade positive), @throws {RangeError} on any invalid input.\n\nOUT OF SCOPE: ratings outside the 19 (CC, C, D, SD, NR, WD are rejected as unknown); Moody's notation such as Baa1; outlooks and watches ('BBB+ (neg)'); a public ratingIndex or isValidRating export; README or changelog changes; lint or coverage tooling.\n\nUNIT TESTS: test/ratings/notch.test.mjs, written with `import { test } from 'node:test'; import assert from 'node:assert/strict'; import { RATING_SCALE, notchChange } from '../../src/ratings/notch.mjs';`. Write at least one test() per AC-1..AC-13 and name each test with its AC id, for example 'AC-2 downgrade example'. Use the exact data in the acceptance list. For AC-9 write the third case with escapes: notchChange('\\u00A0A\\uFEFF', 'A') === 0. For AC-10 write the Unicode minus as 'AA\\u2212' and the Cyrillic case as '\\u0410AA'. For AC-12 loop over the value list in BOTH positions and assert with `assert.throws(fn, RangeError)`. For AC-1 mutation, wrap `RATING_SCALE.push('D')` and `RATING_SCALE[0] = 'X'` in assert.throws(..., TypeError). This works because ESM test files are strict mode. For AC-13, spawn `process.execPath` with child_process.spawnSync from the TEST file (I/O is allowed in tests, not in src), using ['-e', script], where script imports the absolute path of src/ratings/notch.mjs (use new URL('../../src/ratings/notch.mjs', import.meta.url).href inside the import() call). Assert status 0 and empty stdout and stderr. Also read notch.mjs with node:fs readFileSync and assert it has no /\\bimport\\b/ and no /console\\./ and that package.json has no dependencies or devDependencies keys. Use only Node 18 test APIs (test, assert.throws, assert.equal, assert.deepStrictEqual, assert.ok).\n\nDONE WHEN: `node --test test/ratings/notch.test.mjs` passes and `npm test` exits 0.",
+      "scope": [
+        "src/ratings/**",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/ratings/notch.qa.test.mjs"
+      ],
+      "qa_verify": "node --test test/ratings/notch.qa.test.mjs",
+      "acceptance": [
+        "AC-1: RATING_SCALE is the frozen 19-entry array in the exact order; push/assignment throw TypeError",
+        "AC-2: notchChange('BBB+','BB+') → 3",
+        "AC-3: notchChange('BB+','BBB+') → -3",
+        "AC-4: notchChange('A','A') → +0 (not -0); every r → 0",
+        "AC-5: adjacent steps → ±1",
+        "AC-6: AAA→CCC- = 18, CCC-→AAA = -18",
+        "AC-7: all 361 pairs → j - i, integer, antisymmetric",
+        "AC-8: case-insensitive",
+        "AC-9: trim() whitespace incl. U+00A0 and U+FEFF",
+        "AC-10: unknown rating → RangeError",
+        "AC-11: empty/whitespace-only → RangeError",
+        "AC-12: non-string → RangeError, never TypeError",
+        "AC-13: pure, silent, no imports, no dependencies",
+        "AC-14: npm test exits 0 with a test for each of AC-1..AC-13"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T18:58:56Z"
+        },
+        {
+          "attempt": 2,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T19:05:17Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/wt/T-01",
+      "branch": "job/JOB-20261005-1849-rating-notch-change--T-01",
+      "gate": {
+        "result": "FAIL",
+        "head": "9876ab19d70443c0bc864ebbf19f3121b2d4aa86",
+        "attempt": 2,
+        "log": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/gates/T-01-a2-190835.log",
+        "at": "2026-10-05T19:08:36Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-05T19:03:01.767Z",
+          "author": "gate",
+          "text": "PASS — 20 checks ok, 0 failed (T-01-a1-190301.log)"
+        },
+        {
+          "at": "2026-10-05T19:04:30.754Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle in 4 spellings, frozen-scale tampering, silent child process, package.json untouched, error contract); AC-14 npm test exit 0, 27 tests"
+        },
+        {
+          "at": "2026-10-05T19:05:17.545Z",
+          "author": "reviewer",
+          "text": "changes — AC-13 unit test uses static import under node -e (fails on Node 18) and prints to stdout instead of asserting empty"
+        },
+        {
+          "at": "2026-10-05T19:07:24.486Z",
+          "author": "gate",
+          "text": "PASS — 35 checks ok, 0 failed (T-01-a2-190723.log)"
+        },
+        {
+          "at": "2026-10-05T19:08:36.546Z",
+          "author": "gate",
+          "text": "FAIL — 34 checks ok, 1 failed (T-01-a2-190835.log)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "6ae7e84bf2c777f465be61f299666b6ba0077a4d",
+        "gate_head": "2a102c29f1f1e4ede2f47d24d0c70a545f965e16",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/gates/T-01-qa-a1-190430.log",
+        "summary": "AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle in 4 spellings, frozen-scale tampering, silent child process, package.json untouched, error contract); AC-14 npm test exit 0, 27 tests",
+        "at": "2026-10-05T19:04:30Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "6ae7e84bf2c777f465be61f299666b6ba0077a4d",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle in 4 spellings, frozen-scale tampering, silent child process, package.json untouched, error contract); AC-14 npm test exit 0, 27 tests",
+          "at": "2026-10-05T19:04:30Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "changes",
+          "head": "6ae7e84bf2c777f465be61f299666b6ba0077a4d",
+          "summary": "AC-13 unit test uses static import under node -e (fails on Node 18) and prints to stdout instead of asserting empty",
+          "at": "2026-10-05T19:05:17Z"
+        }
+      ],
+      "review": {
+        "verdict": "changes",
+        "head": "6ae7e84bf2c777f465be61f299666b6ba0077a4d",
+        "summary": "reviewer: changes — AC-13 unit test uses static import under node -e (fails on Node 18) and prints to stdout instead of asserting empty",
+        "pending": [],
+        "at": "2026-10-05T19:05:17Z"
+      }
+    },
+    {
+      "title": "ratings-lib: land the reviewed T-01 work (RATING_SCALE + notchChange) and finish its test nits",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "ratings-lib",
+      "scope": [
+        "src/ratings/**",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/ratings/notch.qa.test.mjs"
+      ],
+      "qa_verify": "node --test test/ratings/notch.qa.test.mjs",
+      "acceptance": [
+        "AC-1: RATING_SCALE is the frozen 19-entry array in the exact order; push/assignment throw TypeError",
+        "AC-2: notchChange('BBB+','BB+') → 3",
+        "AC-3: notchChange('BB+','BBB+') → -3",
+        "AC-4: notchChange('A','A') → +0 (not -0); every r → 0",
+        "AC-5: adjacent steps → ±1",
+        "AC-6: AAA→CCC- = 18, CCC-→AAA = -18",
+        "AC-7: all 361 pairs → j - i, integer, antisymmetric",
+        "AC-8: case-insensitive",
+        "AC-9: trim() whitespace incl. U+00A0 and U+FEFF",
+        "AC-10: unknown rating → RangeError",
+        "AC-11: empty/whitespace-only → RangeError",
+        "AC-12: non-string → RangeError, never TypeError",
+        "AC-13: pure, silent, no imports, no dependencies",
+        "AC-14: npm test exits 0 with a test for each of AC-1..AC-13"
+      ],
+      "depends_on": [],
+      "context": "REPLACES T-01 (blocked: attempts used; the gate refused because QA re-committed its test file after the dev's fix). T-01's work is DONE and was QA-passed and reviewed (one blocking item, fixed). Do NOT rewrite it; bring it over, then finish one nit.\n\nSTEP 1 — in your worktree run: `git cherry-pick 2a102c2 6ea15dc` (dev commits of branch job/JOB-20261005-1849-rating-notch-change--T-01: they add src/ratings/notch.mjs and test/ratings/notch.test.mjs). Resolve nothing by hand; if a cherry-pick is empty or fails, report it. Do NOT cherry-pick or touch 6ae7e84 or 9876ab1 (they are the QA's test/ratings/notch.qa.test.mjs; QA owns that path).\nSTEP 2 — the nit: in test/ratings/notch.test.mjs lines ~60, ~112 and ~116 still contain raw non-ASCII characters (U+00B1, U+00A0, U+FEFF, U+2212, Cyrillic U+0410). Replace them with \\u escapes ('\\u00A0A\\uFEFF', 'AA\\u2212', '\\u0410AA') and use plain ASCII in the test title ('+/-1'). Check with: grep -nP '[^\\x00-\\x7F]' src/ratings/notch.mjs test/ratings/notch.test.mjs (must print nothing). Do not change behaviour or src/ratings/notch.mjs.\nSTEP 3 — run `node --test test/ratings/notch.test.mjs` (13 tests pass) and `npm test`, commit with a plain message (no AI attribution), leave the tree clean.\n\nCONTRACT (unchanged from T-01): src/ratings/notch.mjs exports RATING_SCALE (frozen array of the 19 ratings AAA..CCC-, best first) and notchChange(previous, current) = index(current) - index(previous); every invalid input (unknown, empty, non-string incl. new String('A'), Symbol) throws RangeError; pure, no imports, no console. Only src/ratings/** and test/ratings/notch.test.mjs are yours; the QA role owns test/ratings/notch.qa.test.mjs and does not exist in your worktree until QA writes it.",
+      "id": "T-02",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "history": [
+        {
+          "at": "2026-10-05T19:09:16Z",
+          "by": "michael",
+          "change": "added",
+          "reason": "replaces blocked T-01: land its QA-passed/reviewed dev commits and finish the escape nit"
+        }
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T19:09:21Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/wt/T-02",
+      "branch": "job/JOB-20261005-1849-rating-notch-change--T-02",
+      "gate": {
+        "result": "PASS",
+        "head": "d6901bfbfb600e906f66a0df133c69f6aa3719cd",
+        "attempt": 1,
+        "log": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/gates/T-02-a1-191112.log",
+        "at": "2026-10-05T19:11:12Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-05T19:11:12.621Z",
+          "author": "gate",
+          "text": "PASS — 20 checks ok, 0 failed (T-02-a1-191112.log)"
+        },
+        {
+          "at": "2026-10-05T19:11:43.671Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle, frozen-scale tampering, silent child process, package.json, error contract); AC-14 npm test exit 0, 27 tests"
+        },
+        {
+          "at": "2026-10-05T19:12:07.580Z",
+          "author": "reviewer",
+          "text": "approve — T-01 blocking item fixed (dynamic import under -e, silent child); scope, purity, Node 18 compatibility OK"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "d3ba0981556e6f018b798ca745cf6c165fa4291f",
+        "gate_head": "d6901bfbfb600e906f66a0df133c69f6aa3719cd",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/gates/T-02-qa-a1-191143.log",
+        "summary": "AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle, frozen-scale tampering, silent child process, package.json, error contract); AC-14 npm test exit 0, 27 tests",
+        "at": "2026-10-05T19:11:43Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "d3ba0981556e6f018b798ca745cf6c165fa4291f",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle, frozen-scale tampering, silent child process, package.json, error contract); AC-14 npm test exit 0, 27 tests",
+          "at": "2026-10-05T19:11:43Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "d3ba0981556e6f018b798ca745cf6c165fa4291f",
+          "summary": "T-01 blocking item fixed (dynamic import under -e, silent child); scope, purity, Node 18 compatibility OK",
+          "at": "2026-10-05T19:12:07Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "d3ba0981556e6f018b798ca745cf6c165fa4291f",
+        "summary": "reviewer: approve — T-01 blocking item fixed (dynamic import under -e, silent child); scope, purity, Node 18 compatibility OK",
+        "pending": [],
+        "at": "2026-10-05T19:12:07Z"
+      }
+    }
+  ]
+}

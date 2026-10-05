@@ -1,0 +1,57 @@
+2026-10-05T18:49:53Z	new	Rating notch change
+2026-10-05T18:50:09Z	jobset	stack: .stack=["node"]
+2026-10-05T18:50:09Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notch calculator domain logic in src/ratings/notch.mjs"},{"role":"backend","agent":"backend-dev","model":"haiku","why":"Staffing: The backend developer works on the haiku model"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"Plain Node ESM (.mjs) code, stack node"}]
+2026-10-05T18:50:09Z	jobset	assumptions: .assumptions += ["Lead and QA run on the default model; only the backend developer is pinned to haiku, as the Staffing section says."]
+2026-10-05T18:50:09Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T18:50:09Z	phase	readiness
+2026-10-05T18:52:01Z	agent	business-analyst a611a51e: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Deliver the notch-change building block that Ind. 11, 12 and 13 and the REQ-06-02 notch calcula
+2026-10-05T18:52:40Z	readiness	30 items: 18 decided, 8 n/a, 4 open
+2026-10-05T18:52:44Z	decide	DEL-docs: JSDoc on RATING_SCALE and notchChange only; no README or changelog change — pure internal helper; the request asks for no docs and C4 says other POC code imports it
+2026-10-05T18:52:44Z	decide	X-scale-shape: RATING_SCALE is a frozen Array (Object.freeze) of the 19 strings, best first — the request says 'best first', which implies an ordered list, and freezing stops a consumer from corrupting the order notchChange relies on
+2026-10-05T18:52:45Z	decide	X-error-message: RangeError with a descriptive message naming the argument; tests assert the type only — C2 specifies only the error type, so the message is not a contract
+2026-10-05T18:52:45Z	decide	X-coverage: No numeric coverage target; every AC and every C2 rejection class gets at least one test — neither the request nor the repo states a target
+2026-10-05T18:53:03Z	readiness	30 items: 21 decided, 9 n/a, 0 open
+2026-10-05T18:53:03Z	freeze	readiness + architecture frozen (9984e427c6ce)
+2026-10-05T18:53:04Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T18:53:04Z	phase	planning
+2026-10-05T18:53:07Z	freeze	readiness + architecture frozen (9984e427c6ce)
+2026-10-05T18:53:07Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T18:53:07Z	phase	planning
+2026-10-05T18:54:41Z	agent	business-analyst a5109a33: ## Goal Build the notch-change building block of REQ-06-02 (part). Indicators 11, 12 and 13 and the later REQ-06-02 notch calculator will rely on it. A pure ES 
+2026-10-05T18:56:02Z	agent	ecc:architect a39c335e: ```json [{"tmp_id":"B1","title":"ratings-lib: RATING_SCALE + notchChange(previous, current) in src/ratings/notch.mjs with unit tests","role":"backend","componen
+2026-10-05T18:58:18Z	agent	business-analyst afbb12a9: === T-01 === # T-01: ratings-lib: RATING_SCALE + notchChange(previous, current) in src/ratings/notch.mjs with unit tests ## User story As a developer building I
+2026-10-05T18:58:53Z	phase	executing
+2026-10-05T18:58:56Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T19:02:58Z	agent	backend-dev a1d5550a: Perfect! All work is complete. Let me provide the final summary: ```text status: done commit: 2a102c2 verify: passed (all 13 tests) open issues: - ``` ## Summar
+2026-10-05T19:03:01Z	gate	T-01 PASS
+2026-10-05T19:04:24Z	agent	qa-tester aa21fc49: All 14 acceptance criteria pass, and `qa_verify` exits 0 (14 tests, 0 failures). The QA tests are committed on the card branch, but the push to `origin` was blo
+2026-10-05T19:04:30Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle in 4 spellings, frozen-scale tampering, silent child process, package.json untouched, error contract); AC-14 npm test exit 0, 27 tests
+2026-10-05T19:05:11Z	agent	ecc:typescript-reviewer a0874717: {"verdict":"changes","blocking":[{"file":"test/ratings/notch.test.mjs","line":173,"issue":"The AC-13 child process runs `node -e` with a static `import { notchC
+2026-10-05T19:05:17Z	review	T-01 reviewer changes — AC-13 unit test uses static import under node -e (fails on Node 18) and prints to stdout instead of asserting empty
+2026-10-05T19:05:17Z	assign	T-01 → backend-dev (backend#1) attempt=2
+2026-10-05T19:07:16Z	agent	backend-dev af8cff46: Perfect! Let me provide the final summary: ```text status: done commit: 6ea15dc verify: passed (node --test test/ratings/notch.test.mjs: 13/13 tests pass; npm t
+2026-10-05T19:07:24Z	gate	T-01 PASS
+2026-10-05T19:08:07Z	agent	qa-tester aa8d5871: ```json {"verdict":"pass", "tests":["test/ratings/notch.qa.test.mjs"], "criteria":[ {"ac":"AC-1","status":"pass","evidence":"QA 'AC-1: imported from outside the
+2026-10-05T19:08:36Z	gate	T-01 FAIL
+2026-10-05T19:08:36Z	pm-decision	T-01: Accept raw non-ASCII characters (U+00A0/U+FEFF/U+2212/Cyrillic A) left in the dev's unit-test file instead of a third attempt — review nit only; tests pass and the QA file uses escapes; attempts are used up
+2026-10-05T19:09:16Z	state	T-01=blocked
+2026-10-05T19:09:16Z	note	T-01: attempts 2/2 used; gate refuses because QA re-committed test/ratings/notch.qa.test.mjs in round 2 after the dev's fix (dl compares against the commit recorded at the round-1 dl qa). Work itself passes: 14 QA + 13 dev tests, review had one blocking item (fixed).
+2026-10-05T19:09:16Z	card-add	T-02: replaces blocked T-01: land its QA-passed/reviewed dev commits and finish the escape nit
+2026-10-05T19:09:17Z	state	T-01=archived
+2026-10-05T19:09:17Z	pm-decision	T-01: T-01 is not delivered (archived) — replaced by T-02 (same work, brought over by cherry-pick); T-01 could not pass the gate after QA's round-2 re-commit with attempts used
+2026-10-05T19:09:21Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-05T19:11:09Z	agent	backend-dev ab81c99b: ```text status: done commit: d6901bf verify: passed (13 tests) open issues: - ``` ## Summary Successfully completed T-02 in three steps as specified: 1. **Cherr
+2026-10-05T19:11:12Z	gate	T-02 PASS
+2026-10-05T19:11:40Z	agent	qa-tester a747f434: All 14 tests in the QA file pass, and `npm test` exits 0 with 27 of 27 tests passing on Node v22.22.0. I did not run it on Node 18. The file is committed once a
+2026-10-05T19:11:43Z	qa	T-02 pass (qa_verify PASS) — AC-1..AC-13 pass in test/ratings/notch.qa.test.mjs (14 tests: outside import, 361-pair oracle, frozen-scale tampering, silent child process, package.json, error contract); AC-14 npm test exit 0, 27 tests
+2026-10-05T19:12:02Z	agent	ecc:typescript-reviewer a809e0f3: {"verdict":"approve","blocking":[],"nits":["The T-01 blocking item is fixed. The AC-13 child process in test/ratings/notch.test.mjs now uses `import(url).then(.
+2026-10-05T19:12:07Z	review	T-02 reviewer approve — T-01 blocking item fixed (dynamic import under -e, silent child); scope, purity, Node 18 compatibility OK
+2026-10-05T19:12:07Z	integrate	T-02 merged
+2026-10-05T19:12:10Z	phase	integrating
+2026-10-05T19:12:10Z	verify-all	PASS
+2026-10-05T19:12:14Z	phase	closing
+2026-10-05T19:13:10Z	agent	business-analyst acabf6fe: All 14 acceptance criteria are met. The delivered code is commit `c371c23` on branch `job/JOB-20261005-1849-rating-notch-change`, which merges T-02. T-02 brough
+2026-10-05T19:13:25Z	learn	qa: On a QA round 2 after a dev fix, do not re-commit the QA test file unless a test is wrong: dl compares the QA file with the commit recorded at the last dl qa, and the gate then fails the card.
+2026-10-05T19:13:25Z	learn	backend: node -e is CommonJS on Node 18: a static import fails there; use import(url).then(...) or --input-type=module, and build URLs with pathToFileURL.
+2026-10-05T19:13:26Z	ship	local merge into main
+2026-10-05T19:13:28Z	cleanup	
