@@ -1,0 +1,126 @@
+{
+  "id": "JOB-20261005-1849-rating-notch-change",
+  "title": "Rating notch change",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-models.md\nRating notch change (Watchlist POC — one task)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch\ncalculator (REQ-06-02) are built on. It is small: one card.\n\n## Requirement\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 (part) | Given a previous and a current rating, the system computes the notch change between them | BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.\n  A notch is one step on this scale. Input is trimmed with `String.prototype.trim()` and case-insensitive (\"bbb+\" = \"BBB+\").\n- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object\n  such as `new String('A')` is a non-string. No banking-regulation or internal-policy constraint applies to this slice.\n- C3. The result is signed: downgrade positive, upgrade negative, unchanged 0.\n- C4. No UI, CLI or printed output; other parts of the POC import the function.\n\n## Contract\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer (C3).\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.\n\n## Staffing\n\n- The backend developer works on the **haiku** model.",
+  "created": "2026-10-05T18:49:53Z",
+  "repo": "/tmp/claude-0/live/fresh/models/repo",
+  "phase": "done",
+  "stack": [
+    "node"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-06-02: notch calculator domain logic in src/ratings/notch.mjs"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "model": "haiku",
+      "why": "Staffing: The backend developer works on the haiku model"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "Plain Node ESM (.mjs) code, stack node"
+    }
+  ],
+  "assumptions": [
+    "Lead and QA run on the default model; only the backend developer is pinned to haiku, as the Staffing section says."
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261005-1849-rating-notch-change",
+  "integration_worktree": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "c371c2349bb986dafe0281ec8550041d6384f1ea",
+    "log": "/tmp/claude-0/live/fresh/models/repo/.work/JOB-20261005-1849-rating-notch-change/gates/verify-all-191210.log",
+    "at": "2026-10-05T19:12:10Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 3,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "npm test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      ".claude/settings.local.json",
+      ".env",
+      ".venv",
+      "node_modules"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "commit": {
+      "ai_attribution": false,
+      "role_in_message": false
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "7388ca829a155b744b2195a8ca35ed234592f20e",
+    "at": "2026-10-05T19:13:26Z"
+  },
+  "frozen": {
+    "readiness_sha256": "9984e427c6ce13260003d3963e1e059b0365ba5845b949d44ed9b5a5136b8ad2",
+    "at": "2026-10-05T18:53:07Z"
+  },
+  "pm_decisions": [
+    {
+      "at": "2026-10-05T19:08:36Z",
+      "what": "Accept raw non-ASCII characters (U+00A0/U+FEFF/U+2212/Cyrillic A) left in the dev's unit-test file instead of a third attempt",
+      "why": "review nit only; tests pass and the QA file uses escapes; attempts are used up",
+      "card": "T-01"
+    },
+    {
+      "at": "2026-10-05T19:09:17Z",
+      "what": "T-01 is not delivered (archived)",
+      "why": "replaced by T-02 (same work, brought over by cherry-pick); T-01 could not pass the gate after QA's round-2 re-commit with attempts used",
+      "card": "T-01"
+    }
+  ]
+}

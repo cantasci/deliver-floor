@@ -59,6 +59,12 @@ createServer(async (req, res) => {
     if (!body?.object?.url) return send(res, 400, { errors: { url: "required" } });
     i.remotelinks.push(body); save(); return send(res, 201, { id: i.remotelinks.length });
   }
+  if (path === "/myself" && req.method === "GET") return send(res, 200, { accountId: "bot", emailAddress: "bot@example.com", displayName: "bot" });
+  if ((x = path.match(/^\/project\/([A-Z0-9]+)$/)) && req.method === "GET")
+    return x[1] === (process.env.STUB_PROJECT ?? "WL") ? send(res, 200, { key: x[1], name: "Watchlist", issueTypes: [{ name: "Epic" }, { name: "Task" }] }) : send(res, 404, { errorMessages: ["No project could be found"] });
+  if ((x = path.match(/^\/project\/([A-Z0-9]+)\/statuses$/)) && req.method === "GET")
+    return send(res, 200, ["Epic", "Task"].map((name) => ({ name, statuses: statuses.map((s) => ({ name: s })) })));
+  if (path === "/issueLinkType" && req.method === "GET") return send(res, 200, { issueLinkTypes: [{ name: "Blocks" }, { name: "Relates" }] });
   if (path === "/issueLink" && req.method === "POST") { st.links.push(body); save(); return send(res, 201); }
   return send(res, 404, { errorMessages: [`no stub for ${req.method} ${path}`] });
 }).listen(Number(process.argv[3] ?? 0), "127.0.0.1", function () { console.log(`listening ${this.address().port}`); });

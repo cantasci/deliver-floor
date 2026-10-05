@@ -1459,7 +1459,13 @@ cmd_kanban() {
   node "$BIN_DIR/tracker-cli.mjs" kanban "$JOB_DIR" "$@"
   echo; echo "tracker: $(jq -r '.settings.tracker.kind // "local"' "$JOBJ")$(jq -r '.tracker.url // empty | " · " + .' "$JOBJ")  · html: $JOB_DIR/kanban.html"
 }
-cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
+cmd_tracker() {
+  if [[ ${1:-} == check ]]; then   # no job needed: the repo's settings (kit ⊕ yours ⊕ .deliver.json) against the live tracker
+    resolve_root; local f rc=0; f="$(mktemp)"; merged_settings > "$f"
+    node "$BIN_DIR/tracker-cli.mjs" check "$f" || rc=$?; rm -f "$f"; return $rc
+  fi
+  load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync|check]" ;; esac
+}
 cmd_reseal() { # human only (bash-guard): accept the current job.json/board.json after inspecting an outside change
   human_only "dl reseal"; DL_NO_SEAL_CHECK=1 load_job
   local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl reseal "<what was changed outside dl and why it is accepted>"'
@@ -1550,11 +1556,16 @@ cmd_floor_open() {
   resolve_root
   local req=${1:-}; [[ -n $req ]] || die 'usage: dl floor-open "<the /deliver request: text or a path to a requirements .md>"'
   [[ "$(dispatch_of new)" == munder ]] || refuse 1 "this repo runs with subagents (dispatch: subagent) — just run /deliver here"
+  local created=0; [[ -f $ROOT/.deliver.json ]] || { ensure_project_config; created=1; }   # the repo is known: its settings, read from it
   local home cfg h; cfg="$(md_app_config)"
   home="$(project_setting munder.hive_root)"; home=${home%/}; [[ $(basename "${home:-x}") == hive && -f $home/registry.json ]] && home="$(dirname "$home")"
   [[ -n $home ]] || home="$(jq -r '.harnessHome // empty' "$cfg" 2>/dev/null || true)"
   [[ -n $home ]] || refuse 1 "no floor for this repo: set \"munder\": {\"hive_root\": \"<folder>\"} in .deliver.json (scripts/init.sh --munder --hive <folder> --repo $ROOT does it all)"
   home="${home/#\~/$HOME}"; mkdir -p "$home"
+  if [[ $created == 1 && -z "$(jq -r '.munder.hive_root // empty' "$ROOT/.deliver.json")" ]]; then   # the file just written: record the floor it uses
+    jq --arg h "$home" '.munder.hive_root = $h' "$ROOT/.deliver.json" > "$ROOT/.deliver.json.tmp" && mv "$ROOT/.deliver.json.tmp" "$ROOT/.deliver.json"
+    echo "  munder.hive_root: $home — the floor this repo opens" >&2
+  fi
   local started=0
   if md_app_running "$home" "$cfg"; then
     h="$(jq -r '.harnessHome // empty' "$cfg" 2>/dev/null || true)"

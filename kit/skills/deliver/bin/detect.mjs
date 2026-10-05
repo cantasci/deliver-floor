@@ -25,7 +25,9 @@ function node(dir, ev, where) {
   const testOk = s.test && !NPM_PLACEHOLDER.test(s.test);
   const names = testOk ? [...["typecheck", "lint"].filter((n) => s[n]), "test"] : [];
   const steps = names.map(run);
-  const setup = pm === "npm" ? (has(dir, "package-lock.json") ? "npm ci" : "npm install")
+  // nothing to install → no setup (an install would only leave a new lockfile in every card's worktree)
+  const deps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies, ...pkg.optionalDependencies }).length > 0;
+  const setup = !deps ? "" : pm === "npm" ? (has(dir, "package-lock.json") ? "npm ci" : "npm install --no-package-lock")
     : pm === "pnpm" ? "pnpm install --frozen-lockfile" : pm === "yarn" ? "yarn install --frozen-lockfile" : "bun install";
   ev.push(testOk
     ? `${where}package.json scripts ${names.join(", ")}${lock ? `; ${lock} → ${pm}` : ""}`

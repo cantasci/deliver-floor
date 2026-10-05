@@ -12,7 +12,9 @@ repo="$(cd "${1:?repo path required}" && pwd)"; request="${2:-}"; rounds="${3:-1
 cd "$repo"
 command -v claude >/dev/null || { echo "claude CLI not found" >&2; exit 1; }
 # Unattended runs use Claude Code subagents; a floor job (Munder Difflin, the default) is run by the app's Michael.
+# the layered settings: .deliver.json over the user's own config over the kit default (munder)
 d="$(jq -r '.dispatch // empty' .deliver.json 2>/dev/null || true)"
+[[ -n $d ]] || d="$(jq -r '.dispatch // empty' "${DELIVER_HOME:-$HOME/.deliver}/config.json" 2>/dev/null || true)"
 [[ $d == subagent ]] || { echo "run-headless: this repo runs on the Munder Difflin floor (dispatch: ${d:-munder, the default}). Unattended runs need \"dispatch\": \"subagent\" in .deliver.json — see docs/07-munder-difflin.md#choosing-the-mode" >&2; exit 1; }
 
 # auto: classifier-based approvals (no prompts). If your plan lacks auto mode, use

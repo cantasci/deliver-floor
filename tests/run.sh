@@ -615,6 +615,14 @@ out="$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL
 [[ $out == *"is open on $FH"* && ! -f $TMP/app-started ]] && ok "an app already open on that floor is not started twice — the job just goes to Michael" || bad "floor-open with app running: $out"
 jq '.harnessHome = "/elsewhere"' "$FX/.config/munder-difflin/config.json" > "$TMP/c" && mv "$TMP/c" "$FX/.config/munder-difflin/config.json"
 contains "an app open on another floor is not hijacked" "$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "x" 2>&1)" "open on another floor (/elsewhere)"
+# the first /deliver in a floor repo with no .deliver.json writes it, read from the repo, with the floor it opens
+FN="$TMP/floornew"; FX2="$TMP/fakehome2"; FH2="$TMP/floorhome2"; mkdir -p "$FN" "$FX2/.config/munder-difflin" "$FX2/.deliver"
+(cd "$FN" && git init -q -b main && echo '{"scripts":{"test":"node --test"}}' > package.json && git add -A && git commit -qm i)
+jq -n --arg h "$FH2" '{harnessHome:$h}' > "$FX2/.config/munder-difflin/config.json"
+jq -n --arg c "true" '{munder:{app_command:$c}}' > "$FX2/.deliver/config.json"
+out="$(cd "$FN" && HOME="$FX2" XDG_CONFIG_HOME="$FX2/.config" DELIVER_HOME="$FX2/.deliver" env -u AGENT_ID "$DL" floor-open "x" 2>&1)"
+contains "floor-open in a repo without .deliver.json writes it from the repo" "$out" "verify_full: npm test — package.json scripts test"
+contains "…with the floor it opened as munder.hive_root, and no install step for a package.json without dependencies" "$(jq -c '{d:.dispatch,h:.munder.hive_root,s:.worktree_setup}' "$FN/.deliver.json")" "{\"d\":\"munder\",\"h\":\"$FH2\",\"s\":\"\"}"
 
 # The project's config file: the first /deliver writes a complete .deliver.json; its per-role defaults reach the job
 PC="$TMP/projcfg"; mkdir -p "$PC" && (cd "$PC" && git init -q -b main && echo '{"scripts":{"test":"node --test"}}' > package.json && git add -A && git commit -qm i)
@@ -626,11 +634,11 @@ DT="$HERE/kit/skills/deliver/bin/detect.mjs"; DR="$TMP/detect"; mkdir -p "$DR"
 det() { node "$DT" "$DR/$1" | jq -c "$2"; }
 mkdir -p "$DR/placeholder" && echo '{"scripts":{"test":"echo \"Error: no test specified\" && exit 1"}}' > "$DR/placeholder/package.json"
 contains "npm's placeholder test script is not a test suite: verify_full stays empty" "$(det placeholder '{v:.verify_full,e:.evidence.verify_full}')" '{"v":"","e":"package.json has no test script (only npm'"'"'s placeholder) — verify_full left empty"}'
-mkdir -p "$DR/pnpm" && echo '{"scripts":{"test":"vitest run","typecheck":"tsc --noEmit"}}' > "$DR/pnpm/package.json" && touch "$DR/pnpm/pnpm-lock.yaml"
+mkdir -p "$DR/pnpm" && echo '{"scripts":{"test":"vitest run","typecheck":"tsc --noEmit"},"devDependencies":{"vitest":"^2"}}' > "$DR/pnpm/package.json" && touch "$DR/pnpm/pnpm-lock.yaml"
 contains "the lockfile names the package manager (pnpm), typecheck runs before the tests" "$(det pnpm '{v:.verify_full,s:.worktree_setup}')" '{"v":"pnpm typecheck && pnpm test","s":"pnpm install --frozen-lockfile"}'
 mkdir -p "$DR/py" && printf '[project]\nname = "x"\n[dependency-groups]\ndev = ["pytest"]\n' > "$DR/py/pyproject.toml" && touch "$DR/py/uv.lock"
 contains "Python with uv: uv run pytest, uv sync in each worktree" "$(det py '{v:.verify_full,s:.worktree_setup,x:.worktree_exclude}')" '{"v":"uv run pytest -q","s":"uv sync","x":[".venv"]}'
-mkdir -p "$DR/mono/web" "$DR/mono/api" && echo '{"scripts":{"test":"jest"}}' > "$DR/mono/web/package.json" && touch "$DR/mono/web/package-lock.json" && echo 'module x' > "$DR/mono/api/go.mod"
+mkdir -p "$DR/mono/web" "$DR/mono/api" && echo '{"scripts":{"test":"jest"},"devDependencies":{"jest":"^29"}}' > "$DR/mono/web/package.json" && touch "$DR/mono/web/package-lock.json" && echo 'module x' > "$DR/mono/api/go.mod"
 contains "a repo with a project per folder: each one's tests, in its folder" "$(det mono '{v:.verify_full,s:.worktree_setup}')" '{"v":"(cd api && go test ./...) && (cd web && npm test)","s":"(cd web && npm ci)"}'
 mkdir -p "$DR/make" && printf 'test:\n\tgo test ./...\n' > "$DR/make/Makefile" && echo 'module x' > "$DR/make/go.mod"
 contains "the repo's own Makefile test target wins" "$(det make .verify_full)" '"make test"'
@@ -784,6 +792,18 @@ git init -q --bare "$TMP/gh-origin.git"
 JR="$TMP/jira-repo"; mkdir -p "$JR" && cd "$JR" && git init -q -b main
 git remote add origin https://github.com/acme/demo.git && git config url."$TMP/gh-origin.git".insteadOf https://github.com/acme/demo.git
 echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"human","tracker":{"kind":"jira","jira":{"project":"WL"}}}' > .deliver.json && git add -A && git commit -qm i && git push -q origin main
+# Before any job: dl tracker check asks the site what the flow will need (read-only)
+out="$("$DL" tracker check 2>&1)"; rc=$?
+[[ $rc == 0 && $out == *"ok   signed in to $JIRA_BASE_URL as bot@example.com"* && $out == *"status for every column"* && $out == *"link type 'Blocks'"* ]] \
+  && ok "dl tracker check: signed in, project, issue types, a status per column, Blocks — before any job" || bad "tracker check: $out"
+contains "…a missing credential is named" "$(env -u JIRA_API_TOKEN "$DL" tracker check 2>&1)" "Jira credentials missing: JIRA_EMAIL + JIRA_API_TOKEN, or JIRA_PAT"
+contains "…a project the user cannot see fails" "$(jq '.tracker.jira.project = "NOPE"' .deliver.json > x.json && mv x.json .deliver.json && "$DL" tracker check 2>&1; git checkout -q .deliver.json)" "FAIL project NOPE is not visible"
+echo "To Do,In Progress,Code Review,Done,Blocked,Won't Do" > "$JSF"
+out="$("$DL" tracker check 2>&1)"; rc=$?
+[[ $rc == 1 && $out == *"FAIL the Task workflow has no status for: qa → 'QA'"* ]] && ok "…a workflow without a column's status fails, naming it" || bad "tracker check missing status: rc=$rc $out"
+rm -f "$JSF"
+contains "doctor runs the same check for a Jira repo" "$("$HERE/scripts/doctor.sh" "$JR" 2>&1)" "jira: signed in to $JIRA_BASE_URL as bot@example.com"
+contains "…and names missing Jira credentials" "$(env -u JIRA_EMAIL "$HERE/scripts/doctor.sh" "$JR" 2>&1)" "tracker jira: set JIRA_BASE_URL and JIRA_EMAIL + JIRA_API_TOKEN"
 "$DL" new "jira flow" "x" >/dev/null; JJ="$JR/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
@@ -1134,8 +1154,21 @@ for u in u1 u2; do (cd "$TMP/$u" && AGENT_ID=god "$HOME/.claude/skills/deliver/b
 contains "dl new takes the user's settings (\$DELIVER_HOME/config.json)" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u1/.work/JOB-*/job.json)" '{"d":"subagent","m":"opus"}'
 contains "…and a repo's .deliver.json over them" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u2/.work/JOB-*/job.json)" '{"d":"munder","m":"opus"}'
 out="$("$HERE/scripts/doctor.sh" "$R" 2>&1)"
-contains "doctor sees the install and the repo" "$out" "user: hook write-guard"
+contains "doctor sees the install and the repo" "$out" "✔"$'\033[0m'" user: hook write-guard"
+[[ $out != *"hook "*" not in "* ]] && ok "…every installed hook found (none reported missing)" || bad "doctor misses hooks: $(grep 'not in' <<<"$out")"
 mkdir -p "$HOME/.config/munder-difflin"; echo '{}' > "$HOME/.claude.json"
+# Roles on other vendors' CLIs and how Claude signs in
+VR="$TMP/vendor"; mkdir -p "$VR" && git -C "$VR" init -q -b main
+echo '{"dispatch":"subagent","roles":{"backend":{"provider":"codex","model":"gpt-5-codex"}}}' > "$VR/.deliver.json"
+contains "doctor: a role on another vendor's CLI needs the floor" "$("$HERE/scripts/doctor.sh" "$VR" 2>&1)" "role backend runs on codex — other CLIs run only on the Munder Difflin floor"
+echo '{"dispatch":"munder","roles":{"backend":{"provider":"codex","model":"gpt-5-codex"}}}' > "$VR/.deliver.json"
+contains "…and its CLI on PATH" "$(PATH="/usr/bin:/bin:$(dirname "$(command -v node)")" "$HERE/scripts/doctor.sh" "$VR" 2>&1)" "role backend runs on codex but 'codex' is not on PATH"
+mkdir -p "$TMP/fakebin" && printf '#!/bin/sh\nexit 0\n' > "$TMP/fakebin/codex" && chmod +x "$TMP/fakebin/codex"
+contains "…found when installed" "$(PATH="$TMP/fakebin:$PATH" "$HERE/scripts/doctor.sh" "$VR" 2>&1)" "role backend runs on codex ($TMP/fakebin/codex)"
+na() { env -u ANTHROPIC_BASE_URL -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u CLAUDE_CODE_USE_BEDROCK -u CLAUDE_CODE_USE_VERTEX "$@"; }
+contains "doctor names how Claude signs in: an API key" "$(na ANTHROPIC_API_KEY=x "$HERE/scripts/doctor.sh" 2>&1)" "Anthropic API key (ANTHROPIC_API_KEY)"
+contains "…a gateway (another vendor's models behind ANTHROPIC_BASE_URL)" "$(na ANTHROPIC_BASE_URL=http://gw ANTHROPIC_API_KEY=x "$HERE/scripts/doctor.sh" 2>&1)" "an LLM gateway (ANTHROPIC_BASE_URL)"
+contains "…Bedrock" "$(na CLAUDE_CODE_USE_BEDROCK=1 "$HERE/scripts/doctor.sh" 2>&1)" "Amazon Bedrock"
 contains "doctor finds Munder Difflin and warns about Claude Code's unfinished first run" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run is not completed"
 echo '{"hasCompletedOnboarding":true}' > "$HOME/.claude.json"
 contains "…and is satisfied once it is done" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run completed"

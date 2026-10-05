@@ -57,6 +57,8 @@ export class Tracker {
   async note(_card, _author, _text) {}
   /** attach the card's git branch to the task (where the tool has a place for it, else in the description) */
   async branch(_card) {}
+  /** before any job: can this tracker be reached and does it have what the flow needs? → [{ok, msg}] (dl tracker check) */
+  async check() { return [{ ok: true, msg: `tracker '${this.job.settings?.tracker?.kind ?? "local"}': nothing to connect` }]; }
   /** a short line describing where people see the board */
   where() { return ""; }
   card(id) { const c = this.board.cards.find((x) => x.id === id); if (!c) throw new Error(`no such card: ${id}`); return c; }
@@ -179,6 +181,32 @@ export class JiraTracker extends Tracker {
     await this.note(card, "michael", `branch ${c.branch}${c.branch_url ? ` (${c.branch_url})` : ""}`);
   }
   where() { return this.job.tracker?.url ? `jira: ${this.job.tracker.url}` : `jira: ${this.base} (project ${this.project})`; }
+  // Everything the flow will need, asked of the site before a job depends on it: who we are, the project, its issue types,
+  // a workflow status for every column, and the "Blocks" link type. Read-only.
+  async check() {
+    const out = [], ok = (m) => out.push({ ok: true, msg: m }), bad = (m) => out.push({ ok: false, msg: m });
+    try {
+      const me = await this.req("GET", "/myself");
+      ok(`signed in to ${this.base} as ${me.emailAddress ?? me.displayName ?? me.name ?? me.accountId} (${process.env.JIRA_PAT ? "JIRA_PAT" : "JIRA_EMAIL + JIRA_API_TOKEN"}, API v${this.api})`);
+    } catch (e) { bad(`cannot sign in to ${this.base}: ${e.message}`); return out; }
+    let proj;
+    try { proj = await this.req("GET", `/project/${encodeURIComponent(this.project)}`); ok(`project ${this.project}: ${proj.name ?? ""}`.trim()); }
+    catch (e) { bad(`project ${this.project} is not visible to this user: ${e.message}`); return out; }
+    const types = (proj.issueTypes ?? []).map((t) => t.name);
+    for (const t of [this.epicType, this.issueType]) (types.includes(t) ? ok : bad)(`issue type '${t}'${types.includes(t) ? "" : ` missing (has: ${types.join(", ")}) — set tracker.jira.${t === this.epicType ? "epic_type" : "issue_type"}`}`);
+    try {
+      const per = await this.req("GET", `/project/${encodeURIComponent(this.project)}/statuses`);
+      const names = new Set((per.find?.((x) => x.name === this.issueType) ?? { statuses: per.flatMap?.((x) => x.statuses) ?? [] }).statuses.map((x) => x.name.toLowerCase()));
+      const missing = Object.entries(this.columns).filter(([, n]) => !names.has(String(n).toLowerCase()));
+      if (missing.length) bad(`the ${this.issueType} workflow has no status for: ${missing.map(([k, n]) => `${k} → '${n}'`).join(", ")} — add them in Jira, or map each to one it has in tracker.columns`);
+      else ok(`the ${this.issueType} workflow has a status for every column (${Object.values(this.columns).join(", ")})`);
+    } catch (e) { bad(`cannot read the workflow statuses: ${e.message}`); }
+    try {
+      const { issueLinkTypes = [] } = await this.req("GET", "/issueLinkType");
+      (issueLinkTypes.some((t) => t.name === "Blocks") ? ok : bad)(`link type 'Blocks'${issueLinkTypes.some((t) => t.name === "Blocks") ? "" : " missing — card dependencies will not be linked"}`);
+    } catch (e) { bad(`cannot read link types: ${e.message}`); }
+    return out;
+  }
 }
 
 // ---- factory ---------------------------------------------------------------------------------------------------------

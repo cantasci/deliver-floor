@@ -53,7 +53,14 @@ else
 fi
 iso_env claude plugin list 2>/dev/null | gq ecc@ecc && ok "ECC plugin installed ($(iso_env claude plugin list 2>/dev/null | grep -A1 ecc@ecc | grep -o 'Version: [0-9.]*'))" || bad "ECC plugin not installed"
 iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
-SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null
+SB="$W/repo"; rm -rf "$SB"
+if [[ -n ${E2E_FRESH_REPO:-} ]]; then
+  # a repo with no .deliver.json: the first /deliver must write it from the repo; subagents come from the user's own config
+  iso_env "$HERE/scripts/sandbox.sh" "$SB" "$EXN" > /dev/null
+  git -C "$SB" rm -q .deliver.json && git -C "$SB" commit -qm "no .deliver.json: the first /deliver writes it"   # the seed ships one
+  mkdir -p "$ISO_HOME/.deliver" && echo '{"dispatch":"subagent"}' > "$ISO_HOME/.deliver/config.json"
+  [[ ! -f $SB/.deliver.json ]] && ok "fresh repo: no .deliver.json; ~/.deliver/config.json says dispatch subagent" || bad "sandbox wrote a .deliver.json"
+else iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null; fi
 if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
   git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"
@@ -100,6 +107,15 @@ done
 log "wall time: $(( ($(date +%s) - start) / 60 )) min"
 
 step "5 · verify the whole flow on disk"
+if [[ -n ${E2E_FRESH_REPO:-} ]]; then
+  chk "the first /deliver wrote .deliver.json" test -f "$SB/.deliver.json"
+  log ".deliver.json: $(jq -c '{dispatch,verify_full,worktree_setup,merge_mode}' "$SB/.deliver.json" 2>/dev/null)"
+  chk "…read from the repo: verify_full npm test (package.json scripts.test), no install step (no dependencies), local merge (no remote)" \
+    jq -e '.verify_full == "npm test" and .worktree_setup == "" and .merge_mode == "local"' "$SB/.deliver.json"
+  chk "…the user's own dispatch carried into it, and into the job" bash -c "jq -e '.dispatch == \"subagent\"' '$SB/.deliver.json' && jq -e '.settings.verify_full == \"npm test\" and .settings.dispatch == \"subagent\"' '$JJ'"
+  ev="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | grep -o 'verify_full: npm test — package.json scripts test' | head -1)"
+  [[ -n $ev ]] && ok "…and Michael's session saw where each value came from (\"$ev\")" || bad "the evidence lines are not in the session transcript"
+fi
 chk "job reached done" test "$(jq -r .phase "$JJ")" == done
 chk "job shipped ($(jq -r .settings.merge_mode "$JJ"))" test "$(jq -r .shipped "$JJ")" == true
 log "roles: $(jq -r '[.roles[] | .role + (if .count then "×\(.count)" else "" end)] | join(", ")' "$JJ")"

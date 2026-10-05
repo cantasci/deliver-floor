@@ -105,11 +105,78 @@ Then add what only you know, such as models per role:
 wins. `merge_mode` decides who merges: `human` (a PR you merge), `semi` (auto-merge on your approval), `auto` (on green CI),
 `local` (no remote). Every key: [docs/03-settings](docs/03-settings.md).
 
+## Connect it
+
+`scripts/doctor.sh <repo>` checks everything below for that repo and says what is missing, with the fix.
+
+### Claude: a login or an API key
+
+Michael and every Claude role run as ordinary Claude Code sessions, so they sign in the way your `claude` does:
+
+| You have | Set | Notes |
+| --- | --- | --- |
+| a Claude subscription | nothing — run `claude` once and `/login` | for an unattended machine: `claude setup-token` → `CLAUDE_CODE_OAUTH_TOKEN` |
+| an Anthropic API key | `ANTHROPIC_API_KEY=sk-ant-…` | billed per token on your Console account |
+| Amazon Bedrock | `CLAUDE_CODE_USE_BEDROCK=1` + your AWS credentials and region | |
+| Google Vertex AI | `CLAUDE_CODE_USE_VERTEX=1` + `ANTHROPIC_VERTEX_PROJECT_ID`, `CLOUD_ML_REGION` | |
+| an LLM gateway (LiteLLM, a company proxy) | `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (or `ANTHROPIC_API_KEY`) | other vendors' models can sit behind it; the role `model` names are passed through to it |
+
+Put the variables in `~/.claude/settings.json` → `"env"` (every session, the floor's too) or in the shell you start
+`claude` / Munder Difflin from. On the floor, `ANTHROPIC_*` variables reach every seat; Munder Difflin removes other
+`CLAUDE_*` variables except `CLAUDE_CODE_OAUTH_TOKEN` and the Bedrock/Vertex switches
+([07 § 5](docs/07-munder-difflin.md#5-authentication-and-first-run)). Keys never go into `.deliver.json`.
+
+### Other models and other vendors
+
+- **Another Claude model per role.** In `.deliver.json`: `"roles": {"ba": {"model": "opus"}, "backend": {"model": "haiku"}}`,
+  or say it to Michael at the start, or in a Staffing section of the request. Works in both modes.
+- **Another vendor's CLI per role** — Codex, Gemini, Grok, Kimi, Qwen, OpenCode, Crush, Pi, Copilot, Cursor, Antigravity. On
+  the floor only (`"dispatch": "munder"`): that role becomes a person at a seat running that CLI, with the same work orders,
+  gates, QA and reviews.
+
+  ```json
+  "roles": {
+    "backend":  { "provider": "codex",  "model": "gpt-5-codex", "count": 2 },
+    "frontend": { "provider": "gemini", "model": "gemini-2.5-pro" }
+  }
+  ```
+
+  Install that CLI and sign in to it on the machine the floor runs on, the way that CLI wants: its login, or its key in the
+  environment (for example `OPENAI_API_KEY` for Codex, `GEMINI_API_KEY` for Gemini). Munder Difflin starts it, and
+  `doctor` checks the CLI is on your `PATH`. Michael himself can also run on another CLI: the floor briefs him in
+  `CLAUDE.md`, `AGENTS.md` and `GEMINI.md`. The guarantees do not depend on the model: `dl` refuses an out-of-order step
+  whoever calls it ([04 § Models and CLIs per role](docs/04-roles.md#models-and-clis-per-role)).
+- **Another vendor's model inside Claude Code** — through a gateway (above); the subagent mode works too.
+
+### Jira
+
+1. Credentials go in the environment, never in a file you commit. **Cloud:** `JIRA_BASE_URL=https://<site>.atlassian.net`,
+   `JIRA_EMAIL`, `JIRA_API_TOKEN` (id.atlassian.com → Security → API tokens). **Data Center:** `JIRA_BASE_URL`, `JIRA_PAT`,
+   and `"api_version": "2"`. Use a bot user that may browse, create, edit, transition, comment and link in the project.
+2. In `.deliver.json`: `"tracker": {"kind": "jira", "jira": {"project": "WL"}}`.
+3. Check the connection before any job: `dl tracker check` (or `scripts/doctor.sh <repo>`). It confirms the sign-in, the
+   project, the Epic and Task issue types, a workflow status for every column (To Do, In Progress, QA, Code Review, Done,
+   Blocked, Won't Do), and the "Blocks" link type. Anything missing is named; your columns can be mapped to your workflow's
+   own status names with `tracker.columns`.
+
+Michael then opens an Epic per job and a Task per card, moves them as the roles finish their steps, and posts each gate,
+QA and review result as a comment. The card branch carries the issue key, so Jira's Development panel shows it. Details:
+[10-trackers](docs/10-trackers.md#jira).
+
+## Extend it
+
+| To add | Do | Guide |
+| --- | --- | --- |
+| another tracker (Linear, Azure Boards, GitHub Projects…) | one class with `open`, `sync`, `note`, `branch` (and optionally `check`) in `kit/skills/deliver/bin/trackers/<name>.mjs`, then `"tracker": {"kind": "<name>"}` — nothing else changes | [10 § Adding a tracker](docs/10-trackers.md#adding-a-tracker-linear-azure-boards-github-projects-) |
+| a role (data, devops…) | an entry in `roles.yaml` and an agent in `kit/agents/` (or an ECC agent) | [04 § Adding a role](docs/04-roles.md#adding-a-role-example-data) |
+| your company's standards | Markdown files with a `## Must` list; every matching role gets them in its role card | [08 § A standard](docs/08-knowledge.md#1-a-standard) |
+| a default per project | a key in `.deliver.json` (validated by its schema) | [03-settings](docs/03-settings.md) |
+
 ## How it was verified
 
 Every claim above was run, live, with real Claude Code sessions and real agents — and recorded, failures included:
 
-- **480 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
+- **495 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
   hooks on Windows paths, bash 3.2 (macOS) compatibility.
 - **40+ live runs** ([HISTORY](docs/verification/HISTORY.md), raw outputs in [docs/verification](docs/verification/)): headless,
   interactive (a person typing in the TUI), and the Munder Difflin app driven like a user, with screenshots of each person
@@ -118,8 +185,9 @@ Every claim above was run, live, with real Claude Code sessions and real agents 
   delivered), models per role taken from the request, the terminal and the floor default — judged from the session
   transcripts.
 - **Not verified yet** — listed in [docs/OPEN.md](docs/OPEN.md): several projects on one floor at once, non-Claude CLIs per
-  role, a live Jira site, and a run on real Windows and macOS machines (the code paths are covered by the deterministic
-  checks).
+  role, a live Jira site (the connection check and the flow run against a stub of Jira's API), a gateway with another
+  vendor's models, Bedrock/Vertex, and a run on real Windows and macOS machines (the code paths are covered by the
+  deterministic checks).
 
 ## Documentation
 
