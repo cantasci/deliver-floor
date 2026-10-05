@@ -1,0 +1,45 @@
+2026-10-05T09:19:26Z	new	Rating notch calculator and country indicator
+2026-10-05T09:19:29Z	jobset	stack: .stack=["javascript"]
+2026-10-05T09:19:36Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12/REQ-06-02: domain logic in src/ratings and src/indicators"},{"role":"backend","agent":"backend-dev","why":"REQ-06-02 notch calculator and REQ-03-12 indicator 12 implementation"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"JavaScript ESM stack"}]
+2026-10-05T09:19:36Z	jobset	assumptions: .assumptions += ["C2 overrides the POC example: BBB+ -> BB+ is 3 notches, WL=2 (JOB.md clarification)","Indicator 13 thresholds drive the calculator WL; Indicator 12 thresholds (1->1, 2+->2) drive countryRatingChangeWl"]
+2026-10-05T09:19:37Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T09:19:37Z	phase	readiness
+2026-10-05T09:23:52Z	agent	business-analyst a430ba44: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Deliver two business rules as importable, pure functions for the Watchlist POC. The first is th
+2026-10-05T09:24:35Z	readiness	35 items: 19 decided, 10 n/a, 6 open
+2026-10-05T09:24:39Z	decide	X-error-message: Message names the argument and quotes the value; tests assert RangeError type only — C1 fixes only the type; a descriptive message aids debugging at no cost
+2026-10-05T09:24:39Z	decide	X-scale-immutability: RATING_SCALE is frozen (Object.freeze) — Shared constant must not be mutable by consumers; contents unchanged
+2026-10-05T09:24:40Z	decide	X-module-exports: Named exports exactly as the contract; no default export, no extra exported helpers — Contract says other parts import exactly these; keep the surface minimal
+2026-10-05T09:24:40Z	decide	X-zero-sign: Guarantee +0 for unchanged ratings and test it — Strict assert uses Object.is; contract says 0 = unchanged
+2026-10-05T09:24:40Z	decide	X-test-coverage: No numeric coverage target; every AC and edge case has a test — Request states none; DEL-ci requires only node --test
+2026-10-05T09:24:41Z	phase	awaiting_clarification
+2026-10-05T09:24:48Z	clarify	X-input-trim: Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.
+2026-10-05T09:25:12Z	freeze	readiness + architecture frozen (40c7783ff594)
+2026-10-05T09:25:13Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T09:25:13Z	phase	planning
+2026-10-05T09:26:41Z	agent	business-analyst a8d4164d: ## Goal Deliver two business rules from the Watchlist POC as pure, synchronous ES modules that other POC parts can import using the exact names in the contract:
+2026-10-05T09:28:08Z	agent	ecc:architect a7f427ab: ```json [ { "tmp_id": "B1", "title": "Rating scale, notchChange and notchCalculator (src/ratings/notch.mjs)", "role": "backend", "component": "ratings-indicator
+2026-10-05T09:30:01Z	agent	business-analyst a73d9bfe: === T-01 === # T-01: Rating scale, notchChange and notchCalculator (src/ratings/notch.mjs) ## User story As a developer building other Watchlist POC parts, I wa
+2026-10-05T09:30:32Z	phase	executing
+2026-10-05T09:30:36Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T09:31:45Z	agent	backend-dev a03e176a: status: done commit: a00c9ba verify: passed (`node --test test/ratings/notch.test.mjs`, 19 tests pass; `node --test` also passes) open issues: The card branch i
+2026-10-05T09:31:49Z	gate	T-01 PASS
+2026-10-05T09:33:22Z	agent	qa-tester ad0d891e: All 12 acceptance criteria pass and `qa_verify` exits 0, but I could not push the card branch. The bash-guard hook rejected every push attempt with "this direct
+2026-10-05T09:33:25Z	qa	T-01 pass (qa_verify PASS) — AC-1..10,15,16 pass; 27 QA tests, full suite 73/73
+2026-10-05T09:33:41Z	agent	ecc:typescript-reviewer ab77f579: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: the spec requires a rating-scale constant, and the fully frozen array and the plain `to - fro
+2026-10-05T09:33:44Z	review	T-01 reviewer approve — no blocking items; nits only
+2026-10-05T09:33:45Z	integrate	T-01 merged
+2026-10-05T09:33:48Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-05T09:34:27Z	agent	backend-dev a7968384: status: done commit: 6e68432 verify: passed (`node --test test/indicators/countryRating.test.mjs`: 12/12 pass; full `node --test`: 85/85 pass) open issues: - - 
+2026-10-05T09:34:30Z	gate	T-02 PASS
+2026-10-05T09:35:26Z	agent	qa-tester a2123d0a: ```json {"verdict":"pass", "tests":["test/integration/countryRating/countryRating.int.test.mjs","test/integration/countryRating/index.js"], "criteria":[ {"ac":"
+2026-10-05T09:35:30Z	qa	T-02 pass (qa_verify PASS) — AC-5,6,8,11-16 pass; 71 QA tests
+2026-10-05T09:35:40Z	agent	ecc:typescript-reviewer af109fc1: {"verdict":"approve","blocking":[],"nits":["src/indicators/countryRating.mjs is correct and meets the spec. It has one import (notchChange), exactly two paramet
+2026-10-05T09:35:42Z	review	T-02 reviewer approve — no blocking items; nits only
+2026-10-05T09:35:43Z	integrate	T-02 merged
+2026-10-05T09:35:46Z	phase	integrating
+2026-10-05T09:35:47Z	verify-all	PASS
+2026-10-05T09:35:50Z	phase	closing
+2026-10-05T09:37:18Z	agent	business-analyst a5ed710a: ## Closing check: JOB-20261005-0919, rating notch calculator and country indicator All 16 ACs are met. I checked the job branch head `51346ec` in the integratio
+2026-10-05T09:37:28Z	pm-decision	Ship with test-hygiene follow-ups 1-2 unfixed — All 16 ACs met; the issues are test-only, don't change behaviour, and are listed in the report for the next slice
+2026-10-05T09:37:29Z	learn	qa: On Node 22 'node --test <dir>' fails; give qa_verify a file path instead of adding index.js shims; never hard-code commit hashes in tests
+2026-10-05T09:37:29Z	ship	local merge into main

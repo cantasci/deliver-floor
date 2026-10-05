@@ -37,6 +37,15 @@ ready_all() { # ready_all [<id> open] — the BA's readiness review: every appli
 }
 SDIR="$HERE/kit/skills/deliver"
 
+echo "Node 22: node --test <directory> fails (MODULE_NOT_FOUND) — caught before it costs an attempt"
+nt() { node "$HERE/kit/skills/deliver/bin/node-test-args.mjs" "$1" >/dev/null; echo $?; }
+[[ "$(nt 'node --test test/x/')$(nt 'node --test test/x')$(nt "node --test 'test/**/*.test.mjs'")$(nt 'node --test test/a.test.mjs')$(nt 'npm test && node --test --test-reporter=spec test/int/')$(nt 'node --test')" == 110010 ]] \
+  && ok "a directory argument to node --test is found (with or without /, after options); files, globs and none are fine" || bad "node-test-args"
+
+echo "macOS bash 3.2"
+expect_ok "dl, hooks and scripts parse and run on bash 3.2 (no case in \$( ), no bare empty arrays, no bash-4 features)" \
+  node "$HERE/tests/lint-bash32.mjs" "$HERE/kit/skills/deliver/bin/dl" "$HERE/kit/skills/deliver/bin/md-brief.sh" "$HERE"/kit/hooks/deliver/*.sh "$HERE"/scripts/*.sh
+
 echo "scope matcher"
 m() { printf '%s\n' "$2" | node "$SDIR/bin/scope.mjs" "$1"; }
 [[ -z "$(m '["src/a/**"]' src/a/b/c.ts)" ]] && ok "** spans directories" || bad "** spans directories"
@@ -56,7 +65,7 @@ echo 'export const add = (a, b) => a + b;' > src/math.mjs
 echo 'top secret' > secret/keep.txt
 git add -A && git commit -qm init
 cat > .deliver.json <<'EOF'
-{ "verify_full": "node --test", "worktree_setup": "mkdir -p \"$ROOT/node_modules\" && ln -s \"$ROOT/node_modules\" node_modules", "merge_mode": "local", "max_parallel": 2, "gates": { "plan": true } }
+{ "dispatch": "subagent", "verify_full": "node --test", "worktree_setup": "mkdir -p \"$ROOT/node_modules\" && ln -s \"$ROOT/node_modules\" node_modules", "merge_mode": "local", "max_parallel": 2, "gates": { "plan": true } }
 EOF
 git add .deliver.json && git commit -qm cfg
 
@@ -92,6 +101,18 @@ out="$("$DL" readiness 2>&1)"
 contains "a quote that is not in the request is an error (an interpretation, not a decision)" "$out" "quote not found in the request"
 contains "a decision from the request without its quote is an error" "$out" "decided from a source needs \`quote\`"
 [[ $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): decided from a source"* && $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): quote"* ]] && ok "an answer from the human needs no quote" || bad "human source asked for a quote"
+# The language is never a PM default: ARC-stack is the repo's, the request's or the human's
+jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"human: t 2026-10-05"}])} | (.items[] | select(.id=="ARC-stack")) |= {id, status:"decided", answer:"Node.js", source:"pm: michael 2026-10-05 — fastest to write"}' "$TMP/appl.json" > "$RJ/readiness.json"
+out="$("$DL" readiness 2>&1)"
+contains "a language picked out of habit is refused: the choice must quote what in the request points to it" "$out" "quoting the request words that point to it"
+contains "…and name the alternatives it weighed" "$out" "must name the alternatives it weighed"
+REQ0="$(jq -r .request "$RJ/job.json")"; QW="$(printf '%s' "$REQ0" | tr -s ' \n' ' ' | cut -d' ' -f1-3)"
+jq --arg q "$QW" '(.items[] | select(.id=="ARC-stack")).source = ("pm: michael 2026-10-05 — the request says \"" + $q + "\"; chosen over Python, which the repo would add as a second runtime")' "$RJ/readiness.json" > "$RJ/r.json" && mv "$RJ/r.json" "$RJ/readiness.json"
+[[ "$("$DL" readiness 2>&1)" != *"ARC-stack"* ]] && ok "a best-fit choice with the request's words and the alternatives is the team's decision" || bad "ARC-stack: $("$DL" readiness 2>&1 | grep ARC-stack)"
+EJ='{"phase":"intake","stack":[],"roles":[{"role":"ba","agent":"business-analyst"},{"role":"qa","agent":"qa-tester"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"}]}'
+contains "a repo without code may start with no stack reviewer (the language is decided at readiness)…" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; console.log(JSON.stringify(checkJobRoles($EJ, loadCatalog())))")" '[]'
+contains "…but not into planning" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; const j=$EJ; j.phase='planning'; console.log(JSON.stringify(checkJobRoles(j, loadCatalog())))")" "no stack reviewer selected"
+contains "the stack check is in the playbook: no default language, the best fit for the requirements" "$(cat "$HERE/kit/skills/deliver/SKILL.md")" "never pick one by default"
 printf 'Orders are kept for 90 days.\n' > "$R/RETENTION.md"
 jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])} | .items[0].source = "RETENTION.md" | .items[0].quote = "kept for 90   days"' "$TMP/appl.json" > "$RJ/readiness.json"
 out="$("$DL" readiness 2>&1)"; [[ $out != *"quote not found"* ]] && ok "a quote from the repo file named in the source counts (whitespace-insensitive)" || bad "repo-file quote: $out"
@@ -277,6 +298,12 @@ W3="$("$DL" wt add T-03)"
 echo 'export * from "./add/add.mjs";' > "$W3/src/index.mjs"
 printf 'import {test} from "node:test"; test("index", () => {});\n' > "$W3/test/index.test.mjs"
 git -C "$W3" add -A && git -C "$W3" commit -qm "T-03: index"
+contains "a running card's verify command can be fixed (a form Node 22 rejects is refused by the validator)" "$("$DL" card T-03 set qa_verify "node --test test/qa/" "try a directory" 2>&1)" "a directory fails on Node 22+"
+QV0="$(jq -r '.cards[] | select(.id=="T-03") | .qa_verify' "$B")"; AT0="$(jq -r '.cards[] | select(.id=="T-03") | .attempts' "$B")"
+bedit "$B" '(.cards[] | select(.id=="T-03")).qa_verify = "node --test test/qa/"'
+contains "the gate refuses a node --test directory before running it…" "$("$DL" gate T-03 2>&1)" "T-03's qa_verify cannot pass"
+[[ "$(jq -r '.cards[] | select(.id=="T-03") | .attempts' "$B")" == "$AT0" && "$(jq -r '.cards[] | select(.id=="T-03") | .gate.result // "none"' "$B")" == none ]] && ok "…without using an attempt or recording a FAIL" || bad "gate pre-check cost an attempt"
+expect_ok "…and the fix is one command on the running card" "$DL" card T-03 set qa_verify "$QV0" "back to the file form"
 IWT="$R/.work/$JOB/wt/_integration"
 echo 'export const v = 1;' > "$IWT/src/index.mjs"; git -C "$IWT" add -A; git -C "$IWT" commit -qm "hotfix on job branch"
 "$DL" gate T-03 >/dev/null && qa_tests "$W3" T-03 && "$DL" qa T-03 pass "ok" >/dev/null && "$DL" review T-03 approve "ok" >/dev/null
@@ -301,7 +328,7 @@ contains "next asks for the report" "$("$DL" next)" "REPORT"
 echo "# Delivery report — all ACs met" > "$R/.work/$JOB/report.md"
 expect_fail 1 "done refused before shipping" "$DL" phase done
 expect_ok "ship (local) merges into the base" "$DL" ship
-contains "the PR body lists Michael's decisions after the start" "$(cat "$R/.work/$JOB/report.md")" "## Decisions Michael took after the start"
+contains "the PR body lists Michael's own decisions" "$(cat "$R/.work/$JOB/report.md")" "## Decisions Michael took himself"
 contains "…with the reason" "$(cat "$R/.work/$JOB/report.md")" "the reviewer's finding is small and in scope"
 [[ -f $R/src/add/add.mjs && -f $R/src/sub/sub.mjs && "$(jq -r .phase "$R/.work/$JOB/job.json")" == done ]] && ok "local merge delivered the cards, phase done" || bad "local ship"
 
@@ -317,10 +344,10 @@ contains "stop-guard ignores other sessions" "$(hook stop-guard.sh "{\"cwd\":\"$
 contains "stop-guard ignores card worktree sessions" "$(hook stop-guard.sh "{\"cwd\":\"$R/.work/$JOB/wt/T-03\",\"transcript_path\":\"$TR\"}")" "rc=0"
 for i in 1 2 3 4 5; do hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}" >/dev/null; done
 contains "stop-guard gives up after stop_guard_max" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
-"$DL" jobset '.settings.dispatch="munder"'; rm -f "$R/.work/$JOB/.stop-blocks"
+"$DL" jobset '.settings.dispatch="munder"'; export AGENT_ID=god; rm -f "$R/.work/$JOB/.stop-blocks"   # a floor job: only the app's Michael drives it
 bedit "$B" '.cards[2].state="running"'
 contains "stop-guard lets Michael wait for floor workers (munder)" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
-"$DL" jobset '.settings.dispatch="subagent"'; rm -f "$R/.work/$JOB/.stop-blocks"
+"$DL" jobset '.settings.dispatch="subagent"'; unset AGENT_ID; rm -f "$R/.work/$JOB/.stop-blocks"
 contains "interactive: waiting for background agents is allowed" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
 contains "headless: Michael may not stop while agents run in the foreground flow" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"
 contains "agent-guard: headless background dispatch is denied" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":true,"subagent_type":"backend-dev"}}')" "rc=2"
@@ -393,7 +420,7 @@ contains "settings.munder.claude_command sets the workers' claude binary" "$(jq 
 "$DL" jobset '(.roles[] | select(.role=="backend")) += {provider:"codex", model:"gpt-5-codex"}'
 out="$("$DL" phase readiness --force 2>&1; node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$R/.work/$JOB/job.json")"
 contains "a non-Claude role needs dispatch munder" "$out" "runs on codex: non-Claude roles run as Munder Difflin floor workers"
-"$DL" jobset '.settings.dispatch="munder"'; "$DL" phase executing --force >/dev/null
+"$DL" jobset '.settings.dispatch="munder"'; export AGENT_ID=god; "$DL" phase executing --force >/dev/null
 jq '(.cards[] | select(.id=="T-03")).md_workers = []' "$R/.work/$JOB/board.json" > /dev/null
 "$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
 reqc="$(grep -l "\"provider\": *\"codex\"" "$HIVE_ROOT"/spawn-requests/*.json | head -1)"
@@ -402,12 +429,12 @@ jq -r .objective "$reqc" | gq "Your role instructions (backend-dev)" && jq -r .o
   && ok "the agent definition's instructions travel inside the objective for non-Claude CLIs" || bad "agent body not embedded"
 jq -r .objective "$reqc" | gq "^---$" && ! jq -r .objective "$reqc" | gq "^tools: " && ok "…without Claude frontmatter" || bad "frontmatter leaked"
 "$DL" jobset '(.roles[] | select(.role=="backend")) |= del(.provider, .model) | .settings.dispatch="subagent"'
-unset HIVE_ROOT
+unset HIVE_ROOT AGENT_ID
 
 echo "munder difflin seats: one person per role seat, work orders, no subagents for Michael"
 export HIVE_ROOT="$TMP/hive-seats"; mkdir -p "$HIVE_ROOT"
 echo '{"godId":"god","agents":{"god":{"id":"god","isGod":true,"status":"idle"}}}' > "$HIVE_ROOT/registry.json"
-"$DL" jobset '.settings.dispatch="munder"' >/dev/null
+"$DL" jobset '.settings.dispatch="munder"' >/dev/null; export AGENT_ID=god
 nseat="$(jq '[.roles[] | select(.agent != "artemis") | (.count // 1)] | add' "$R/.work/$JOB/job.json")"
 expect_ok "md-hire seats every role seat" "$DL" md-hire
 "$DL" roles >/dev/null
@@ -425,12 +452,18 @@ expect_ok "md-hire again does not hire twice" "$DL" md-hire
 mkdir -p "$HIVE_ROOT/spawn-requests/.done"
 for f in "$HIVE_ROOT"/spawn-requests/seat-*.json; do w="worker-$(basename "$f" .json)"; mv "$f" "$HIVE_ROOT/spawn-requests/.done/"
   jq --arg w "$w" '.agents[$w] = {id:$w, role:"worker", status:"idle"}' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"; done
+contains "on the floor but silent: starting, not live (the registry alone proves nothing)" "$("$DL" md-seats)" "starting"
+contains "…and gets no order yet" "$("$DL" md-send backend#1 T-03 "$TMP/p.txt" 2>&1)" "not seated yet"
+# a message from the worker in the hive log also counts as "seated" (the router logs every delivery)
+w1s="$(jq -r '.munder.seats["ba#1"].worker' "$R/.work/$JOB/job.json")"
+jq -cn --arg w "$w1s" '{ts:0, kind:"message", from:$w, to:"god", act:"inform", subject:"hello"}' >> "$HIVE_ROOT/log.jsonl"
+grep -qE "^ba#1 +live" <<<"$("$DL" md-seats)" && ok "a worker's first message in the hive log seats it (any subject)" || bad "log seated: $("$DL" md-seats | head -3)"
+# each worker says "seated" (its outbox; the router moves it to .sent)
+for w in $(jq -r '.munder.seats[].worker' "$R/.work/$JOB/job.json"); do mkdir -p "$HIVE_ROOT/agents/$w/outbox/.sent"
+  jq -n --arg w "$w" '{from:$w, to:"god", act:"inform", subject:"seated", body:"ready"}' > "$HIVE_ROOT/agents/$w/outbox/.sent/s1.json"; done
+out="$("$DL" md-seats)"; [[ $out != *pending* && $out != *starting* && $out == *live* && $out != *"not seated"* ]] && ok "md-seats: everyone said seated — live" || bad "md-seats: $out"
+contains "every seat gets an explicit model — never the app's default (kit default sonnet)" "$(jq -c '[.model]' "$HIVE_ROOT/spawn-requests/.done/$(basename "$sreq")")" '["sonnet"]'
 echo "Build T-03 test-first." > "$TMP/order.md"
-# On the floor is not at the desk: a worker counts as seated once it said so (the hive log records its message to god)
-out="$("$DL" md-seats)"; [[ $out == *starting* && $out != *live* && $out != *"not seated"* ]] && ok "a worker on the floor that has not said \"seated\" yet is starting" || bad "md-seats: $out"
-contains "…and is given no work order yet" "$("$DL" md-send backend#1 T-03 "$TMP/order.md" 2>&1)" "not seated yet (starting)"
-said() { jq -cn --arg w "$1" --arg s "$2" '{ts:0, kind:"message", from:$w, to:"god", act:"inform", subject:$s}' >> "$HIVE_ROOT/log.jsonl"; }
-for w in $(jq -r '.munder.seats[].worker' "$R/.work/$JOB/job.json"); do said "$w" "seated"; done
 out="$("$DL" md-seats)"; [[ $out != *pending* && $out != *starting* && $out == *live* && $out != *"not seated"* ]] && ok "md-seats: everyone is at their desk" || bad "md-seats: $out"
 out="$("$DL" md-send backend T-03 "$TMP/order.md" 2>&1)"; contains "md-send gives a running card to its role's seat" "$out" "T-03 → backend#1"
 ord="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)"
@@ -453,22 +486,73 @@ contains "a reaped seat shows as not seated" "$("$DL" md-seats)" "not seated: ba
 contains "…and sends no order into the void" "$("$DL" md-send backend#1 T-03 "$TMP/order.md" 2>&1)" "no one at the desk"
 "$DL" md-hire >/dev/null; contains "md-hire re-seats only that seat, same face" "$(ls "$HIVE_ROOT"/spawn-requests/*.json | xargs -n1 basename)" "backend-1-h2.json"
 contains "…logged as a re-seat" "$(grep md-hire "$R/.work/$JOB/events.log" | tail -1)" "re-seated, was gone"
-# The floor takes the request, but the new worker never says "seated" (seen live: nobody typed its first message)
-w2="$(jq -r '.munder.seats["backend#1"].worker' "$R/.work/$JOB/job.json")"; mv "$HIVE_ROOT/spawn-requests/${w2#worker-}.json" "$HIVE_ROOT/spawn-requests/.done/"
-jq --arg w "$w2" '.agents[$w] = {id:$w, role:"worker", status:"idle"}' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
-"$DL" jobset '.settings.munder.seat_timeout=-1' >/dev/null
-out="$("$DL" md-seats)"; contains "a seat with no \"seated\" after settings.munder.seat_timeout is stuck, and md-seats says why" "$out" "backend#1: no \"seated\" message"
-contains "…listed as not seated" "$out" "not seated: backend#1"
-contains "a stuck seat takes no work order, and the refusal says why" "$("$DL" md-send backend#1 T-03 "$TMP/order.md" 2>&1)" "cannot take work: no \"seated\" message"
-"$DL" md-hire >/dev/null
-contains "md-hire sends the stuck worker home…" "$(jq -r --arg w "$w2" 'select(.to == $w) | .subject' "$HIVE_ROOT"/agents/god/outbox/*.json)" "release — your seat backend#1 is given to someone else"
-contains "…and seats someone new" "$(ls "$HIVE_ROOT"/spawn-requests/*.json | xargs -n1 basename)" "backend-1-h3.json"
-"$DL" jobset '.settings.munder.seat_timeout=300' >/dev/null
-# The floor could not start the worker and recorded why on its registry entry (Munder Difflin: lastError)
-w3="$(jq -r '.munder.seats["backend#1"].worker' "$R/.work/$JOB/job.json")"; mv "$HIVE_ROOT/spawn-requests/${w3#worker-}.json" "$HIVE_ROOT/spawn-requests/.done/"
-jq --arg w "$w3" '.agents[$w] = {id:$w, role:"worker", status:"idle", archived:true, lastError:"failed to start: no usage left for its model — \"You are out of usage credits.\""}' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
-out="$("$DL" md-seats)"; contains "a worker that failed to start shows as failed, with the floor's reason" "$out" "backend#1: failed to start: no usage left for its model"
-contains "…and as not seated" "$out" "not seated: backend#1"
+# A seat that fails is seen, with the reason — never called live
+seat_w() { jq -r --arg s "$1" '.munder.seats[$s].worker' "$R/.work/$JOB/job.json"; }
+on_floor() { local w; w="$(seat_w "$1")"; mv "$HIVE_ROOT/spawn-requests/${w#worker-}.json" "$HIVE_ROOT/spawn-requests/.done/" 2>/dev/null
+  jq --arg w "$w" --arg sid "${2:-}" '.agents[$w] = {id:$w, role:"worker", status:"idle"} + (if $sid != "" then {sessionId:$sid} else {} end)' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"; }
+on_floor backend#1
+mkdir -p "$HIVE_ROOT/crashes"; printf 'agent: x\n--- tail ---\n\033[31mError: Invalid API key · Please run /login\033[0m\n\n' > "$HIVE_ROOT/crashes/c1.log"
+jq -nc --arg w "$(seat_w backend#1)" --arg tp "$HIVE_ROOT/crashes/c1.log" '{ts:1, kind:"agent-exit", agentId:$w, exitCode:1, signal:null, abnormal:true, tailPath:$tp}' >> "$HIVE_ROOT/log.jsonl"
+out="$("$DL" md-seats)"; contains "a worker that died at startup is failed, not live (hive log agent-exit)" "$out" "FAILED   backend#1: its process died (exit 1)"
+contains "…with the last thing it printed" "$out" "last output: Error: Invalid API key · Please run /login"
+contains "…and md-seats says how to recover" "$out" "dl md-reseat"
+contains "…and md-send names the failure" "$("$DL" md-send backend#1 T-03 "$TMP/order.md" 2>&1)" "backend#1 failed: its process died"
+# out of credit: the worker runs, but its last Claude reply is an API error
+mkdir -p "$HOME/.claude/projects/p"; QAW="$(seat_w qa#1)"
+jq --arg w "$QAW" '.agents[$w].sessionId = "sess-qa"' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+{ echo '{"type":"assistant","message":{"model":"claude-x","content":[{"type":"text","text":"ok"}]}}'
+  echo '{"type":"assistant","isApiErrorMessage":true,"message":{"model":"<synthetic>","content":[{"type":"text","text":"Credit balance is too low"}]}}'; } > "$HOME/.claude/projects/p/sess-qa.jsonl"
+contains "a seat whose last reply is an API error (credit) is failed, with the error" "$("$DL" md-seats)" "FAILED   qa#1: its last Claude reply is an API error: Credit balance is too low"
+echo '{"type":"assistant","message":{"model":"claude-x","content":[{"type":"text","text":"retried fine"}]}}' >> "$HOME/.claude/projects/p/sess-qa.jsonl"
+[[ "$("$DL" md-seats)" != *"FAILED   qa#1"* ]] && ok "…an error it recovered from is not a failure" || bad "recovered seat still failed"
+# no "seated" within the timeout
+"$DL" jobset '.settings.munder.seat_timeout_minutes = 0' >/dev/null
+RW="$(jq -r '.munder.seats | to_entries[] | select(.key | startswith("reviewer")) | .value.worker' "$R/.work/$JOB/job.json" | head -1)"; RS="$(jq -r '.munder.seats | to_entries[] | select(.key | startswith("reviewer")) | .key' "$R/.work/$JOB/job.json" | head -1)"
+rm -f "$HIVE_ROOT/agents/$RW/outbox/.sent/s1.json"
+contains "a seat silent past munder.seat_timeout_minutes is failed" "$("$DL" md-seats)" "FAILED   $RS: no \"seated\" message"
+"$DL" jobset '.settings.munder.seat_timeout_minutes = 5 | .settings.munder.seat_timeout = 0' >/dev/null
+contains "…also by the older munder.seat_timeout (seconds)" "$("$DL" md-seats)" "FAILED   $RS: no \"seated\" message"
+"$DL" jobset 'del(.settings.munder.seat_timeout)' >/dev/null
+mkdir -p "$HIVE_ROOT/agents/$RW/outbox/.sent"; jq -n --arg w "$RW" '{from:$w, subject:"seated"}' > "$HIVE_ROOT/agents/$RW/outbox/.sent/s1.json"
+# the app rejects a request
+w2="$(seat_w backend#1)"
+# re-seat the crashed one on another model: old one withdrawn, a new person hired with that model, a PM decision recorded
+out="$("$DL" md-reseat backend#1 "died at startup: invalid API key" --model haiku 2>&1)"
+contains "md-reseat hires a new person for the seat" "$out" "backend#1"
+nreq="$(ls "$HIVE_ROOT"/spawn-requests/*backend-1-h3.json 2>/dev/null | head -1)"
+[[ -n $nreq ]] && contains "…on the model it was given" "$(jq -c '{model}' "$nreq")" '{"model":"haiku"}' || bad "no h3 request: $(ls "$HIVE_ROOT"/spawn-requests)"
+contains "…logged with the reason" "$(grep $'\tmd-reseat\t' "$R/.work/$JOB/events.log" | tail -1)" "backend#1 (failed): died at startup: invalid API key → model haiku"
+contains "…as Michael's decision for the PR" "$(jq -r '.pm_decisions[-1].what' "$R/.work/$JOB/job.json")" "re-seated backend#1 on haiku"
+contains "the new person is starting, not live" "$("$DL" md-seats)" "backend#1"
+mv "$nreq" "$HIVE_ROOT/spawn-requests/.failed/" 2>/dev/null || { mkdir -p "$HIVE_ROOT/spawn-requests/.failed"; mv "$nreq" "$HIVE_ROOT/spawn-requests/.failed/"; }
+contains "a request the app rejected is failed" "$("$DL" md-seats)" "FAILED   backend#1: the app rejected the spawn request"
+contains "md-reseat needs a reason" "$("$DL" md-reseat backend#1 2>&1)" "usage: dl md-reseat"
+# a stuck live seat: re-seated, the old person is sent home
+n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-reseat "$RS" "stuck: no answer for 20 min" >/dev/null
+contains "re-seating a live seat sends the old person home" "$(jq -r .subject "$(ls -t "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)")" "release — your seat is re-seated"
+[[ "$(jq -r --arg s "$RS" '.munder.seats[$s].worker' "$R/.work/$JOB/job.json")" != "$RW" ]] && ok "…and a new worker takes the seat" || bad "same worker"
+# the floor recorded why it could not start the worker (Munder Difflin: registry lastError)
+LW="$(seat_w ba#1)"; jq --arg w "$LW" '.agents[$w].lastError = "failed to start: no usage left for its model — \"You are out of usage credits.\""' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+contains "a worker the floor could not start is failed, with the floor's reason (lastError)" "$("$DL" md-seats)" "FAILED   ba#1: the floor says: failed to start: no usage left for its model"
+jq --arg w "$LW" 'del(.agents[$w].lastError)' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+# more seats than the floor runs at once: said, not left pending without a word
+echo '{"workerCap":2,"agents":[]}' > "$HIVE_ROOT/fleet.json"
+contains "md-seats notes when the job has more seats than the floor's worker cap" "$("$DL" md-seats 2>&1)" "the floor runs at most 2 workers at once"
+rm -f "$HIVE_ROOT/fleet.json"
+# Outside the app (no HIVE_ROOT from Munder Difflin) a live Michael on the floor would drive the same job: run it from his seat
+"$DL" jobset ".settings.munder.hive_root=\"$HIVE_ROOT\"" >/dev/null
+out="$(env -u HIVE_ROOT -u AGENT_ID "$DL" md-seats 2>&1)"; contains "outside the app, the floor's Michael is not raced for his inbox" "$out" "REFUSED — Michael (god) has a seat on the floor"
+contains "…the refusal says where to run it" "$out" "\"/deliver resume\" with REPO: $R"
+expect_ok "Michael's own seat (AGENT_ID=god) uses the configured hive" env -u HIVE_ROOT AGENT_ID=god "$DL" md-seats
+jq '.agents.god.archived = true' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+expect_ok "…and with no Michael on the floor the configured hive is usable from outside" env -u HIVE_ROOT -u AGENT_ID "$DL" md-seats
+jq '.agents.god.archived = false' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+contains "md-hire does not re-hire a failed seat blindly (same model, same failure)" "$("$DL" md-hire)" "→ dl md-reseat backend#1"
+expect_ok "md-hire --reseat <seat> is md-reseat (the other branch's spelling)" "$DL" md-hire --reseat backend#1 "the app rejected the request"
+contains "…logged as a re-seat on request" "$(grep $'\tmd-reseat\t' "$R/.work/$JOB/events.log" | tail -1)" "backend#1 (failed): the app rejected the request"
+# put everyone back on the floor for what follows
+for s in backend#1 "$RS"; do on_floor "$s"; w="$(seat_w "$s")"; mkdir -p "$HIVE_ROOT/agents/$w/outbox/.sent"; jq -n --arg w "$w" '{from:$w, subject:"seated"}' > "$HIVE_ROOT/agents/$w/outbox/.sent/s1.json"; done
+rm -f "$HOME/.claude/projects/p/sess-qa.jsonl"
 # Michael's inbox: each message shown once, archived exactly; a report archived unread is still found
 GI="$HIVE_ROOT/agents/god/inbox"; mkdir -p "$GI"; wq="$(jq -r '.munder.seats["qa#1"].worker' "$R/.work/$JOB/job.json")"
 echo "Test T-03." > "$TMP/qa.md"; "$DL" jobset '.settings.dispatch="munder"' >/dev/null
@@ -480,33 +564,15 @@ out="$("$DL" md-inbox)"; contains "md-inbox shows a report with the sender as it
 [[ ! -e $GI/m1.json && -f $GI/.done/m1.json ]] && ok "…and archives exactly what it showed" || bad "inbox archive"
 contains "a report archived without md-done is flagged as unrecorded" "$("$DL" md-inbox)" "UNRECORDED  qa#1 reported \"done $qtask\""
 "$DL" md-done qa#1 "6/6" >/dev/null; contains "…until it is recorded" "$("$DL" md-inbox)" "(no new messages)"
+nlive="$("$DL" md-seats | grep -cE '^[^ ]+ +(live|starting) ')"
 n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-release >/dev/null
-[[ $(( $(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l) - n0 )) == $(( nseat - 1 )) ]] && ok "md-release sends every live seat home" || bad "release orders"
-# Re-seat on request: the one at the desk is sent home first, a new person is asked for
-wb="$(jq -r '.munder.seats["ba#1"].worker' "$R/.work/$JOB/job.json")"
-expect_ok "md-hire --reseat re-seats one seat whatever its state" "$DL" md-hire --reseat ba#1
-contains "…releasing who sat there" "$(jq -r --arg w "$wb" 'select(.to == $w) | .subject' "$HIVE_ROOT"/agents/god/outbox/*.json)" "release — your seat ba#1 is given to someone else"
-contains "…and asking for someone new" "$(ls "$HIVE_ROOT"/spawn-requests/*.json | xargs -n1 basename)" "ba-1-h2.json"
-expect_fail 1 "md-hire --reseat refuses a seat the job does not have" "$DL" md-hire --reseat nobody#9
-# More seats than the floor runs at once: say so instead of leaving a seat pending without a word
-echo '{"workerCap":2,"agents":[]}' > "$HIVE_ROOT/fleet.json"
-contains "md-seats notes when the job has more seats than the floor's worker cap" "$("$DL" md-seats 2>&1)" "the floor runs at most 2 workers at once"
-echo '{"workerCap":99,"agents":[]}' > "$HIVE_ROOT/fleet.json"
-# Outside the app (no HIVE_ROOT from Munder Difflin) a live Michael on the floor would drive the same job: run it from his seat
-"$DL" jobset ".settings.munder.hive_root=\"$HIVE_ROOT\"" >/dev/null
-out="$(env -u HIVE_ROOT "$DL" md-seats 2>&1)"; contains "outside the app, the floor's Michael is not raced for his inbox" "$out" "REFUSED — Michael (god) has a seat on the floor"
-contains "…the refusal says where to run it" "$out" "\"/deliver resume\" with REPO: $R"
-expect_ok "Michael's own seat (AGENT_ID=god) uses the configured hive" env -u HIVE_ROOT AGENT_ID=god "$DL" md-seats
-jq '.agents.god.archived = true' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
-expect_ok "…and with no Michael on the floor the configured hive is usable from outside" env -u HIVE_ROOT "$DL" md-seats
-jq '.agents.god.archived = false' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
-"$DL" jobset '.settings.munder.hive_root=""' >/dev/null
+[[ $nlive == "$nseat" && $(( $(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l) - n0 )) == "$nlive" ]] && ok "md-release sends every live seat home" || bad "release orders"
 # Guards: Michael on the floor has no Agent tool; seats are agents (their own lanes, no flow commands)
 ag() { hook agent-guard.sh '{"tool_input":{"subagent_type":"backend-dev","run_in_background":true}}'; }
 contains "Michael on the floor may not start subagents" "$(AGENT_ID=god ag)" "rc=2"
 contains "…the message names md-send" "$(AGENT_ID=god ag)" "md-send"
 contains "a seat may use subagents for its own work" "$(AGENT_ID=worker-seat-x ag)" "rc=0"
-contains "outside the floor nothing changes" "$(ag)" "rc=0"
+contains "outside the floor nothing changes" "$(unset AGENT_ID; ag)" "rc=0"
 contains "a seat is not mistaken for Michael: it may write in a card worktree" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/wt/T-03/src/a.ts" "$R" "" "$TR")" "rc=0"
 contains "…where Michael (god) may not" "$(AGENT_ID=god wg "$R/.work/$JOB/wt/T-03/src/a.ts" "$R" "" "$TR")" "rc=2"
 contains "a seat may write its analysis to out/" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/out/readiness.json" "$R" "" "$TR")" "rc=0"
@@ -519,7 +585,51 @@ contains "a seat may not hand out work orders" "$(AGENT_ID=worker-seat-x bg '"$D
 contains "…nor record decisions" "$(AGENT_ID=worker-seat-x bg '"$DL" pm-decide x y')" "rc=2"
 contains "a seat may not run flow commands" "$(AGENT_ID=worker-seat-x bg "\"\$DL\" qa T-03 pass")" "rc=2"
 contains "Michael (god) still writes the job's files" "$(AGENT_ID=god wg "$R/.work/$JOB/plan.md" "$R" "" "$TR")" "rc=0"
-"$DL" jobset '.settings.dispatch="subagent"' >/dev/null; unset HIVE_ROOT
+# A floor job is driven only by the app's Michael: a second Michael in a plain terminal would read the same inbox
+contains "outside the app, a floor job's flow is refused" "$(env -u AGENT_ID "$DL" md-inbox 2>&1)" "Hand it to Michael in the app: dl floor-open"
+contains "…the refusal says how to switch to subagents by hand" "$(env -u AGENT_ID "$DL" phase executing 2>&1)" 'dl dispatch subagent'
+expect_ok "…while the human can still read and answer from any terminal (status, md-seats)" env -u AGENT_ID "$DL" status
+expect_ok "…md-seats" env -u AGENT_ID "$DL" md-seats
+contains "a seat cannot run the flow through dl either" "$(AGENT_ID=worker-seat-x "$DL" md-hire 2>&1)" "a seat does not run the flow"
+contains "switching modes is the human's call (bash-guard)" "$(AGENT_ID=god bg '"$DL" dispatch subagent "x"')" "rc=2"
+contains "dl dispatch is refused in an unattended session" "$(DELIVER_HEADLESS=1 "$DL" dispatch subagent "x" 2>&1)" "the human's decision"
+NF="$TMP/newfloor"; mkdir -p "$NF" && (cd "$NF" && git init -q -b main && echo x > a && git add -A && git commit -qm i)
+contains "Munder Difflin is the default: dl new outside the app is refused" "$(cd "$NF" && env -u AGENT_ID "$DL" new "t" "r" 2>&1)" "dispatch: munder, the default"
+expect_ok "…and opened by the app's Michael" bash -c "cd '$NF' && AGENT_ID=god '$DL' new t r"
+contains "…as a floor job" "$(jq -r .settings.dispatch "$NF/.work/$(cat "$NF/.work/ACTIVE")/job.json")" "munder"
+(cd "$NF" && git rm -q --cached a >/dev/null; rm -rf .work; echo '{"dispatch":"subagent"}' > .deliver.json)
+expect_ok "subagents are an explicit choice: \"dispatch\": \"subagent\" in .deliver.json, dl new from any terminal" bash -c "cd '$NF' && env -u AGENT_ID '$DL' new t2 r2"
+# /deliver typed in a terminal for a floor repo: dl floor-open opens the app on the repo's floor and hands Michael the job
+FO="$TMP/floorrepo"; FH="$TMP/floorhome"; FX="$TMP/fakehome"; mkdir -p "$FO" "$FX" && (cd "$FO" && git init -q -b main && echo x > a && git add -A && git commit -qm i)
+jq -n --arg h "$FH" --arg c "touch '$TMP/app-started'" '{munder:{hive_root:$h, app_command:$c}}' > "$FO/.deliver.json"
+out="$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "examples/JOB.md" 2>&1)"
+contains "floor-open: the app is started on the repo's floor" "$out" "Munder Difflin is starting on $FH"
+for i in 1 2 3 4 5 6 7 8 9 10; do [[ -f $TMP/app-started ]] && break; sleep 0.3; done
+[[ -f $TMP/app-started ]] && ok "…with munder.app_command" || bad "app command not run"
+contains "…aimed at that floor (the app's harnessHome) with the repo registered" "$(jq -c '{harnessHome, r:(.registeredRepos|length), s:.orchestratorMaySpawn}' "$FX/.config/munder-difflin/config.json")" "{\"harnessHome\":\"$FH\",\"r\":1,\"s\":true}"
+grep -q "deliver:begin" "$FH/CLAUDE.md" && ok "…Michael is taught /deliver there (the brief ships in the plugin)" || bad "no brief in $FH"
+msg="$(ls "$FH"/hive/agents/god/inbox/*.json 2>/dev/null | head -1)"
+contains "…and the job is in Michael's inbox as the human's request, with the repo" "$(jq -c '{from,to,act,b:.body}' "$msg" 2>/dev/null)" "{\"from\":\"human\",\"to\":\"god\",\"act\":\"request\",\"b\":\"/deliver examples/JOB.md\\nREPO: $FO\"}"
+mkdir -p "$FH/hive"; jq -n --argjson t "$(( $(date +%s) * 1000 ))" '{godId:"god", agents:{god:{lastSeen:$t}}}' > "$FH/hive/registry.json"; rm -f "$TMP/app-started"
+out="$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "again" 2>&1)"
+[[ $out == *"is open on $FH"* && ! -f $TMP/app-started ]] && ok "an app already open on that floor is not started twice — the job just goes to Michael" || bad "floor-open with app running: $out"
+jq '.harnessHome = "/elsewhere"' "$FX/.config/munder-difflin/config.json" > "$TMP/c" && mv "$TMP/c" "$FX/.config/munder-difflin/config.json"
+contains "an app open on another floor is not hijacked" "$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "x" 2>&1)" "open on another floor (/elsewhere)"
+
+# The project's config file: the first /deliver writes a complete .deliver.json; its per-role defaults reach the job
+PC="$TMP/projcfg"; mkdir -p "$PC" && (cd "$PC" && git init -q -b main && echo '{"scripts":{"test":"node --test"}}' > package.json && git add -A && git commit -qm i)
+out="$(cd "$PC" && AGENT_ID=god "$DL" new t r 2>&1)"; contains "the first /deliver in a repo writes its config file" "$out" "created $PC/.deliver.json"
+contains "…complete: run mode, verify, merge mode, roles, the floor, with its schema" "$(jq -c '{d:.dispatch,v:.verify_full,m:.merge_mode,r:.roles,mm:.munder.model,s:(."$schema"|endswith("deliver.schema.json"))}' "$PC/.deliver.json")" '{"d":"munder","v":"npm test","m":"local","r":{},"mm":"sonnet","s":true}'
+expect_ok "…valid against the shipped schema's keys" node -e 'const s=require(process.argv[1]),c=require(process.argv[2]);for(const k of Object.keys(c)) if(!(k in s.properties)) {console.error("unknown key "+k);process.exit(1)}' "$HERE/kit/skills/deliver/deliver.schema.json" "$PC/.deliver.json"
+contains "dl config shows what applies (kit defaults ⊕ .deliver.json)" "$(cd "$PC" && "$DL" config)" "kit defaults ⊕ $PC/.deliver.json"
+(cd "$PC" && AGENT_ID=god "$DL" phase aborted >/dev/null 2>&1; AGENT_ID=god "$DL" cleanup --all >/dev/null 2>&1; jq '.roles = {"backend":{"model":"haiku","count":2},"qa":{"model":"sonnet"}}' .deliver.json > x && mv x .deliver.json && AGENT_ID=god "$DL" new t2 r2 >/dev/null 2>&1)
+(cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x"},{"role":"qa","agent":"qa-tester","why":"y","model":"opus"}]' >/dev/null)
+PJ="$PC/.work/$(cat "$PC/.work/ACTIVE")/job.json"
+contains "per-role defaults from .deliver.json reach the job's roles" "$(jq -c '[.roles[] | {role,model,count}]' "$PJ")" '[{"role":"backend","model":"haiku","count":2},{"role":"qa","model":"opus","count":null}]'
+contains "…a role that names its own model keeps it (qa: opus from the request, not the default sonnet), logged" "$(grep $'\troles-defaults\t' "$PC/.work/$(cat "$PC/.work/ACTIVE")/events.log")" "backend: model haiku, count 2"
+contains "the human switches the job to subagents by hand (dl dispatch)" "$(env -u AGENT_ID "$DL" dispatch subagent "leave the floor for the rest of the tests" 2>&1)" "now runs with dispatch subagent"
+contains "…logged with who and why" "$(grep $'\tdispatch\t' "$R/.work/$JOB/events.log" | tail -1)" "subagent — leave the floor"
+unset HIVE_ROOT AGENT_ID
 
 echo "plugin install: the kit's agents are namespaced, job files keep plain names"
 DELIVER_AGENT_NS=deliver "$DL" roles >/dev/null
@@ -529,16 +639,16 @@ contains "…and says to call them by those names" "$out" 'runs as the `deliver`
 [[ $out != *deliver:ecc:* ]] && ok "…ECC agents keep their own namespace" || bad "ecc agent re-prefixed"
 contains "the role card names the agent to call" "$(cat "$R/.work/$JOB/roles/backend.md")" 'Agent: `deliver:backend-dev`'
 contains "job.json keeps the plain name" "$(jq -r '.roles[] | select(.role=="backend") | .agent' "$R/.work/$JOB/job.json")" "backend-dev"
-export HIVE_ROOT="$TMP/hive3"; mkdir -p "$HIVE_ROOT"; "$DL" jobset '.settings.dispatch="munder"'
+export HIVE_ROOT="$TMP/hive3"; mkdir -p "$HIVE_ROOT"; "$DL" jobset '.settings.dispatch="munder"'; export AGENT_ID=god
 DELIVER_AGENT_NS=deliver "$DL" md-dispatch T-03 "$TMP/p.txt" >/dev/null 2>&1 || true
 contains "floor workers start the namespaced agent" "$(jq -r .command "$(ls "$HIVE_ROOT"/spawn-requests/*.json | head -1)" 2>&1)" "claude --agent deliver:backend-dev"
-"$DL" jobset '.settings.dispatch="subagent"'; unset HIVE_ROOT
+"$DL" jobset '.settings.dispatch="subagent"'; unset HIVE_ROOT AGENT_ID
 "$DL" roles >/dev/null
 out="$(cat "$R/.work/$JOB/ROLES.md")"
 [[ $out == *'`backend-dev`'* && $out != *deliver:* ]] && ok "a copied install (no plugin) keeps plain names" || bad "plain names: $out"
 # Claude Code may load an installed plugin straight from a local marketplace folder: the kit's manifest + the plugin
 # listed in installed_plugins.json is enough.
-mkdir -p "$HOME/.claude/plugins"; echo '{"version":2,"plugins":{"deliver@skills-shop":[{"scope":"user"}]}}' > "$HOME/.claude/plugins/installed_plugins.json"
+mkdir -p "$HOME/.claude/plugins"; echo '{"version":2,"plugins":{"deliver@deliver-floor":[{"scope":"user"}]}}' > "$HOME/.claude/plugins/installed_plugins.json"
 "$DL" roles >/dev/null; contains "an installed plugin loaded from its source folder is detected" "$(cat "$R/.work/$JOB/ROLES.md")" '`deliver:backend-dev`'
 rm -f "$HOME/.claude/plugins/installed_plugins.json"; "$DL" roles >/dev/null
 [[ "$(cat "$R/.work/$JOB/ROLES.md")" != *deliver:* ]] && ok "…and not when the plugin is not installed" || bad "namespace without plugin"
@@ -547,7 +657,7 @@ HV="$TMP/hive2"; DELIVER_SKILL_DIR=/opt/kit/skills/deliver "$HERE/scripts/md-bri
   && ok "md-brief briefs Michael for Claude, Codex-style (AGENTS.md) and Gemini CLIs" || bad "md-brief files"
 
 echo "architecture: mixed stacks, frozen decisions, seats, parallel assignment"
-AR="$TMP/arch"; mkdir -p "$AR" && cd "$AR" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","max_parallel":4}' > .deliver.json && git add -A && git commit -qm i
+AR="$TMP/arch"; mkdir -p "$AR" && cd "$AR" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":4}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "micro" "x" >/dev/null; AJ="$AR/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},
   {"role":"backend","agent":"backend-dev","count":2},{"role":"database","agent":"database-dev"},{"role":"qa","agent":"qa-tester"},
@@ -620,7 +730,7 @@ jq -e '[.cards[] | select(.id=="T-01") | .assignments[0] | .by=="michael" and .s
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"; unset ARCH
 
 echo "traceability: card changes, jobset limits, seals"
-TR2="$TMP/trace"; mkdir -p "$TR2" && cd "$TR2" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+TR2="$TMP/trace"; mkdir -p "$TR2" && cd "$TR2" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "trace" "x" >/dev/null; TJ="$TR2/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 expect_fail 1 "jobset cannot move the phase" "$DL" jobset '.phase="done"'
@@ -655,7 +765,7 @@ export JIRA_BASE_URL="http://127.0.0.1:$(awk '{print $2}' "$TMP/jira.port")" JIR
 git init -q --bare "$TMP/gh-origin.git"
 JR="$TMP/jira-repo"; mkdir -p "$JR" && cd "$JR" && git init -q -b main
 git remote add origin https://github.com/acme/demo.git && git config url."$TMP/gh-origin.git".insteadOf https://github.com/acme/demo.git
-echo '{"verify_full":"true","merge_mode":"human","tracker":{"kind":"jira","jira":{"project":"WL"}}}' > .deliver.json && git add -A && git commit -qm i && git push -q origin main
+echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"human","tracker":{"kind":"jira","jira":{"project":"WL"}}}' > .deliver.json && git add -A && git commit -qm i && git push -q origin main
 "$DL" new "jira flow" "x" >/dev/null; JJ="$JR/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
@@ -701,7 +811,7 @@ kill $JPID 2>/dev/null; unset JIRA_BASE_URL JIRA_EMAIL JIRA_API_TOKEN
 "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "ECC specialists: decisions bring their reviewers; every reviewer must approve"
-EC="$TMP/ecc"; mkdir -p "$EC" && cd "$EC" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+EC="$TMP/ecc"; mkdir -p "$EC" && cd "$EC" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "spec" "x" >/dev/null; EJ="$EC/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"frontend-lead","agent":"ecc:architect"},{"role":"frontend","agent":"frontend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:react-reviewer"}]'
 "$DL" phase readiness >/dev/null
@@ -733,7 +843,7 @@ expect_ok "…and the card merges" "$DL" integrate T-01
 "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"; unset ARCH
 
 echo "robustness: dl next at full capacity with many ready cards (was SIGPIPE 141)"
-PF="$TMP/pf"; mkdir -p "$PF" && cd "$PF" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","max_parallel":1}' > .deliver.json && git add -A && git commit -qm i
+PF="$TMP/pf"; mkdir -p "$PF" && cd "$PF" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":1}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "pf" "x" >/dev/null; PJ="$PF/.work/$(cat .work/ACTIVE)"; "$DL" phase executing --force >/dev/null
 node -e 'const c=[...Array(6)].map((_,i)=>({id:"T-0"+(i+1),title:"t",role:"backend",agent:"backend-dev",state:i?"ready":"running",depends_on:[],scope:["s/**"],acceptance:["x"],verify:"true",context:"c",attempts:i?0:1,notes:[]}));require("fs").writeFileSync(process.argv[1],JSON.stringify({cards:c}))' "$PJ/board.json"
 "$DL" reseal "fixture" >/dev/null
@@ -742,7 +852,7 @@ rc=0; for i in 1 2 3 4 5; do "$DL" next >/dev/null 2>&1 || rc=$?; done
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "commit hygiene: no AI attribution, optional role trailer"
-CH="$TMP/commits"; mkdir -p "$CH" && cd "$CH" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+CH="$TMP/commits"; mkdir -p "$CH" && cd "$CH" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "commits" "x" >/dev/null; CJ="$CH/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
@@ -777,10 +887,10 @@ class LogTracker extends Tracker {
 }
 registerTracker("testlog", LogTracker);
 JS
-TKR="$TMP/tk"; mkdir -p "$TKR" && cd "$TKR" && git init -q -b main && echo '{"verify_full":"true","merge_mode":"local","tracker":{"kind":"nope"}}' > .deliver.json && git add -A && git commit -qm i
+TKR="$TMP/tk"; mkdir -p "$TKR" && cd "$TKR" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","tracker":{"kind":"nope"}}' > .deliver.json && git add -A && git commit -qm i
 out="$("$DL" new "tk" "x" 2>&1)"; contains "an unknown tracker kind is refused at dl new" "$out" "not a known tracker"
 contains "…and the message lists the registered ones, including the new file" "$out" "testlog"
-echo '{"verify_full":"true","merge_mode":"local","tracker":{"kind":"testlog"}}' > .deliver.json
+echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","tracker":{"kind":"testlog"}}' > .deliver.json
 export TK_LOG="$TMP/tk.log"; "$DL" new "tk" "x" >/dev/null && TJ2="$TKR/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
@@ -821,7 +931,7 @@ applies_to: [qa, dev]
 ## Must
 - Tests live in test/<area>/.
 MD
-cd "$TMP/kn" && git init -q -b main && echo x > a && git add -A && git commit -qm i
+cd "$TMP/kn" && git init -q -b main && echo x > a && echo '{"dispatch":"subagent"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "know" "x" >/dev/null; KJ="$(cat .work/ACTIVE)"
 "$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" learn qa "Check rounding at .5 boundaries — QA missed it in JOB-1" >/dev/null
@@ -866,7 +976,7 @@ shipjob() { # shipjob <mode> → a repo with one merged card, in phase closing w
   git init -q --bare "$TMP/origin-$mode.git"
   mkdir -p "$r" && cd "$r" && git init -q -b main && git remote add origin "$TMP/origin-$mode.git"
   echo '{}' > package.json; mkdir -p test; printf 'import {test} from "node:test"; test("x",()=>{});\n' > test/x.test.mjs
-  printf '{"verify_full":"node --test","merge_mode":"%s"}\n' "$mode" > .deliver.json
+  printf '{"dispatch":"subagent","verify_full":"node --test","merge_mode":"%s"}\n' "$mode" > .deliver.json
   git add -A && git commit -qm init
   "$DL" new "ship $mode" "x" >/dev/null
   "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
@@ -902,11 +1012,48 @@ out="$("$DL" ship 2>&1)"; contains "auto: merged on green" "$out" "merged automa
 contains "auto: phase done" "$(jq -r .phase .work/*/job.json)" "done"
 unset DELIVER_GH; cd "$R"
 
+echo "hooks on every platform: node launcher + SessionStart setup (the plugin's postinstall)"
+contains "the node launcher runs a bash guard with its stdin and exit code (Windows: via Git Bash)" "$(printf '%s' '{"tool_input":{"command":"dl clarify CON-interface x"},"agent_id":"a1","cwd":"/"}' | node "$HERE/kit/hooks/deliver/run.mjs" bash-guard 2>&1; echo "rc=$?")" "rc=2"
+contains "…an unknown hook name is a no-op, never a block" "$(echo '{}' | node "$HERE/kit/hooks/deliver/run.mjs" nope 2>&1; echo "rc=$?")" "rc=0"
+SH="$TMP/setuphome"; SP="$TMP/setupproj"; mkdir -p "$SH" "$SP" && (cd "$SP" && git init -q -b main && echo '{"dispatch":"subagent"}' > .deliver.json)
+su() { echo "{\"cwd\":\"$SP\"}" | CLAUDE_CONFIG_DIR="$SH" CLAUDE_PLUGIN_ROOT="$HERE/kit" CLAUDE_PLUGIN_DATA="$SH/data" CLAUDE_PROJECT_DIR="$SP" node "$HERE/kit/hooks/deliver/setup.mjs"; }
+out="$(su)"; jq -e . >/dev/null <<<"$out" && ok "setup speaks JSON to Claude Code (systemMessage + additionalContext)" || bad "setup output: $out"
+contains "first session after install: the env a plugin cannot set goes into ~/.claude/settings.json" "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$SH/settings.json")" ".work/"
+contains "…and the user is told to restart once" "$(jq -r .systemMessage <<<"$out")" "restart Claude Code once"
+contains "a /deliver repo gets no AI attribution — in that repo only (.claude/settings.local.json)" "$(jq -c .attribution "$SP/.claude/settings.local.json")" '{"commit":"","pr":""}'
+[[ ! -e $SH/settings.json || "$(jq -r '.attribution // "none"' "$SH/settings.json")" == none ]] && ok "…never in the user's global settings" || bad "global attribution changed"
+contains "missing prerequisites are named with the fix (ECC here)" "$(jq -r .systemMessage <<<"$out")" "ECC plugin is not installed"
+out2="$(su)"; [[ "$(jq -r .systemMessage <<<"$out2")" != *"first-run setup"* && "$(jq -r .systemMessage <<<"$out2")" != *"settings.local.json"* ]] && ok "the setup runs once per version; later sessions only check" || bad "setup repeated: $out2"
+mkdir -p "$SH/plugins"; echo '{"plugins":{"ecc@ecc":[{}],"deliver@deliver-floor":[{}]}}' > "$SH/plugins/installed_plugins.json"
+[[ -z "$(su)" ]] && ok "all well: the setup prints nothing" || bad "setup output when all is well: $(su)"
+(cd "$SP" && echo '{}' > .deliver.json); out3="$(su)"
+if compgen -G "$HOME/.config/munder-difflin/config.json" >/dev/null; then ok "(Munder Difflin installed here — floor check skipped)"
+else contains "a floor repo (the default) without the app: told how to install it or choose subagents" "$(jq -r .systemMessage <<<"$out3")" "Munder Difflin floor (the default) but the app is not set up"; fi
+OLD="$TMP/oldhome"; mkdir -p "$OLD/.claude"; echo '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"/x/.claude/hooks/deliver/stop-guard.sh"}]}]}}' > "$OLD/.claude/settings.json"
+HOME="$OLD" "$HERE/scripts/install.sh" --user >/dev/null 2>&1
+contains "upgrading a copied install replaces the old .sh hook entries (no double guards)" "$(jq -c '[.hooks.Stop[].hooks[].command]' "$OLD/.claude/settings.json")" "[\"node \\\"$OLD/.claude/hooks/deliver\\\"/run.mjs stop-guard\"]"
+
+echo "Windows"
+grep -q '^\* text=auto eol=lf' "$HERE/.gitattributes" && ok ".gitattributes keeps LF in every checkout (a CRLF .sh breaks bash on Windows)" || bad ".gitattributes"
+crlf="$(cd "$HERE" && git ls-files kit scripts tests | grep -E '\.(sh|mjs|cjs|json|md)$|/bin/dl$' | xargs grep -lI $'\r' 2>/dev/null | head -3)"
+[[ -z $crlf ]] && ok "no CRLF in any script or config" || bad "CRLF in: $crlf"
+contains "Git Bash is found on Windows: CLAUDE_CODE_GIT_BASH_PATH, next to git.exe, the install folders — or reported missing" "$(node --input-type=module -e '
+import { findBash } from "'"$HERE"'/kit/hooks/deliver/bash-path.mjs";
+const ex = (p) => ["G:/Git/bin/bash.exe","C:/PF/Git/bin/bash.exe"].includes(p.replace(/\\/g,"/")), f = (p) => (p ?? "null").replace(/\\/g,"/");
+console.log([findBash({}, "linux"), f(findBash({CLAUDE_CODE_GIT_BASH_PATH:"G:/Git/bin/bash.exe"}, "win32", ex, () => "")),
+  f(findBash({}, "win32", ex, () => "C:/PF/Git/cmd/git.exe\r\n")), f(findBash({ProgramFiles:"C:/PF"}, "win32", ex, () => { throw 1; })),
+  f(findBash({}, "win32", () => false, () => ""))].join(" "))')" "bash G:/Git/bin/bash.exe C:/PF/Git/bin/bash.exe C:/PF/Git/bin/bash.exe null"
+lp() { bash -c '. "$1/kit/hooks/deliver/lib.sh"; np "$2"' _ "$HERE" "$1"; }
+[[ "$(lp 'C:\Users\a b\repo')" == "/c/Users/a b/repo" && "$(lp 'C:/x/y')" == "/c/x/y" && "$(lp /home/u)" == "/home/u" ]] \
+  && ok "hooks compare Windows paths (C:\\… from Claude Code) with Git Bash paths (/c/… from dl)" || bad "np: $(lp 'C:\Users\a b\repo')"
+WG="$(jq -n --arg f 'C:\x\.work\JOB-1\board.json' '{tool_input:{file_path:$f},cwd:"C:\\x"}')"
+contains "write-guard reads a Windows file path as absolute (not glued to the cwd)" "$(bash -c '. "$1/kit/hooks/deliver/lib.sh"; input=$2; hkp .tool_input.file_path' _ "$HERE" "$WG")" "/c/x/.work/JOB-1/board.json"
+
 echo "plugin packaging"
 claude_ok=0; command -v claude >/dev/null && claude_ok=1
 jq -e '.name=="deliver"' "$HERE/kit/.claude-plugin/plugin.json" >/dev/null && ok "plugin manifest names the plugin deliver" || bad "plugin.json"
 jq -e '.plugins[] | select(.name=="deliver" and .source=="./kit")' "$HERE/.claude-plugin/marketplace.json" >/dev/null && ok "the repo is a marketplace offering ./kit" || bad "marketplace.json"
-gen="$(jq -S '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver")))}' "$HERE/kit/settings.hooks.json")"
+gen="$(jq -S '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"")))}' "$HERE/kit/settings.hooks.json")"
 [[ "$gen" == "$(jq -S . "$HERE/kit/hooks/hooks.json")" ]] && ok "plugin hooks.json matches settings.hooks.json" \
   || bad "kit/hooks/hooks.json is stale — regenerate it from kit/settings.hooks.json (docs/02-setup.md)"
 for f in "$HERE"/kit/hooks/deliver/*.sh "$HERE/kit/skills/deliver/bin/dl"; do [[ -x $f ]] || bad "not executable in the plugin: $f"; done
@@ -938,7 +1085,7 @@ echo "install / uninstall"
 INST="$HERE/scripts/install.sh"
 expect_ok "install --user" "$INST" --user
 expect_ok "install is idempotent" "$INST" --user
-[[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 5 ]] && ok "5 hooks, no duplicates" || bad "hook count"
+[[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 6 ]] && ok "6 hooks (5 guards + the SessionStart setup), no duplicates" || bad "hook count"
 [[ -f $HOME/.claude/agents/qa-tester.md ]] && ok "qa-tester agent installed" || bad "qa-tester missing"
 [[ "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$HOME/.claude/settings.json")" == .work/* ]] && ok "GateGuard exemption set" || bad "env"
 [[ "$(jq -c .attribution "$HOME/.claude/settings.json")" == '{"commit":"","pr":""}' ]] && ok "Claude Code commit/PR attribution switched off" || bad "attribution"
@@ -953,20 +1100,21 @@ expect_ok "uninstall" "$INST" --user --uninstall
 "$INST" --user >/dev/null
 # A reinstall keeps what the user changed in the installed config.json: it moves into $DELIVER_HOME/config.json
 IC="$HOME/.claude/skills/deliver/config.json"
-jq '.dispatch = "munder" | .munder.model = "opus"' "$IC" > "$IC.t" && mv "$IC.t" "$IC"
+jq '.dispatch = "subagent" | .munder.model = "opus"' "$IC" > "$IC.t" && mv "$IC.t" "$IC"
 out="$("$INST" --user 2>&1)"
+[[ $out != *"cannot"* ]] && ok "a reinstall in the same second as the last one backs up beside the old backup" || bad "reinstall: $out"
 contains "a reinstall keeps the user's changes to the installed config" "$out" "kept your settings: $DELIVER_HOME/config.json"
-[[ "$(jq -c . "$DELIVER_HOME/config.json")" == '{"dispatch":"munder","munder":{"model":"opus"}}' ]] \
+[[ "$(jq -c . "$DELIVER_HOME/config.json")" == '{"dispatch":"subagent","munder":{"model":"opus"}}' ]] \
   && ok "…in \$DELIVER_HOME/config.json, only what they changed" || bad "user config: $(cat "$DELIVER_HOME/config.json")"
-cmp -s "$IC" "$SDIR/config.json" && ok "…and the installed config is the shipped defaults again" || bad "installed config not reset"
+cmp -s "$IC" "$SDIR/config.json" && ok "…and the installed config is the shipped defaults again" || bad "installed config not reset: $(diff "$IC" "$SDIR/config.json" | head -5)"
 out="$("$INST" --user 2>&1)"; [[ $out == *"unchanged: $HOME/.claude/skills/deliver"* && $out != *"kept your settings"* ]] \
   && ok "an untouched reinstall moves nothing" || bad "untouched reinstall: $out"
 # dl reads the user's settings over the shipped defaults, and a repo's .deliver.json over both
 for u in u1 u2; do mkdir -p "$TMP/$u" && git -C "$TMP/$u" init -q -b main && git -C "$TMP/$u" commit -q --allow-empty -m i; done
-echo '{"dispatch":"subagent"}' > "$TMP/u2/.deliver.json"
-for u in u1 u2; do (cd "$TMP/$u" && "$HOME/.claude/skills/deliver/bin/dl" new "u" "x" >/dev/null 2>&1); done
-contains "dl new takes the user's settings (\$DELIVER_HOME/config.json)" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u1/.work/JOB-*/job.json)" '{"d":"munder","m":"opus"}'
-contains "…and a repo's .deliver.json over them" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u2/.work/JOB-*/job.json)" '{"d":"subagent","m":"opus"}'
+echo '{"dispatch":"munder"}' > "$TMP/u2/.deliver.json"
+for u in u1 u2; do (cd "$TMP/$u" && AGENT_ID=god "$HOME/.claude/skills/deliver/bin/dl" new "u" "x" >/dev/null 2>&1); done
+contains "dl new takes the user's settings (\$DELIVER_HOME/config.json)" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u1/.work/JOB-*/job.json)" '{"d":"subagent","m":"opus"}'
+contains "…and a repo's .deliver.json over them" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u2/.work/JOB-*/job.json)" '{"d":"munder","m":"opus"}'
 out="$("$HERE/scripts/doctor.sh" "$R" 2>&1)"
 contains "doctor sees the install and the repo" "$out" "user: hook write-guard"
 mkdir -p "$HOME/.config/munder-difflin"; echo '{}' > "$HOME/.claude.json"

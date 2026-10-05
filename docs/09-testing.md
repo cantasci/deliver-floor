@@ -27,10 +27,13 @@ is summarised away.
 
 ## Layer 1 — `tests/run.sh`
 
-Groups (each prints ✔/✘ per check, ends with `result: N passed, M failed`): scope matcher · repo + job · planning guards ·
+Groups (each prints ✔/✘ per check, ends with `result: N passed, M failed`): macOS bash 3.2 (`tests/lint-bash32.mjs`: no
+case statement inside `$( )`, no bare empty array under `set -u`, no bash-4 features) · scope matcher · repo + job · planning guards ·
 execution guards (gate, QA scope, review on the same commit, attempts, blocked) · integration + delivery · hooks
 (bash-guard, write-guard, agent-guard, stop-guard, subagent-log) · Munder Difflin dispatch (spawn request, providers, worker
-command) · mixed stacks, frozen decisions, seats, parallel assignment · traceability (card changes, seals) · Jira contract stub
+command) · seats (one person per seat, `live` only after `seated`, failures with their reason — startup crash, API/credit
+error, rejected request, timeout — `md-reseat`, explicit models) · the floor default (a floor job refused outside the app's
+Michael, `dl dispatch` by hand) · mixed stacks, frozen decisions, parallel assignment · traceability (card changes, seals) · Jira contract stub
 (statuses, comments, branch links, a workflow missing a status) · ECC specialists · `dl next` robustness · commit hygiene ·
 tracker factory · knowledge (standards, lessons, MemPalace, knowledge graph) · merge modes · install/uninstall.
 
@@ -79,3 +82,7 @@ tests/e2e-munder.sh /tmp/e2e-md                # + xvfb-run, Playwright
 
 Each live run keeps everything: the sandbox repo with `.work/` (job, readiness, plan, board, specs, handoffs, gate logs,
 events), the `claude -p` transcripts (`.work/runs/*.jsonl`), the report, and for Munder Difflin the screenshots.
+
+The fixtures of `tests/run.sh` and the headless/interactive scenarios run with Claude Code subagents — chosen explicitly
+(`"dispatch": "subagent"`, `scripts/sandbox.sh --subagent`), since the floor is the default. `tests/e2e-munder.sh` runs the
+floor.

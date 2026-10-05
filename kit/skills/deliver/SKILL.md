@@ -21,6 +21,12 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 - **Target repo.** Normally the current directory's git repo. If you run elsewhere (e.g. Munder Difflin, where Michael's
   folder is the hive), the request names the repo (`REPO: /path`) or there is exactly one in `registeredRepos`; then call
   every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
+- **Run mode.** Munder Difflin is the default (`settings.dispatch: "munder"`): you run as Michael inside the app, and every
+  role is a person at a seat (see **Munder Difflin** below). Claude Code subagents are used only when the human chose them
+  by hand (`"dispatch": "subagent"` in `.deliver.json`, or `dl dispatch subagent "<why>"`). **`/deliver` in a plain terminal
+  for a floor repo** (`dl` says "this job runs on the Munder Difflin floor", or `AGENT_ID` is not `god` and the repo's mode is
+  `munder`): do not run the flow here. Run `"$DL" floor-open "<the request exactly as given>"` — it opens Munder Difflin on the
+  repo's floor and hands the job to Michael there — tell the human what it printed, and stop. Never change the mode yourself.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.
 - **Agent names.** This playbook, job.json and board.json use plain names (`backend-dev`). When the kit is installed as a
   plugin, ROLES.md and the role cards list its agents with the plugin prefix (`deliver:backend-dev`): `subagent_type` is
@@ -63,9 +69,21 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 
 1. `"$DL" new "<short title, ≤6 words>" "<the full request text>"` → prints the job id.
    (For a requirements file the request text is: `Requirements: <abs path>` + its content.)
-2. Detect the stack from the repo (`stack_hints` in `roles.yaml`): `"$DL" jobset '.stack=["javascript"]'`.
+2. **The stack comes from the repo — or, in a repo without code, it is chosen for the requirements.** Detect it from the
+   repo's files (`stack_hints` in `roles.yaml`), e.g. a `pyproject.toml` → `"$DL" jobset '.stack=["python"]'`. **A repo
+   without code has no stack yet — never pick one by default** (not the language you write fastest, not the tool's
+   example): leave `.stack` empty. The readiness review then chooses the **best fit for the requirements** (`ARC-stack`):
+   the language the request names wins; otherwise the libraries, tools, platforms and data sources it names decide (e.g.
+   `yfinance` and a "Python KAP client" → Python), then company standards (`dl knowledge`). Record it as your decision with
+   the evidence quoted and the alternatives weighed:
+   `"$DL" decide ARC-stack "Python 3.12 + FastAPI" "the request names \"yfinance (free library)\" and a \"Python KAP client\"; chosen over Node.js, which has neither"`
+   — `dl` refuses a choice without a quote from the request or without the alternatives, and the PR lists it. Ask the human
+   only when the request itself contradicts (two stacks named) or the choice changes the business scope. Then record
+   `.stack`, pick the stack reviewer, and set the full test command if the repo has none
+   (`"$DL" jobset '.settings.verify_full="pytest -q"'`); `dl` refuses planning without a reviewer and `verify-all` without a
+   test command.
 3. **Select the roles from the request** — read `roles.yaml` (the only catalog). For each role apply its `when` to what the request
-   asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer from `stack_reviewers`
+   asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer (once the stack is known) from `stack_reviewers`
    (most specific match) as role `reviewer` (a second one, e.g. for a React UI next to a Node API, as `reviewer-ui`).
    Write a one-line reason per role that quotes the part of the request it serves:
    `"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule"},…]'`
@@ -323,13 +341,15 @@ Michael `/deliver resume` with `REPO: <repo>`.
 
 1. **Hire the seats** right after `"$DL" phase readiness` (and again whenever the roles change): `"$DL" md-hire`. One person
    per seat — every selected role, `count` seats each (default 1): ba, the leads, every dev seat, qa, the reviewers, the
-   specialists. No click in the app is needed. Each new person sends you `seated <seat>`; `"$DL" md-seats` shows who sits where:
-   `pending` (queued — more seats than the floor's worker cap wait, md-seats says so), `starting` (on the floor, not seated
-   yet), `live`, and the ones needing you — `stuck` (no `seated` within `settings.munder.seat_timeout`, 300 s), `failed` (the
-   floor names why, e.g. no usage left for the model) or `gone` (released, reaped after a long idle). `"$DL" md-hire` again
-   sends a stuck person home and seats a replacement with the same face; a failure the floor named is fixed first (another
-   model: `dl jobset '.settings.munder.model="…"'`, recorded with `dl pm-decide`). Someone wedged mid-task:
-   `"$DL" md-hire --reseat <seat>`, then send the open task again. Work orders go only to `live` seats.
+   specialists. No click in the app is needed. Each seat starts on an explicit model (the role's, else `munder.model`), never
+   the app's default. A seat is `live` only after its person sends you `seated <seat>`; until then it is `starting`.
+   `"$DL" md-seats` shows who sits where and, for every seat that is not live, why. Someone whose desk is empty (released,
+   reaped after a long idle) shows as `not seated`: `"$DL" md-hire` again seats a replacement with the same face.
+   **A seat that `FAILED`** — the process died at startup, its last reply is an API error (credit, auth), the app rejected the
+   request, or no `seated` within `munder.seat_timeout_minutes` — gets a new person: `"$DL" md-reseat <seat> "<why>"`, with
+   `--model <model>` when the error is about the model or its credit. That is your decision (recorded for the PR), not a
+   question for the human. A seat that took a task and never reports is stuck: re-seat it the same way and send the task
+   again once the new person is seated.
 2. **Every "call Agent(subagent_type: X)" in this playbook is a work order to X's seat on the floor.** Write the same prompt to
    `.work/<job>/prompts/<task>-<role>.md`, then `"$DL" md-send <role|seat> <task> <prompt file> --agent X`.
    `<task>` is the card id for card work (dev, QA, review) or the plan step (`readiness`, `plan`, `cards-<lead role>`,

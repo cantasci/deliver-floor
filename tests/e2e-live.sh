@@ -53,7 +53,7 @@ else
 fi
 iso_env claude plugin list 2>/dev/null | gq ecc@ecc && ok "ECC plugin installed ($(iso_env claude plugin list 2>/dev/null | grep -A1 ecc@ecc | grep -o 'Version: [0-9.]*'))" || bad "ECC plugin not installed"
 iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
-SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" "$SB" "$EXN" > /dev/null
+SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null
 if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
   git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"
@@ -180,7 +180,7 @@ if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
       [[ ( $st == archived || $st == merged ) ]] && ok "$c was decided by Michael: now $st" || bad "$c is still $st"
       [[ $st == merged || -n $dec ]] && ok "…with a recorded decision: ${dec:0:110}" || bad "$c archived without a recorded decision"
     done
-    grep -q "## Decisions Michael took after the start" "$J/report.md" && [[ "$(sed -n '/deliver:pm-decisions/,$p' "$J/report.md" | grep -c '^- ')" -ge 1 ]] \
+    grep -q "## Decisions Michael took himself" "$J/report.md" && [[ "$(sed -n '/deliver:pm-decisions/,$p' "$J/report.md" | grep -c '^- ')" -ge 1 ]] \
       && ok "the PR body lists his decisions" || bad "the PR body does not list the decisions"
     log "note: a dropped card leaves its requirement undelivered — the oracle result above shows the effect"
   fi

@@ -1,0 +1,89 @@
+# qa_verify: node --test test/ratings/integration/*.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE is the 19 ratings in order and frozen
+ok 1 - AC-1: RATING_SCALE is the 19 ratings in order and frozen
+  ---
+  duration_ms: 8.240087
+  type: 'test'
+  ...
+# Subtest: AC-2: BBB+ → BB+ is 3
+ok 2 - AC-2: BBB+ → BB+ is 3
+  ---
+  duration_ms: 0.452423
+  type: 'test'
+  ...
+# Subtest: AC-3: BB+ → BBB+ is -3
+ok 3 - AC-3: BB+ → BBB+ is -3
+  ---
+  duration_ms: 0.157176
+  type: 'test'
+  ...
+# Subtest: AC-4: A → A is 0 and not -0
+ok 4 - AC-4: A → A is 0 and not -0
+  ---
+  duration_ms: 0.287379
+  type: 'test'
+  ...
+# Subtest: AC-5: examples and antisymmetry
+ok 5 - AC-5: examples and antisymmetry
+  ---
+  duration_ms: 0.784018
+  type: 'test'
+  ...
+# Subtest: AC-6: all 361 pairs equal index(c) - index(p) and are integers
+ok 6 - AC-6: all 361 pairs equal index(c) - index(p) and are integers
+  ---
+  duration_ms: 1.378472
+  type: 'test'
+  ...
+# Subtest: AC-7: surrounding whitespace is trimmed
+ok 7 - AC-7: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.29754
+  type: 'test'
+  ...
+# Subtest: AC-8: case-insensitive
+ok 8 - AC-8: case-insensitive
+  ---
+  duration_ms: 0.223196
+  type: 'test'
+  ...
+# Subtest: AC-9: unknown rating strings throw RangeError in either position
+ok 9 - AC-9: unknown rating strings throw RangeError in either position
+  ---
+  duration_ms: 2.302245
+  type: 'test'
+  ...
+# Subtest: AC-10: empty and whitespace-only strings throw RangeError
+ok 10 - AC-10: empty and whitespace-only strings throw RangeError
+  ---
+  duration_ms: 2.815599
+  type: 'test'
+  ...
+# Subtest: AC-11: non-strings throw RangeError (never TypeError) in either position
+ok 11 - AC-11: non-strings throw RangeError (never TypeError) in either position
+  ---
+  duration_ms: 2.537162
+  type: 'test'
+  ...
+# Subtest: AC-12: valid+invalid in both orders and invalid+invalid throw, no number returned
+ok 12 - AC-12: valid+invalid in both orders and invalid+invalid throw, no number returned
+  ---
+  duration_ms: 0.358797
+  type: 'test'
+  ...
+# Subtest: AC-13: no stdout/stderr writes, exact exports, import has no side effects, package.json unchanged
+ok 13 - AC-13: no stdout/stderr writes, exact exports, import has no side effects, package.json unchanged
+  ---
+  duration_ms: 118.342815
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 339.773688

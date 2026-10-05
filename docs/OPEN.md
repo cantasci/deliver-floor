@@ -42,6 +42,25 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | --- | --- | --- |
 | R4 | A role runs on the model the owner names — in the request file, typed to Michael, or as the floor default (`munder.model`) | **Done — verified live**, judged from the session transcripts: runs 36 (file, headless), 37 (typed, interactive), 39 (floor: role model wins over the default, every role ≠ Michael's model). Non-Claude CLIs stay O1 |
 
+## The user's Mac report (2026-10-05) and what followed
+
+| # | What | Status |
+| --- | --- | --- |
+| F1 | `dl` did not run on macOS bash 3.2 | **Fixed; verified on a real Mac for the floor code** — the owner's branch `fix/floor-robustness` (d6d6455) ran `tests/run.sh` 393/393 on bash 3.2 and found two traps the lint here had missed (`"$miss→"`, `"{a, b}"` in nested quotes); both are fixed here and the lint now finds all five on the pre-fix `dl`. This branch has more code since — **the owner re-runs `/bin/bash tests/run.sh` on the Mac once** |
+| F2 | a seat was "live" though its worker died at startup | **Done** — `live` only after its `seated` message (`tests/run.sh`; runs 42–43) |
+| F3 | a worker crashing at startup was silent | **Done** — `dl md-seats` reads the app's crash log, the worker's transcript (API/credit errors), rejected requests and a timeout, and says why (`tests/run.sh`; runs 42–43: seen within ~45 s) |
+| F4 | no command to re-seat a stuck seat | **Done** — `dl md-reseat <seat> "<why>" [--model m]`, Michael's decision, listed in the PR (run 43) |
+| F5 | workers started on the app's default model (no credit), unreported | **Done** — every seat gets an explicit model (`munder.model`, default sonnet); a credit error shows as `failed` (runs 42–43) |
+| F6 | `/deliver` from a separate terminal raced the app's Michael for the inbox | **Done** — a floor job runs only from the app's Michael (run 41); `/deliver` in a terminal now opens the floor (F8) |
+| F7 | the floor is the default; subagents only by hand | **Done** — `dispatch: munder` default; `"dispatch": "subagent"`, `--subagent`, `dl dispatch` (human only) — run 40 |
+| F8 | `/deliver` in a terminal opens Munder Difflin on the repo's floor and hands the job to Michael | **Done — verified live** (run 45). One click remains: the app opens on its floor picker, and has no setting to skip it |
+| F9 | plugin setup without scripts (postinstall) | **Done** — SessionStart setup + ECC as a dependency (run 44) |
+| F10 | a config file per project | **Done** — the first `/deliver` writes `.deliver.json` with a schema; per-role defaults reach the job (`tests/run.sh`) |
+| F12 | Munder Difflin restores a previous job's workers when it is reopened (seen in run 45); they idle and take no orders, but crowd the floor | **App behaviour, open** — to raise with Munder Difflin (a released seat should not come back) |
+| F13 | slow floor runs / agents waiting | **Measured (run 45): not the floor** — its handoffs cost 2–18 s each (~3 of 23.5 min); 10 min went to a QA command Node 22 rejects (`node --test <dir>`), seen in runs 29, 33, 45. Now refused at validation and before the gate, fixable on a running card (`tests/run.sh`). Proposed, not done: QA writes its tests in parallel with the dev |
+| F14 | the POC was written in Node.js by default | **Done — verified live** (run 47): in a repo without code the team chooses the best fit for the requirements — Python + FastAPI, quoting "yfinance" and "Python KAP client", Node.js and Java weighed — as Michael's decision listed in the PR; no default language, no `npm test` default |
+| F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
+
 ## Verified by the owner, not here
 
 | # | What | Why not here |
@@ -53,4 +72,4 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 
 | # | What | Status |
 | --- | --- | --- |
-| P1 | Pull request [cantasci/skills-shop#1](https://github.com/cantasci/skills-shop/pull/1) | open, awaiting review |
+| P1 | Pull request [cantasci/deliver-floor#1](https://github.com/cantasci/deliver-floor/pull/1) | **merged into main** (2026-10-05, ceef77c) |

@@ -1,0 +1,39 @@
+2026-10-05T15:37:16Z	new	Watchlist credit monitoring POC
+2026-10-05T15:37:32Z	jobset	stack: .stack=["python","fastapi"]
+2026-10-05T15:37:32Z	jobset	settings: .settings.verify_full="python -m pytest -q"
+2026-10-05T15:37:32Z	jobset	roles: .roles=[
+{"role":"ba","agent":"business-analyst","why":"always"},
+{"role":"tech-lead","agent":"ecc:architect","why":"EPIC-01..07: new module spanning fetcher, scoring engine and UI"},
+{"role":"backend-lead","agent":"ecc:architect","why":"REQ-02-01: automated data fetcher; REQ-05-01: max-rule WL calculation"},
+{"role":"backend","agent":"backend-dev","why":"REQ-02-03/04/05/06: BDDK, KAP, yfinance, Google News RSS fetchers"},
+{"role":"frontend-lead","agent":"ecc:architect","why":"REQ-03-14: assessment forms with real-time WL per row"},
+{"role":"frontend","agent":"frontend-dev","why":"EPIC-03/04: hard and soft factor forms, news panel"},
+{"role":"security","agent":"ecc:security-reviewer","why":"REQ-02-07: scraping external input and rendering source links"},
+{"role":"quality","agent":"ecc:silent-failure-hunter","why":"REQ-02-08: fetch failures must fall back to manual input, not fail silently"},
+{"role":"performance","agent":"ecc:performance-optimizer","why":"REQ-02-01: fetch completes within 30 seconds"},
+{"role":"qa","agent":"qa-tester","why":"always"},
+{"role":"reviewer","agent":"ecc:fastapi-reviewer","why":"stack python/fastapi"}
+]
+2026-10-05T15:37:32Z	roles	ba tech-lead backend-lead backend frontend-lead frontend security quality performance qa reviewer
+2026-10-05T15:37:32Z	phase	readiness
+2026-10-05T15:50:06Z	agent	business-analyst a7a6548a: I checked the readiness answer against the tool's own rules: no errors, and every applicable item is answered. It has 52 items: 15 decided, 1 not applicable and
+2026-10-05T15:50:13Z	readiness	52 items: 15 decided, 1 n/a, 36 open
+2026-10-05T15:50:30Z	decide	ARC-stack: Python 3.12 + FastAPI; deps yfinance, feedparser, openpyxl, httpx, beautifulsoup4, Jinja2 (permissive licences) — the request names "yfinance (free library)" and a "Python KAP client"; chosen over Node.js and Java, which have neither; A7 limits yfinance to research use
+2026-10-05T15:50:30Z	pm-decision	language and runtime: Python 3.12 + FastAPI; deps yfinance, feedparser, openpyxl, httpx, beautifulsoup4, Jinja2 (permissive licences) — the request names "yfinance (free library)" and a "Python KAP client"; chosen over Node.js and Java, which have neither; A7 limits yfinance to research use
+2026-10-05T15:50:30Z	decide	ARC-style: Modular monolith: one FastAPI app, internal modules scoring / fetchers / api / web — single user (A1) and a 'Small (POC)' project; no need for services
+2026-10-05T15:50:30Z	decide	ARC-components: watchlist-scoring, watchlist-fetchers, watchlist-api (incl. persistence), watchlist-web in one package src/watchlist/ with tests under tests/, as in readiness.json architecture — follows from ARC-style and ARC-stack; each component has an owner role on the job
+2026-10-05T15:50:30Z	decide	ARC-layer: All WL rules (option->WL, notch calc, max rule, minimum condition, visibility by segment/type/listed) live in the pure-Python scoring module; UI calls POST /api/wl/calculate for real-time per-row WL; fetchers are a separate module called by the API — single source of truth for A4 scoring logic; no rule duplicated in the UI
+2026-10-05T15:50:30Z	decide	CON-interface: REST/JSON under /api; stable snake_case enum codes; per-field {value,state,source_name,source_url,error,overridden,note}; notch change signed int (positive = downgrade); percentages to 1 decimal; ISO-8601 dates; 422 on validation errors — API is internal to one app with no external consumer
+2026-10-05T15:50:31Z	decide	ARC-integration: Concurrent fetch of all sources, per-source timeout <=20s inside the 30s budget, max 1 retry on connection errors, descriptive User-Agent, same-day cache per (source,key), robots/ToS respected; every failure maps to REQ-02-08 manual fallback with source name and reason — REQ-02-01 30 s budget and REQ-02-08 fallback; request C2 limits to public non-licensed sources
+2026-10-05T15:50:31Z	decide	FE-stack: Server-rendered Jinja2 templates in the same FastAPI app, small vanilla JS for conditional fields and per-row WL, plain CSS with the §4 / REQ-05-05 colours; latest desktop Chrome/Edge, >=1280px — no Node build needed for a single-user POC; keeps one stack and one reviewer
+2026-10-05T15:50:31Z	decide	NFR-observability: Structured JSON-line logs per fetch (assessment id, source, outcome ok/not_found/unavailable/timeout/parse_error, duration ms, reason) and one total-fetch-time line per assessment; no customer names in logs; no metrics/tracing/alerting — supports REQ-02-08 (no silent failures) and the 30 s target; single-user POC
+2026-10-05T15:50:31Z	decide	TST-strategy: Dev TDD unit tests (table-driven per option->WL, notch, max rule, visibility); fetcher tests on recorded fixtures with no live network in default suite; API integration tests with TestClient incl. timeouts/failures; QA e2e on running app; optional 'live' marker excluded by default; >=90% line coverage on scoring — verify_full is python -m pytest -q; deterministic offline tests
+2026-10-05T15:50:31Z	decide	DEL-ci: pytest green to merge; dev runs ruff (lint+format check) and mypy on src/watchlist/scoring before review; pip-audit once on new dependencies — no CI config exists; the job gate is pytest
+2026-10-05T15:50:32Z	decide	DEL-deploy: Run locally with uvicorn bound to 127.0.0.1 in a Python 3.12 venv (pip install -e .); no feature flags; rollback = previous commit — A1 single user, no auth, and C1 forbids production use without review
+2026-10-05T15:50:32Z	decide	DEL-docs: README with setup/run/test commands, list of external sources and A7/A8 caveats, written by a backend dev inside a card; no separate docs role — request asks for no docs; a README is cheap and avoids an extra role
+2026-10-05T15:50:32Z	decide	X-q9-segments: Segment rules held as data (table: segment -> active indicators, sources, rating agency, Data Guide rows) so a new country is configuration, not code — Q9 informs technical design only; no need to wait for the answer
+2026-10-05T15:50:36Z	jobset	roles: .roles += [{"role":"docs","agent":"ecc:doc-updater","why":"DEL-docs: README with setup, sources and A7/A8 caveats"}]
+2026-10-05T15:50:36Z	roles	ba tech-lead backend-lead backend frontend-lead frontend security quality performance qa reviewer docs
+2026-10-05T15:50:36Z	phase	readiness
+2026-10-05T15:50:36Z	readiness	52 items: 28 decided, 1 n/a, 23 open
+2026-10-05T15:50:38Z	phase	awaiting_clarification

@@ -1,0 +1,25 @@
+2026-10-05T09:22:29Z	new	Rating notch change
+2026-10-05T09:22:30Z	jobset	stack: .stack=["javascript"]
+2026-10-05T09:22:30Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02 (part): domain logic notchChange(previous,current)"},{"role":"backend","agent":"backend-dev","why":"Contract: src/ratings/notch.mjs RATING_SCALE + notchChange"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (plain Node ESM)"}]
+2026-10-05T09:22:30Z	jobset	assumptions: .assumptions += ["Single card: the slice is one pure function + constant (request says one card)","Plain Node ESM, no deps, node --test (repo CLAUDE.md)"]
+2026-10-05T09:22:31Z	roles	ba qa backend-lead backend reviewer
+2026-10-05T09:22:31Z	phase	readiness
+2026-10-05T09:22:35Z	md-hire	ba#1 → worker-seat-20261005-0922-ba-1-h1 (claude claude-nonexistent-0, pam)
+2026-10-05T09:22:35Z	md-hire	qa#1 → worker-seat-20261005-0922-qa-1-h1 (claude claude-nonexistent-0, angela)
+2026-10-05T09:22:36Z	md-hire	backend-lead#1 → worker-seat-20261005-0922-backend-lead-1-h1 (claude claude-nonexistent-0, oscar)
+2026-10-05T09:22:36Z	md-hire	backend#1 → worker-seat-20261005-0922-backend-1-h1 (claude claude-nonexistent-0, dwight)
+2026-10-05T09:22:36Z	md-hire	reviewer#1 → worker-seat-20261005-0922-reviewer-1-h1 (claude claude-nonexistent-0, toby)
+2026-10-05T09:23:22Z	md-reseat	ba#1 (failed): API error: configured seat model claude-nonexistent-0 does not exist; using kit default sonnet → model sonnet
+2026-10-05T09:23:23Z	md-hire	ba#1 → worker-seat-20261005-0922-ba-1-h2 (claude sonnet, pam)
+2026-10-05T09:23:23Z	md-hire	qa#1 → worker-seat-20261005-0922-qa-1-h2 (claude claude-nonexistent-0, angela) — re-seated, was failed
+2026-10-05T09:23:24Z	md-hire	backend-lead#1 → worker-seat-20261005-0922-backend-lead-1-h2 (claude claude-nonexistent-0, oscar) — re-seated, was failed
+2026-10-05T09:23:24Z	md-hire	backend#1 → worker-seat-20261005-0922-backend-1-h2 (claude claude-nonexistent-0, dwight) — re-seated, was failed
+2026-10-05T09:23:24Z	md-hire	reviewer#1 → worker-seat-20261005-0922-reviewer-1-h2 (claude claude-nonexistent-0, toby) — re-seated, was failed
+2026-10-05T09:23:25Z	md-reseat	qa#1 (pending): API error: configured seat model claude-nonexistent-0 does not exist; using kit default sonnet → model sonnet
+2026-10-05T09:23:28Z	md-hire	qa#1 → worker-seat-20261005-0922-qa-1-h3 (claude sonnet, angela)
+2026-10-05T09:23:33Z	md-reseat	backend-lead#1 (starting): API error: configured seat model claude-nonexistent-0 does not exist; using kit default sonnet → model sonnet
+2026-10-05T09:23:36Z	md-hire	backend-lead#1 → worker-seat-20261005-0922-backend-lead-1-h3 (claude sonnet, oscar)
+2026-10-05T09:23:39Z	md-reseat	backend#1 (starting): API error: configured seat model claude-nonexistent-0 does not exist; using kit default sonnet → model sonnet
+2026-10-05T09:23:44Z	md-hire	backend#1 → worker-seat-20261005-0922-backend-1-h3 (claude sonnet, dwight)
+2026-10-05T09:23:47Z	md-reseat	reviewer#1 (starting): API error: configured seat model claude-nonexistent-0 does not exist; using kit default sonnet → model sonnet
+2026-10-05T09:23:53Z	md-hire	reviewer#1 → worker-seat-20261005-0922-reviewer-1-h3 (claude sonnet, toby)

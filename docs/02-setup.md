@@ -5,7 +5,7 @@ About 15 minutes. `scripts/init.sh` does steps 1–3 for you; the rest is per re
 ## 1. One command: `scripts/init.sh`
 
 ```bash
-git clone https://github.com/cantasci/skills-shop && cd skills-shop
+git clone https://github.com/cantasci/deliver-floor && cd deliver-floor
 scripts/init.sh --repo /path/to/your/repo                        # ECC + the kit (~/.claude) + .deliver.json + doctor
 scripts/init.sh --repo /path/to/repo --munder --hive ~/md-hive   # … and Munder Difflin from source (see 07)
 ```
@@ -40,38 +40,73 @@ ECC notes:
 - **Don't copy ECC's hooks into `settings.json`** — the plugin loads them.
 - ECC has hundreds of skills; they load on demand. The role cards name the few each role should load.
 
-### Or: install the kit as a Claude Code plugin
+### Or: install the kit as a Claude Code plugin — no script to run
 
-The repo is also a plugin marketplace (`.claude-plugin/marketplace.json` → `kit/`, plugin `deliver`). Inside Claude Code:
+The repo is a plugin marketplace (`.claude-plugin/marketplace.json` → `kit/`, plugin `deliver`). Inside Claude Code:
 
 ```text
-/plugin marketplace add https://github.com/cantasci/skills-shop
-/plugin install deliver@skills-shop
+/plugin marketplace add https://github.com/affaan-m/ECC
+/plugin marketplace add https://github.com/cantasci/deliver-floor
+/plugin install deliver@deliver-floor
 ```
 
-then, once, in a terminal: `scripts/install.sh --user --plugin`. A plugin cannot set `env` or `attribution`, so this merges
-only those two into `~/.claude/settings.json` — it copies no files and adds no hooks (the plugin brings the skill, the six
-agents and `kit/hooks/hooks.json`).
+That is all. The plugin depends on ECC (`"dependencies": ["ecc@ecc"]`), so installing `deliver` installs ECC too, once ECC's
+marketplace is added (`… (+ 1 dependency: ecc)`). Claude Code has no install hook, so **the first session does the setup** —
+the plugin's SessionStart hook (`kit/hooks/deliver/setup.mjs`), once per plugin version:
+
+- `~/.claude/settings.json` gets the env a plugin cannot set (`GATEGUARD_EXEMPT_GLOBS`: ECC's GateGuard lets Michael write
+  `.work/` files), with a backup; restart Claude Code once so it applies;
+- in a repo with `.deliver.json`, `.claude/settings.local.json` gets an empty commit/PR attribution — that repo only;
+- every session: git, jq, Node 18+, bash (Git Bash on Windows), ECC and — for a floor repo — Munder Difflin are checked;
+  what is missing is named with the command that fixes it. Nothing is printed when all is well.
+
+`scripts/install.sh --user --plugin` still exists for a machine set up from a terminal; it is no longer required.
 
 What changes with the plugin:
 
-- The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin (the kit carries
-  its manifest and Claude Code lists the plugin as installed — whether it loads it from its cache or, for a marketplace
-  added from a local folder, from the folder itself) and writes those names into ROLES.md, the role cards and floor workers' `claude --agent`.
-  `job.json` and `board.json` keep the plain names. Developing with `claude --plugin-dir kit`? Set `DELIVER_AGENT_NS=deliver`.
+- The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin and writes those
+  names into ROLES.md, the role cards and the seats' orders. `job.json` and `board.json` keep the plain names. Developing
+  with `claude --plugin-dir kit`? Set `DELIVER_AGENT_NS=deliver`.
 - `/deliver` still works; `/deliver:deliver` is the fully qualified name.
-- `dl` lives in the plugin cache: `ls ~/.claude/plugins/cache/skills-shop/deliver/*/skills/deliver/bin/dl`.
+- `dl` lives in the plugin cache: `ls ~/.claude/plugins/cache/deliver-floor/deliver/*/skills/deliver/bin/dl`.
 - **One install path.** Don't also copy the kit with `scripts/install.sh --user` — the skill and the hooks would load twice.
-  `scripts/doctor.sh` reports it.
+  The SessionStart check and `scripts/doctor.sh` report it.
 
 `kit/hooks/hooks.json` is generated from `kit/settings.hooks.json` (the one source of truth); after changing the hooks:
 
 ```bash
-jq '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver")))}' \
+jq '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"")))}' \
   kit/settings.hooks.json > kit/hooks/hooks.json
 ```
 
 `tests/run.sh` fails while the two disagree.
+
+### Windows
+
+The plugin runs on Windows with what Claude Code on Windows already needs, plus jq:
+
+| Need | Why | Install |
+| --- | --- | --- |
+| Git for Windows (Git Bash) | `dl` and the guards are bash; Claude Code's Bash tool uses Git Bash too | `winget install Git.Git` |
+| jq | `dl` reads and writes its JSON state with it | `winget install jqlang.jq` |
+| Node 18+ | helpers and the hook launcher | `winget install OpenJS.NodeJS.LTS` |
+| Munder Difflin (floor mode) | the default run mode | `scripts/init.sh --munder` in Git Bash (builds the [cantasci/munder-difflin](https://github.com/cantasci/munder-difflin) fork; the released installer's seats never start) |
+
+How the kit copes:
+
+- Hooks are started as `node "…/hooks/deliver"/run.mjs <guard>`: Claude Code runs hook commands in the Windows shell, which
+  cannot start a `.sh` file; the launcher finds Git Bash (`CLAUDE_CODE_GIT_BASH_PATH`, next to `git.exe`, or the usual
+  install folders) and runs the guard in it.
+- Paths: Claude Code hands hooks `C:\Users\…`; `dl` sees `/c/Users/…` in Git Bash. The guards normalise both forms before
+  comparing.
+- Line endings: `.gitattributes` keeps LF in every checkout, so `core.autocrlf` cannot break the scripts.
+- `/deliver` in a floor repo opens the installed app (`%LOCALAPPDATA%\Programs\Munder Difflin`), its config is read from
+  `%APPDATA%\Munder Difflin`.
+- `worktree_setup` commands are yours: on Windows avoid `ln -s` (it needs Developer Mode) — copy instead.
+
+`scripts/init.sh --munder` builds Munder Difflin from source (native modules); on Windows install the released app instead.
+The Windows path is checked by `tests/run.sh` (launcher, path normalisation, line endings) but has not been run on a real
+Windows machine yet.
 
 ## 2. `dl` on your PATH (for you; Michael uses the absolute path)
 
@@ -166,13 +201,29 @@ and `"tracker": {"kind": "jira", "jira": {"project": "WL"}}` — [10-trackers](1
 
 Try it on the sandbox first — nothing of yours is touched:
 
+**On the Munder Difflin floor — the default mode.** Install the app, make a sandbox, give the job to Michael in the app:
+
 ```bash
-scripts/sandbox.sh /tmp/wl watchlist-poc && cd /tmp/wl && claude
+scripts/sandbox.sh /tmp/wl watchlist-poc
+scripts/init.sh --munder --hive ~/md-hive --repo /tmp/wl
 ```
 
 ```text
-/deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md
+/deliver /path/to/deliver-floor/examples/watchlist-poc/JOB.md          (typed to Michael in the app)
 ```
+
+**With Claude Code subagents — chosen by hand.** No app; one `claude` session, roles run as its subagents:
+
+```bash
+scripts/sandbox.sh --subagent /tmp/wl watchlist-poc && cd /tmp/wl && claude
+```
+
+```text
+/deliver /path/to/deliver-floor/examples/watchlist-poc/JOB.md
+```
+
+Never start `/deliver` for a floor job from a separate terminal: `dl` refuses it, because a second Michael would read the
+same inbox. Switching modes and recovering seats: [07 § Choosing the mode](07-munder-difflin.md#choosing-the-mode).
 
 Then on your repo, something small: `/deliver Add a /health endpoint that returns {"status":"ok"}`.
 

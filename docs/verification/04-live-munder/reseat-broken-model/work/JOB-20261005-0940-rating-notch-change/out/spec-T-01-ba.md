@@ -1,0 +1,64 @@
+=== T-01 ===
+# T-01: notchChange + frozen RATING_SCALE in src/ratings/notch.mjs
+
+## User story
+As the developer of Indicators 11, 12 and 13, I want `notchChange(previous, current)` and a frozen `RATING_SCALE` exported from `src/ratings/notch.mjs`, so that I get the signed number of rating steps between two ratings, and bad input fails loudly instead of corrupting an indicator.
+
+## Traces to
+AC-1 to AC-13 of plan.md; REQ-06-02 (part); clarifications C1–C4; readiness X-scale-immutability, X-error-message, X-nonstring-and-zero, CON-errors.
+
+## Acceptance criteria
+Public names: `RATING_SCALE`, `notchChange` (named exports of `src/ratings/notch.mjs`). Result = index(current) − index(previous) on the scale.
+1. AC-1: Given the module is imported, when `RATING_SCALE` is read, then it deep-equals `['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-']` (19 entries, this order) and `Object.isFrozen(RATING_SCALE) === true`.
+2. AC-2: Given `'BBB+'` then `'BB+'`, when `notchChange('BBB+','BB+')`, then `3`; `notchChange('AAA','CCC-')` → `18`.
+3. AC-3: Given `'BB+'` then `'BBB+'`, when `notchChange('BB+','BBB+')`, then `-3`; `notchChange('CCC-','AAA')` → `-18`.
+4. AC-4: Given equal ratings, when `notchChange('A','A')`, then `Object.is(result, 0)` is true (+0, never -0); the same for every entry of the scale, e.g. `'CCC-'`.
+5. AC-5: Given adjacent ratings, when `notchChange('AA+','AA')` then `1`, and `notchChange('AA','AA+')` then `-1`; for every adjacent pair (i, i+1) of the literal expected array, `notchChange(s[i], s[i+1]) === 1` and reversed `=== -1`.
+6. AC-6: Given surrounding whitespace, when `notchChange(' BBB+ ','\tBB+\n')`, then `3`. Given internal whitespace, `notchChange('BB B+','A')` throws `RangeError`.
+7. AC-7: Given other case, `notchChange('bbb+','Bb+')` → `3`; `notchChange('aaa','aaa')` → `0` (+0).
+8. AC-8: `notchChange('','A')`, `notchChange('A','')` and `notchChange('   ','A')` each throw `RangeError`.
+9. AC-9: `notchChange('D','A')`, `notchChange('A','XYZ')`, `notchChange('BBB++','A')`, `notchChange('AA +','A')` each throw `RangeError`.
+10. AC-10: `notchChange(undefined,'A')`, `('A',null)`, `(5,'A')`, `('A',['A'])`, `({},'A')`, `(new String('A'),'A')` and `notchChange()` each throw `RangeError`, never `TypeError`.
+11. AC-11: Given one valid and one invalid argument, the call throws `RangeError` when the invalid one is `previous` (`('XYZ','A')`) and when it is `current` (`('A','XYZ')`); no number is returned. Also both invalid: `('XYZ', 5)` throws `RangeError`.
+12. AC-12: Importing the module and calling `notchChange` writes nothing to stdout/stderr and does no I/O; `package.json` is unchanged (no dependencies); `node --test` passes.
+13. AC-13: The tests for AC-8..AC-11 assert only the error type (e.g. `assert.throws(fn, RangeError)`), never the message text. (The message may name the argument and value; it is not part of the contract.)
+
+## Edge cases
+- Lowest/highest boundary: `'AAA'` and `'CCC-'` are valid; the range of the result is −18..18.
+- Tabs/newlines/NBSP around the rating: removed only as far as `String.prototype.trim()` does; anything else is an unknown rating → `RangeError`.
+- Lower-case and mixed-case are accepted; case is not preserved (no returned rating string).
+- `new String('A')`, arrays, objects, numbers, null, undefined, missing argument → `RangeError` (type check is `typeof x === 'string'`).
+- Both arguments are validated before the result is computed, so invalid input throws in either position even when the other is valid.
+- `RATING_SCALE` mutation attempts must not change it (frozen; in strict ESM, push throws a `TypeError`, which is fine and not a contract of `notchChange`).
+- The function does not mutate or return its inputs.
+
+## Test data
+| previous | current | expected |
+|---|---|---|
+| `'BBB+'` | `'BB+'` | `3` |
+| `'BB+'` | `'BBB+'` | `-3` |
+| `'A'` | `'A'` | `0` (+0) |
+| `'AAA'` | `'CCC-'` | `18` |
+| `'CCC-'` | `'AAA'` | `-18` |
+| `'AA+'` | `'AA'` | `1` |
+| `'AA'` | `'AA+'` | `-1` |
+| `' BBB+ '` | `'\tBB+\n'` | `3` |
+| `'bbb+'` | `'Bb+'` | `3` |
+| `'aaa'` | `'aaa'` | `0` |
+| `''` | `'A'` | RangeError |
+| `'A'` | `'   '` | RangeError |
+| `'D'` | `'A'` | RangeError |
+| `'A'` | `'XYZ'` | RangeError |
+| `'BBB++'` | `'A'` | RangeError |
+| `'AA +'` | `'A'` | RangeError |
+| `'BB B+'` | `'A'` | RangeError |
+| `undefined` | `'A'` | RangeError |
+| `'A'` | `null` | RangeError |
+| `5` | `'A'` | RangeError |
+| `'A'` | `['A']` | RangeError |
+| `{}` | `'A'` | RangeError |
+| `new String('A')` | `'A'` | RangeError |
+| (no args) | | RangeError |
+
+## Out of scope for this card
+Indicators 11–13, other parts of REQ-06-02, WL mapping, UI/CLI/logging/printed output, documentation, a message-text contract, new dependencies or changes to `package.json`. The dev's unit tests live in `test/ratings/notch.test.mjs`; QA's integration checks (`test/ratings/integration/`) are not part of this spec's dev work.

@@ -9,6 +9,19 @@
 DELIVER_REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
 
 hk() { jq -r "$1 // empty" <<<"$input" 2>/dev/null; }
+# Windows (Git Bash): Claude Code hands hooks "C:\\Users\\x\\repo", while dl stores roots as Git Bash sees them ("/c/Users/x/repo").
+# np turns either form into the latter, so every path comparison below compares like with like. A no-op elsewhere.
+np() { local p=${1//\\//}; if [[ $p =~ ^([A-Za-z]):(/.*)?$ ]]; then p="/$(printf '%s' "${BASH_REMATCH[1]}" | tr 'A-Z' 'a-z')${BASH_REMATCH[2]}"; fi; printf '%s' "$p"; }
+hkp() { np "$(hk "$1")"; }   # a path field of the hook input, normalised
+# canon_path <path> → symlinks resolved in its longest existing directory prefix. macOS links /tmp and /var into /private,
+# so one file has two spellings; dl's roots come from git (resolved), a tool call's path may not (fix/floor-robustness).
+canon_path() {
+  local p=$1 rest=""
+  while [[ ! -d $p ]]; do rest="/${p##*/}$rest"; p="${p%/*}"; [[ -n $p ]] || p=/; done
+  local base; base="$(cd -P "$p" 2>/dev/null && pwd -P)" || base=$p
+  [[ $base == / ]] && base=""
+  printf '%s%s\n' "$base" "$rest"
+}
 
 # canon_path <path> → the path with symlinks resolved in its longest existing directory prefix. macOS links /tmp and
 # /var into /private, so one file has two spellings; dl's roots come from git (resolved), a tool call's path may not.
@@ -23,10 +36,10 @@ canon_path() {
 # active_jobs → lines "<job id>\t<repo root>"
 active_jobs() {
   local roots=() r f id seen=""
-  [[ -n ${CLAUDE_PROJECT_DIR:-} ]] && roots+=("$CLAUDE_PROJECT_DIR")
-  r="$(hk .cwd)"; [[ -n $r ]] && roots+=("$(git -C "$r" rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's#/\.git$##')")
-  if [[ -d $DELIVER_REG ]]; then for f in "$DELIVER_REG"/*; do [[ -f $f ]] && roots+=("$(cat "$f")"); done; fi
-  for r in "${roots[@]}"; do
+  [[ -n ${CLAUDE_PROJECT_DIR:-} ]] && roots+=("$(np "$CLAUDE_PROJECT_DIR")")
+  r="$(hkp .cwd)"; [[ -n $r ]] && roots+=("$(np "$(git -C "$r" rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's#/\.git$##')")")
+  if [[ -d $DELIVER_REG ]]; then for f in "$DELIVER_REG"/*; do [[ -f $f ]] && roots+=("$(np "$(cat "$f")")"); done; fi
+  for r in ${roots[@]+"${roots[@]}"}; do   # bash 3.2 + set -u: an empty array is "unbound"
     [[ -n $r && -f $r/.work/ACTIVE ]] || continue
     id="$(cat "$r/.work/ACTIVE")"
     [[ -f $r/.work/$id/job.json && $seen != *"|$id|"* ]] || continue
@@ -36,13 +49,13 @@ active_jobs() {
 
 # owns_job <id> → true when this session's transcript mentions the job id (i.e. this session runs the job)
 owns_job() {
-  local t; t="$(hk .transcript_path)"
+  local t; t="$(hkp .transcript_path)"
   [[ -n $t && -f $t ]] && grep -qF "$1" "$t"
 }
 
 # The session is a card worker when it is a subagent, or a top-level session started inside a card worktree
 # (Munder Difflin workers run `claude --agent <dev>` with cwd = the card worktree).
-in_card_worktree() { [[ "$(hk .cwd)" == */.work/JOB-*/wt/T-* ]]; }
+in_card_worktree() { [[ "$(hkp .cwd)" == */.work/JOB-*/wt/T-* ]]; }
 # Munder Difflin sets AGENT_ID in every terminal on the floor; Michael's is "god". Every other id is a seat or a worker.
 is_floor_seat() { [[ -n ${AGENT_ID:-} && $AGENT_ID != god ]]; }
 is_agent() { [[ -n "$(hk .agent_id)" ]] || in_card_worktree || is_floor_seat; }

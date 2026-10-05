@@ -1,0 +1,274 @@
+
+━━ 1 · setup: scripts/init.sh --munder in a fresh HOME
+  ✔ init: result: 29 ok, 7 warning(s), 0 problem(s)
+  ✔ repo set to dispatch=munder (devs are floor workers)
+  ✔ Michael briefed in the hive (CLAUDE.md, AGENTS.md, GEMINI.md)
+  ✔ credential bridge for the floor's terminals: bin/claude (container auth via CLAUDE_* variables)
+  ✔ Munder Difflin: Michael runs 'claude' on claude-opus-5-5, workers default to claude-nonexistent-0
+
+━━ 2 · the floor: open the app, brief Michael with one message, watch
+    [7s] opened the hive
+    [46s] briefed Michael: /deliver /home/user/skills-shop/examples/watchlist-poc/JOB-models-plain.md
+    [68s] event new Rating notch change
+    [68s] event jobset stack: .stack=["javascript"]
+    [68s] event jobset roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notchCh
+    [68s] event jobset assumptions: .assumptions += ["Security specialist not selected: pure function, no I/O; input validation is covered by C2 (RangeError)."]
+    [68s] event roles ba backend-lead backend qa reviewer
+    [68s] event phase readiness
+    [68s] phase readiness
+    [73s] event md-hire ba#1 → worker-seat-20261005-0940-ba-1-h1 (claude claude-nonexistent-0, pam)
+    [73s] event md-hire backend-lead#1 → worker-seat-20261005-0940-backend-lead-1-h1 (claude claude-nonexistent-0, oscar)
+    [73s] event md-hire backend#1 → worker-seat-20261005-0940-backend-1-h1 (claude claude-nonexistent-0, dwight)
+    [73s] event md-hire qa#1 → worker-seat-20261005-0940-qa-1-h1 (claude claude-nonexistent-0, angela)
+    [73s] event md-hire reviewer#1 → worker-seat-20261005-0940-reviewer-1-h1 (claude claude-nonexistent-0, toby)
+    [140s] event md-reseat ba#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+    [140s] event pm-decision re-seated ba#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+    [140s] event md-hire ba#1 → worker-seat-20261005-0940-ba-1-h2 (claude claude-sonnet-5-5, pam)
+    [140s] event md-reseat backend-lead#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+    [140s] event pm-decision re-seated backend-lead#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+    [145s] event md-hire backend-lead#1 → worker-seat-20261005-0940-backend-lead-1-h2 (claude claude-sonnet-5-5, oscar)
+    [145s] event md-reseat backend#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+    [145s] event pm-decision re-seated backend#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+    [145s] event md-hire backend#1 → worker-seat-20261005-0940-backend-1-h2 (claude claude-sonnet-5-5, dwight)
+    [145s] event md-reseat qa#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+    [145s] event pm-decision re-seated qa#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+    [145s] event md-hire qa#1 → worker-seat-20261005-0940-qa-1-h2 (claude claude-sonnet-5-5, angela)
+    [145s] event md-reseat reviewer#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+    [145s] event pm-decision re-seated reviewer#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+    [150s] event md-hire reviewer#1 → worker-seat-20261005-0940-reviewer-1-h2 (claude claude-sonnet-5-5, toby)
+    [199s] event md-send readiness ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+    [201s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [206s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [208s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [215s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [220s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [222s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [229s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [234s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [236s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [242s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [248s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [250s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [259s] event md-done readiness ba#1: Readiness: all items answered; one component ratings-lib; open pm items DEL-docs, X-error-message, X-scale-immutability
+    [261s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [266s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [268s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [278s] event readiness 30 items: 16 decided, 11 n/a, 3 open
+    [288s] event decide DEL-docs: No README/changelog update; the module's JSDoc header documents RATING_SCALE and notchChange. — The request asks only for the module 
+    [288s] event decide X-error-message: Tests assert only the error type (RangeError). The message names the offending argument (previous/current) and value, but its 
+    [288s] event decide X-scale-immutability: RATING_SCALE is exported frozen (Object.freeze), and a test checks it is frozen and has the 19 C1 ratings in order. — The
+    [298s] event readiness 30 items: 18 decided, 12 n/a, 0 open
+    [298s] event freeze readiness + architecture frozen (0e533dafb8d6)
+    [298s] event roles ba backend-lead backend qa reviewer
+    [298s] event phase planning
+    [298s] phase planning
+    [303s] event pm-decision No security specialist role — NFR-security covers only input validation of a pure, I/O-free function (C2 RangeError); the stack reviewer a
+    [312s] event md-send plan ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+    [314s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span>) — sent the DOM click
+    [319s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [321s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span>) — sent the DOM click
+    [328s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [333s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [335s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [343s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [348s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [350s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [357s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [362s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [364s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [374s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [380s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [382s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [387s] event md-done plan ba#1: Plan: 13 ACs (AC-1..AC-13) traced to REQ-06-02/C1-C4, one card
+    [389s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [394s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [396s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [396s] event md-send cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261005-0940-backend-lead-1-h2
+    [398s] select backend-lead: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="backend-lead — double-click to rename"]').first() |     - locator resolved to <span title="backend-lead — double-click to rename">BACKEND-LEAD</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [403s] select backend-lead: the Command Center does not show worker-seat-20261005-0940-backend-lead-1-h2 — no screenshot
+    [405s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [412s] select backend-lead: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="backend-lead — double-click to rename"]').first() |     - locator resolved to <span title="backend-lead — double-click to rename">BACKEND-LEAD</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [418s] select backend-lead: the Command Center does not show worker-seat-20261005-0940-backend-lead-1-h2 — no screenshot
+    [421s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [429s] event md-done cards-backend-lead backend-lead#1: Cards: one card B1 (ratings-lib), AC-1..AC-13 covered
+    [431s] select backend-lead: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="backend-lead — double-click to rename"]').first() |     - locator resolved to <span title="backend-lead — double-click to rename">BACKEND-LEAD</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [436s] select backend-lead: the Command Center does not show worker-seat-20261005-0940-backend-lead-1-h2 — no screenshot
+    [438s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [438s] event md-send spec-T-01 ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+    [441s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [446s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [448s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [455s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [460s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [463s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [470s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [475s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [477s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [484s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [489s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [491s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [501s] event md-done spec-T-01 ba#1: Spec T-01: 13 numbered criteria AC-1..AC-13, edge cases, 24-row test data
+    [503s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [509s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [511s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [511s] event phase executing
+    [511s] phase executing
+    [516s] event assign T-01 → backend-dev (backend#1) attempt=1
+    [516s] event md-send T-01 backend#1 (backend-dev) → worker-seat-20261005-0940-backend-1-h2
+    [519s] select backend: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="backend — double-click to rename"]').first()) — sent the DOM click
+    [524s] select backend: the Command Center does not show worker-seat-20261005-0940-backend-1-h2 — no screenshot
+    [526s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [533s] select backend: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="backend — double-click to rename"]').first() |     - locator resolved to <span title="backend — double-click to rename">BACKEND</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [538s] select backend: the Command Center does not show worker-seat-20261005-0940-backend-1-h2 — no screenshot
+    [540s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span>) — sent the DOM click
+    [551s] select backend: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="backend — double-click to rename"]').first() |     - locator resolved to <span title="backend — double-click to rename">BACKEND</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [556s] select backend: the Command Center does not show worker-seat-20261005-0940-backend-1-h2 — no screenshot
+    [559s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [564s] event md-done T-01 backend#1: T-01 done: commit 26399aa, verify 7 pass
+    [566s] select backend: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="backend — double-click to rename"]').first() |     - locator resolved to <span title="backend — double-click to rename">BACKEND</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [571s] select backend: the Command Center does not show worker-seat-20261005-0940-backend-1-h2 — no screenshot
+    [573s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [578s] event gate T-01 PASS
+    [578s] event md-send T-01 qa#1 (qa-tester) → worker-seat-20261005-0940-qa-1-h2
+    [580s] select qa: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="qa — double-click to rename"]').first() |     - locator resolved to <span title="qa — double-click to rename">QA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [586s] select qa: the Command Center does not show worker-seat-20261005-0940-qa-1-h2 — no screenshot
+    [588s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [595s] select qa: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="qa — double-click to rename"]').first() |     - locator resolved to <span title="qa — double-click to rename">QA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [600s] select qa: the Command Center does not show worker-seat-20261005-0940-qa-1-h2 — no screenshot
+    [602s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [613s] select qa: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="qa — double-click to rename"]').first() |     - locator resolved to <span title="qa — double-click to rename">QA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [618s] select qa: the Command Center does not show worker-seat-20261005-0940-qa-1-h2 — no screenshot
+    [620s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [627s] select qa: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="qa — double-click to rename"]').first() |     - locator resolved to <span title="qa — double-click to rename">QA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [633s] select qa: the Command Center does not show worker-seat-20261005-0940-qa-1-h2 — no screenshot
+    [635s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [642s] select qa: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="qa — double-click to rename"]').first() |     - locator resolved to <span title="qa — double-click to rename">QA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [647s] select qa: the Command Center does not show worker-seat-20261005-0940-qa-1-h2 — no screenshot
+    [650s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span>) — sent the DOM click
+    [655s] event md-done T-01 qa#1: T-01 QA pass: 13 integration tests, one per AC
+    [657s] select qa: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="qa — double-click to rename"]').first() |     - locator resolved to <span title="qa — double-click to rename">QA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [662s] select qa: the Command Center does not show worker-seat-20261005-0940-qa-1-h2 — no screenshot
+    [664s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span>) — sent the DOM click
+    [664s] event qa T-01 pass (qa_verify PASS) — AC-1..AC-13 pass: test/ratings/integration/notch.int.test.mjs (13/13); AC-12 via child process, empty stdout/stderr
+    [675s] event md-send T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261005-0940-reviewer-1-h2
+    [677s] select reviewer: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="reviewer — double-click to rename"]').first() |     - locator resolved to <span title="reviewer — double-click to rename">REVIEWER</span>) — sent the DOM click
+    [682s] select reviewer: the Command Center does not show worker-seat-20261005-0940-reviewer-1-h2 — no screenshot
+    [685s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [692s] select reviewer: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="reviewer — double-click to rename"]').first() |     - locator resolved to <span title="reviewer — double-click to rename">REVIEWER</span>) — sent the DOM click
+    [697s] select reviewer: the Command Center does not show worker-seat-20261005-0940-reviewer-1-h2 — no screenshot
+    [699s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [704s] event md-done T-01 reviewer#1: T-01 review: approve, 0 blocking, 3 nits
+    [706s] select reviewer: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="reviewer — double-click to rename"]').first() |     - locator resolved to <span title="reviewer — double-click to rename">REVIEWER</span>) — sent the DOM click
+    [711s] select reviewer: the Command Center does not show worker-seat-20261005-0940-reviewer-1-h2 — no screenshot
+    [714s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [714s] event review T-01 reviewer approve — All ACs met, scope OK, 20/20 tests; 3 non-blocking nits (JSDoc, assertion messages)
+    [714s] event integrate T-01 merged
+    [714s] event phase integrating
+    [714s] event verify-all PASS
+    [714s] phase closing
+    [719s] event phase closing
+    [719s] event md-send closing ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+    [721s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [726s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [728s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [738s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [744s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [746s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [753s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [758s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [760s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [767s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span>) — sent the DOM click
+    [772s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [774s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [779s] event md-done closing ba#1: Closing: AC-1..AC-13 met, 4 non-blocking follow-ups
+    [781s] select ba: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="ba — double-click to rename"]').first() |     - locator resolved to <span title="ba — double-click to rename">BA</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [786s] select ba: the Command Center does not show worker-seat-20261005-0940-ba-1-h2 — no screenshot
+    [788s] select Michael: click timed out (locator.click: Timeout 1500ms exceeded. | Call log: |   - waiting for locator('[title="Michael — double-click to rename"]').first() |     - locator resolved to <span title="Michael — double-click to rename">MICHAEL</span> |   - attempting click action |     - waiting for element to be visible, enabled and stable) — sent the DOM click
+    [797s] event learn all: Readiness sources that cite repo files must use repo-relative paths (e.g. CLAUDE.md), not absolute paths — dl's quote check resolves them a
+    [797s] event ship local merge into main
+    [797s] event md-release ba#1 → worker-seat-20261005-0940-ba-1-h2
+    [797s] event md-release backend-lead#1 → worker-seat-20261005-0940-backend-lead-1-h2
+    [797s] event md-release backend#1 → worker-seat-20261005-0940-backend-1-h2
+    [797s] event md-release qa#1 → worker-seat-20261005-0940-qa-1-h2
+    [797s] event md-release reviewer#1 → worker-seat-20261005-0940-reviewer-1-h2
+    [797s] phase done
+    [797s] finished: done
+    [820s] all 5 seats released
+  ✔ the job finished on the floor
+  ✔ screenshots of the floor: 16 (shots/)
+
+━━ 3 · floor-specific checks
+  ✔ 1 card(s) were built by floor workers (md_workers on the cards)
+  ✔ Munder Difflin consumed 10 spawn request(s) (spawn-requests/.done)
+    worker: worker-seat-20261005-0940-ba-1-h1 — ba
+    worker: worker-seat-20261005-0940-backend-lead-1-h1 — backend-lead
+    worker: worker-seat-20261005-0940-backend-1-h1 — backend
+    worker: worker-seat-20261005-0940-qa-1-h1 — qa
+    worker: worker-seat-20261005-0940-reviewer-1-h1 — reviewer
+    worker: worker-seat-20261005-0940-ba-1-h2 — ba
+    worker: worker-seat-20261005-0940-backend-lead-1-h2 — backend-lead
+    worker: worker-seat-20261005-0940-backend-1-h2 — backend
+    worker: worker-seat-20261005-0940-qa-1-h2 — qa
+    worker: worker-seat-20261005-0940-reviewer-1-h2 — reviewer
+  ✔ a seat was hired for every role seat the requirements called for: ba#1 backend#1 backend-lead#1 qa#1 reviewer#1 
+  ✔ ba#1 (ba) did: readiness plan spec-T-01 closing 
+  ✔ backend#1 (backend) did: T-01 
+  ✔ backend-lead#1 (backend-lead) did: cards-backend-lead 
+  ✔ qa#1 (qa) did: T-01 
+  ✔ reviewer#1 (reviewer) did: T-01 
+  ✔ Michael sent all 5 seats home at the end (md-release)
+  ✔ Michael ran no subagent: every role's work went to its seat (md-send → md-done)
+  ✘ no screenshot of ba#1 at work
+  ✘ no screenshot of backend#1 at work
+  ✘ no screenshot of backend-lead#1 at work
+  ✘ no screenshot of qa#1 at work
+  ✘ no screenshot of reviewer#1 at work
+  ✔ every seat left the floor after the release
+
+━━ seats that fail: seen, re-seated by Michael on a working model, reported in the PR
+re-seats: 5 for 5 seat(s)
+  ✔ every seat that started on the broken model was re-seated (5 re-seats, 5 seats)
+  ✔ …each on a model Michael chose: claude-sonnet-5-5
+  ✔ …recorded as Michael's own decisions
+  ✔ …and listed in the PR body
+  ✔ no question to the human about it
+
+models seen (assistant messages per session, from the transcripts):
+- Michael: claude-opus-5-5 ×113
+- ba: claude-sonnet-5-5 ×34
+- backend-lead: claude-sonnet-5-5 ×12
+- backend: claude-sonnet-5-5 ×14
+- qa: claude-sonnet-5-5 ×30
+- reviewer: claude-sonnet-5-5 ×16
+  ✔ the re-seated people really worked (Claude replies from a real model)
+
+━━ 4 · verify the delivered job
+  ✔ job reached done
+  ✔ job shipped (local)
+roles: ba, backend-lead, backend, qa, reviewer
+  ✔ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+  ✔ a role card for every role
+  ✔ readiness review complete (no open item) with an architecture
+readiness: 30 items — 18 decided (0 by the human, 3 by the PM), 12 n/a
+architecture: library: ratings-lib [javascript+node-esm] → backend/reviewer
+  ✔ readiness frozen at planning and unchanged since
+  ✔ the Leads cut 1 card(s)
+  ✔ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | Reviewers | State |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| T-01 notchChange + frozen RATING_SCALE in src/ratings/notch.mjs | ratings-lib | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | reviewer | merged |
+  ✔ every card (1): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged
+  ✔ QA's integration/e2e tests are on main (1 file(s) in the cards' qa_scope)
+  ✔ role really ran: business-analyst
+  ✔ role really ran: ecc:architect
+  ✔ role really ran: qa-tester
+  ✔ role really ran: a dev role
+  ✔ role really ran: reviewer(s)
+  ✔ no tracker errors
+  ✔ kanban view rendered
+  ✔ report.md written by the closing check
+  ✔ no AI attribution in the delivered history (5 commits)
+  ✔ the whole test suite passes on main
+  ✔ hidden oracle passes (3 checks, models.oracle.test.mjs)
+VERIFY 21 0

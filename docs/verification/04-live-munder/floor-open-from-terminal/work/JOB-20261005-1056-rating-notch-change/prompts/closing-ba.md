@@ -1,0 +1,6 @@
+MODE: CLOSING
+ROLE CARD: /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/roles/ba.md
+PLAN: /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/plan.md
+EVIDENCE: board /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/board.json (gate/qa/review per card; T-01 archived → replaced by T-02), handoffs in /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/handoffs/, gate logs in /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/gates/, verify-all log /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/gates/verify-all-111824.log, QA verdict /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/out/T-02-qa.json, review /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/out/T-02-reviewer.json. Merged code is on branch job/JOB-20261005-1056-rating-notch-change (worktree /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/wt/_integration).
+For each AC: met / not met / partially, with the evidence (test name, QA result, log file). List follow-ups.
+OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list — written to /tmp/claude-0/fo-live/repo/.work/JOB-20261005-1056-rating-notch-change/out/closing-ba.md. Then report done.

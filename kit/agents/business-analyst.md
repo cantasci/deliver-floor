@@ -36,6 +36,11 @@ You get the request, repository facts and a list of readiness items (`id`, `q`).
   without stating what it means (e.g. "input is trimmed" without saying which whitespace), that is not a decision: make the
   item `open`, owner `"business"`. A sensible convention you infer from the repo is a decision only when the repo
   shows it (e.g. "plain Node ESM, no deps — CLAUDE.md").
+  **The language (ARC-stack) is never a default.** The repo's code or the request decides it when they state it. A repo
+  without code and a request that names no language → `open`, owner `"pm"`, with your **recommendation of the best fit for
+  the requirements**: the evidence the request gives, quoted (e.g. it names `yfinance` and a "Python KAP client" → Python;
+  a React screen → TypeScript), and the alternatives with why they fit less. Michael decides it with that evidence. Owner
+  `"business"` only when the request contradicts itself (names two stacks) or the choice changes the scope.
 - `n_a` — it truly does not apply to this delivery: say why, with the source that shows it.
 - `open` — nobody can answer it from the request or the repo, **or the request is ambiguous or contradicts itself**: write
   the question, the options you see, the impact of each, and its **owner**:

@@ -4,7 +4,7 @@
 #   scripts/install.sh --user                 → ~/.claude            (every project)
 #   scripts/install.sh --project <repo path>  → <repo>/.claude       (one project, can be committed)
 #   add --dry-run to only print what would happen, --uninstall to remove the kit again
-#   --plugin: the kit itself comes from the plugin (/plugin install deliver@skills-shop); only merge the settings a
+#   --plugin: the kit itself comes from the plugin (/plugin install deliver@deliver-floor); only merge the settings a
 #   plugin cannot set (env, attribution) into <target>/settings.json — no files are copied, no hooks are added
 #   --keep-attribution: keep Claude Code's "Co-Authored-By"/"Generated with" lines in commits and PRs
 #   (by default the kit sets attribution.commit/pr to "" so delivered history carries no AI attribution)
@@ -39,8 +39,10 @@ backup_dir="$target/.deliver-backups/$ts"
 
 backup() { # backup <path> — moves it under .deliver-backups, keeping its relative path
   local p=$1 rel=${1#"$target"/}
-  run mkdir -p "$(dirname "$backup_dir/$rel")"
-  run mv "$p" "$backup_dir/$rel"; echo "backup: $backup_dir/$rel"
+  local dst="$backup_dir/$rel" n=1
+  while [[ -e $dst ]]; do n=$((n + 1)); dst="$backup_dir/$rel.$n"; done   # two installs in one second: never mv into an old backup
+  run mkdir -p "$(dirname "$dst")"
+  run mv "$p" "$dst"; echo "backup: $dst"
 }
 
 copy() { # copy <src> <dst> — skips if identical, backs up an existing different destination
@@ -54,7 +56,8 @@ copy() { # copy <src> <dst> — skips if identical, backs up an existing differe
 }
 
 # Hook commands: absolute path for --user, $CLAUDE_PROJECT_DIR for --project (portable when committed)
-if [[ $mode == user ]]; then hooks_dir="$target/hooks/deliver"; else hooks_dir='"${CLAUDE_PROJECT_DIR}"/.claude/hooks/deliver'; fi
+# Hooks run through node (run.mjs finds bash — Git Bash on Windows — for the .sh guards); the dir is quoted for spaces.
+if [[ $mode == user ]]; then hooks_dir="\"$target/hooks/deliver\""; else hooks_dir='"${CLAUDE_PROJECT_DIR}/.claude/hooks/deliver"'; fi
 snippet="$(jq --arg d "$hooks_dir" --argjson keep "$keep_attr" '(.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; $d)
   | if $keep == 1 then del(.attribution) else . end' "$KIT/settings.hooks.json")"
 # The plugin brings its own hooks (kit/hooks/hooks.json); settings.json only gets env and attribution.
@@ -77,7 +80,7 @@ if [[ $uninstall -eq 1 ]]; then
   [[ $plugin -eq 0 && -e $target/hooks/deliver ]] && backup "$target/hooks/deliver"
   # Remove every hook entry whose command points into hooks/deliver/, and our env keys if unchanged.
   cleaned="$(jq --argjson k "$snippet" '
-    (if .hooks then .hooks |= (with_entries(.value |= map(select(([.hooks[]?.command] | any(test("hooks/deliver/"))) | not)))
+    (if .hooks then .hooks |= (with_entries(.value |= map(select(([.hooks[]?.command] | any(test("hooks/deliver[/\"]"))) | not)))
                                | with_entries(select(.value | length > 0))) else . end)
     | (if .env then .env |= with_entries(select(. as $e | ($k.env[$e.key] // null) != $e.value)) else . end)
     | (if .attribution == $k.attribution then del(.attribution) else . end)
@@ -125,6 +128,8 @@ merged="$(jq --argjson k "$snippet" '
   | .env = (($k.env // {}) + ((.env // {}) | with_entries(select(
       # keep the user'"'"'s own values; replace values an older kit version wrote (they mention .work/)
       (($k.env[.key] // null) == null) or ((.value | tostring | test("\\.work/")) | not)))))
+  # entries an older kit version wrote (…/hooks/deliver/<name>.sh) are replaced, never kept beside the new ones
+  | .hooks = ((.hooks // {}) | with_entries(.value |= map(select(([.hooks[]?.command // ""] | any(test("hooks/deliver/[a-z-]+\\.sh"))) | not))))
   | .hooks = ((.hooks // {}) as $h
     | reduce (($k.hooks // {}) | keys[]) as $ev ($h;
         .[$ev] = ((.[$ev] // []) + [ $k.hooks[$ev][]
@@ -136,8 +141,8 @@ if [[ $plugin -eq 1 ]]; then
   cat <<EOF
 
 Done (settings only — the plugin brings the skill, agents and hooks). Next steps:
-  1. In Claude Code:   /plugin marketplace add https://github.com/cantasci/skills-shop
-                       /plugin install deliver@skills-shop
+  1. In Claude Code:   /plugin marketplace add https://github.com/cantasci/deliver-floor
+                       /plugin install deliver@deliver-floor
                        /plugin marketplace add https://github.com/affaan-m/ECC
                        /plugin install ecc@ecc        (if not installed yet), then restart Claude Code
   2. Start a job:      /deliver <what you want built>   (or /deliver:deliver; agents are called deliver:<name> — ROLES.md lists them)

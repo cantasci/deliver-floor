@@ -66,7 +66,7 @@ check_install() { # check_install <claude dir> <label>
   [[ -x $d/skills/deliver/bin/dl ]] && pass "$label: dl executable" || fail "$label: dl not executable (chmod +x)"
   s=$d/settings.json
   for h in stop-guard bash-guard write-guard agent-guard subagent-log; do
-    grep -q "$h.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
+    grep -qE "run\.mjs\\?\"? $h|$h\.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
   done
   for h in "$d"/skills/deliver*.bak* "$d"/skills/deliver.bak*; do
     [[ -e $h ]] && fail "$label: stale backup $h is loaded as a second skill — delete it (newer install.sh backs up to .deliver-backups/)"
@@ -78,24 +78,24 @@ echo "Kit install"
 found=0
 check_install "$HOME/.claude" "user" && found=1
 if [[ -n $repo ]]; then check_install "$repo/.claude" "project" && found=1; fi
-# As a plugin (/plugin install deliver@skills-shop): skill, agents and hooks come from the plugin; settings.json only
+# As a plugin (/plugin install deliver@deliver-floor): skill, agents and hooks come from the plugin; settings.json only
 # carries what a plugin cannot set (scripts/install.sh --plugin).
 pdir="$(jq -r '[.plugins | to_entries[] | select(.key | startswith("deliver@")) | .value[].installPath] | last // empty' "$ipj" 2>/dev/null)"
 if [[ -n $pdir && -d $pdir ]]; then
   pass "plugin: deliver ($pdir)"
   [[ -x $pdir/skills/deliver/bin/dl ]] && pass "plugin: dl executable" || fail "plugin: dl not executable — reinstall the plugin"
   for h in stop-guard bash-guard write-guard agent-guard subagent-log; do
-    grep -q "$h.sh" "$pdir/hooks/hooks.json" 2>/dev/null && pass "plugin: hook $h" || fail "plugin: hook $h missing from hooks/hooks.json — update the plugin"
+    grep -qE "run\.mjs\\?\"? $h" "$pdir/hooks/hooks.json" 2>/dev/null && pass "plugin: hook $h" || fail "plugin: hook $h missing from hooks/hooks.json — update the plugin"
   done
   [[ "$(jq -r '.env.GATEGUARD_EXEMPT_GLOBS // empty' "$HOME/.claude/settings.json" 2>/dev/null)" == .work/* ]] \
-    && pass "plugin: settings carry the GateGuard exemption" || note "plugin: a plugin cannot set env/attribution — run scripts/install.sh --user --plugin"
+    && pass "plugin: settings carry the GateGuard exemption" || note "plugin: the GateGuard exemption is not in ~/.claude/settings.json yet — the plugin's first session writes it (restart once), or scripts/install.sh --user --plugin"
   [[ $found -eq 1 ]] && fail "the kit is installed twice (plugin AND copied into .claude/) — skill and hooks load twice: scripts/install.sh --user --uninstall, then scripts/install.sh --user --plugin"
   found=1
 fi
-[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@skills-shop + scripts/install.sh --user --plugin, or scripts/install.sh --user (or --project <repo>)"
+[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@deliver-floor + scripts/install.sh --user --plugin, or scripts/install.sh --user (or --project <repo>)"
 have dl && pass "dl on PATH ($(command -v dl))" || note "dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl"
 
-echo "Munder Difflin (optional)"
+echo "Munder Difflin (the default run mode)"
 if [[ -n ${HIVE_ROOT:-} ]]; then
   pass "running inside Munder Difflin (HIVE_ROOT=$HIVE_ROOT)"
   [[ -d $HIVE_ROOT/spawn-requests ]] && pass "spawn-requests/ exists (dispatch=munder possible once Settings → Autonomy allows worker spawning)" \
@@ -121,7 +121,8 @@ elif compgen -G "$HOME/Library/Application Support/*[Mm]under*" >/dev/null || co
       || fail "maxConcurrentWorkers is $v — a job's seats queue behind it: set ≥ 12 in $mcfg (scripts/init.sh --munder does)"
   fi
 else
-  note "Munder Difflin not detected — only needed for the office-floor run mode (docs/07-munder-difflin.md)"
+  md_missing=1
+  note "Munder Difflin not detected — it is the default run mode: scripts/init.sh --munder --hive <dir>, or choose Claude Code subagents by hand (\"dispatch\": \"subagent\" in .deliver.json — docs/07-munder-difflin.md#choosing-the-mode)"
 fi
 # Which Munder Difflin: /deliver's seats need the fork's floor fixes (a spawn-queue worker gets a first prompt and appears on
 # the floor). Upstream lacks them and its seats never start. The fix leaves a fingerprint in the build: the first prompt.
@@ -165,6 +166,14 @@ if [[ -n $repo ]]; then
     else fail ".deliver.json is not valid JSON"; fi
   else
     note "no .deliver.json — defaults apply (verify_full: npm test, merge_mode: human). See docs/03-settings.md"
+  fi
+  disp="$(jq -r '.dispatch // empty' "$repo/.deliver.json" 2>/dev/null || true)"
+  if [[ ${disp:-munder} == munder ]]; then
+    pass "run mode: Munder Difflin floor (${disp:+set in .deliver.json}${disp:-the default}) — give /deliver to Michael in the app"
+    [[ ${md_missing:-0} == 1 ]] && fail "this repo runs on the Munder Difflin floor but the app is not installed — scripts/init.sh --munder --hive <dir> --repo $repo, or \"dispatch\": \"subagent\" in .deliver.json"
+    [[ "$(jq -r '.munder.model // empty' "$repo/.deliver.json" 2>/dev/null)" == "" ]] && note "seats run on the kit's default model (munder.model: sonnet) — set munder.model to choose another; never the app's default"
+  else
+    pass "run mode: Claude Code subagents (dispatch: $disp, chosen in .deliver.json)"
   fi
   [[ -f $repo/.work/ACTIVE ]] && note "active job: $(cat "$repo/.work/ACTIVE")"
 fi

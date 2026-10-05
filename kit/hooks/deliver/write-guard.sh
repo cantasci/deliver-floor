@@ -11,9 +11,9 @@ set -uo pipefail
 input="$(cat)"
 command -v jq >/dev/null || exit 0
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-f="$(hk .tool_input.file_path)"; [[ -n $f ]] || f="$(hk .tool_input.notebook_path)"
+f="$(hkp .tool_input.file_path)"; [[ -n $f ]] || f="$(hkp .tool_input.notebook_path)"
 [[ -n $f ]] || exit 0
-[[ $f == /* ]] || f="$(hk .cwd)/$f"
+[[ $f == /* ]] || f="$(hkp .cwd)/$f"
 f="$(canon_path "$f")"
 deny() { echo "deliver write-guard: $1" >&2; exit 2; }
 

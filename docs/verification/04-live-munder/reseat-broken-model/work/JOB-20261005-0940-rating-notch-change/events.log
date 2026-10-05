@@ -1,0 +1,67 @@
+2026-10-05T09:40:37Z	new	Rating notch change
+2026-10-05T09:40:38Z	jobset	stack: .stack=["javascript"]
+2026-10-05T09:40:38Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notchChange domain logic in src/ratings"},{"role":"backend","agent":"backend-dev","why":"Contract: src/ratings/notch.mjs RATING_SCALE + notchChange"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (plain Node ESM)"}]
+2026-10-05T09:40:38Z	jobset	assumptions: .assumptions += ["Security specialist not selected: pure function, no I/O; input validation is covered by C2 (RangeError)."]
+2026-10-05T09:40:39Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T09:40:39Z	phase	readiness
+2026-10-05T09:40:42Z	md-hire	ba#1 → worker-seat-20261005-0940-ba-1-h1 (claude claude-nonexistent-0, pam)
+2026-10-05T09:40:42Z	md-hire	backend-lead#1 → worker-seat-20261005-0940-backend-lead-1-h1 (claude claude-nonexistent-0, oscar)
+2026-10-05T09:40:42Z	md-hire	backend#1 → worker-seat-20261005-0940-backend-1-h1 (claude claude-nonexistent-0, dwight)
+2026-10-05T09:40:42Z	md-hire	qa#1 → worker-seat-20261005-0940-qa-1-h1 (claude claude-nonexistent-0, angela)
+2026-10-05T09:40:43Z	md-hire	reviewer#1 → worker-seat-20261005-0940-reviewer-1-h1 (claude claude-nonexistent-0, toby)
+2026-10-05T09:41:51Z	md-reseat	ba#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+2026-10-05T09:41:51Z	pm-decision	re-seated ba#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+2026-10-05T09:41:51Z	md-hire	ba#1 → worker-seat-20261005-0940-ba-1-h2 (claude claude-sonnet-5-5, pam)
+2026-10-05T09:41:52Z	md-reseat	backend-lead#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+2026-10-05T09:41:52Z	pm-decision	re-seated backend-lead#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+2026-10-05T09:41:52Z	md-hire	backend-lead#1 → worker-seat-20261005-0940-backend-lead-1-h2 (claude claude-sonnet-5-5, oscar)
+2026-10-05T09:41:53Z	md-reseat	backend#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+2026-10-05T09:41:53Z	pm-decision	re-seated backend#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+2026-10-05T09:41:54Z	md-hire	backend#1 → worker-seat-20261005-0940-backend-1-h2 (claude claude-sonnet-5-5, dwight)
+2026-10-05T09:41:54Z	md-reseat	qa#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+2026-10-05T09:41:55Z	pm-decision	re-seated qa#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+2026-10-05T09:41:56Z	md-hire	qa#1 → worker-seat-20261005-0940-qa-1-h2 (claude claude-sonnet-5-5, angela)
+2026-10-05T09:41:57Z	md-reseat	reviewer#1 (failed): API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json) → model claude-sonnet-5-5
+2026-10-05T09:41:57Z	pm-decision	re-seated reviewer#1 on claude-sonnet-5-5 — API error: model claude-nonexistent-0 does not exist (munder.model in .deliver.json)
+2026-10-05T09:41:59Z	md-hire	reviewer#1 → worker-seat-20261005-0940-reviewer-1-h2 (claude claude-sonnet-5-5, toby)
+2026-10-05T09:42:44Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+2026-10-05T09:43:50Z	md-done	readiness ba#1: Readiness: all items answered; one component ratings-lib; open pm items DEL-docs, X-error-message, X-scale-immutability
+2026-10-05T09:44:09Z	readiness	30 items: 16 decided, 11 n/a, 3 open
+2026-10-05T09:44:16Z	decide	DEL-docs: No README/changelog update; the module's JSDoc header documents RATING_SCALE and notchChange. — The request asks only for the module and its tests (C4: imported by other POC parts); a one-file POC slice needs no separate docs.
+2026-10-05T09:44:17Z	decide	X-error-message: Tests assert only the error type (RangeError). The message names the offending argument (previous/current) and value, but its exact text is not part of the contract. — C2 fixes only the type; pinning the text would make tests brittle without any business rule behind them.
+2026-10-05T09:44:17Z	decide	X-scale-immutability: RATING_SCALE is exported frozen (Object.freeze), and a test checks it is frozen and has the 19 C1 ratings in order. — The scale is shared reference data for Indicators 11-13; freezing stops a consumer from silently corrupting every other caller, and it costs nothing.
+2026-10-05T09:44:27Z	readiness	30 items: 18 decided, 12 n/a, 0 open
+2026-10-05T09:44:28Z	freeze	readiness + architecture frozen (0e533dafb8d6)
+2026-10-05T09:44:28Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T09:44:28Z	phase	planning
+2026-10-05T09:44:35Z	pm-decision	No security specialist role — NFR-security covers only input validation of a pure, I/O-free function (C2 RangeError); the stack reviewer and QA check it.
+2026-10-05T09:44:35Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+2026-10-05T09:45:51Z	md-done	plan ba#1: Plan: 13 ACs (AC-1..AC-13) traced to REQ-06-02/C1-C4, one card
+2026-10-05T09:45:52Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261005-0940-backend-lead-1-h2
+2026-10-05T09:46:38Z	md-done	cards-backend-lead backend-lead#1: Cards: one card B1 (ratings-lib), AC-1..AC-13 covered
+2026-10-05T09:46:39Z	md-send	spec-T-01 ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+2026-10-05T09:47:45Z	md-done	spec-T-01 ba#1: Spec T-01: 13 numbered criteria AC-1..AC-13, edge cases, 24-row test data
+2026-10-05T09:47:47Z	phase	executing
+2026-10-05T09:47:57Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T09:47:59Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261005-0940-backend-1-h2
+2026-10-05T09:48:55Z	md-done	T-01 backend#1: T-01 done: commit 26399aa, verify 7 pass
+2026-10-05T09:48:57Z	gate	T-01 PASS
+2026-10-05T09:49:06Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261005-0940-qa-1-h2
+2026-10-05T09:50:19Z	md-done	T-01 qa#1: T-01 QA pass: 13 integration tests, one per AC
+2026-10-05T09:50:21Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-13 pass: test/ratings/integration/notch.int.test.mjs (13/13); AC-12 via child process, empty stdout/stderr
+2026-10-05T09:50:31Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261005-0940-reviewer-1-h2
+2026-10-05T09:51:08Z	md-done	T-01 reviewer#1: T-01 review: approve, 0 blocking, 3 nits
+2026-10-05T09:51:08Z	review	T-01 reviewer approve — All ACs met, scope OK, 20/20 tests; 3 non-blocking nits (JSDoc, assertion messages)
+2026-10-05T09:51:10Z	integrate	T-01 merged
+2026-10-05T09:51:15Z	phase	integrating
+2026-10-05T09:51:15Z	verify-all	PASS
+2026-10-05T09:51:16Z	phase	closing
+2026-10-05T09:51:24Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261005-0940-ba-1-h2
+2026-10-05T09:52:21Z	md-done	closing ba#1: Closing: AC-1..AC-13 met, 4 non-blocking follow-ups
+2026-10-05T09:52:33Z	learn	all: Readiness sources that cite repo files must use repo-relative paths (e.g. CLAUDE.md), not absolute paths — dl's quote check resolves them against the repo.
+2026-10-05T09:52:33Z	ship	local merge into main
+2026-10-05T09:52:40Z	md-release	ba#1 → worker-seat-20261005-0940-ba-1-h2
+2026-10-05T09:52:40Z	md-release	backend-lead#1 → worker-seat-20261005-0940-backend-lead-1-h2
+2026-10-05T09:52:40Z	md-release	backend#1 → worker-seat-20261005-0940-backend-1-h2
+2026-10-05T09:52:40Z	md-release	qa#1 → worker-seat-20261005-0940-qa-1-h2
+2026-10-05T09:52:41Z	md-release	reviewer#1 → worker-seat-20261005-0940-reviewer-1-h2

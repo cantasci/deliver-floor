@@ -1,0 +1,69 @@
+2026-10-05T10:56:17Z	new	Rating notch change
+2026-10-05T10:56:28Z	jobset	stack: .stack=["javascript"]
+2026-10-05T10:56:28Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notch change domain logic (src/ratings/notch.mjs)"},{"role":"backend","agent":"backend-dev","why":"Contract: notchChange(previous, current) in src/ratings/notch.mjs"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript (plain Node ESM)"}]
+2026-10-05T10:56:29Z	jobset	assumptions: .assumptions += ["Single card expected per request (\"It is small: one card\")"]
+2026-10-05T10:56:29Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T10:56:29Z	phase	readiness
+2026-10-05T10:56:30Z	md-hire	ba#1 → worker-seat-20261005-1056-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-05T10:56:30Z	md-hire	backend-lead#1 → worker-seat-20261005-1056-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-05T10:56:30Z	md-hire	backend#1 → worker-seat-20261005-1056-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-05T10:56:31Z	md-hire	qa#1 → worker-seat-20261005-1056-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-05T10:56:31Z	md-hire	reviewer#1 → worker-seat-20261005-1056-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-05T10:57:37Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261005-1056-ba-1-h1
+2026-10-05T10:59:07Z	md-done	readiness ba#1: readiness: 28 items answered, no open items, single component ratings-lib
+2026-10-05T10:59:18Z	readiness	27 items: 16 decided, 11 n/a, 0 open
+2026-10-05T10:59:28Z	freeze	readiness + architecture frozen (1f57ff65bcac)
+2026-10-05T10:59:29Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T10:59:29Z	phase	planning
+2026-10-05T10:59:29Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261005-1056-ba-1-h1
+2026-10-05T10:59:35Z	pm-decision	No security reviewer role — Pure in-process function over a constant scale; NFR-security is only strict input validation (C2), covered by unit/QA tests and the JS reviewer.
+2026-10-05T10:59:36Z	pm-decision	Component reviewer = job role 'reviewer' (ecc:typescript-reviewer) — BA named 'reviewer-javascript', not a role on this job.
+2026-10-05T11:00:51Z	md-done	plan ba#1: plan: 14 ACs (AC-1..AC-14) on REQ-06-02/C1-C4, one card on ratings-lib, no open questions
+2026-10-05T11:00:52Z	pm-decision	RATING_SCALE is exported frozen (Object.freeze) — Shared constant imported by other POC modules; freezing prevents accidental mutation of the scale every indicator depends on. Plan left it as a PM detail.
+2026-10-05T11:00:52Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261005-1056-backend-lead-1-h1
+2026-10-05T11:01:49Z	md-done	cards-backend-lead backend-lead#1: cards: one card B1 (ratings-lib, backend) covering AC-1..AC-14
+2026-10-05T11:01:50Z	md-send	spec-T-01 ba#1 (business-analyst) → worker-seat-20261005-1056-ba-1-h1
+2026-10-05T11:02:51Z	md-done	spec-T-01 ba#1: spec-T-01: 14 numbered criteria AC-1..AC-14, edge cases, test data table
+2026-10-05T11:02:57Z	phase	executing
+2026-10-05T11:02:59Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T11:03:09Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261005-1056-backend-1-h1
+2026-10-05T11:03:54Z	md-done	T-01 backend#1: T-01 built TDD, commit 66ff20e, unit tests 11/11 green
+2026-10-05T11:03:56Z	gate	T-01 PASS
+2026-10-05T11:04:05Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261005-1056-qa-1-h1
+2026-10-05T11:05:27Z	md-done	T-01 qa#1: T-01 QA pass: AC-1..AC-14, 13 integration tests, commit e270a4d
+2026-10-05T11:05:41Z	state	T-01=blocked
+2026-10-05T11:05:42Z	note	T-01: qa_verify 'node --test test/ratings/integration/' exits 1 on Node 22 (dir arg -> MODULE_NOT_FOUND); QA tests themselves pass 13/13
+2026-10-05T11:05:42Z	card-set	T-01.qa_verify = "node --test test/ratings/integration/*.mjs" — Card contract defect: directory argument to node --test fails on Node 22; glob runs the same QA tests
+2026-10-05T11:05:43Z	state	T-01=ready
+2026-10-05T11:05:53Z	assign	T-01 → backend-dev (backend#1) attempt=2
+2026-10-05T11:05:56Z	gate	T-01 FAIL
+2026-10-05T11:05:56Z	pm-decision	T-01: T-01 qa_verify changed to 'node --test test/ratings/integration/*.mjs' — Lead's directory form exits 1 on Node 22 (MODULE_NOT_FOUND); no code change, gate re-run on the same commits
+2026-10-05T11:15:52Z	state	T-01=blocked
+2026-10-05T11:15:53Z	note	T-01: Attempts exhausted by a process fault, not a product fault: broken qa_verify blocked the QA record; QA commit then failed the re-gate. Code 66ff20e and QA tests e270a4d both pass.
+2026-10-05T11:15:53Z	card-add	T-02: Re-plan of T-01 after its attempts ran out on a qa_verify contract defect; same contract, fixed qa_verify; code and QA tests reused by cherry-pick
+2026-10-05T11:15:59Z	state	T-01=archived
+2026-10-05T11:15:59Z	pm-decision	T-01: T-01 is not delivered (archived) — Replaced by T-02 (same contract, fixed qa_verify); T-01 attempts were spent on a qa_verify defect, not on the product
+2026-10-05T11:16:18Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-05T11:16:28Z	md-send	T-02 backend#1 (backend-dev) → worker-seat-20261005-1056-backend-1-h1
+2026-10-05T11:17:02Z	md-done	T-02 backend#1: T-02: cherry-picked 66ff20e as 03523bf, unit tests 11/11
+2026-10-05T11:17:04Z	gate	T-02 PASS
+2026-10-05T11:17:05Z	md-send	T-02 qa#1 (qa-tester) → worker-seat-20261005-1056-qa-1-h1
+2026-10-05T11:17:42Z	md-done	T-02 qa#1: T-02 QA pass: AC-1..AC-14, 13/13 integration, commit 6d35bdf
+2026-10-05T11:17:43Z	qa	T-02 pass (qa_verify PASS) — AC-1..AC-14 pass (test/ratings/integration/notch.int.test.mjs 13/13; full suite 24/24)
+2026-10-05T11:17:44Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261005-1056-reviewer-1-h1
+2026-10-05T11:18:16Z	md-done	T-02 reviewer#1: T-02 review: approve, 0 blocking, 4 nits
+2026-10-05T11:18:17Z	review	T-02 reviewer approve — Matches contract: frozen scale, typeof-first validation, both args checked, no -0, no I/O; 4 non-blocking nits
+2026-10-05T11:18:18Z	integrate	T-02 merged
+2026-10-05T11:18:24Z	phase	integrating
+2026-10-05T11:18:25Z	verify-all	PASS
+2026-10-05T11:18:34Z	phase	closing
+2026-10-05T11:18:35Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261005-1056-ba-1-h1
+2026-10-05T11:19:21Z	md-done	closing ba#1: closing: AC-1..AC-14 all met; follow-ups = reviewer nits
+2026-10-05T11:19:42Z	learn	backend-lead: qa_verify/verify must run test files, not a bare directory: 'node --test dir/' fails on Node 22 (MODULE_NOT_FOUND) — use 'node --test dir/*.mjs'
+2026-10-05T11:19:43Z	learn	qa: Run the card's literal qa_verify before reporting; if it fails for an environment reason, report it as a blocker, not as a pass with a caveat
+2026-10-05T11:19:43Z	ship	local merge into main
+2026-10-05T11:19:48Z	md-release	ba#1 → worker-seat-20261005-1056-ba-1-h1
+2026-10-05T11:19:48Z	md-release	backend-lead#1 → worker-seat-20261005-1056-backend-lead-1-h1
+2026-10-05T11:19:48Z	md-release	backend#1 → worker-seat-20261005-1056-backend-1-h1
+2026-10-05T11:19:48Z	md-release	qa#1 → worker-seat-20261005-1056-qa-1-h1
+2026-10-05T11:19:48Z	md-release	reviewer#1 → worker-seat-20261005-1056-reviewer-1-h1

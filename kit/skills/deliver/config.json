@@ -1,12 +1,12 @@
 {
   "base_branch": "auto",
-  "dispatch": "subagent",
+  "dispatch": "munder",
   "max_parallel": 3,
   "max_attempts": 2,
   "gates": {
     "plan": false
   },
-  "verify_full": "npm test",
+  "verify_full": "",
   "worktree_setup": "",
   "worktree_exclude": [
     "node_modules",
@@ -19,9 +19,10 @@
   "munder": {
     "hive_root": "",
     "claude_command": "claude",
-    "model": "",
+    "model": "sonnet",
+    "seat_timeout_minutes": 5,
     "token_cap": 0,
-    "seat_timeout": 300
+    "app_command": ""
   },
   "merge_mode": "human",
   "push_branches": "auto",
@@ -41,5 +42,6 @@
   "commit": {
     "ai_attribution": false,
     "role_in_message": false
-  }
+  },
+  "roles": {}
 }
