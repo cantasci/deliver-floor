@@ -1407,7 +1407,8 @@ floor_guard() {
   [[ $FLOW_CMDS == *" $1 "* && ${AGENT_ID:-} != god ]] || return 0
   [[ "$(dispatch_of "$1")" == munder ]] || return 0
   [[ ${AGENT_ID:-} == worker-* ]] && refuse 9 "a seat does not run the flow — Michael records every step"
-  refuse 9 "this job runs on the Munder Difflin floor (dispatch: munder, the default): give /deliver to Michael in the app — never from a separate terminal, where a second Michael would read the same inbox. To work without the floor (Claude Code subagents), switch by hand: \"dispatch\": \"subagent\" in .deliver.json for new jobs, or dl dispatch subagent \"<why>\" for this one — see docs/07-munder-difflin.md"
+  local how="\"dispatch\": \"subagent\" in .deliver.json"; [[ $1 == new ]] || how+=" for new jobs, or dl dispatch subagent \"<why>\" for this one"
+  refuse 9 "this job runs on the Munder Difflin floor (dispatch: munder, the default): give /deliver to Michael in the app — never from a separate terminal, where a second Michael would read the same inbox. To work without the floor (Claude Code subagents), the human switches by hand: $how — see docs/07-munder-difflin.md#choosing-the-mode"
 }
 
 # dl dispatch munder|subagent "<why>" — the human switches how this job's roles run. Never Michael's call (bash-guard).
