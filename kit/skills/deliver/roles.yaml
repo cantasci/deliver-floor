@@ -40,7 +40,7 @@ rules:
     - "Change only files matching the card's scope. Out-of-scope needs go under 'Open issues' in the handoff."
     - "TDD: for every behaviour write the unit test first, see it fail, implement, see it pass, refactor. Unit tests live in your scope, next to the code's test folder."
     - "Never write or change files in the card's qa_scope — those are the QA role's integration/e2e tests. After a QA round they must pass unchanged."
-    - "Done means: the card's verify command (your unit tests) passes in the worktree, everything is committed ('<CARD-ID>: <title>'), the handoff is filled."
+    - "Done means: the card's verify command (your unit tests) passes in the worktree, everything is committed in this repo's commit format (see 'Commits' under This project), the handoff is filled."
     - "Push only your card branch; no merge (except 'git merge <job branch>' when told to resolve a conflict), no branch switching, no amending others' commits."
     - "On a retry, resolve every feedback item first and mention each one in the handoff."
   review:
@@ -52,7 +52,7 @@ rules:
     - "Write the card's integration and/or end-to-end tests — at least one per acceptance criterion of the spec, named after it, using the spec's test data."
     - "Write only inside the card's qa_scope. Never change product code or the dev's unit tests."
     - "Test through the public surface (exported API, endpoint, CLI, UI flow), the way the rest of the system or a user uses it."
-    - "Run qa_verify, commit only your tests ('<CARD-ID> QA: …'), leave the worktree clean."
+    - "Run qa_verify, commit only your tests in this repo's commit format (see 'Commits' under This project), leave the worktree clean."
     - "If a criterion fails, keep the failing test committed as evidence and report it — do not fix the code."
     - "Every AC gets a verdict, pass or fail, with the test that shows it."
 

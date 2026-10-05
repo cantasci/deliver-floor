@@ -44,6 +44,7 @@ repo itself says, and prints where each value came from (`kit/skills/deliver/bin
 | `worktree_setup` | the lockfile's install command (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`, `bun install`, `uv sync`, `poetry install`); nothing for a `package.json` without dependencies (an install would only leave a new lockfile in every card) |
 | `worktree_exclude` | the kit's list plus what that setup creates (`node_modules`, `.venv`, per folder) |
 | `merge_mode` | `human` with an `origin` remote, `local` without |
+| `commit.convention` | commitlint (config file, `package.json`, a husky/lefthook commit-msg hook), commitizen, a pre-commit commit-msg hook → `conventional`; else the last 30 commits (≥ 70 % Conventional → `conventional`), otherwise `plain` |
 | `munder.hive_root` | the floor whose app config lists this repo |
 
 Everything else comes from the kit defaults and your own `$DELIVER_HOME/config.json`. An existing `.deliver.json` is never
@@ -65,6 +66,8 @@ There is exactly one human approval in `human` / `semi`: the PR. `dl pr` syncs t
 | Key | Default | Effect |
 | --- | --- | --- |
 | `push_branches` | `"auto"` | Push each card branch to `origin` when it is assigned and after each step (`auto` = when there is an origin and `merge_mode` is not `local`; `true`/`false` to force). Agents may push only their own card branch (bash-guard); the job branch is pushed by `dl ship`; nobody pushes main |
+| `commit.convention` | `"auto"` | The repo's commit message convention, followed by every commit of a job — the devs', QA's and `dl`'s own merges (`conventional` or `plain`). `auto`: detected from commitlint / commitizen / a commit-msg hook, else the history. The gate checks the card's commits (with the repo's commitlint when installed); the repo's hooks are never skipped |
+| `commit.merge_message` | `""` | The message of `dl`'s merge commits when the repo's hooks refuse the convention's default forms — `{card}`, `{title}`, `{key}` (tracker key). `dl integrate` exits 5 (not a conflict) with the hook's output until one is accepted |
 | `commit.ai_attribution` | `false` | `false`: the gate fails a card whose commits carry AI attribution (`Co-Authored-By: Claude …`, "Generated with …"); `install.sh` also sets Claude Code's `attribution` to empty |
 | `commit.role_in_message` | `false` | `true`: every card commit must carry a `Role: <seat>` trailer (e.g. `Role: backend#2`) — the gate checks it, merge commits get `Role: michael` |
 

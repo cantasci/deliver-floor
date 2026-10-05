@@ -76,6 +76,29 @@ function stack(dir, where = "") {
   return null;
 }
 
+// The repo's commit message convention — every commit of a job (the devs', QA's and dl's own merges) must follow it.
+// Read from the tools that enforce it, else from the history. → { convention: "conventional" | "plain", source, enforced }
+const CONVENTIONAL = /^(feat|fix|chore|docs|test|tests|refactor|perf|build|ci|style|revert)(\([^)]*\))?!?: \S/;
+export function commitConvention(root) {
+  const cl = ["commitlint.config.js", "commitlint.config.cjs", "commitlint.config.mjs", "commitlint.config.ts", "commitlint.config.cts",
+    ".commitlintrc", ".commitlintrc.json", ".commitlintrc.yaml", ".commitlintrc.yml", ".commitlintrc.js", ".commitlintrc.cjs", ".commitlintrc.mjs", ".commitlintrc.ts"]
+    .find((f) => existsSync(join(root, f)));
+  if (cl) return { convention: "conventional", source: `${cl} (commitlint)`, enforced: true };
+  const pkg = json(join(root, "package.json")) ?? {};
+  if (pkg.commitlint) return { convention: "conventional", source: "package.json \"commitlint\"", enforced: true };
+  for (const h of [".husky/commit-msg", "lefthook.yml", "lefthook.yaml", ".lefthook.yml"])
+    if (/commitlint|conventional/i.test(read(join(root, h)))) return { convention: "conventional", source: `${h} runs commitlint`, enforced: true };
+  if (/conventional-pre-commit|commitizen/i.test(read(join(root, ".pre-commit-config.yaml")))) return { convention: "conventional", source: ".pre-commit-config.yaml (commit-msg hook)", enforced: true };
+  const cz = [".czrc", ".cz.json", ".cz.toml", "cz.json", "cz.toml", "cz.yaml"].find((f) => existsSync(join(root, f)))
+    ?? (pkg.config?.commitizen ? "package.json config.commitizen" : /\[tool\.commitizen\]/.test(read(join(root, "pyproject.toml"))) ? "pyproject.toml [tool.commitizen]" : "");
+  if (cz) return { convention: "conventional", source: `${cz} (commitizen)`, enforced: false };
+  let subjects = [];
+  try { subjects = execFileSync("git", ["-C", root, "log", "--no-merges", "-n", "30", "--format=%s"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).split("\n").filter(Boolean); } catch { /* no history */ }
+  const n = subjects.filter((x) => CONVENTIONAL.test(x)).length;
+  if (subjects.length >= 3 && n / subjects.length >= 0.7) return { convention: "conventional", source: `the history: ${n} of the last ${subjects.length} commits`, enforced: false };
+  return { convention: "plain", source: subjects.length ? `the history: ${n} of the last ${subjects.length} commits are Conventional Commits — no convention` : "no commits and no commit tooling", enforced: false };
+}
+
 export function detect(repo) {
   const root = resolve(repo);
   const evidence = {};
@@ -120,9 +143,13 @@ export function detect(repo) {
     if (c?.harnessHome && (c.registeredRepos ?? []).some((r) => resolve(r) === root)) { hive = c.harnessHome; evidence.hive_root = `Munder Difflin (${name}/config.json) lists this repo`; break; }
   }
 
-  return { verify_full: verify, worktree_setup: setup, worktree_exclude: exclude, merge_mode: remote ? "human" : "local", hive_root: hive, evidence };
+  const cc = commitConvention(root);
+  evidence.commit = `${cc.source}${cc.enforced ? " — enforced: every commit must follow it" : ""}`;
+
+  return { verify_full: verify, worktree_setup: setup, worktree_exclude: exclude, merge_mode: remote ? "human" : "local", hive_root: hive, commit_convention: cc.convention, evidence };
 }
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("detect.mjs")) {
-  process.stdout.write(JSON.stringify(detect(process.argv[2] ?? "."), null, 2) + "\n");
+  if (process.argv[2] === "--commit") process.stdout.write(JSON.stringify(commitConvention(resolve(process.argv[3] ?? "."))) + "\n");
+  else process.stdout.write(JSON.stringify(detect(process.argv[2] ?? "."), null, 2) + "\n");
 }

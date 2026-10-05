@@ -263,7 +263,7 @@ CARD: <card JSON>
 SPEC (one test per acceptance criterion at least, with its test data and edge cases): <abs path to .work/<job>/specs/T-xx.md>
 WORKTREE: <abs path>   QA_SCOPE (write only here): <card.qa_scope>   QA_VERIFY: <card.qa_verify>
 PLAN ACs referenced by the card: <the AC-n lines from plan.md, verbatim>
-Commit your tests ("T-xx QA: …"), leave the worktree clean, return the JSON your agent definition specifies.
+Commit your tests in this repo's commit format (your role card, "Commits"), leave the worktree clean, return the JSON your agent definition specifies.
 ```
 
    Record: `"$DL" qa T-xx pass|fail "<AC-1 pass: …; AC-2 fail: …>"` — `dl` checks that QA only wrote in `qa_scope`, that
@@ -287,6 +287,11 @@ Use "changes" only when there is at least one blocking item.
    in the handoff. Any `changes` → re-dispatch the dev with all blocking items together (same retry rule).
 4. `"$DL" integrate T-xx` → merged. Exit 3 (conflict) → re-dispatch the dev with: "Conflict with the job branch: run
    `git merge <job.branch>` in your worktree, resolve, run verify, commit." Then gate → QA → review → integrate again.
+   **Exit 5 is not a conflict**: the repo's commit rules (commitlint, a commit-msg hook) refused every merge message `dl`
+   can write — the card is fine, never re-dispatch the dev for it. Read the hook's output `dl` printed, write a message the
+   repo accepts: `"$DL" jobset '.settings.commit.merge_message="<message with {card} {title} {key}>"'`, record it as your
+   decision (`dl pm-decide`), and integrate again. Every commit follows the repo's convention (`settings.commit.convention`,
+   detected at `dl new`); its hooks are never skipped.
 
 ## Blocked
 

@@ -129,6 +129,9 @@ function projectFacts(job) {
   ];
   facts.push(job.settings?.commit?.ai_attribution === true ? "Commits: AI attribution lines are allowed." :
     "Commits: no AI attribution — no 'Co-Authored-By: Claude …', no 'Generated with Claude Code', no Anthropic e-mail (the gate rejects them).");
+  facts.push(job.settings?.commit?.convention === "conventional"
+    ? `Commits: this repo uses Conventional Commits (${job.settings.commit.convention_source ?? "its commit rules"}) — every message is \`<type>(<optional scope>): <summary>\`, lower-case summary, the card id at the end: \`feat: add notch change (T-01)\`, \`fix: …\`, \`test: integration tests for AC-1..AC-4 (T-01)\`. The gate rejects any other form.`
+    : "Commits: `<CARD-ID>: <what changed>` (QA: `<CARD-ID> QA: <what>`).");
   if (job.settings?.commit?.role_in_message === true) facts.push("Commits: end every commit message with a trailer line `Role: <your seat, e.g. backend#1>` (the gate checks it).");
   if (job.settings?.worktree_setup) facts.push(`Each worktree is prepared with: \`${job.settings.worktree_setup}\``);
   for (const f of ["CLAUDE.md", "AGENTS.md", "CONTRIBUTING.md"])
