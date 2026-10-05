@@ -1,0 +1,36 @@
+{
+  "verdict": "pass",
+  "tests": [
+    "test/integration/ratings/notch.int.test.mjs"
+  ],
+  "criteria": [
+    {"ac": "AC-1", "status": "pass", "evidence": "AC-1: given previous rating \"BBB+\" and current rating \"BB+\", returns 3 → PASS"},
+    {"ac": "AC-2", "status": "pass", "evidence": "AC-2: given previous rating \"BB+\" and current rating \"BBB+\", returns -3 → PASS"},
+    {"ac": "AC-3", "status": "pass", "evidence": "AC-3: given previous rating \"A\" and current rating \"A\", returns 0 → PASS"},
+    {"ac": "AC-4", "status": "pass", "evidence": "AC-4: RATING_SCALE is an array of 19 ratings from AAA (index 0) to CCC- (index 18) → PASS"},
+    {"ac": "AC-5", "status": "pass", "evidence": "AC-5: given previous rating \"  AAA  \" with whitespace, trims and returns 18 → PASS"},
+    {"ac": "AC-6", "status": "pass", "evidence": "AC-6: given previous rating \"aaa\" in lowercase, normalizes and returns 18 → PASS"},
+    {"ac": "AC-7", "status": "pass", "evidence": "AC-7: given mixed-case ratings \"bBb+\" and \"Bb+\", normalizes both and returns 3 → PASS"},
+    {"ac": "AC-7b", "status": "pass", "evidence": "AC-7b: given ratings with trim and case \"  bbb+ \" and \" BB+  \", returns 3 → PASS"},
+    {"ac": "AC-8", "status": "pass", "evidence": "AC-8: given boundary ratings AAA to CCC-, returns 18 (maximum downgrade) → PASS"},
+    {"ac": "AC-9", "status": "pass", "evidence": "AC-9: given boundary ratings CCC- to AAA, returns -18 (maximum upgrade) → PASS"},
+    {"ac": "AC-10", "status": "pass", "evidence": "AC-10: given same rating for both previous and current for each of 19 ratings, returns 0 → PASS"},
+    {"ac": "AC-11", "status": "pass", "evidence": "AC-11: given previous rating as empty string \"\", throws RangeError → PASS"},
+    {"ac": "AC-12", "status": "pass", "evidence": "AC-12: given previous rating as unknown string \"XYZ\", throws RangeError → PASS"},
+    {"ac": "AC-13", "status": "pass", "evidence": "AC-13: given previous rating as whitespace-only \"   \", trims to empty and throws RangeError → PASS"},
+    {"ac": "AC-14", "status": "pass", "evidence": "AC-14: given previous rating as non-string number 123, throws RangeError → PASS"},
+    {"ac": "AC-15", "status": "pass", "evidence": "AC-15: given previous rating as String object new String(\"A\"), throws RangeError → PASS"},
+    {"ac": "AC-16", "status": "pass", "evidence": "AC-16: given previous rating as null, throws RangeError → PASS"},
+    {"ac": "AC-17", "status": "pass", "evidence": "AC-17: given previous rating as undefined, throws RangeError → PASS"},
+    {"ac": "AC-18", "status": "pass", "evidence": "AC-18: given current rating as empty string \"\", throws RangeError → PASS"},
+    {"ac": "AC-19", "status": "pass", "evidence": "AC-19: given current rating as unknown string \"XYZ\", throws RangeError → PASS"},
+    {"ac": "AC-20", "status": "pass", "evidence": "AC-20: given current rating as whitespace-only \"   \", throws RangeError → PASS"},
+    {"ac": "AC-21", "status": "pass", "evidence": "AC-21: given current rating as non-string number 123, throws RangeError → PASS"},
+    {"ac": "AC-22", "status": "pass", "evidence": "AC-22: given current rating as String object new String(\"B\"), throws RangeError → PASS"},
+    {"ac": "AC-23", "status": "pass", "evidence": "AC-23: given current rating as null, throws RangeError → PASS"},
+    {"ac": "AC-24", "status": "pass", "evidence": "AC-24: given current rating as undefined, throws RangeError → PASS"},
+    {"ac": "AC-25", "status": "pass", "evidence": "AC-25: given all 19 previous ratings against current \"A\", returns correct notch distances → PASS"},
+    {"ac": "AC-26", "status": "pass", "evidence": "AC-26: given previous \"A\" against all 19 current ratings, returns correct notch distances → PASS"}
+  ],
+  "failures": []
+}

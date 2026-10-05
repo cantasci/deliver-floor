@@ -1,0 +1,149 @@
+# qa_verify: node --test test/integration/ratings/*.test.mjs
+TAP version 13
+# Subtest: AC-1: notchChange(BBB+, BB+) is the integer 3
+ok 1 - AC-1: notchChange(BBB+, BB+) is the integer 3
+  ---
+  duration_ms: 2.927617
+  type: 'test'
+  ...
+# Subtest: AC-1: module exposes exactly two named exports and no default
+ok 2 - AC-1: module exposes exactly two named exports and no default
+  ---
+  duration_ms: 1.708284
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange(BB+, BBB+) is -3
+ok 3 - AC-2: notchChange(BB+, BBB+) is -3
+  ---
+  duration_ms: 0.321694
+  type: 'test'
+  ...
+# Subtest: AC-3: unchanged rating is 0 and never -0, for every rating
+ok 4 - AC-3: unchanged rating is 0 and never -0, for every rating
+  ---
+  duration_ms: 0.521216
+  type: 'test'
+  ...
+# Subtest: AC-4: RATING_SCALE has the 19 C1 ratings, best first
+ok 5 - AC-4: RATING_SCALE has the 19 C1 ratings, best first
+  ---
+  duration_ms: 0.436784
+  type: 'test'
+  ...
+# Subtest: AC-5: RATING_SCALE is frozen and mutation attempts throw TypeError
+ok 6 - AC-5: RATING_SCALE is frozen and mutation attempts throw TypeError
+  ---
+  duration_ms: 0.88498
+  type: 'test'
+  ...
+# Subtest: AC-6: adjacent ratings differ by 1 and reversed by -1
+ok 7 - AC-6: adjacent ratings differ by 1 and reversed by -1
+  ---
+  duration_ms: 0.36444
+  type: 'test'
+  ...
+# Subtest: AC-6: spot checks and extremes
+ok 8 - AC-6: spot checks and extremes
+  ---
+  duration_ms: 0.201714
+  type: 'test'
+  ...
+# Subtest: AC-6: full 19x19 matrix equals j - i (361 pairs)
+ok 9 - AC-6: full 19x19 matrix equals j - i (361 pairs)
+  ---
+  duration_ms: 1.269309
+  type: 'test'
+  ...
+# Subtest: AC-7: surrounding whitespace is trimmed
+ok 10 - AC-7: surrounding whitespace is trimmed
+  ---
+  duration_ms: 1.915652
+  type: 'test'
+  ...
+# Subtest: AC-8: matching is case-insensitive
+ok 11 - AC-8: matching is case-insensitive
+  ---
+  duration_ms: 0.34713
+  type: 'test'
+  ...
+# Subtest: AC-9: unknown ratings throw RangeError in either position (24 calls)
+ok 12 - AC-9: unknown ratings throw RangeError in either position (24 calls)
+  ---
+  duration_ms: 1.000192
+  type: 'test'
+  ...
+# Subtest: AC-9: whitespace inside a rating is not removed
+ok 13 - AC-9: whitespace inside a rating is not removed
+  ---
+  duration_ms: 0.390983
+  type: 'test'
+  ...
+# Subtest: AC-9: full-width look-alike letters are rejected
+ok 14 - AC-9: full-width look-alike letters are rejected
+  ---
+  duration_ms: 0.195286
+  type: 'test'
+  ...
+# Subtest: AC-10: empty and whitespace-only strings throw RangeError in either position (8 calls)
+ok 15 - AC-10: empty and whitespace-only strings throw RangeError in either position (8 calls)
+  ---
+  duration_ms: 0.294144
+  type: 'test'
+  ...
+# Subtest: AC-11: non-strings throw RangeError (never TypeError) in either position (20 calls)
+ok 16 - AC-11: non-strings throw RangeError (never TypeError) in either position (20 calls)
+  ---
+  duration_ms: 0.88226
+  type: 'test'
+  ...
+# Subtest: AC-11: missing arguments throw RangeError
+ok 17 - AC-11: missing arguments throw RangeError
+  ---
+  duration_ms: 0.245577
+  type: 'test'
+  ...
+# Subtest: AC-11: both arguments invalid still throws RangeError
+ok 18 - AC-11: both arguments invalid still throws RangeError
+  ---
+  duration_ms: 0.225636
+  type: 'test'
+  ...
+# Subtest: AC-12: synchronous number result, deterministic
+ok 19 - AC-12: synchronous number result, deterministic
+  ---
+  duration_ms: 0.159449
+  type: 'test'
+  ...
+# Subtest: AC-12: writes nothing to console or stdout/stderr, valid or throwing
+ok 20 - AC-12: writes nothing to console or stdout/stderr, valid or throwing
+  ---
+  duration_ms: 0.425442
+  type: 'test'
+  ...
+# Subtest: AC-12: src/ratings/notch.mjs has no import statements
+ok 21 - AC-12: src/ratings/notch.mjs has no import statements
+  ---
+  duration_ms: 0.627172
+  type: 'test'
+  ...
+# Subtest: AC-12: package.json declares no dependencies or devDependencies
+ok 22 - AC-12: package.json declares no dependencies or devDependencies
+  ---
+  duration_ms: 0.354214
+  type: 'test'
+  ...
+# Subtest: AC-13: node --test at the repo root exits 0 and includes the notch unit and integration tests
+ok 23 - AC-13: node --test at the repo root exits 0 and includes the notch unit and integration tests
+  ---
+  duration_ms: 903.579112
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1127.931293

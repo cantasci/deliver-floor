@@ -1,0 +1,112 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "ratings: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with TDD unit tests",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "ratings",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "depends_on": [],
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/ratings/notch.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/ratings/notch.integration.test.mjs",
+      "context": "WHY: REQ-06-02 (part). The notch calculator and Ind. 11, 12, 13 build on a reusable pure function returning the signed notch change between two credit ratings. This card delivers only that library module and its unit tests (no calculator, thresholds, WL mapping or indicators). The repo has no src/ratings code yet. package.json already has type=module and test=node --test; leave it unchanged.\n\nFILES: create src/ratings/notch.mjs and test/ratings/notch.test.mjs only.\n\nSTACK RULES (CLAUDE.md): plain Node 18+ ESM (.mjs), no npm dependencies, pure module: no I/O imports (node:fs/net/http/child_process), no console calls, no logging. Node 18 APIs only (no toSorted/toReversed/with/Object.groupBy). Tests test-first with node:test + node:assert/strict.\n\nEXACT CONTRACT (named ESM exports only):\n1) export const RATING_SCALE = Object.freeze(['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-']) — real Array, frozen, 19 distinct upper-case entries, best first (AAA=0, BBB+=7, BB+=10, CCC-=18). push()/index write throw TypeError in ESM.\n2) export function notchChange(previous, current) returns index(current) - index(previous): integer -18..18, downgrade positive, upgrade negative, unchanged +0 (never -0). Extra arguments are ignored.\n\nNORMALISATION: an argument is valid only if typeof value === 'string' (primitive). Then value.trim().toUpperCase() (NOT toLocaleUpperCase), then look up in RATING_SCALE. trim also removes tabs, CR/LF, NBSP, BOM (accepted). Whitespace inside a rating is not removed ('BBB +' invalid).\n\nVALIDATION (C2): every invalid argument throws RangeError — never any other error type, no fallback. Invalid: any non-string (undefined, null, numbers incl. NaN, booleans, 1n, Symbol, {}, Object.create(null), arrays, functions), String objects (new String('A') rejected — do NOT coerce before the typeof check), missing arguments, '' and whitespace-only strings, and any string not in the scale after trim+upper ('D','NR','C','AAA+','BB++','BBB +','BBB\\u2212','Baa1','BBB+ (neg)'). Validate previous fully first, then current.\n\nERROR MESSAGE: the RangeError message names the argument ('previous' or 'current') and shows the bad value, e.g. notchChange('ZZZ','QQQ') message contains 'previous' and 'ZZZ'; notchChange('A','QQQ') contains 'current' and 'QQQ'. Building the message must never throw: template literals/concatenation on a Symbol or Object.create(null) throw TypeError. Use a safe describer (string: JSON.stringify; symbol: value.toString(); bigint: String(v)+'n'; otherwise try String(v) in try/catch falling back to Object.prototype.toString.call(v)). Unit tests need only assert the error type.\n\nUNIT TESTS (test/ratings/notch.test.mjs, written first): cover AC-1..AC-12 and AC-14 — table-driven for the AC-6/8/9/10/11/12 tables, a nested loop for the 361 pairs (AC-7); AC-2 mutation attempts with assert.throws(..., TypeError) then check the scale is unchanged; AC-12 every value in both positions with assert.throws(..., RangeError); AC-14: inputs unchanged and 100 calls all return 3. Run node --test from the repo root and confirm exit 0.",
+      "acceptance": [
+        "AC-1: Given the module is imported, when `RATING_SCALE` is read, then it deep-equals the 19-entry list above, its length is `19`, `[0]==='AAA'`, `[7]==='BBB+'`, `[10]==='BB+'`, `[18]==='CCC-'`, every entry is upper-case and `new Set(RATING_SCALE).size === 19`.",
+        "AC-2: Given the module is imported, when it is inspected, then `Array.isArray(RATING_SCALE)` and `Object.isFrozen(RATING_SCALE)` are both `true`. When `RATING_SCALE.push('D')` or `RATING_SCALE[0]='X'` runs, then each throws `TypeError`. Afterwards the length is still `19`, `[0]` is still `'AAA'` and `notchChange('AAA','CCC-')` is still `18`.",
+        "AC-3: Given previous `'BBB+'` and current `'BB+'`, when `notchChange('BBB+','BB+')` is called, then it returns `3`.",
+        "AC-4: Given previous `'BB+'` and current `'BBB+'`, when `notchChange('BB+','BBB+')` is called, then it returns `-3`.",
+        "AC-5: Given `'A'` and `'A'`, when `notchChange('A','A')` is called, then `Object.is(result, 0)` is `true` (the result is not `-0`). For every `r` in `RATING_SCALE`, `Object.is(notchChange(r,r), 0)` is also `true`.",
+        "AC-6: Given neighbouring ratings and the two ends of the scale, when `notchChange` is called, then the results are: `AAA→AA+` = `1`, `AA+→AAA` = `-1`, `BBB-→BB+` = `1`, `BB+→BBB-` = `-1`, `CCC→CCC-` = `1`, `AAA→CCC-` = `18`, `CCC-→AAA` = `-18`.",
+        "AC-7: Given every `i, j` in 0..18 (361 pairs), when `notchChange(RATING_SCALE[i], RATING_SCALE[j])` is called, then it returns exactly `j - i`, the result is an integer in [-18, 18], and `notchChange(a,b) === -notchChange(b,a)` whenever `a !== b`.",
+        "AC-8: Given whitespace that `trim()` removes at the start or end of an argument, when `notchChange` is called, then the whitespace is ignored: `(' BBB+ ','BB+')` = `3`, `('\\tBB+\\n','BBB+')` = `-3`, `(' A ','A')` = `0`, `('AAA','  CCC-\\r\\n')` = `18`.",
+        "AC-9: Given lower-case or mixed-case input, when `notchChange` is called, then case is ignored: `('bbb+','bb+')` = `3`, `('Aa-','aa+')` = `-2`, `('ccc-','aaa')` = `-18`, `(' bBb- ','BB+')` = `1`.",
+        "AC-10: Given a string that is not in the scale after trim and upper-case, in either position, when `notchChange` is called, then it throws `RangeError`. Values: `'D'`, `'NR'`, `'AAA+'`, `'BB++'`, `'C'`, `'BBB +'`, `'BBB−'`, `'Baa1'`, `'BBB+ (neg)'`. For example, `('D','A')`, `('A','D')` and `('BBB +','BB+')` all throw `RangeError`.",
+        "AC-11: Given `''`, `' '`, `'\\t\\n'` or `' '` (NBSP only) in either position, when `notchChange` is called, then it throws `RangeError`. For example, `('', 'A')` and `('A','   ')` both throw.",
+        "AC-12: Given any of `undefined`, `null`, `0`, `7`, `NaN`, `true`, `1n`, `Symbol('A')`, `{}`, `Object.create(null)`, `['A']`, `() => 'A'`, `new String('A')`, `new String('BBB+')` in either position, when `notchChange` is called, then it throws `RangeError`, never `TypeError` and never a return value. `notchChange()` and `notchChange('A')` also throw `RangeError`.",
+        "AC-13: Given invalid input, when `notchChange` throws, then: `('ZZZ','QQQ')` gives a `RangeError` whose message contains `previous` and `ZZZ`. `('A','QQQ')` gives a message that contains `current` and `QQQ`. `(Symbol('x'),'A')` gives a `RangeError`, not a `TypeError` raised while the message is built. Unit tests need only assert the error type. QA checks the wording by command.",
+        "AC-14: Given the module is imported, when `notchChange('BBB+','BB+')` is called 100 times with stdout and stderr captured, then nothing is written and every call returns `3`. Given `p=' bbb+ '` and `c='BB+'`, after the call they are still `' bbb+ '` and `'BB+'`. `src/ratings/notch.mjs` has no `import` of `node:fs`, `node:net`, `node:http` or `node:child_process` (nor any other I/O module) and no `console.` call.",
+        "AC-15: Given the delivered branch, when `node --test` is run from the repo root, then it exits `0`. `test/ratings/notch.test.mjs` exists, imports `node:test` and `node:assert/strict`, and covers AC-1 to AC-12 and AC-14. `package.json` has no `dependencies` and no `devDependencies` key and is otherwise unchanged."
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T06:27:22Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-mB/interactive/repo/.work/JOB-20261005-0619-rating-notch-change/wt/T-01",
+      "branch": "job/JOB-20261005-0619-rating-notch-change--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "e3b3d8e28d923322c7d178ae4f3d16a3579b6c96",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-mB/interactive/repo/.work/JOB-20261005-0619-rating-notch-change/gates/T-01-a1-062922.log",
+        "at": "2026-10-05T06:29:23Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-05T06:29:24.287Z",
+          "author": "gate",
+          "text": "PASS — 17 checks ok, 0 failed (T-01-a1-062922.log)"
+        },
+        {
+          "at": "2026-10-05T06:30:53.256Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-15 pass; QA commit b6af6a5, 24 integration tests pass (qa_verify), tree clean; QA agent report: all 15 criteria pass"
+        },
+        {
+          "at": "2026-10-05T06:33:09.499Z",
+          "author": "reviewer",
+          "text": "approve — No blocking items; 105 tests pass; nits only (revoked-Proxy fallback, duplicated validation block, style)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "b6af6a5587a81a5349d510a06b9230f16d8790c9",
+        "gate_head": "e3b3d8e28d923322c7d178ae4f3d16a3579b6c96",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-mB/interactive/repo/.work/JOB-20261005-0619-rating-notch-change/gates/T-01-qa-a1-063052.log",
+        "summary": "AC-1..AC-15 pass; QA commit b6af6a5, 24 integration tests pass (qa_verify), tree clean; QA agent report: all 15 criteria pass",
+        "at": "2026-10-05T06:30:52Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "b6af6a5587a81a5349d510a06b9230f16d8790c9",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-15 pass; QA commit b6af6a5, 24 integration tests pass (qa_verify), tree clean; QA agent report: all 15 criteria pass",
+          "at": "2026-10-05T06:30:52Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "b6af6a5587a81a5349d510a06b9230f16d8790c9",
+          "summary": "No blocking items; 105 tests pass; nits only (revoked-Proxy fallback, duplicated validation block, style)",
+          "at": "2026-10-05T06:33:09Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "b6af6a5587a81a5349d510a06b9230f16d8790c9",
+        "summary": "reviewer: approve — No blocking items; 105 tests pass; nits only (revoked-Proxy fallback, duplicated validation block, style)",
+        "pending": [],
+        "at": "2026-10-05T06:33:09Z"
+      }
+    }
+  ]
+}

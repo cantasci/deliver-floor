@@ -1,0 +1,146 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "ratings-lib: add src/ratings/notch.mjs with frozen RATING_SCALE and notchChange(previous, current), plus TDD unit tests",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "ratings-lib",
+      "state": "merged",
+      "attempts": 2,
+      "notes": [],
+      "depends_on": [],
+      "context": "WHY: Indicators 11-13 and the REQ-06-02 notch calculator need one shared function giving the signed notch change between two credit ratings. This card adds only that function and its scale. OUT of scope: Indicators 11-13, thresholds, WL mapping, UI, CLI, logging.\n\nREPO RULES (CLAUDE.md): plain Node.js 18+ ES modules (.mjs). No npm dependencies. Do not change package.json (test script is already 'node --test'). node:test + node:assert/strict. Code in src/ratings is pure: no I/O, no console output.\n\nFILES (both new): src/ratings/notch.mjs, test/ratings/notch.test.mjs (.test.mjs suffix required).\n\nCONTRACT. Exactly two named exports, no default export, NO import statements:\n1) export const RATING_SCALE = Object.freeze(['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-']); 19 entries, best first. notchChange reads indices from this array.\n2) export function notchChange(previous, current) -> number. Synchronous. Returns index(current) - index(previous), integer -18..+18; downgrade positive, upgrade negative, unchanged 0. notchChange('BBB+','BB+') === 3, ('BB+','BBB+') === -3, ('A','A') === 0.\n\nNORMALISATION per argument: (a) if typeof arg !== 'string' throw RangeError — BEFORE .trim(), so a non-string never surfaces as TypeError (covers String objects, objects with toString, Symbols, arrays, numbers, booleans, null, undefined/missing). (b) s = arg.trim() (String.prototype.trim only; internal whitespace stays, so 'BBB +' is unknown). (c) key = s.toUpperCase() (not toLocaleUpperCase). (d) idx = RATING_SCALE.indexOf(key); -1 -> throw RangeError (covers '', whitespace-only, 'D','CC','C','SD','NR','WD','AAA+','CCC--','BBB +','BBB+.', 'A\\u2212','Baa1'). Validate both arguments before computing. Error message text is free; tests check only instanceof RangeError.\n\n-0 RULE: compute idxCurrent - idxPrevious directly; never negate (no -(a-b)). Tests check Object.is(result, 0).\n\nFROZEN SCALE: in an ES module RATING_SCALE.push('D') and RATING_SCALE[0]='X' must throw TypeError; scale and results unchanged afterwards.\n\nUNIT TESTS (TDD, write first, import from '../../src/ratings/notch.mjs'; use the spec's data tables exactly): three headline examples; RATING_SCALE contents/length/frozen/mutation throws TypeError; every one-notch step forward and reversed; extremes +18/-18; full 19x19 matrix (result === j - i); Object.is(...,0) for every rating vs itself; trim and case cases; RangeError for every invalid value of AC-9/10/11 in both argument positions with 'A' as the other; notchChange() and notchChange('A'); return value is a number, not a thenable; console.log/console.error not called (stub). Do not write under test/integration/: that belongs to QA.",
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/integration/ratings/**"
+      ],
+      "qa_verify": "node --test test/integration/ratings/*.test.mjs",
+      "acceptance": [
+        "AC-1: notchChange('BBB+','BB+') returns integer 3",
+        "AC-2: notchChange('BB+','BBB+') returns -3",
+        "AC-3: notchChange(r, r) is 0 and Object.is(result, 0) for every rating (not -0)",
+        "AC-4: RATING_SCALE has length 19 and deep-equals the C1 list, [0]='AAA', [18]='CCC-'",
+        "AC-5: RATING_SCALE is frozen; push/assignment throw TypeError and leave scale and results unchanged",
+        "AC-6: adjacent steps are 1/-1, extremes 18/-18, full 19x19 matrix result === j - i",
+        "AC-7: leading/trailing whitespace (incl. \\t \\n \\r U+00A0 U+FEFF) is trimmed: ('  BBB+ ','BB+')=3",
+        "AC-8: case-insensitive: ('bbb+','bb+')=3, ('a','A')=0",
+        "AC-9: unknown ratings ('D','CC','AAA+','BBB +','Baa1',...) in either position throw RangeError",
+        "AC-10: '', whitespace-only strings in either position throw RangeError",
+        "AC-11: non-strings (undefined, null, 3, Symbol, new String('A'), ...) and missing args throw RangeError, never TypeError",
+        "AC-12: returns a number synchronously, prints nothing, no import statements, no package.json dependencies",
+        "AC-13: node --test at the repo root exits 0 with the notch tests included"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T06:27:35Z"
+        },
+        {
+          "attempt": 2,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T06:36:28Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-mA/models/repo/.work/JOB-20261005-0619-rating-notch-change/wt/T-01",
+      "branch": "job/JOB-20261005-0619-rating-notch-change--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "1bd6d0d74cff1bd51776e5215db680f7ffbd8732",
+        "attempt": 2,
+        "log": "/tmp/claude-0/e2e-mA/models/repo/.work/JOB-20261005-0619-rating-notch-change/gates/T-01-a2-063942.log",
+        "at": "2026-10-05T06:39:45Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-05T06:30:36.761Z",
+          "author": "gate",
+          "text": "PASS — 9 checks ok, 0 failed (T-01-a1-063035.log)"
+        },
+        {
+          "at": "2026-10-05T06:36:01.006Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-13 pass: 23 integration tests, root node --test 76/76"
+        },
+        {
+          "at": "2026-10-05T06:36:27.463Z",
+          "author": "reviewer",
+          "text": "changes — dev unit tests miss AC-12 checks and U+FEFF in AC-7"
+        },
+        {
+          "at": "2026-10-05T06:39:45.750Z",
+          "author": "gate",
+          "text": "PASS — 33 checks ok, 0 failed (T-01-a2-063942.log)"
+        },
+        {
+          "at": "2026-10-05T06:40:14.310Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): round 2: AC-1..AC-13 pass; 23 integration tests, root node --test 80/80; no test changes needed"
+        },
+        {
+          "at": "2026-10-05T06:40:35.984Z",
+          "author": "reviewer",
+          "text": "approve — round 2: both blocking items fixed; nits only (literal invisible chars)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "1bd6d0d74cff1bd51776e5215db680f7ffbd8732",
+        "gate_head": "1bd6d0d74cff1bd51776e5215db680f7ffbd8732",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-mA/models/repo/.work/JOB-20261005-0619-rating-notch-change/gates/T-01-qa-a2-064012.log",
+        "summary": "round 2: AC-1..AC-13 pass; 23 integration tests, root node --test 80/80; no test changes needed",
+        "at": "2026-10-05T06:40:13Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "2cdf3613a911ade3b61e655dc688e611afc84b33",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-13 pass: 23 integration tests, root node --test 76/76",
+          "at": "2026-10-05T06:36:00Z"
+        },
+        {
+          "verdict": "pass",
+          "head": "1bd6d0d74cff1bd51776e5215db680f7ffbd8732",
+          "qa_verify": "PASS",
+          "summary": "round 2: AC-1..AC-13 pass; 23 integration tests, root node --test 80/80; no test changes needed",
+          "at": "2026-10-05T06:40:13Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "changes",
+          "head": "2cdf3613a911ade3b61e655dc688e611afc84b33",
+          "summary": "dev unit tests miss AC-12 checks and U+FEFF in AC-7",
+          "at": "2026-10-05T06:36:26Z"
+        },
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "1bd6d0d74cff1bd51776e5215db680f7ffbd8732",
+          "summary": "round 2: both blocking items fixed; nits only (literal invisible chars)",
+          "at": "2026-10-05T06:40:35Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "1bd6d0d74cff1bd51776e5215db680f7ffbd8732",
+        "summary": "reviewer: approve — round 2: both blocking items fixed; nits only (literal invisible chars)",
+        "pending": [],
+        "at": "2026-10-05T06:40:35Z"
+      }
+    }
+  ]
+}

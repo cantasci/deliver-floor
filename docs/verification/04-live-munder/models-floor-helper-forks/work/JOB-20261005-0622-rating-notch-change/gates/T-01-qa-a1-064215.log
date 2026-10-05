@@ -1,0 +1,173 @@
+# qa_verify: node --test "test/integration/ratings/**/*.test.mjs"
+TAP version 13
+# Subtest: AC-1: given previous rating "BBB+" and current rating "BB+", returns 3
+ok 1 - AC-1: given previous rating "BBB+" and current rating "BB+", returns 3
+  ---
+  duration_ms: 1.794942
+  type: 'test'
+  ...
+# Subtest: AC-2: given previous rating "BB+" and current rating "BBB+", returns -3
+ok 2 - AC-2: given previous rating "BB+" and current rating "BBB+", returns -3
+  ---
+  duration_ms: 0.413245
+  type: 'test'
+  ...
+# Subtest: AC-3: given previous rating "A" and current rating "A", returns 0
+ok 3 - AC-3: given previous rating "A" and current rating "A", returns 0
+  ---
+  duration_ms: 0.18542
+  type: 'test'
+  ...
+# Subtest: AC-4: RATING_SCALE is an array of 19 ratings from AAA (index 0) to CCC- (index 18)
+ok 4 - AC-4: RATING_SCALE is an array of 19 ratings from AAA (index 0) to CCC- (index 18)
+  ---
+  duration_ms: 1.507032
+  type: 'test'
+  ...
+# Subtest: AC-5: given previous rating "  AAA  " with whitespace, trims and returns 18
+ok 5 - AC-5: given previous rating "  AAA  " with whitespace, trims and returns 18
+  ---
+  duration_ms: 0.269219
+  type: 'test'
+  ...
+# Subtest: AC-6: given previous rating "aaa" in lowercase, normalizes and returns 18
+ok 6 - AC-6: given previous rating "aaa" in lowercase, normalizes and returns 18
+  ---
+  duration_ms: 0.247422
+  type: 'test'
+  ...
+# Subtest: AC-7: given mixed-case ratings "bBb+" and "Bb+", normalizes both and returns 3
+ok 7 - AC-7: given mixed-case ratings "bBb+" and "Bb+", normalizes both and returns 3
+  ---
+  duration_ms: 0.315681
+  type: 'test'
+  ...
+# Subtest: AC-7b: given ratings with trim and case "  bbb+ " and " BB+  ", returns 3
+ok 8 - AC-7b: given ratings with trim and case "  bbb+ " and " BB+  ", returns 3
+  ---
+  duration_ms: 0.138489
+  type: 'test'
+  ...
+# Subtest: AC-8: given boundary ratings AAA to CCC-, returns 18 (maximum downgrade)
+ok 9 - AC-8: given boundary ratings AAA to CCC-, returns 18 (maximum downgrade)
+  ---
+  duration_ms: 0.415054
+  type: 'test'
+  ...
+# Subtest: AC-9: given boundary ratings CCC- to AAA, returns -18 (maximum upgrade)
+ok 10 - AC-9: given boundary ratings CCC- to AAA, returns -18 (maximum upgrade)
+  ---
+  duration_ms: 0.508582
+  type: 'test'
+  ...
+# Subtest: AC-10: given same rating for both previous and current for each of 19 ratings, returns 0
+ok 11 - AC-10: given same rating for both previous and current for each of 19 ratings, returns 0
+  ---
+  duration_ms: 0.307465
+  type: 'test'
+  ...
+# Subtest: AC-11: given previous rating as empty string "", throws RangeError
+ok 12 - AC-11: given previous rating as empty string "", throws RangeError
+  ---
+  duration_ms: 0.474127
+  type: 'test'
+  ...
+# Subtest: AC-12: given previous rating as unknown string "XYZ", throws RangeError
+ok 13 - AC-12: given previous rating as unknown string "XYZ", throws RangeError
+  ---
+  duration_ms: 0.141988
+  type: 'test'
+  ...
+# Subtest: AC-13: given previous rating as whitespace-only "   ", trims to empty and throws RangeError
+ok 14 - AC-13: given previous rating as whitespace-only "   ", trims to empty and throws RangeError
+  ---
+  duration_ms: 0.233931
+  type: 'test'
+  ...
+# Subtest: AC-14: given previous rating as non-string number 123, throws RangeError
+ok 15 - AC-14: given previous rating as non-string number 123, throws RangeError
+  ---
+  duration_ms: 0.199592
+  type: 'test'
+  ...
+# Subtest: AC-15: given previous rating as String object new String("A"), throws RangeError
+ok 16 - AC-15: given previous rating as String object new String("A"), throws RangeError
+  ---
+  duration_ms: 0.129325
+  type: 'test'
+  ...
+# Subtest: AC-16: given previous rating as null, throws RangeError
+ok 17 - AC-16: given previous rating as null, throws RangeError
+  ---
+  duration_ms: 0.1409
+  type: 'test'
+  ...
+# Subtest: AC-17: given previous rating as undefined, throws RangeError
+ok 18 - AC-17: given previous rating as undefined, throws RangeError
+  ---
+  duration_ms: 3.27959
+  type: 'test'
+  ...
+# Subtest: AC-18: given current rating as empty string "", throws RangeError
+ok 19 - AC-18: given current rating as empty string "", throws RangeError
+  ---
+  duration_ms: 0.321442
+  type: 'test'
+  ...
+# Subtest: AC-19: given current rating as unknown string "XYZ", throws RangeError
+ok 20 - AC-19: given current rating as unknown string "XYZ", throws RangeError
+  ---
+  duration_ms: 0.154407
+  type: 'test'
+  ...
+# Subtest: AC-20: given current rating as whitespace-only "   ", throws RangeError
+ok 21 - AC-20: given current rating as whitespace-only "   ", throws RangeError
+  ---
+  duration_ms: 0.103556
+  type: 'test'
+  ...
+# Subtest: AC-21: given current rating as non-string number 123, throws RangeError
+ok 22 - AC-21: given current rating as non-string number 123, throws RangeError
+  ---
+  duration_ms: 0.097409
+  type: 'test'
+  ...
+# Subtest: AC-22: given current rating as String object new String("B"), throws RangeError
+ok 23 - AC-22: given current rating as String object new String("B"), throws RangeError
+  ---
+  duration_ms: 0.094365
+  type: 'test'
+  ...
+# Subtest: AC-23: given current rating as null, throws RangeError
+ok 24 - AC-23: given current rating as null, throws RangeError
+  ---
+  duration_ms: 0.187782
+  type: 'test'
+  ...
+# Subtest: AC-24: given current rating as undefined, throws RangeError
+ok 25 - AC-24: given current rating as undefined, throws RangeError
+  ---
+  duration_ms: 0.124829
+  type: 'test'
+  ...
+# Subtest: AC-25: given all 19 previous ratings against current "A", returns correct notch distances
+ok 26 - AC-25: given all 19 previous ratings against current "A", returns correct notch distances
+  ---
+  duration_ms: 0.165207
+  type: 'test'
+  ...
+# Subtest: AC-26: given previous "A" against all 19 current ratings, returns correct notch distances
+ok 27 - AC-26: given previous "A" against all 19 current ratings, returns correct notch distances
+  ---
+  duration_ms: 0.114312
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 184.791667

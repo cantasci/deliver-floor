@@ -1,0 +1,217 @@
+# gate: T-01  attempt: 1  2026-10-05T06:39:22Z
+ok    on job/JOB-20261005-0622-rating-notch-change--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: AC-4: RATING_SCALE has 19 ratings best to worst
+ok 1 - AC-4: RATING_SCALE has 19 ratings best to worst
+  ---
+  duration_ms: 3.01758
+  type: 'test'
+  ...
+# Subtest: AC-1: downgrade is positive
+ok 2 - AC-1: downgrade is positive
+  ---
+  duration_ms: 0.636309
+  type: 'test'
+  ...
+# Subtest: AC-2: upgrade is negative
+ok 3 - AC-2: upgrade is negative
+  ---
+  duration_ms: 0.189157
+  type: 'test'
+  ...
+# Subtest: AC-3: unchanged is 0
+ok 4 - AC-3: unchanged is 0
+  ---
+  duration_ms: 0.203081
+  type: 'test'
+  ...
+# Subtest: AC-5: trims whitespace
+ok 5 - AC-5: trims whitespace
+  ---
+  duration_ms: 0.286862
+  type: 'test'
+  ...
+# Subtest: AC-6: lowercase
+ok 6 - AC-6: lowercase
+  ---
+  duration_ms: 0.169533
+  type: 'test'
+  ...
+# Subtest: AC-7: mixed case
+ok 7 - AC-7: mixed case
+  ---
+  duration_ms: 0.329767
+  type: 'test'
+  ...
+# Subtest: AC-7b: trim and case
+ok 8 - AC-7b: trim and case
+  ---
+  duration_ms: 0.159906
+  type: 'test'
+  ...
+# Subtest: AC-8: max downgrade
+ok 9 - AC-8: max downgrade
+  ---
+  duration_ms: 0.366232
+  type: 'test'
+  ...
+# Subtest: AC-9: max upgrade
+ok 10 - AC-9: max upgrade
+  ---
+  duration_ms: 1.155808
+  type: 'test'
+  ...
+# Subtest: AC-10: same rating gives 0 for all ratings
+ok 11 - AC-10: same rating gives 0 for all ratings
+  ---
+  duration_ms: 0.286558
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous empty throws RangeError
+ok 12 - AC-11..24: previous empty throws RangeError
+  ---
+  duration_ms: 0.490381
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current empty throws RangeError
+ok 13 - AC-11..24: current empty throws RangeError
+  ---
+  duration_ms: 0.173561
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous unknown throws RangeError
+ok 14 - AC-11..24: previous unknown throws RangeError
+  ---
+  duration_ms: 0.091968
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current unknown throws RangeError
+ok 15 - AC-11..24: current unknown throws RangeError
+  ---
+  duration_ms: 0.077803
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous whitespace-only throws RangeError
+ok 16 - AC-11..24: previous whitespace-only throws RangeError
+  ---
+  duration_ms: 6.356187
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current whitespace-only throws RangeError
+ok 17 - AC-11..24: current whitespace-only throws RangeError
+  ---
+  duration_ms: 0.199453
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous number throws RangeError
+ok 18 - AC-11..24: previous number throws RangeError
+  ---
+  duration_ms: 0.094117
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current number throws RangeError
+ok 19 - AC-11..24: current number throws RangeError
+  ---
+  duration_ms: 0.066956
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous String object throws RangeError
+ok 20 - AC-11..24: previous String object throws RangeError
+  ---
+  duration_ms: 0.162838
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current String object throws RangeError
+ok 21 - AC-11..24: current String object throws RangeError
+  ---
+  duration_ms: 0.081734
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous null throws RangeError
+ok 22 - AC-11..24: previous null throws RangeError
+  ---
+  duration_ms: 0.067065
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current null throws RangeError
+ok 23 - AC-11..24: current null throws RangeError
+  ---
+  duration_ms: 0.059894
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous undefined throws RangeError
+ok 24 - AC-11..24: previous undefined throws RangeError
+  ---
+  duration_ms: 0.0625
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current undefined throws RangeError
+ok 25 - AC-11..24: current undefined throws RangeError
+  ---
+  duration_ms: 0.058498
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous boolean throws RangeError
+ok 26 - AC-11..24: previous boolean throws RangeError
+  ---
+  duration_ms: 0.206732
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current boolean throws RangeError
+ok 27 - AC-11..24: current boolean throws RangeError
+  ---
+  duration_ms: 0.083391
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous tab/newline throws RangeError
+ok 28 - AC-11..24: previous tab/newline throws RangeError
+  ---
+  duration_ms: 0.07163
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current tab/newline throws RangeError
+ok 29 - AC-11..24: current tab/newline throws RangeError
+  ---
+  duration_ms: 0.062639
+  type: 'test'
+  ...
+# Subtest: AC-11..24: previous B++ throws RangeError
+ok 30 - AC-11..24: previous B++ throws RangeError
+  ---
+  duration_ms: 0.066458
+  type: 'test'
+  ...
+# Subtest: AC-11..24: current B++ throws RangeError
+ok 31 - AC-11..24: current B++ throws RangeError
+  ---
+  duration_ms: 0.059928
+  type: 'test'
+  ...
+# Subtest: AC-25: all previous vs "A"
+ok 32 - AC-25: all previous vs "A"
+  ---
+  duration_ms: 0.171415
+  type: 'test'
+  ...
+# Subtest: AC-26: "A" vs all current
+ok 33 - AC-26: "A" vs all current
+  ---
+  duration_ms: 0.382052
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 231.121303
+ok    verify passed

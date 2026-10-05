@@ -27,6 +27,7 @@ const alts = (m) => {
 const byId = id ? answers.filter((a) => (a.ids ?? []).includes(id)) : [];
 if (byId.length === 1) { process.stdout.write(byId[0].answer); process.exit(0); }
 const scored = answers
+  .filter((a) => a.match)   // an answer without `match` answers only its own item ids
   .map((a) => ({ a, score: alts(a.match).filter((x) => new RegExp(x, "i").test(question)).length }))
   .filter((x) => x.score >= 2)
   .sort((x, y) => y.score - x.score);

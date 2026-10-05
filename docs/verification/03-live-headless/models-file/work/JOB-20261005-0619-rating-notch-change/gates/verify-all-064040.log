@@ -1,0 +1,574 @@
+TAP version 13
+# Subtest: AC-1: notchChange(BBB+, BB+) is the integer 3
+ok 1 - AC-1: notchChange(BBB+, BB+) is the integer 3
+  ---
+  duration_ms: 1.954571
+  type: 'test'
+  ...
+# Subtest: AC-1: module exposes exactly two named exports and no default
+ok 2 - AC-1: module exposes exactly two named exports and no default
+  ---
+  duration_ms: 1.299285
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange(BB+, BBB+) is -3
+ok 3 - AC-2: notchChange(BB+, BBB+) is -3
+  ---
+  duration_ms: 0.188427
+  type: 'test'
+  ...
+# Subtest: AC-3: unchanged rating is 0 and never -0, for every rating
+ok 4 - AC-3: unchanged rating is 0 and never -0, for every rating
+  ---
+  duration_ms: 0.361165
+  type: 'test'
+  ...
+# Subtest: AC-4: RATING_SCALE has the 19 C1 ratings, best first
+ok 5 - AC-4: RATING_SCALE has the 19 C1 ratings, best first
+  ---
+  duration_ms: 0.260077
+  type: 'test'
+  ...
+# Subtest: AC-5: RATING_SCALE is frozen and mutation attempts throw TypeError
+ok 6 - AC-5: RATING_SCALE is frozen and mutation attempts throw TypeError
+  ---
+  duration_ms: 0.626412
+  type: 'test'
+  ...
+# Subtest: AC-6: adjacent ratings differ by 1 and reversed by -1
+ok 7 - AC-6: adjacent ratings differ by 1 and reversed by -1
+  ---
+  duration_ms: 0.289786
+  type: 'test'
+  ...
+# Subtest: AC-6: spot checks and extremes
+ok 8 - AC-6: spot checks and extremes
+  ---
+  duration_ms: 0.148419
+  type: 'test'
+  ...
+# Subtest: AC-6: full 19x19 matrix equals j - i (361 pairs)
+ok 9 - AC-6: full 19x19 matrix equals j - i (361 pairs)
+  ---
+  duration_ms: 0.702893
+  type: 'test'
+  ...
+# Subtest: AC-7: surrounding whitespace is trimmed
+ok 10 - AC-7: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.774534
+  type: 'test'
+  ...
+# Subtest: AC-8: matching is case-insensitive
+ok 11 - AC-8: matching is case-insensitive
+  ---
+  duration_ms: 0.335477
+  type: 'test'
+  ...
+# Subtest: AC-9: unknown ratings throw RangeError in either position (24 calls)
+ok 12 - AC-9: unknown ratings throw RangeError in either position (24 calls)
+  ---
+  duration_ms: 0.791008
+  type: 'test'
+  ...
+# Subtest: AC-9: whitespace inside a rating is not removed
+ok 13 - AC-9: whitespace inside a rating is not removed
+  ---
+  duration_ms: 1.573113
+  type: 'test'
+  ...
+# Subtest: AC-9: full-width look-alike letters are rejected
+ok 14 - AC-9: full-width look-alike letters are rejected
+  ---
+  duration_ms: 0.137516
+  type: 'test'
+  ...
+# Subtest: AC-10: empty and whitespace-only strings throw RangeError in either position (8 calls)
+ok 15 - AC-10: empty and whitespace-only strings throw RangeError in either position (8 calls)
+  ---
+  duration_ms: 0.19248
+  type: 'test'
+  ...
+# Subtest: AC-11: non-strings throw RangeError (never TypeError) in either position (20 calls)
+ok 16 - AC-11: non-strings throw RangeError (never TypeError) in either position (20 calls)
+  ---
+  duration_ms: 0.700711
+  type: 'test'
+  ...
+# Subtest: AC-11: missing arguments throw RangeError
+ok 17 - AC-11: missing arguments throw RangeError
+  ---
+  duration_ms: 0.150181
+  type: 'test'
+  ...
+# Subtest: AC-11: both arguments invalid still throws RangeError
+ok 18 - AC-11: both arguments invalid still throws RangeError
+  ---
+  duration_ms: 0.116404
+  type: 'test'
+  ...
+# Subtest: AC-12: synchronous number result, deterministic
+ok 19 - AC-12: synchronous number result, deterministic
+  ---
+  duration_ms: 0.169306
+  type: 'test'
+  ...
+# Subtest: AC-12: writes nothing to console or stdout/stderr, valid or throwing
+ok 20 - AC-12: writes nothing to console or stdout/stderr, valid or throwing
+  ---
+  duration_ms: 0.376417
+  type: 'test'
+  ...
+# Subtest: AC-12: src/ratings/notch.mjs has no import statements
+ok 21 - AC-12: src/ratings/notch.mjs has no import statements
+  ---
+  duration_ms: 0.408294
+  type: 'test'
+  ...
+# Subtest: AC-12: package.json declares no dependencies or devDependencies
+ok 22 - AC-12: package.json declares no dependencies or devDependencies
+  ---
+  duration_ms: 0.571346
+  type: 'test'
+  ...
+# Subtest: AC-13: node --test at the repo root exits 0 and includes the notch unit and integration tests
+ok 23 - AC-13: node --test at the repo root exits 0 and includes the notch unit and integration tests
+  ---
+  duration_ms: 998.934187
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE
+    # Subtest: AC-4: has exactly 19 elements with correct values
+    ok 1 - AC-4: has exactly 19 elements with correct values
+      ---
+      duration_ms: 2.912994
+      type: 'test'
+      ...
+    # Subtest: AC-5: RATING_SCALE is frozen
+    ok 2 - AC-5: RATING_SCALE is frozen
+      ---
+      duration_ms: 0.25702
+      type: 'test'
+      ...
+    # Subtest: AC-5: frozen array throws TypeError on push
+    ok 3 - AC-5: frozen array throws TypeError on push
+      ---
+      duration_ms: 0.56627
+      type: 'test'
+      ...
+    # Subtest: AC-5: frozen array throws TypeError on element assignment
+    ok 4 - AC-5: frozen array throws TypeError on element assignment
+      ---
+      duration_ms: 0.184567
+      type: 'test'
+      ...
+    # Subtest: AC-5: RATING_SCALE remains unchanged after mutation attempts
+    ok 5 - AC-5: RATING_SCALE remains unchanged after mutation attempts
+      ---
+      duration_ms: 0.328914
+      type: 'test'
+      ...
+    1..5
+ok 24 - RATING_SCALE
+  ---
+  duration_ms: 5.812471
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: AC-1, AC-2: basic downgrade/upgrade
+        # Subtest: AC-1: downgrade BBB+ to BB+ returns 3
+        ok 1 - AC-1: downgrade BBB+ to BB+ returns 3
+          ---
+          duration_ms: 0.354503
+          type: 'test'
+          ...
+        # Subtest: AC-2: upgrade BB+ to BBB+ returns -3
+        ok 2 - AC-2: upgrade BB+ to BBB+ returns -3
+          ---
+          duration_ms: 0.201621
+          type: 'test'
+          ...
+        1..2
+    ok 1 - AC-1, AC-2: basic downgrade/upgrade
+      ---
+      duration_ms: 0.947092
+      type: 'suite'
+      ...
+    # Subtest: AC-3: unchanged returns positive 0 (not -0)
+        # Subtest: same rating returns 0 for A
+        ok 1 - same rating returns 0 for A
+          ---
+          duration_ms: 0.218839
+          type: 'test'
+          ...
+        # Subtest: same rating returns 0 for CCC-
+        ok 2 - same rating returns 0 for CCC-
+          ---
+          duration_ms: 0.266358
+          type: 'test'
+          ...
+        # Subtest: all ratings return 0 when unchanged
+        ok 3 - all ratings return 0 when unchanged
+          ---
+          duration_ms: 0.363381
+          type: 'test'
+          ...
+        1..3
+    ok 2 - AC-3: unchanged returns positive 0 (not -0)
+      ---
+      duration_ms: 1.164662
+      type: 'suite'
+      ...
+    # Subtest: AC-6: adjacent pairs and matrix
+        # Subtest: every adjacent pair forward returns 1
+        ok 1 - every adjacent pair forward returns 1
+          ---
+          duration_ms: 0.231088
+          type: 'test'
+          ...
+        # Subtest: every adjacent pair backward returns -1
+        ok 2 - every adjacent pair backward returns -1
+          ---
+          duration_ms: 0.172141
+          type: 'test'
+          ...
+        # Subtest: AC-6 spot checks
+        ok 3 - AC-6 spot checks
+          ---
+          duration_ms: 0.107705
+          type: 'test'
+          ...
+        # Subtest: AC-6 extremes
+        ok 4 - AC-6 extremes
+          ---
+          duration_ms: 0.081522
+          type: 'test'
+          ...
+        # Subtest: AC-6 full 19x19 matrix: result equals j - i
+        ok 5 - AC-6 full 19x19 matrix: result equals j - i
+          ---
+          duration_ms: 0.38458
+          type: 'test'
+          ...
+        1..5
+    ok 3 - AC-6: adjacent pairs and matrix
+      ---
+      duration_ms: 1.162463
+      type: 'suite'
+      ...
+    # Subtest: AC-7: whitespace handling
+        # Subtest: leading and trailing spaces
+        ok 1 - leading and trailing spaces
+          ---
+          duration_ms: 0.293338
+          type: 'test'
+          ...
+        # Subtest: tabs and newlines
+        ok 2 - tabs and newlines
+          ---
+          duration_ms: 0.098025
+          type: 'test'
+          ...
+        # Subtest: leading space with zero-width no-break space (U+FEFF)
+        ok 3 - leading space with zero-width no-break space (U+FEFF)
+          ---
+          duration_ms: 0.085447
+          type: 'test'
+          ...
+        # Subtest: trailing spaces and carriage return
+        ok 4 - trailing spaces and carriage return
+          ---
+          duration_ms: 0.105404
+          type: 'test'
+          ...
+        # Subtest: non-breaking space (U+00A0)
+        ok 5 - non-breaking space (U+00A0)
+          ---
+          duration_ms: 0.086047
+          type: 'test'
+          ...
+        1..5
+    ok 4 - AC-7: whitespace handling
+      ---
+      duration_ms: 0.829351
+      type: 'suite'
+      ...
+    # Subtest: AC-8: case insensitivity
+        # Subtest: lowercase
+        ok 1 - lowercase
+          ---
+          duration_ms: 0.170072
+          type: 'test'
+          ...
+        # Subtest: mixed case
+        ok 2 - mixed case
+          ---
+          duration_ms: 0.085616
+          type: 'test'
+          ...
+        # Subtest: all lowercase to uppercase extreme
+        ok 3 - all lowercase to uppercase extreme
+          ---
+          duration_ms: 0.150498
+          type: 'test'
+          ...
+        # Subtest: lowercase with spaces to uppercase with spaces
+        ok 4 - lowercase with spaces to uppercase with spaces
+          ---
+          duration_ms: 0.079419
+          type: 'test'
+          ...
+        # Subtest: single letter case variations
+        ok 5 - single letter case variations
+          ---
+          duration_ms: 0.071437
+          type: 'test'
+          ...
+        1..5
+    ok 5 - AC-8: case insensitivity
+      ---
+      duration_ms: 1.95937
+      type: 'suite'
+      ...
+    # Subtest: AC-9: invalid rating strings throw RangeError
+        # Subtest: invalid as previous (with current A)
+        ok 1 - invalid as previous (with current A)
+          ---
+          duration_ms: 0.45086
+          type: 'test'
+          ...
+        # Subtest: invalid as current (with previous A)
+        ok 2 - invalid as current (with previous A)
+          ---
+          duration_ms: 0.377271
+          type: 'test'
+          ...
+        1..2
+    ok 6 - AC-9: invalid rating strings throw RangeError
+      ---
+      duration_ms: 0.955586
+      type: 'suite'
+      ...
+    # Subtest: AC-10: empty/whitespace-only strings throw RangeError
+        # Subtest: whitespace-only as previous
+        ok 1 - whitespace-only as previous
+          ---
+          duration_ms: 0.408037
+          type: 'test'
+          ...
+        # Subtest: whitespace-only as current
+        ok 2 - whitespace-only as current
+          ---
+          duration_ms: 0.260742
+          type: 'test'
+          ...
+        1..2
+    ok 7 - AC-10: empty/whitespace-only strings throw RangeError
+      ---
+      duration_ms: 0.788409
+      type: 'suite'
+      ...
+    # Subtest: AC-11: non-strings throw RangeError (not TypeError)
+        # Subtest: non-strings as previous throw RangeError
+        ok 1 - non-strings as previous throw RangeError
+          ---
+          duration_ms: 0.277621
+          type: 'test'
+          ...
+        # Subtest: non-strings as current throw RangeError
+        ok 2 - non-strings as current throw RangeError
+          ---
+          duration_ms: 0.278492
+          type: 'test'
+          ...
+        # Subtest: missing arguments throw RangeError
+        ok 3 - missing arguments throw RangeError
+          ---
+          duration_ms: 0.131261
+          type: 'test'
+          ...
+        1..3
+    ok 8 - AC-11: non-strings throw RangeError (not TypeError)
+      ---
+      duration_ms: 0.810821
+      type: 'suite'
+      ...
+    # Subtest: AC-12: return value properties
+        # Subtest: returns a number
+        ok 1 - returns a number
+          ---
+          duration_ms: 0.225611
+          type: 'test'
+          ...
+        # Subtest: return value is not a Promise
+        ok 2 - return value is not a Promise
+          ---
+          duration_ms: 0.088443
+          type: 'test'
+          ...
+        # Subtest: deterministic: same input returns same value
+        ok 3 - deterministic: same input returns same value
+          ---
+          duration_ms: 0.081605
+          type: 'test'
+          ...
+        # Subtest: AC-12: no console output in valid or throwing calls
+        ok 4 - AC-12: no console output in valid or throwing calls
+          ---
+          duration_ms: 1.23365
+          type: 'test'
+          ...
+        # Subtest: AC-12: source does not contain import statements
+        ok 5 - AC-12: source does not contain import statements
+          ---
+          duration_ms: 0.550213
+          type: 'test'
+          ...
+        # Subtest: AC-12: package.json has no dependencies or devDependencies
+        ok 6 - AC-12: package.json has no dependencies or devDependencies
+          ---
+          duration_ms: 0.291745
+          type: 'test'
+          ...
+        1..6
+    ok 9 - AC-12: return value properties
+      ---
+      duration_ms: 2.694514
+      type: 'suite'
+      ...
+    # Subtest: test data from spec: valid pairs
+        # Subtest: notchChange("BBB+", "BB+") === 3
+        ok 1 - notchChange("BBB+", "BB+") === 3
+          ---
+          duration_ms: 0.2768
+          type: 'test'
+          ...
+        # Subtest: notchChange("BB+", "BBB+") === -3
+        ok 2 - notchChange("BB+", "BBB+") === -3
+          ---
+          duration_ms: 0.068448
+          type: 'test'
+          ...
+        # Subtest: notchChange("A", "A") === 0
+        ok 3 - notchChange("A", "A") === 0
+          ---
+          duration_ms: 0.060005
+          type: 'test'
+          ...
+        # Subtest: notchChange("CCC-", "CCC-") === 0
+        ok 4 - notchChange("CCC-", "CCC-") === 0
+          ---
+          duration_ms: 0.051214
+          type: 'test'
+          ...
+        # Subtest: notchChange("AAA", "AA+") === 1
+        ok 5 - notchChange("AAA", "AA+") === 1
+          ---
+          duration_ms: 0.053637
+          type: 'test'
+          ...
+        # Subtest: notchChange("BBB-", "BBB") === -1
+        ok 6 - notchChange("BBB-", "BBB") === -1
+          ---
+          duration_ms: 0.058799
+          type: 'test'
+          ...
+        # Subtest: notchChange("BBB-", "BB+") === 1
+        ok 7 - notchChange("BBB-", "BB+") === 1
+          ---
+          duration_ms: 0.050726
+          type: 'test'
+          ...
+        # Subtest: notchChange("B-", "CCC+") === 1
+        ok 8 - notchChange("B-", "CCC+") === 1
+          ---
+          duration_ms: 0.047472
+          type: 'test'
+          ...
+        # Subtest: notchChange("AAA", "CCC-") === 18
+        ok 9 - notchChange("AAA", "CCC-") === 18
+          ---
+          duration_ms: 0.16256
+          type: 'test'
+          ...
+        # Subtest: notchChange("CCC-", "AAA") === -18
+        ok 10 - notchChange("CCC-", "AAA") === -18
+          ---
+          duration_ms: 0.063725
+          type: 'test'
+          ...
+        # Subtest: notchChange("  BBB+ ", "BB+") === 3
+        ok 11 - notchChange("  BBB+ ", "BB+") === 3
+          ---
+          duration_ms: 0.053125
+          type: 'test'
+          ...
+        # Subtest: notchChange("\\tA-\\n", "A-") === 0
+        ok 12 - notchChange("\\tA-\\n", "A-") === 0
+          ---
+          duration_ms: 0.059253
+          type: 'test'
+          ...
+        # Subtest: notchChange(" AAA", "AA+﻿") === 1
+        ok 13 - notchChange(" AAA", "AA+﻿") === 1
+          ---
+          duration_ms: 0.068512
+          type: 'test'
+          ...
+        # Subtest: notchChange("BB+", " BBB+\\r\\n") === -3
+        ok 14 - notchChange("BB+", " BBB+\\r\\n") === -3
+          ---
+          duration_ms: 0.078589
+          type: 'test'
+          ...
+        # Subtest: notchChange("bbb+", "bb+") === 3
+        ok 15 - notchChange("bbb+", "bb+") === 3
+          ---
+          duration_ms: 0.065458
+          type: 'test'
+          ...
+        # Subtest: notchChange("Bb+", "bBb+") === -3
+        ok 16 - notchChange("Bb+", "bBb+") === -3
+          ---
+          duration_ms: 0.058823
+          type: 'test'
+          ...
+        # Subtest: notchChange("aaa", "CCC-") === 18
+        ok 17 - notchChange("aaa", "CCC-") === 18
+          ---
+          duration_ms: 0.061446
+          type: 'test'
+          ...
+        # Subtest: notchChange(" ccc- ", "aAa") === -18
+        ok 18 - notchChange(" ccc- ", "aAa") === -18
+          ---
+          duration_ms: 0.064924
+          type: 'test'
+          ...
+        # Subtest: notchChange("a", "A") === 0
+        ok 19 - notchChange("a", "A") === 0
+          ---
+          duration_ms: 0.117458
+          type: 'test'
+          ...
+        1..19
+    ok 10 - test data from spec: valid pairs
+      ---
+      duration_ms: 2.00029
+      type: 'suite'
+      ...
+    1..10
+ok 25 - notchChange
+  ---
+  duration_ms: 15.926285
+  type: 'suite'
+  ...
+1..25
+# tests 80
+# suites 12
+# pass 80
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1208.557238

@@ -1,0 +1,144 @@
+{
+  "cards": [
+    {
+      "title": "Implement notchChange function and RATING_SCALE export",
+      "role": "backend",
+      "component": "notch-change",
+      "context": "# Implementation Context: notchChange Calculator\n\n## Why This Card Exists\nSupports indicators 11, 12, and 13 in the Watchlist POC by providing the core rating notch change calculation logic.\n\n## Contract (Public Interface)\n\nExports from `src/ratings/notch.mjs`:\n1. **RATING_SCALE** — Array of 19 credit ratings in order (best to worst):\n   ```\n   [\"AAA\", \"AA+\", \"AA\", \"AA-\", \"A+\", \"A\", \"A-\", \"BBB+\", \"BBB\", \"BBB-\",\n    \"BB+\", \"BB\", \"BB-\", \"B+\", \"B\", \"B-\", \"CCC+\", \"CCC\", \"CCC-\"]\n   ```\n   Index 0 (best) through Index 18 (worst).\n\n2. **notchChange(previous, current)** — Pure function\n   - **Inputs**: Two string parameters (credit ratings)\n   - **Output**: Signed integer representing notch movement\n     - Positive = downgrade (worse rating, higher index)\n     - Negative = upgrade (better rating, lower index)\n     - 0 = unchanged\n   - **Calculation**: `index(current) - index(previous)`\n   - **Example**: notchChange(\"BBB+\", \"BB+\") → 3 (downgrade)\n\n## Input Validation & Normalization\n\nBoth `previous` and `current` parameters must be processed as follows:\n\n1. **Type Check**: Must be a primitive string (typeof x === 'string')\n   - Reject non-strings: numbers, String objects, null, undefined\n   - Throw RangeError for any non-string type\n\n2. **Trim**: Remove leading/trailing whitespace using `String.prototype.trim()`\n   - Example: \"  AAA  \" → \"AAA\"\n\n3. **Case Normalize**: Convert to uppercase using `.toUpperCase()`\n   - Example: \"aaa\" or \"bBb+\" → \"AAA\" or \"BBB+\"\n\n4. **Validate**: Check if the normalized string exists in RATING_SCALE\n   - Reject empty strings (after trim)\n   - Reject whitespace-only strings (empty after trim)\n   - Reject unknown ratings not in RATING_SCALE\n   - Throw RangeError with a descriptive message for any invalid input\n\n## Error Handling\n\nAll invalid inputs throw **RangeError** with a descriptive message. Invalid cases:\n- Empty strings: \"\" (original) or \"   \" (whitespace-only, empty after trim)\n- Unknown ratings: \"XYZ\", \"B++\", etc.\n- Non-string types: 123, null, undefined, new String('A')\n- String objects: `new String('A')` (use typeof check; String objects have typeof 'object')\n\nError message text is not specified; any descriptive message is acceptable (e.g., \"Invalid rating: 'XYZ'\").\n\n## Clarifications (C1–C4)\n\n**C1 — Input Processing**: Trim and case-normalize all inputs before validation. Trimming removes whitespace; case normalization converts to uppercase per .toUpperCase().\n\n**C2 — Error Behavior**: Reject all invalid inputs (empty, unknown, non-string types) with RangeError. No fallback, recovery, or default values.\n\n**C3 — Boundary Cases**: Support full range of the 19-step scale. Minimum downgrade: AAA → CCC- = 18 notches (positive). Maximum upgrade: CCC- → AAA = -18 notches (negative). Unchanged: any rating to itself = 0.\n\n**C4 — No User Interface**: This is an internal API for indicators 11–13. No end-user UI, CLI, printed output, or logging required.\n\n## Implementation Notes\n\n- Use plain JavaScript ESM (.mjs) with Node.js 18+ built-in modules (node:test, node:assert/strict)\n- Pure function: no I/O, no side effects, no external dependencies\n- Synchronous operation; no async/await needed\n- Idempotent: same inputs always produce the same output\n- Deterministic and fully testable\n\n## Testing Strategy\n\nUnit tests in `test/ratings/notch.test.mjs` must cover:\n- All 19 ratings in RATING_SCALE (both as previous and current)\n- Boundary cases: AAA (best, index 0) and CCC- (worst, index 18)\n- Unchanged case: each rating to itself\n- All invalid input types: empty string, unknown rating, whitespace-only, non-string (number), String object, null, undefined\n- Trim and case normalization: leading/trailing whitespace, mixed case, lowercase\n- Sign correctness: downgrade (positive), upgrade (negative), unchanged (zero)",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/integration/ratings/**"
+      ],
+      "qa_verify": "node --test \"test/integration/ratings/**/*.test.mjs\"",
+      "acceptance": [
+        "AC-1: Given previous rating \"BBB+\" and current rating \"BB+\", when `notchChange(\"BBB+\", \"BB+\")` is called, then it returns 3 (downgrade = positive).",
+        "AC-2: Given previous rating \"BB+\" and current rating \"BBB+\", when `notchChange(\"BB+\", \"BBB+\")` is called, then it returns -3 (upgrade = negative).",
+        "AC-3: Given previous rating \"A\" and current rating \"A\", when `notchChange(\"A\", \"A\")` is called, then it returns 0 (unchanged).",
+        "AC-4: Given the rating scale (best to worst: AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-), when `RATING_SCALE` is exported from `src/ratings/notch.mjs`, then it is an array of these 19 ratings in order (index 0 = AAA, index 18 = CCC-).",
+        "AC-5: Given previous rating \"  AAA  \" (with leading/trailing whitespace), when `notchChange(\"  AAA  \", \"CCC-\")` is called, then it trims to \"AAA\" and returns 18 (index 18 - index 0).",
+        "AC-6: Given previous rating \"aaa\" (lowercase), when `notchChange(\"aaa\", \"ccc-\")` is called, then it normalizes to uppercase and returns 18 (index 18 - index 0).",
+        "AC-7: Given mixed-case ratings \"bBb+\" and \"Bb+\", when `notchChange(\"bBb+\", \"Bb+\")` is called, then it case-normalizes both (BBB+ at index 7 and BB+ at index 10) and returns 3 (index 10 - index 7).",
+        "AC-7b: Given ratings with trim and case \"  bbb+ \" and \" BB+  \", when `notchChange(\"  bbb+ \", \" BB+  \")` is called, then it trims and case-normalizes both (BBB+ at index 7 and BB+ at index 10) and returns 3.",
+        "AC-8: Given boundary ratings AAA (best, index 0) and CCC- (worst, index 18), when `notchChange(\"AAA\", \"CCC-\")` is called, then it returns 18 (maximum downgrade distance).",
+        "AC-9: Given boundary ratings CCC- (worst, index 18) and AAA (best, index 0), when `notchChange(\"CCC-\", \"AAA\")` is called, then it returns -18 (maximum upgrade distance).",
+        "AC-10: Given the same rating in both positions for each of the 19 ratings (AAA, AA+, ..., CCC-), when `notchChange(rating, rating)` is called for each, then it returns 0.",
+        "AC-11: Given previous rating as an empty string \"\", when `notchChange(\"\", \"A\")` is called, then it throws a RangeError.",
+        "AC-12: Given previous rating as an unknown string \"XYZ\", when `notchChange(\"XYZ\", \"A\")` is called, then it throws a RangeError.",
+        "AC-13: Given previous rating as a whitespace-only string \"   \", when `notchChange(\"   \", \"A\")` is called, then it trims (resulting in empty string) and throws a RangeError.",
+        "AC-14: Given previous rating as a non-string number 123, when `notchChange(123, \"A\")` is called, then it throws a RangeError.",
+        "AC-15: Given previous rating as a String object `new String('A')`, when `notchChange(new String('A'), \"A\")` is called, then it throws a RangeError (String object has typeof 'object', not 'string').",
+        "AC-16: Given previous rating as null, when `notchChange(null, \"A\")` is called, then it throws a RangeError.",
+        "AC-17: Given previous rating as undefined, when `notchChange(undefined, \"A\")` is called, then it throws a RangeError.",
+        "AC-18: Given current rating as an empty string \"\", when `notchChange(\"A\", \"\")` is called, then it throws a RangeError.",
+        "AC-19: Given current rating as an unknown string \"XYZ\", when `notchChange(\"A\", \"XYZ\")` is called, then it throws a RangeError.",
+        "AC-20: Given current rating as a whitespace-only string \"   \", when `notchChange(\"A\", \"   \")` is called, then it trims (resulting in empty string) and throws a RangeError.",
+        "AC-21: Given current rating as a non-string number 123, when `notchChange(\"A\", 123)` is called, then it throws a RangeError.",
+        "AC-22: Given current rating as a String object `new String('B')`, when `notchChange(\"A\", new String('B'))` is called, then it throws a RangeError.",
+        "AC-23: Given current rating as null, when `notchChange(\"A\", null)` is called, then it throws a RangeError.",
+        "AC-24: Given current rating as undefined, when `notchChange(\"A\", undefined)` is called, then it throws a RangeError.",
+        "AC-25: Given all 19 valid ratings as the previous parameter and \"A\" (index 5) as current, when `notchChange(previous, \"A\")` is called for each rating, then it returns the correct notch distance per the test data table below (formula: index(current) − index(previous) = 5 − index(previous)).",
+        "AC-26: Given \"A\" (index 5) as the previous parameter and all 19 valid ratings as current, when `notchChange(\"A\", current)` is called for each rating, then it returns the correct notch distance per the test data table below (formula: index(current) − index(previous) = index(current) − 5), which is the negative of the corresponding AC-25 entry."
+      ],
+      "id": "T-01",
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T06:38:29Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/e2e-mC/munder/repo/.work/JOB-20261005-0622-rating-notch-change/wt/T-01",
+      "branch": "job/JOB-20261005-0622-rating-notch-change--T-01",
+      "md_workers": [
+        {
+          "role": "backend",
+          "seat": "backend#1",
+          "worker": "worker-seat-20261005-0622-backend-1-h1",
+          "at": "2026-10-05T06:38:41Z"
+        },
+        {
+          "role": "qa",
+          "seat": "qa#1",
+          "worker": "worker-seat-20261005-0622-qa-1-h1",
+          "at": "2026-10-05T06:39:32Z"
+        },
+        {
+          "role": "reviewer",
+          "seat": "reviewer#1",
+          "worker": "worker-seat-20261005-0622-reviewer-1-h1",
+          "at": "2026-10-05T06:42:26Z"
+        }
+      ],
+      "gate": {
+        "result": "PASS",
+        "head": "cea0fb7495ec3f63ecbea47564d0a3bf298b3dd8",
+        "attempt": 1,
+        "log": "/tmp/claude-0/e2e-mC/munder/repo/.work/JOB-20261005-0622-rating-notch-change/gates/T-01-a1-063922.log",
+        "at": "2026-10-05T06:39:23Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-05T06:39:23.726Z",
+          "author": "gate",
+          "text": "PASS — 40 checks ok, 0 failed (T-01-a1-063922.log)"
+        },
+        {
+          "at": "2026-10-05T06:42:16.290Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-26 + AC-7b pass: 27/27 integration tests in test/integration/ratings/notch.int.test.mjs (19781a6)"
+        },
+        {
+          "at": "2026-10-05T06:43:45.252Z",
+          "author": "reviewer",
+          "text": "approve — AC-1..AC-26 + AC-7b met; correct typeof/trim/upper-case validation, RangeError on every invalid kind, signed index diff; no blocking items"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "19781a61ab24cec0c2c780b44bbf45d1035b8711",
+        "gate_head": "cea0fb7495ec3f63ecbea47564d0a3bf298b3dd8",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/e2e-mC/munder/repo/.work/JOB-20261005-0622-rating-notch-change/gates/T-01-qa-a1-064215.log",
+        "summary": "AC-1..AC-26 + AC-7b pass: 27/27 integration tests in test/integration/ratings/notch.int.test.mjs (19781a6)",
+        "at": "2026-10-05T06:42:15Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "19781a61ab24cec0c2c780b44bbf45d1035b8711",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-26 + AC-7b pass: 27/27 integration tests in test/integration/ratings/notch.int.test.mjs (19781a6)",
+          "at": "2026-10-05T06:42:15Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "19781a61ab24cec0c2c780b44bbf45d1035b8711",
+          "summary": "AC-1..AC-26 + AC-7b met; correct typeof/trim/upper-case validation, RangeError on every invalid kind, signed index diff; no blocking items",
+          "at": "2026-10-05T06:43:44Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "19781a61ab24cec0c2c780b44bbf45d1035b8711",
+        "summary": "reviewer: approve — AC-1..AC-26 + AC-7b met; correct typeof/trim/upper-case validation, RangeError on every invalid kind, signed index diff; no blocking items",
+        "pending": [],
+        "at": "2026-10-05T06:43:44Z"
+      }
+    }
+  ]
+}

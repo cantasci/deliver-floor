@@ -1,0 +1,257 @@
+{
+ "items": [
+  {
+   "id": "PRD-goal",
+   "status": "decided",
+   "answer": "Deliver the reusable notch-change function that Ind. 11, 12, 13 and the notch calculator (REQ-06-02) build on. Success = the REQ-06-02 examples (BBB+ to BB+ = 3, BB+ to BBB+ = -3, A to A = 0) pass under `node --test`.",
+   "source": "request intro; REQ-06-02 (part)",
+   "quote": "the notch change that Indicators 11, 12 and 13 and the notch calculator (REQ-06-02) are built on"
+  },
+  {
+   "id": "PRD-users",
+   "status": "decided",
+   "answer": "No human users or roles. The only consumers are other POC modules that import the function. No access control.",
+   "source": "request C4",
+   "quote": "No UI, CLI or printed output; other parts of the POC import the function."
+  },
+  {
+   "id": "PRD-scope",
+   "status": "decided",
+   "answer": "In: src/ratings/notch.mjs exporting RATING_SCALE and notchChange(previous, current), plus its tests. Out: the rest of REQ-06-02 and Ind. 11-13, any UI/CLI/printed output, persistence.",
+   "source": "request intro, C4, Contract",
+   "quote": "This job is a one-requirement slice of that document"
+  },
+  {
+   "id": "PRD-acceptance",
+   "status": "decided",
+   "answer": "Yes. REQ-06-02 examples plus C1-C3: notchChange('BBB+','BB+') = 3; ('BB+','BBB+') = -3; ('A','A') = 0; ' bbb+ ' equals 'BBB+'; unknown rating, '', non-string or new String('A') throws RangeError.",
+   "source": "request REQ-06-02, C1, C2, C3",
+   "quote": "BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0"
+  },
+  {
+   "id": "PRD-conflicts",
+   "status": "decided",
+   "answer": "No contradiction. The examples match C1+C3 (BBB+ index 7, BB+ index 10, so +3). C3 turns the N-notch wording into a signed integer. C2 says non-strings raise RangeError. CLAUDE.md puts tests at test/ratings/notch.test.mjs.",
+   "source": "request C1, C2, C3; CLAUDE.md",
+   "quote": "The result is signed: downgrade positive, upgrade negative, unchanged 0."
+  },
+  {
+   "id": "PRD-priority",
+   "status": "n_a",
+   "answer": "One requirement and one card, nothing to prioritise.",
+   "source": "request intro"
+  },
+  {
+   "id": "CON-interface",
+   "status": "decided",
+   "answer": "Module src/ratings/notch.mjs with named ESM exports. RATING_SCALE = the 19 C1 ratings, best first. notchChange(previous, current) returns the integer index(current) - index(previous) (range -18..18; downgrade +, upgrade -, unchanged 0). Inputs trimmed with String.prototype.trim(), matched case-insensitively.",
+   "source": "request Contract, C1, C3",
+   "quote": "`notchChange(previous, current)` → integer (C3)."
+  },
+  {
+   "id": "CON-errors",
+   "status": "decided",
+   "answer": "Any invalid argument throws RangeError, no fallback value: unknown rating, whitespace-only, '', undefined, null, number, missing argument, String object.",
+   "source": "request C2",
+   "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError."
+  },
+  {
+   "id": "CON-compat",
+   "status": "n_a",
+   "answer": "New module; the repo has no src/ratings code yet (only .gitkeep files), so nothing to stay compatible with and no versioning.",
+   "source": "repo: git ls-files at 3fca1aa"
+  },
+  {
+   "id": "ARC-style",
+   "status": "decided",
+   "answer": "Library: a pure-function module inside the POC codebase that other parts import.",
+   "source": "request C4, Contract; CLAUDE.md",
+   "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+  },
+  {
+   "id": "ARC-components",
+   "status": "decided",
+   "answer": "One component: library 'ratings' (javascript, Node 18+ ESM) at src/ratings/ + test/ratings/, owner backend, reviewer reviewer.",
+   "source": "request Contract; CLAUDE.md",
+   "quote": "`src/ratings/notch.mjs`"
+  },
+  {
+   "id": "ARC-layer",
+   "status": "decided",
+   "answer": "Shared domain library (src/ratings): pure, no I/O, imported by other POC modules.",
+   "source": "CLAUDE.md; request C4",
+   "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+  },
+  {
+   "id": "ARC-stack",
+   "status": "decided",
+   "answer": "Plain Node.js 18+ ES modules (.mjs). No npm dependencies. Tests use node:test + node:assert/strict.",
+   "source": "CLAUDE.md; request Contract",
+   "quote": "Plain Node.js 18+ ES modules (`.mjs`). No npm dependencies; do not add any."
+  },
+  {
+   "id": "ARC-data",
+   "status": "n_a",
+   "answer": "No stored data; pure function, the scale is a code constant.",
+   "source": "CLAUDE.md"
+  },
+  {
+   "id": "ARC-integration",
+   "status": "n_a",
+   "answer": "No external systems; runs in-process.",
+   "source": "CLAUDE.md; request C4"
+  },
+  {
+   "id": "ARC-async",
+   "status": "decided",
+   "answer": "Synchronous: notchChange returns the integer directly. Idempotent because pure.",
+   "source": "request Contract; CLAUDE.md",
+   "quote": "`notchChange(previous, current)` → integer (C3)."
+  },
+  {
+   "id": "NFR-performance",
+   "status": "n_a",
+   "answer": "No targets; lookup over a fixed 19-entry scale, no I/O.",
+   "source": "request C1; CLAUDE.md"
+  },
+  {
+   "id": "NFR-availability",
+   "status": "n_a",
+   "answer": "Imported library, not a running service.",
+   "source": "request C4"
+  },
+  {
+   "id": "NFR-security",
+   "status": "decided",
+   "answer": "No auth or secrets (library, no I/O). Only control is input validation: primitive strings only, checked against RATING_SCALE, else RangeError.",
+   "source": "request C2",
+   "quote": "Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError."
+  },
+  {
+   "id": "NFR-privacy",
+   "status": "n_a",
+   "answer": "Inputs are public rating codes only; no personal data, no logging.",
+   "source": "request C1, C4"
+  },
+  {
+   "id": "NFR-audit",
+   "status": "n_a",
+   "answer": "Pure function, no state changes.",
+   "source": "CLAUDE.md"
+  },
+  {
+   "id": "NFR-observability",
+   "status": "n_a",
+   "answer": "No logging or metrics; prints nothing.",
+   "source": "request C4"
+  },
+  {
+   "id": "NFR-compliance",
+   "status": "decided",
+   "answer": "No regulatory or internal-policy constraint applies to this slice.",
+   "source": "request C2",
+   "quote": "No banking-regulation or internal-policy constraint applies to this slice."
+  },
+  {
+   "id": "TST-strategy",
+   "status": "decided",
+   "answer": "Backend writes unit tests first (TDD) in test/ratings/notch.test.mjs with node:test + node:assert/strict. QA re-runs them and checks C1-C3 edges: all 19 ratings, extremes AAA->CCC- = 18 and CCC-->AAA = -18, trimming and case, every C2 invalid kind. No coverage percentage, no test environments.",
+   "source": "CLAUDE.md; request Contract",
+   "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`."
+  },
+  {
+   "id": "DEL-ci",
+   "status": "decided",
+   "answer": "`node --test` (= npm test) must pass. No lint, typecheck or security scan configured.",
+   "source": "package.json",
+   "quote": "\"test\": \"node --test\""
+  },
+  {
+   "id": "DEL-deploy",
+   "status": "decided",
+   "answer": "Not deployed; other modules import src/ratings/notch.mjs. No flags or migrations; rollback = revert the merge.",
+   "source": "request C4",
+   "quote": "other parts of the POC import the function"
+  },
+  {
+   "id": "DEL-docs",
+   "status": "n_a",
+   "question": "Is any documentation required (JSDoc, README line, changelog)?",
+   "options": [
+    "JSDoc on the two exports only",
+    "JSDoc plus a README line",
+    "None"
+   ],
+   "impact": "Affects only effort; no behaviour change.",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "Is any documentation required (JSDoc, README line, changelog)?",
+     "at": "2026-10-05T06:22:21.256Z"
+    }
+   ],
+   "answer": "No separate documentation deliverable (no README, changelog or runbook); the contract is in the request and the tests",
+   "source": "pm: michael 2026-10-05 — one-function slice; the request Contract and the tests document the behaviour"
+  },
+  {
+   "id": "X-scale-shape",
+   "status": "decided",
+   "question": "Is RATING_SCALE a plain Array or a frozen Array of the 19 upper-case strings?",
+   "options": [
+    "Frozen Array",
+    "Plain Array"
+   ],
+   "impact": "Frozen stops consumers breaking notchChange; C1 fixes order and content either way.",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "Is RATING_SCALE a plain Array or a frozen Array of the 19 upper-case strings?",
+     "at": "2026-10-05T06:22:21.631Z"
+    }
+   ],
+   "answer": "Frozen Array of the 19 upper-case strings",
+   "source": "pm: michael 2026-10-05 — Consumers cannot silently break notchChange; C1 fixes order and content either way"
+  },
+  {
+   "id": "X-error-message",
+   "status": "decided",
+   "question": "What should the RangeError message say, and which argument is checked first?",
+   "options": [
+    "Names the argument and bad value; previous checked first",
+    "Generic message"
+   ],
+   "impact": "Diagnostics only; C2 fixes the error type.",
+   "owner": "pm",
+   "history": [
+    {
+     "status": "open",
+     "question": "What should the RangeError message say, and which argument is checked first?",
+     "at": "2026-10-05T06:22:22.013Z"
+    }
+   ],
+   "answer": "RangeError message names the argument and the bad value; previous is checked first",
+   "source": "pm: michael 2026-10-05 — Better diagnostics; tests assert only the error type per C2"
+  }
+ ],
+ "architecture": {
+  "style": "library",
+  "components": [
+   {
+    "id": "ratings",
+    "kind": "library",
+    "stack": [
+     "javascript"
+    ],
+    "path": [
+     "src/ratings/",
+     "test/ratings/"
+    ],
+    "owner": "backend",
+    "reviewer": "reviewer",
+    "notes": "Pure ESM module src/ratings/notch.mjs (RATING_SCALE, notchChange); tests in test/ratings/notch.test.mjs; no deps, no I/O."
+   }
+  ]
+ }
+}

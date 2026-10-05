@@ -9,6 +9,10 @@ owned="$(owned_job)" || owned="$(active_jobs | awk 'NR==1')"
 [[ -n $owned ]] || exit 0
 IFS=$'\t' read -r job root <<<"$owned"
 
+# No agent type = one of Claude Code's own helper forks (status line, prompt suggestion, tool summaries — seen live in
+# 2.1.x on every session, with lines like "/deliver status"), never a role's work: not a role run, not logged.
+[[ -n "$(hk .agent_type)" ]] || exit 0
+
 msg="$(hk .last_assistant_message)"
 if [[ -z $msg ]]; then # older Claude Code: read the agent's own transcript
   at="$(hk .agent_transcript_path)"

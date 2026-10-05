@@ -371,6 +371,9 @@ contains "writes outside the repo are ignored" "$(wg "$TMP/elsewhere.txt" "$R" a
 
 out="$(printf '%s' "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\",\"agent_type\":\"backend-dev\",\"agent_id\":\"abcdef1234\",\"last_assistant_message\":\"status: done\\ncommit: 123\"}" | "$H/subagent-log.sh"; tail -1 "$R/.work/$JOB/events.log")"
 contains "subagent-log appends the agent's summary" "$out" "backend-dev abcdef12: status: done commit: 123"
+n0="$(wc -l < "$R/.work/$JOB/events.log")"
+printf '%s' "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\",\"agent_type\":\"\",\"agent_id\":\"abcdef1234\",\"last_assistant_message\":\"/deliver status\"}" | "$H/subagent-log.sh"
+expect_ok "subagent-log skips Claude Code's own helper forks (no agent type)" test "$(wc -l < "$R/.work/$JOB/events.log")" -eq "$n0"
 
 echo "munder difflin dispatch"
 export HIVE_ROOT="$TMP/hive"; mkdir -p "$HIVE_ROOT"

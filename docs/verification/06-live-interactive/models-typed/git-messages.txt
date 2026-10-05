@@ -1,0 +1,22 @@
+c0fadc725f98981761918de29157c4cccb9eb797
+Merge job/JOB-20261005-0619-rating-notch-change: Rating notch change
+
+----
+979dcf9d81d03d16cf45436651e47cabfa7de771
+Merge T-01: ratings: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with TDD unit tests
+
+----
+b6af6a5587a81a5349d510a06b9230f16d8790c9
+T-01 QA: integration tests
+
+----
+e3b3d8e28d923322c7d178ae4f3d16a3579b6c96
+T-01: ratings: add notch.mjs with RATING_SCALE and notchChange pure function
+
+Implement src/ratings/notch.mjs exporting RATING_SCALE (frozen 19-entry array) and notchChange(previous, current) function that returns the signed integer notch change between two credit ratings. The function normalizes inputs (trim + toUpperCase), validates them as primitive strings, and throws RangeError for any invalid input. Error messages safely handle Symbols and Objects without throwing TypeError. All 81 unit tests covering AC-1 to AC-12 and AC-14 pass.
+
+----
+3fca1aaab2f588ff4e8ad631894d3c4a0aebb97f
+seed: watchlist-poc
+
+----
