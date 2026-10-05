@@ -117,6 +117,9 @@ again once the new person is seated), and a new person is hired for that seat on
 is logged and listed in the PR under "Decisions Michael took himself". `dl md-hire` never re-hires a failed seat by itself
 (the same model would fail the same way); `dl md-send` refuses a seat that is not live and names the reason.
 
+The app keeps a failed worker's card on the floor (it has no way to be told to remove it); it does no work and goes when
+you close it or restart the app. The seat's new person sits at a new card with the same face.
+
 **The model is always explicit.** A seat starts on the re-seat's `--model` if it was given one, else on its role's `model`,
 else on `munder.model` (kit default `sonnet`) — never on the app's default model, which may be one the account has no credit
 for.

@@ -64,8 +64,9 @@ async function answer(win) {
   // upper-cased). A normal click first; cards that are still sliding in never count as stable, so then the DOM click
   // event, which React handles exactly like a click on the card. A double click would rename the person instead.
   const why = (e) => String(e?.message ?? e).split('\n').filter((l) => l.trim()).slice(0, 6).join(' | ').slice(0, 400);
-  const select = async (name) => {
-    const el = win.locator(`[title="${name} — double-click to rename"]`).first();
+  // nth: several people can share a name — a re-seated seat leaves the failed worker's card on the floor (the app keeps it)
+  const select = async (name, nth = 0) => {
+    const el = win.locator(`[title="${name} — double-click to rename"]`).nth(nth);
     if (!(await el.count())) {
       if (name !== 'Michael') { log(`select ${name}: no card on the agent strip`); return false; }
       try { await win.getByText('BOSS', { exact: true }).first().click({ timeout: 3000 }); return true; } catch (e) { log(`select Michael failed: ${why(e)}`); return false; }
@@ -78,11 +79,17 @@ async function answer(win) {
   focusMichael = () => select('Michael');
   const seatShot = async (seat, b, tag) => {
     const name = b.name ?? (b.name = floorName(b.worker));
-    if (!name || !(await select(name))) return;
-    // Proof only when the Command Center really shows this person: its terminal header names the worker ("pty worker-…").
-    // polled on a timer, not on animation frames (which a background window may not get)
-    const shown = await win.waitForFunction((w) => document.body.innerText.includes(w), b.worker, { polling: 250, timeout: 5000 }).then(() => true, () => false);
-    if (!shown) { log(`select ${name}: the Command Center does not show ${b.worker} — no screenshot`); await select('Michael'); return; }
+    if (!name) return;
+    // Proof only when the Command Center really shows this person: its terminal header names the worker ("pty worker-…"),
+    // polled on a timer, not on animation frames (which a background window may not get). Same-named cards: try each,
+    // newest first (a re-seated seat's failed worker keeps its card).
+    const n = await win.locator(`[title="${name} — double-click to rename"]`).count();
+    let shown = false;
+    for (let k = Math.max(n, 1) - 1; k >= 0 && !shown; k--) {
+      if (!(await select(name, k))) continue;
+      shown = await win.waitForFunction((w) => document.body.innerText.includes(w), b.worker, { polling: 250, timeout: 5000 }).then(() => true, () => false);
+    }
+    if (!shown) { log(`select ${name}: the Command Center does not show ${b.worker} (${n} card(s) named ${name}) — no screenshot`); await select('Michael'); return; }
     await win.waitForTimeout(600);
     const file = `p${String(++ns).padStart(3, '0')}-${seat.replace('#', '')}-${b.task}-${tag}.png`;
     await snap(`${shots}/${file}`); log(`shot ${file} (${name}'s own terminal, ${b.worker})`);
