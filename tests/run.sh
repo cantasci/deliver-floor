@@ -39,7 +39,7 @@ SDIR="$HERE/kit/skills/deliver"
 
 echo "macOS bash 3.2"
 expect_ok "dl, hooks and scripts parse and run on bash 3.2 (no case in \$( ), no bare empty arrays, no bash-4 features)" \
-  node "$HERE/tests/lint-bash32.mjs" "$HERE/kit/skills/deliver/bin/dl" "$HERE"/kit/hooks/deliver/*.sh "$HERE"/scripts/*.sh
+  node "$HERE/tests/lint-bash32.mjs" "$HERE/kit/skills/deliver/bin/dl" "$HERE/kit/skills/deliver/bin/md-brief.sh" "$HERE"/kit/hooks/deliver/*.sh "$HERE"/scripts/*.sh
 
 echo "scope matcher"
 m() { printf '%s\n' "$2" | node "$SDIR/bin/scope.mjs" "$1"; }
@@ -535,7 +535,7 @@ contains "…nor record decisions" "$(AGENT_ID=worker-seat-x bg '"$DL" pm-decide
 contains "a seat may not run flow commands" "$(AGENT_ID=worker-seat-x bg "\"\$DL\" qa T-03 pass")" "rc=2"
 contains "Michael (god) still writes the job's files" "$(AGENT_ID=god wg "$R/.work/$JOB/plan.md" "$R" "" "$TR")" "rc=0"
 # A floor job is driven only by the app's Michael: a second Michael in a plain terminal would read the same inbox
-contains "outside the app, a floor job's flow is refused" "$(env -u AGENT_ID "$DL" md-inbox 2>&1)" "give /deliver to Michael in the app"
+contains "outside the app, a floor job's flow is refused" "$(env -u AGENT_ID "$DL" md-inbox 2>&1)" "Hand it to Michael in the app: dl floor-open"
 contains "…the refusal says how to switch to subagents by hand" "$(env -u AGENT_ID "$DL" phase executing 2>&1)" 'dl dispatch subagent'
 expect_ok "…while the human can still read and answer from any terminal (status, md-seats)" env -u AGENT_ID "$DL" status
 expect_ok "…md-seats" env -u AGENT_ID "$DL" md-seats
@@ -548,6 +548,23 @@ expect_ok "…and opened by the app's Michael" bash -c "cd '$NF' && AGENT_ID=god
 contains "…as a floor job" "$(jq -r .settings.dispatch "$NF/.work/$(cat "$NF/.work/ACTIVE")/job.json")" "munder"
 (cd "$NF" && git rm -q --cached a >/dev/null; rm -rf .work; echo '{"dispatch":"subagent"}' > .deliver.json)
 expect_ok "subagents are an explicit choice: \"dispatch\": \"subagent\" in .deliver.json, dl new from any terminal" bash -c "cd '$NF' && env -u AGENT_ID '$DL' new t2 r2"
+# /deliver typed in a terminal for a floor repo: dl floor-open opens the app on the repo's floor and hands Michael the job
+FO="$TMP/floorrepo"; FH="$TMP/floorhome"; FX="$TMP/fakehome"; mkdir -p "$FO" "$FX" && (cd "$FO" && git init -q -b main && echo x > a && git add -A && git commit -qm i)
+jq -n --arg h "$FH" --arg c "touch '$TMP/app-started'" '{munder:{hive_root:$h, app_command:$c}}' > "$FO/.deliver.json"
+out="$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "examples/JOB.md" 2>&1)"
+contains "floor-open: the app is started on the repo's floor" "$out" "Munder Difflin is starting on $FH"
+for i in 1 2 3 4 5 6 7 8 9 10; do [[ -f $TMP/app-started ]] && break; sleep 0.3; done
+[[ -f $TMP/app-started ]] && ok "…with munder.app_command" || bad "app command not run"
+contains "…aimed at that floor (the app's harnessHome) with the repo registered" "$(jq -c '{harnessHome, r:(.registeredRepos|length), s:.orchestratorMaySpawn}' "$FX/.config/munder-difflin/config.json")" "{\"harnessHome\":\"$FH\",\"r\":1,\"s\":true}"
+grep -q "deliver:begin" "$FH/CLAUDE.md" && ok "…Michael is taught /deliver there (the brief ships in the plugin)" || bad "no brief in $FH"
+msg="$(ls "$FH"/hive/agents/god/inbox/*.json 2>/dev/null | head -1)"
+contains "…and the job is in Michael's inbox as the human's request, with the repo" "$(jq -c '{from,to,act,b:.body}' "$msg" 2>/dev/null)" "{\"from\":\"human\",\"to\":\"god\",\"act\":\"request\",\"b\":\"/deliver examples/JOB.md\\nREPO: $FO\"}"
+mkdir -p "$FH/hive"; jq -n --argjson t "$(( $(date +%s) * 1000 ))" '{godId:"god", agents:{god:{lastSeen:$t}}}' > "$FH/hive/registry.json"; rm -f "$TMP/app-started"
+out="$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "again" 2>&1)"
+[[ $out == *"is open on $FH"* && ! -f $TMP/app-started ]] && ok "an app already open on that floor is not started twice — the job just goes to Michael" || bad "floor-open with app running: $out"
+jq '.harnessHome = "/elsewhere"' "$FX/.config/munder-difflin/config.json" > "$TMP/c" && mv "$TMP/c" "$FX/.config/munder-difflin/config.json"
+contains "an app open on another floor is not hijacked" "$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "x" 2>&1)" "open on another floor (/elsewhere)"
+
 # The project's config file: the first /deliver writes a complete .deliver.json; its per-role defaults reach the job
 PC="$TMP/projcfg"; mkdir -p "$PC" && (cd "$PC" && git init -q -b main && echo '{"scripts":{"test":"node --test"}}' > package.json && git add -A && git commit -qm i)
 out="$(cd "$PC" && AGENT_ID=god "$DL" new t r 2>&1)"; contains "the first /deliver in a repo writes its config file" "$out" "created $PC/.deliver.json"

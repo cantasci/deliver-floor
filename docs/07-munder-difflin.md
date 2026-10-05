@@ -39,7 +39,14 @@ The floor is the default.
 Back to the floor: remove the key (or set `"munder"`), or `dl dispatch munder "<why>"` for a running job. `dl dispatch` is the
 human's command: bash-guard refuses it to every agent, Michael included, and it is refused in unattended sessions.
 
-**Never run `/deliver` for a floor job from a separate terminal.** The app's Michael reads the hive inbox; a second Michael
+**`/deliver` in a terminal opens the floor.** Type `/deliver <request>` in a plain `claude` session in a floor repo, and the
+session does not run the job itself: `dl floor-open` aims Munder Difflin at the repo's floor (`munder.hive_root` in
+`.deliver.json`, else the app's current floor), starts the app when it is not running (`munder.app_command`, else the
+installed app, else the source checkout `scripts/init.sh --munder` made), teaches Michael `/deliver` there, and puts your
+request in his inbox — the app wakes him. You follow the job on the floor (or `dl status` / `dl kanban` from the terminal).
+An app already open on another floor is never switched: you are told to open the repo's floor in it.
+
+**The job itself never runs from a separate terminal.** The app's Michael reads the hive inbox; a second Michael
 in another terminal reads the same inbox, and the two race for every seat's report (seen on a user's machine). `dl` refuses
 every flow command of a floor job unless it comes from the app's Michael (`AGENT_ID=god`, which the app sets in his
 terminal): `this job runs on the Munder Difflin floor … give /deliver to Michael in the app`. From any terminal you can still

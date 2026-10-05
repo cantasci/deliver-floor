@@ -51,6 +51,7 @@
 #   dl md-hire                     Munder Difflin: seat one person per role seat (job.roles[].count) — the whole job
 #   dl md-seats                    who sits where: pending / starting / live / gone / failed (with why), each seat's open task
 #   dl config [--init]            the settings that apply in this repo (kit defaults ⊕ .deliver.json); --init writes .deliver.json
+#   dl floor-open "<request>"     /deliver from a terminal in a floor repo: open Munder Difflin on its floor, hand Michael the job
 #   dl dispatch munder|subagent "<why>"   (human) switch how this job's roles run: floor seats (default) or subagents
 #   dl md-reseat <seat> "<why>" [--model m]   a failed or stuck seat gets a new person (another model for a credit error)
 #   dl md-send <seat|role> <task> <prompt-file> [--agent a]   a work order to a seat: role card + agent instructions + task
@@ -1104,6 +1105,7 @@ cmd_md_dispatch() {
 CAST="jim pam dwight kevin angela oscar stanley phyllis andy kelly ryan toby creed meredith"
 md_hive() {
   local h="${HIVE_ROOT:-$(setting munder.hive_root)}"
+  [[ -z ${HIVE_ROOT:-} && -n $h && -d $h/hive ]] && h="$h/hive"   # munder.hive_root may name the floor's folder (harnessHome)
   [[ -n $h && -d $h ]] || die "HIVE_ROOT is not set — seats only exist inside Munder Difflin (or set settings.munder.hive_root)"
   echo "$h"
 }
@@ -1458,7 +1460,78 @@ floor_guard() {
   [[ "$(dispatch_of "$1")" == munder ]] || return 0
   [[ ${AGENT_ID:-} == worker-* ]] && refuse 9 "a seat does not run the flow — Michael records every step"
   local how="\"dispatch\": \"subagent\" in .deliver.json"; [[ $1 == new ]] || how+=" for new jobs, or dl dispatch subagent \"<why>\" for this one"
-  refuse 9 "this job runs on the Munder Difflin floor (dispatch: munder, the default): give /deliver to Michael in the app — never from a separate terminal, where a second Michael would read the same inbox. To work without the floor (Claude Code subagents), the human switches by hand: $how — see docs/07-munder-difflin.md#choosing-the-mode"
+  refuse 9 "this job runs on the Munder Difflin floor (dispatch: munder, the default): never from a separate terminal, where a second Michael would read the same inbox. Hand it to Michael in the app: dl floor-open \"<request>\" opens the floor and gives him the job. To work without the floor (Claude Code subagents), the human switches by hand: $how — see docs/07-munder-difflin.md#choosing-the-mode"
+}
+
+# dl floor-open "<request>" — /deliver typed in a terminal for a floor repo: open Munder Difflin on this repo's floor and hand
+# the request to Michael there (his inbox; the app wakes him when idle, or he reads it when he starts). Nothing runs here.
+md_app_config() { # the app's config.json (userData: "munder-difflin" for source builds, "Munder Difflin" for installed apps)
+  local d c
+  case "$(uname -s)" in
+    Darwin) d="$HOME/Library/Application Support" ;;
+    MINGW*|MSYS*|CYGWIN*) d="${APPDATA:-$HOME/AppData/Roaming}" ;;
+    *) d="${XDG_CONFIG_HOME:-$HOME/.config}" ;;
+  esac
+  for c in "$d/munder-difflin/config.json" "$d/Munder Difflin/config.json"; do [[ -f $c ]] && { echo "$c"; return 0; }; done
+  echo "$d/munder-difflin/config.json"
+}
+md_app_running() { # md_app_running <floor> <app config.json> — Michael's heartbeat (≤ 2 min), or the app's single-instance lock
+  local reg=$1/hive/registry.json seen lock pid
+  seen="$(jq -r '.agents[.godId // "god"].lastSeen // 0' "$reg" 2>/dev/null || echo 0)"
+  [[ $(( $(date +%s) - ${seen:-0} / 1000 )) -lt 120 ]] && return 0
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) tasklist //FI "IMAGENAME eq Munder Difflin.exe" 2>/dev/null | grep -qi "Munder Difflin" ;;
+    *) lock="$(dirname "$2")/SingletonLock"   # Electron's lock: a symlink to "<host>-<pid>" while the app runs
+       [[ -L $lock ]] || return 1; pid="$(readlink "$lock")"; pid=${pid##*-}
+       [[ $pid =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null ;;
+  esac
+}
+md_app_start() { # munder.app_command, else the installed app, else the source checkout scripts/init.sh --munder made
+  local cmd; cmd="$(project_setting munder.app_command)"
+  local log="$1/deliver-app.log"
+  if [[ -n $cmd ]]; then (nohup bash -c "$cmd" >"$log" 2>&1 &) ; return 0; fi
+  case "$(uname -s)" in
+    Darwin) open -a "Munder Difflin" 2>/dev/null && return 0 ;;
+    MINGW*|MSYS*|CYGWIN*) local exe="${LOCALAPPDATA:-}/Programs/Munder Difflin/Munder Difflin.exe"; [[ -f $exe ]] && { cmd.exe //c start "" "$(cygpath -w "$exe" 2>/dev/null || echo "$exe")" >/dev/null 2>&1; return 0; } ;;
+  esac
+  local src="${XDG_DATA_HOME:-$HOME/.local/share}/munder-difflin"
+  if [[ -f $src/package.json ]]; then (cd "$src" && nohup npm run preview >"$log" 2>&1 &); return 0; fi
+  return 1
+}
+project_setting() { # a key from .deliver.json over the kit defaults (no job needed)
+  if [[ -f $ROOT/.deliver.json ]]; then jq -rs ".[0] * .[1] | .$1 // empty" "$CONFIG" "$ROOT/.deliver.json"; else jq -r ".$1 // empty" "$CONFIG"; fi
+}
+cmd_floor_open() {
+  resolve_root
+  local req=${1:-}; [[ -n $req ]] || die 'usage: dl floor-open "<the /deliver request: text or a path to a requirements .md>"'
+  [[ "$(dispatch_of new)" == munder ]] || refuse 1 "this repo runs with subagents (dispatch: subagent) — just run /deliver here"
+  local home cfg h; cfg="$(md_app_config)"
+  home="$(project_setting munder.hive_root)"; home=${home%/}; [[ $(basename "${home:-x}") == hive && -f $home/registry.json ]] && home="$(dirname "$home")"
+  [[ -n $home ]] || home="$(jq -r '.harnessHome // empty' "$cfg" 2>/dev/null || true)"
+  [[ -n $home ]] || refuse 1 "no floor for this repo: set \"munder\": {\"hive_root\": \"<folder>\"} in .deliver.json (scripts/init.sh --munder --hive <folder> --repo $ROOT does it all)"
+  home="${home/#\~/$HOME}"; mkdir -p "$home"
+  local started=0
+  if md_app_running "$home" "$cfg"; then
+    h="$(jq -r '.harnessHome // empty' "$cfg" 2>/dev/null || true)"
+    [[ -z $h || "${h/#\~/$HOME}" == "$home" ]] || refuse 1 "Munder Difflin is open on another floor ($h) — open $home in it (File → Open floor), or close it and run /deliver again"
+  else
+    [[ -f $cfg ]] || { mkdir -p "$(dirname "$cfg")"; echo '{}' > "$cfg"; }
+    jq --arg h "$home" --arg r "$ROOT" '.harnessHome = $h | .recentHives = ([$h] + ((.recentHives // []) - [$h]))
+      | .registeredRepos = (((.registeredRepos // []) + [$r]) | unique) | .orchestratorMaySpawn = true
+      | .workerIdleTimeoutMinutes = ([.workerIdleTimeoutMinutes // 0, 480] | max) | .maxConcurrentWorkers = ([.maxConcurrentWorkers // 0, 12] | max)' \
+      "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+    bash "$BIN_DIR/md-brief.sh" "$home" "$ROOT" >/dev/null   # teach Michael /deliver (idempotent: refreshes the section)
+    md_app_start "$home" || refuse 1 "Munder Difflin is not installed here — install it (https://munderdiffl.in, or scripts/init.sh --munder), or set munder.app_command in .deliver.json"
+    started=1
+  fi
+  # The request goes into Michael's inbox as the human's message; the router-side wake (or his start-up inbox drain) picks it up.
+  local inbox="$home/hive/agents/god/inbox" id; mkdir -p "$inbox"; id="$(date -u +%Y%m%dT%H%M%S)-deliver-$RANDOM"
+  jq -n --arg id "$id" --arg body "/deliver $req
+REPO: $ROOT" --arg t "$(date -u +%FT%T.000Z)" \
+    '{id:$id, conversation:("deliver-" + $id), from:"human", to:"god", act:"request", subject:"/deliver", body:$body, hops:0, requires_reply:false, needs_human:false, created_at:$t}' \
+    > "$inbox/.$id.tmp" && mv "$inbox/.$id.tmp" "$inbox/$id.json"
+  echo "Munder Difflin $([[ $started == 1 ]] && echo "is starting on" || echo "is open on") $home — the job went to Michael there (his inbox: $id)."
+  echo "Follow it on the floor; from here: dl status · dl kanban · dl md-seats (read only — Michael in the app drives the job)."
 }
 
 # dl dispatch munder|subagent "<why>" — the human switches how this job's roles run. Never Michael's call (bash-guard).
@@ -1479,6 +1552,7 @@ main() {
   floor_guard "$c"
   case $c in
     dispatch) cmd_dispatch "$@" ;;
+    floor-open) cmd_floor_open "$@" ;;
     config) cmd_config "$@" ;;
     new) cmd_new "$@" ;;
     status) cmd_status ;;
@@ -1522,7 +1596,7 @@ main() {
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,67p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,68p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

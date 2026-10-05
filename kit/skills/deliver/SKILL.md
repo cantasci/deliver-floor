@@ -23,9 +23,10 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
   every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
 - **Run mode.** Munder Difflin is the default (`settings.dispatch: "munder"`): you run as Michael inside the app, and every
   role is a person at a seat (see **Munder Difflin** below). Claude Code subagents are used only when the human chose them
-  by hand (`"dispatch": "subagent"` in `.deliver.json`, or `dl dispatch subagent "<why>"`). If `dl` refuses with "this job
-  runs on the Munder Difflin floor", you are not the app's Michael: stop and tell the human exactly that message — never
-  change the mode yourself.
+  by hand (`"dispatch": "subagent"` in `.deliver.json`, or `dl dispatch subagent "<why>"`). **`/deliver` in a plain terminal
+  for a floor repo** (`dl` says "this job runs on the Munder Difflin floor", or `AGENT_ID` is not `god` and the repo's mode is
+  `munder`): do not run the flow here. Run `"$DL" floor-open "<the request exactly as given>"` — it opens Munder Difflin on the
+  repo's floor and hands the job to Michael there — tell the human what it printed, and stop. Never change the mode yourself.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.
 - **Agent names.** This playbook, job.json and board.json use plain names (`backend-dev`). When the kit is installed as a
   plugin, ROLES.md and the role cards list its agents with the plugin prefix (`deliver:backend-dev`): `subagent_type` is
