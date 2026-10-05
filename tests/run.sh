@@ -37,6 +37,10 @@ ready_all() { # ready_all [<id> open] — the BA's readiness review: every appli
 }
 SDIR="$HERE/kit/skills/deliver"
 
+echo "macOS bash 3.2"
+expect_ok "dl, hooks and scripts parse and run on bash 3.2 (no case in \$( ), no bare empty arrays, no bash-4 features)" \
+  node "$HERE/tests/lint-bash32.mjs" "$HERE/kit/skills/deliver/bin/dl" "$HERE"/kit/hooks/deliver/*.sh "$HERE"/scripts/*.sh
+
 echo "scope matcher"
 m() { printf '%s\n' "$2" | node "$SDIR/bin/scope.mjs" "$1"; }
 [[ -z "$(m '["src/a/**"]' src/a/b/c.ts)" ]] && ok "** spans directories" || bad "** spans directories"

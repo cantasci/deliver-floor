@@ -425,7 +425,11 @@ cmd_phase() {
       planning)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml"
         local rr=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >&2 || rr=$?
-        [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $(case $rr in 3) echo "open questions for the human remain (QUESTIONS.md) — ask, record with dl clarify" ;; 4) echo "implementation details are open — decide them as PM: dl decide <id> \"<decision>\" \"<rationale>\"" ;; *) echo "readiness.json is incomplete (dl readiness)" ;; esac)" ;;
+        # (bash 3.2 — macOS — cannot parse a case statement inside $( ): the message is chosen first)
+        local why="readiness.json is incomplete (dl readiness)"
+        [[ $rr -eq 3 ]] && why="open questions for the human remain (QUESTIONS.md) — ask, record with dl clarify"
+        [[ $rr -eq 4 ]] && why="implementation details are open — decide them as PM: dl decide <id> \"<decision>\" \"<rationale>\""
+        [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $why" ;;
       awaiting_plan_approval)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
@@ -1138,7 +1142,7 @@ cmd_md_seats() {
     while read -r s; do
       printf '%s\t%s\t%s\t%s\n' "$s" "$(seat_state "$s" "$hive")" "$(seat_get "$s" .worker)" "$(seat_get "$s" .task)"
     done < <(seat_list); } | table
-  local miss; miss="$(while read -r s; do case "$(seat_state "$s" "$hive")" in none|gone|failed) printf '%s ' "$s" ;; esac; done < <(seat_list))"
+  local miss="" st; while read -r s; do st="$(seat_state "$s" "$hive")"; [[ $st == none || $st == gone || $st == failed ]] && miss+="$s "; done < <(seat_list)
   [[ -z $miss ]] || echo "not seated: $miss→ dl md-hire"
 }
 
@@ -1238,7 +1242,7 @@ cmd_md_inbox() {
   mkdir -p "$dir/.done"
   map="$(jq -c '[.munder.seats // {} | to_entries[] | {key: .value.worker, value: .key}] | from_entries' "$JOBJ")"
   local files=(); while IFS= read -r f; do files+=("$f"); done < <(find "$dir" -maxdepth 1 -name '*.json' | sort)
-  for f in "${files[@]}"; do
+  for f in ${files[@]+"${files[@]}"}; do   # empty-array guard: bash 3.2 + set -u calls "${files[@]}" unbound
     jq -r --argjson m "$map" '"── \(.created_at // "?") · \($m[.from] // .from) · \(.act // "inform") · \(.subject // "")\n\(.body // "" | split("\n")[0:40] | join("\n"))\n"' "$f" 2>/dev/null \
       || echo "── (unreadable message: $(basename "$f"))"
     mv "$f" "$dir/.done/"; n=$((n + 1))

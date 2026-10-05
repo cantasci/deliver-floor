@@ -16,7 +16,7 @@ active_jobs() {
   [[ -n ${CLAUDE_PROJECT_DIR:-} ]] && roots+=("$CLAUDE_PROJECT_DIR")
   r="$(hk .cwd)"; [[ -n $r ]] && roots+=("$(git -C "$r" rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's#/\.git$##')")
   if [[ -d $DELIVER_REG ]]; then for f in "$DELIVER_REG"/*; do [[ -f $f ]] && roots+=("$(cat "$f")"); done; fi
-  for r in "${roots[@]}"; do
+  for r in ${roots[@]+"${roots[@]}"}; do   # bash 3.2 + set -u: an empty array is "unbound"
     [[ -n $r && -f $r/.work/ACTIVE ]] || continue
     id="$(cat "$r/.work/ACTIVE")"
     [[ -f $r/.work/$id/job.json && $seen != *"|$id|"* ]] || continue
