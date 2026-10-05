@@ -53,4 +53,4 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 
 | # | What | Status |
 | --- | --- | --- |
-| P1 | Pull request [cantasci/skills-shop#1](https://github.com/cantasci/skills-shop/pull/1) | open, awaiting review |
+| P1 | Pull request [cantasci/skills-shop#1](https://github.com/cantasci/skills-shop/pull/1) | **merged into main** (2026-10-05, ceef77c) |
