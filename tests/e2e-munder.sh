@@ -13,6 +13,9 @@
 #   E2E_SAY="<text>"      added to Michael's /deliver message (e.g. which model a role works on)
 #   E2E_SEAT_MODEL=<role>:<seat name regex>:<m>   judge from the transcripts: that seat on <m>, every other seat on
 #                         E2E_MODEL, Michael on neither
+#   E2E_EXPECT_RESEAT=1  the floor default model is broken on purpose (E2E_MODEL=claude-nonexistent-0, like an app default
+#                         with no credit): every seat must be seen as failed and re-seated by Michael on a working model,
+#                         as his own decision (no question to the human), listed in the PR — and the job still delivered
 #   Needs: xvfb-run, Playwright (node), network to GitHub/npm. Costs real tokens.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -124,6 +127,23 @@ if [[ -n ${E2E_SEAT_MODEL:-} && -n $J ]]; then
   . "$HERE/tests/lib-models.sh"; IFS=: read -r mr ms mm <<<"$E2E_SEAT_MODEL"
   dm="${E2E_MODEL:-claude-sonnet-5-5}"; dm="$(sed -E 's/^claude-//; s/-[0-9].*$//' <<<"$dm")"
   models_floor "$W/hive/hive/registry.json" "$ISO_HOME/.claude/projects" "$J/job.json" "$dm" "$mr" "$ms" "$mm"
+fi
+
+if [[ ${E2E_EXPECT_RESEAT:-0} == 1 && -n $J ]]; then
+  step "seats that fail: seen, re-seated by Michael on a working model, reported in the PR"
+  bad_m="${E2E_MODEL:-}"; nseats="$(jq '[.munder.seats // {} | keys[]] | length' "$J/job.json")"
+  nres="$(grep -cP '\tmd-reseat\t' "$J/events.log")"
+  log "re-seats: $nres for $nseats seat(s)"; grep -P '\tmd-reseat\t' "$J/events.log" | cut -f3 | head -12 | sed 's/^/    /' | tee -a "$REP" >/dev/null
+  [[ $nres -ge $nseats ]] && ok "every seat that started on the broken model was re-seated ($nres re-seats, $nseats seats)" || bad "only $nres re-seat(s) for $nseats seats"
+  jq -e --arg b "$bad_m" '[.munder.seats[] | .model // ""] | all(. != "" and . != $b)' "$J/job.json" >/dev/null \
+    && ok "…each on a model Michael chose: $(jq -r '[.munder.seats[] | .model] | unique | join(", ")' "$J/job.json")" || bad "seat models: $(jq -c '[.munder.seats[] | .model]' "$J/job.json")"
+  jq -e '[.pm_decisions[]? | select(.what | startswith("re-seated"))] | length > 0' "$J/job.json" >/dev/null && ok "…recorded as Michael's own decisions" || bad "no re-seat decision recorded"
+  grep -q "re-seated" "$J/report.md" && ok "…and listed in the PR body" || bad "the PR body does not list the re-seats"
+  first_plan="$(grep -n $'\tphase\tplanning' "$J/events.log" | head -1 | cut -d: -f1)"
+  [[ -z $first_plan || -z "$(tail -n +"$first_plan" "$J/events.log" | grep -P '\tclarify\t')" ]] && ok "no question to the human about it" || bad "a question after planning"
+  . "$HERE/tests/lib-models.sh"
+  M="$(node "$HERE/tests/check-models.mjs" floor "$W/hive/hive/registry.json" "$ISO_HOME/.claude/projects")"; echo "$M" > "$W/models.json"; _models_dump "$M"
+  jq -e '[.roles[] | keys[] | select(. != "<synthetic>")] | length > 0' <<<"$M" >/dev/null && ok "the re-seated people really worked (Claude replies from a real model)" || bad "no real model replies from the seats"
 fi
 
 step "4 · verify the delivered job"
