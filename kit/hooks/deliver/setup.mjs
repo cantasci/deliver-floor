@@ -78,7 +78,7 @@ if (projCfg && mode === "munder") {
   const ud = win ? join(process.env.APPDATA ?? "", "Munder Difflin") : platform() === "darwin" ? join(homedir(), "Library", "Application Support", "munder-difflin") : join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "munder-difflin");
   const alt = win ? join(process.env.APPDATA ?? "", "munder-difflin") : platform() === "darwin" ? join(homedir(), "Library", "Application Support", "Munder Difflin") : ud;
   if (!existsSync(join(ud, "config.json")) && !existsSync(join(alt, "config.json")))
-    warn.push(`this repo runs on the Munder Difflin floor (the default) but the app is not set up — install it (https://munderdiffl.in, or scripts/init.sh --munder), or choose subagents by hand: "dispatch": "subagent" in .deliver.json`);
+    warn.push(`this repo runs on the Munder Difflin floor (the default) but the app is not set up — install it with scripts/init.sh --munder from https://github.com/cantasci/deliver-floor (the cantasci/munder-difflin fork; the released app's seats never start), or choose subagents by hand: "dispatch": "subagent" in .deliver.json`);
 }
 
 if (done.length || warn.length) {

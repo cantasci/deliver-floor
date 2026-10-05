@@ -68,3 +68,8 @@ Not a live run, but its failures belong here too:
   `tests/verify-job.sh` now read to EOF (`gq`). 9 consecutive full runs green afterwards (`fccfa73`).
 - On a fresh clone the tracker-factory check aborted the suite: `bin/trackers/` had never been committed (git drops empty
   folders), so the documented extension point did not exist. It ships with a README now (`fccfa73`).
+- Merging main (user config layer, fork init) into the branch: `scripts/install.sh` stopped half way when two installs
+  ran in the same second (`mv: cannot overwrite …/.deliver-backups/<ts>/skills/deliver/deliver`) — the backup now goes
+  beside the old one, with a check. And the first `.deliver.json` was written from the shipped defaults only, so the
+  user's own `$DELIVER_HOME/config.json` never applied in a new repo — it now starts from defaults ⊕ the user's config
+  (`0f9f63c`).

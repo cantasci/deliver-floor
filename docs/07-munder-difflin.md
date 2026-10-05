@@ -1,6 +1,6 @@
 # 07 — Munder Difflin: Michael on the office floor
 
-[Munder Difflin](https://munderdiffl.in) is a desktop app (Electron) where agents sit at desks on an office floor: a god agent
+[Munder Difflin](https://github.com/cantasci/munder-difflin) (the fork `scripts/init.sh --munder` installs; upstream is [munderdiffl.in](https://munderdiffl.in), whose spawn-queue seats never start) is a desktop app (Electron) where agents sit at desks on an office floor: a god agent
 (**Michael**) runs the floor, workers appear at desks while they work, and the hive (a folder) holds their memory, mailboxes,
 board and log. `/deliver` runs on it with one rule more: **you talk only to Michael, and Michael uses no subagents.** Every
 role the requirements call for — BA, Leads, every dev seat, QA, reviewers, specialists — is a person Michael seats at a desk

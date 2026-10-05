@@ -1563,7 +1563,7 @@ cmd_floor_open() {
       | .workerIdleTimeoutMinutes = ([.workerIdleTimeoutMinutes // 0, 480] | max) | .maxConcurrentWorkers = ([.maxConcurrentWorkers // 0, 12] | max)' \
       "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
     bash "$BIN_DIR/md-brief.sh" "$home" "$ROOT" >/dev/null   # teach Michael /deliver (idempotent: refreshes the section)
-    md_app_start "$home" || refuse 1 "Munder Difflin is not installed here — install it (https://munderdiffl.in, or scripts/init.sh --munder), or set munder.app_command in .deliver.json"
+    md_app_start "$home" || refuse 1 "Munder Difflin is not installed here — install it with scripts/init.sh --munder (the cantasci/munder-difflin fork — the released app's seats never start), or set munder.app_command in .deliver.json"
     started=1
   fi
   # The request goes into Michael's inbox as the human's message; the router-side wake (or his start-up inbox drain) picks it up.

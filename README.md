@@ -6,7 +6,7 @@
 requirements `.md` — and **Michael**, the PM, runs it the way a good team would: a Business Analyst finds the gaps before any
 work starts, Leads cut the cards, developers build them test-first in their own git worktrees, QA writes the
 integration tests, reviewers approve, and the job lands as a PR. By default every role is a person at a desk on the
-[Munder Difflin](https://munderdiffl.in) office floor; without the app, the same flow runs as Claude Code subagents.
+[Munder Difflin](https://github.com/cantasci/munder-difflin) office floor; without the app, the same flow runs as Claude Code subagents.
 
 ```text
  you ──► /deliver requirements.md ──► MICHAEL (PM) ─── asks you only at the start, decides himself after that
@@ -61,8 +61,9 @@ Then, in your repository:
 /deliver docs/requirements/feature.md
 ```
 
-- **On the Munder Difflin floor (default).** Install the app ([munderdiffl.in](https://munderdiffl.in), or
-  `scripts/init.sh --munder` from source). `/deliver` typed in a terminal opens the app on your repo's floor and hands the job
+- **On the Munder Difflin floor (default).** Install the app with `scripts/init.sh --munder`: it builds
+  the [cantasci/munder-difflin](https://github.com/cantasci/munder-difflin) fork — the released app (upstream) never starts
+  a `/deliver` seat. `/deliver` typed in a terminal opens the app on your repo's floor and hands the job
   to Michael there; you watch the team work and talk only to him.
 - **With Claude Code subagents.** Put `"dispatch": "subagent"` in `.deliver.json` and `/deliver` runs right there, in one
   session — also how unattended runs work (`scripts/run-headless.sh`).
@@ -102,7 +103,7 @@ wins. `merge_mode` decides who merges: `human` (a PR you merge), `semi` (auto-me
 
 Every claim above was run, live, with real Claude Code sessions and real agents — and recorded, failures included:
 
-- **436 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
+- **467 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
   hooks on Windows paths, bash 3.2 (macOS) compatibility.
 - **40+ live runs** ([HISTORY](docs/verification/HISTORY.md), raw outputs in [docs/verification](docs/verification/)): headless,
   interactive (a person typing in the TUI), and the Munder Difflin app driven like a user, with screenshots of each person

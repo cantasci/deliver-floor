@@ -90,7 +90,7 @@ The plugin runs on Windows with what Claude Code on Windows already needs, plus 
 | Git for Windows (Git Bash) | `dl` and the guards are bash; Claude Code's Bash tool uses Git Bash too | `winget install Git.Git` |
 | jq | `dl` reads and writes its JSON state with it | `winget install jqlang.jq` |
 | Node 18+ | helpers and the hook launcher | `winget install OpenJS.NodeJS.LTS` |
-| Munder Difflin (floor mode) | the default run mode | the Windows installer from [munderdiffl.in](https://munderdiffl.in) |
+| Munder Difflin (floor mode) | the default run mode | `scripts/init.sh --munder` in Git Bash (builds the [cantasci/munder-difflin](https://github.com/cantasci/munder-difflin) fork; the released installer's seats never start) |
 
 How the kit copes:
 
