@@ -1125,6 +1125,11 @@ md_hive() {
   local h="${HIVE_ROOT:-$(setting munder.hive_root)}"
   [[ -z ${HIVE_ROOT:-} && -n $h && -d $h/hive ]] && h="$h/hive"   # munder.hive_root may name the floor's folder (harnessHome)
   [[ -n $h && -d $h ]] || die "HIVE_ROOT is not set — seats only exist inside Munder Difflin (or set settings.munder.hive_root)"
+  # Outside the app the floor still has its own Michael (god): he drains the same inbox and would drive this job too.
+  if [[ -z ${HIVE_ROOT:-} && ${AGENT_ID:-} != god ]] && jq -e '(.godId // "god") as $g | .agents[$g] | . != null and .archived != true and .status != "gone"' \
+       "$h/registry.json" >/dev/null 2>&1; then
+    refuse 1 "Michael (god) has a seat on the floor in $h — two orchestrators would share one inbox and both drive this job. Run it from Michael's seat in Munder Difflin (start the app if it is closed): \"/deliver resume\" with REPO: $ROOT"
+  fi
   echo "$h"
 }
 md_god() { jq -r '.godId // "god"' "$1/registry.json" 2>/dev/null || echo god; }
@@ -1169,6 +1174,8 @@ seat_eval() {
   a="$(jq -r --arg w "$w" '.agents[$w] | if . == null then "" elif (.archived == true or .status == "gone") then "gone" else "on" end' "$h/registry.json" 2>/dev/null || true)"
   [[ $a == gone ]] && { printf 'gone\treleased or reaped by the floor\n'; return; }
   age="$(seat_age_min "$(seat_get "$s" .hired_at)")"; tmo="$(setting munder.seat_timeout_minutes)"; tmo=${tmo:-5}
+  local secs; secs="$(setting munder.seat_timeout)"   # the older key, in seconds — still honoured
+  [[ $secs =~ ^[0-9]+$ ]] && tmo=$(( (secs + 59) / 60 ))
   if [[ -f $h/spawn-requests/$req.json ]]; then
     local cap; cap="$(jq -r '.workerCap // empty' "$h/fleet.json" 2>/dev/null || true)"
     if [[ -n $cap && $(seat_list | wc -l | tr -d ' ') -gt $cap ]]; then printf 'pending\twaits for a free place: the floor runs at most %s workers at once (raise maxConcurrentWorkers in Munder Difflin, or lower a role'"'"'s count)\n' "$cap"; return; fi

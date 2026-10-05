@@ -510,7 +510,9 @@ echo '{"type":"assistant","message":{"model":"claude-x","content":[{"type":"text
 RW="$(jq -r '.munder.seats | to_entries[] | select(.key | startswith("reviewer")) | .value.worker' "$R/.work/$JOB/job.json" | head -1)"; RS="$(jq -r '.munder.seats | to_entries[] | select(.key | startswith("reviewer")) | .key' "$R/.work/$JOB/job.json" | head -1)"
 rm -f "$HIVE_ROOT/agents/$RW/outbox/.sent/s1.json"
 contains "a seat silent past munder.seat_timeout_minutes is failed" "$("$DL" md-seats)" "FAILED   $RS: no \"seated\" message"
-"$DL" jobset '.settings.munder.seat_timeout_minutes = 5' >/dev/null
+"$DL" jobset '.settings.munder.seat_timeout_minutes = 5 | .settings.munder.seat_timeout = 0' >/dev/null
+contains "…also by the older munder.seat_timeout (seconds)" "$("$DL" md-seats)" "FAILED   $RS: no \"seated\" message"
+"$DL" jobset 'del(.settings.munder.seat_timeout)' >/dev/null
 mkdir -p "$HIVE_ROOT/agents/$RW/outbox/.sent"; jq -n --arg w "$RW" '{from:$w, subject:"seated"}' > "$HIVE_ROOT/agents/$RW/outbox/.sent/s1.json"
 # the app rejects a request
 w2="$(seat_w backend#1)"
@@ -537,6 +539,14 @@ jq --arg w "$LW" 'del(.agents[$w].lastError)' "$HIVE_ROOT/registry.json" > "$TMP
 echo '{"workerCap":2,"agents":[]}' > "$HIVE_ROOT/fleet.json"
 contains "md-seats notes when the job has more seats than the floor's worker cap" "$("$DL" md-seats 2>&1)" "the floor runs at most 2 workers at once"
 rm -f "$HIVE_ROOT/fleet.json"
+# Outside the app (no HIVE_ROOT from Munder Difflin) a live Michael on the floor would drive the same job: run it from his seat
+"$DL" jobset ".settings.munder.hive_root=\"$HIVE_ROOT\"" >/dev/null
+out="$(env -u HIVE_ROOT -u AGENT_ID "$DL" md-seats 2>&1)"; contains "outside the app, the floor's Michael is not raced for his inbox" "$out" "REFUSED — Michael (god) has a seat on the floor"
+contains "…the refusal says where to run it" "$out" "\"/deliver resume\" with REPO: $R"
+expect_ok "Michael's own seat (AGENT_ID=god) uses the configured hive" env -u HIVE_ROOT AGENT_ID=god "$DL" md-seats
+jq '.agents.god.archived = true' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+expect_ok "…and with no Michael on the floor the configured hive is usable from outside" env -u HIVE_ROOT -u AGENT_ID "$DL" md-seats
+jq '.agents.god.archived = false' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
 contains "md-hire does not re-hire a failed seat blindly (same model, same failure)" "$("$DL" md-hire)" "→ dl md-reseat backend#1"
 expect_ok "md-hire --reseat <seat> is md-reseat (the other branch's spelling)" "$DL" md-hire --reseat backend#1 "the app rejected the request"
 contains "…logged as a re-seat on request" "$(grep $'\tmd-reseat\t' "$R/.work/$JOB/events.log" | tail -1)" "backend#1 (failed): the app rejected the request"
