@@ -69,6 +69,7 @@ set -euo pipefail
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$BIN_DIR/.." && pwd)"
 CONFIG="$SKILL_DIR/config.json"
+USER_CONFIG="${DELIVER_HOME:-$HOME/.deliver}/config.json"   # the user's settings — install and plugin updates leave it alone
 REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
 
 # Installed as a Claude Code plugin, the kit's agents are namespaced (<plugin>:<agent>, e.g. deliver:backend-dev).
@@ -240,13 +241,14 @@ cmd_new() {
   id="JOB-$(date +%Y%m%d-%H%M)-$slug"
   [[ ! -e "$WORK/$id" ]] || die "already exists: $id"
 
-  # Settings: skill config.json, overridden by .deliver.json at the repo root if present.
-  local settings
-  if [[ -f "$ROOT/.deliver.json" ]]; then
-    settings="$(jq -s '.[0] * .[1]' "$CONFIG" "$ROOT/.deliver.json")" || die ".deliver.json is not valid JSON"
-  else
-    settings="$(cat "$CONFIG")"
-  fi
+  # Settings: the skill's config.json (shipped defaults, replaced by every install and plugin update), overridden by the
+  # user's own $DELIVER_HOME/config.json (survives both), overridden by .deliver.json at the repo root.
+  local settings f
+  settings="$(cat "$CONFIG")"
+  for f in "$USER_CONFIG" "$ROOT/.deliver.json"; do
+    [[ -f $f ]] || continue
+    settings="$(jq -s '.[0] * .[1]' <(printf '%s' "$settings") "$f")" || die "$f is not valid JSON"
+  done
   # Older .deliver.json files said merge_strategy: pr|local.
   settings="$(jq 'if .merge_strategy then .merge_mode = (if .merge_strategy == "local" then "local" else (.merge_mode // "human") end) | del(.merge_strategy) else . end' <<<"$settings")"
   local mm; mm="$(jq -r .merge_mode <<<"$settings")"

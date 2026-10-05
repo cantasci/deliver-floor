@@ -951,6 +951,22 @@ expect_ok "uninstall" "$INST" --user --uninstall
 [[ ! -e $HOME/.claude/skills/deliver && "$(jq -c '[.hooks.Stop[].hooks[].command]' "$HOME/.claude/settings.json")" == '["/usr/bin/true"]' && "$(jq -r .env.MINE "$HOME/.claude/settings.json")" == 1 ]] \
   && ok "uninstall keeps foreign hooks and env" || bad "uninstall: $(cat "$HOME/.claude/settings.json")"
 "$INST" --user >/dev/null
+# A reinstall keeps what the user changed in the installed config.json: it moves into $DELIVER_HOME/config.json
+IC="$HOME/.claude/skills/deliver/config.json"
+jq '.dispatch = "munder" | .munder.model = "opus"' "$IC" > "$IC.t" && mv "$IC.t" "$IC"
+out="$("$INST" --user 2>&1)"
+contains "a reinstall keeps the user's changes to the installed config" "$out" "kept your settings: $DELIVER_HOME/config.json"
+[[ "$(jq -c . "$DELIVER_HOME/config.json")" == '{"dispatch":"munder","munder":{"model":"opus"}}' ]] \
+  && ok "…in \$DELIVER_HOME/config.json, only what they changed" || bad "user config: $(cat "$DELIVER_HOME/config.json")"
+cmp -s "$IC" "$SDIR/config.json" && ok "…and the installed config is the shipped defaults again" || bad "installed config not reset"
+out="$("$INST" --user 2>&1)"; [[ $out == *"unchanged: $HOME/.claude/skills/deliver"* && $out != *"kept your settings"* ]] \
+  && ok "an untouched reinstall moves nothing" || bad "untouched reinstall: $out"
+# dl reads the user's settings over the shipped defaults, and a repo's .deliver.json over both
+for u in u1 u2; do mkdir -p "$TMP/$u" && git -C "$TMP/$u" init -q -b main && git -C "$TMP/$u" commit -q --allow-empty -m i; done
+echo '{"dispatch":"subagent"}' > "$TMP/u2/.deliver.json"
+for u in u1 u2; do (cd "$TMP/$u" && "$HOME/.claude/skills/deliver/bin/dl" new "u" "x" >/dev/null 2>&1); done
+contains "dl new takes the user's settings (\$DELIVER_HOME/config.json)" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u1/.work/JOB-*/job.json)" '{"d":"munder","m":"opus"}'
+contains "…and a repo's .deliver.json over them" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u2/.work/JOB-*/job.json)" '{"d":"subagent","m":"opus"}'
 out="$("$HERE/scripts/doctor.sh" "$R" 2>&1)"
 contains "doctor sees the install and the repo" "$out" "user: hook write-guard"
 mkdir -p "$HOME/.config/munder-difflin"; echo '{}' > "$HOME/.claude.json"
