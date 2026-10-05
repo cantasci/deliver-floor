@@ -102,6 +102,8 @@ In addition — so it is visible without a Git integration — the branch goes i
 ### 6. Check it
 
 ```bash
+dl tracker check     # before any job: sign-in, project, issue types, a status per column, "Blocks" — read-only
+                     # (scripts/doctor.sh <repo> runs the same check)
 dl tracker open      # creates/links the epic and tasks for the active job
 dl tracker sync      # re-syncs every card (after an outage)
 dl status            # shows tracker errors, if any
@@ -123,6 +125,7 @@ export class LinearTracker extends Tracker {
   async sync(cardId, event) { /* move the item to this.columns[stageOf(card)] */ }
   async note(cardId, author, text) { /* comment as the role */ }
   async branch(cardId) { /* attach card.branch / card.branch_url */ }
+  async check() { /* optional: [{ok, msg}] — what dl tracker check and doctor print, before any job */ }
 }
 registerTracker("linear", LinearTracker);
 ```

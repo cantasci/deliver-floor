@@ -108,6 +108,15 @@ How the kit copes:
 The Windows path is checked by `tests/run.sh` (launcher, path normalisation, line endings) but has not been run on a real
 Windows machine yet.
 
+### Claude authentication
+
+Michael and the Claude roles are ordinary Claude Code sessions and sign in the way your `claude` does: a `/login` (your
+subscription; `claude setup-token` → `CLAUDE_CODE_OAUTH_TOKEN` for an unattended machine), `ANTHROPIC_API_KEY`, Bedrock
+(`CLAUDE_CODE_USE_BEDROCK=1`), Vertex (`CLAUDE_CODE_USE_VERTEX=1`) or a gateway (`ANTHROPIC_BASE_URL` +
+`ANTHROPIC_AUTH_TOKEN`). Put the variables in `~/.claude/settings.json` → `env` or the shell that starts `claude` / Munder
+Difflin — never in `.deliver.json`. `scripts/doctor.sh` says which one it found. Roles on other vendors' CLIs sign in with
+that CLI's own login or key ([README § Connect it](../README.md#connect-it)).
+
 ## 2. `dl` on your PATH (for you; Michael uses the absolute path)
 
 ```bash

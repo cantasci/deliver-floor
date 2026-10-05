@@ -1459,7 +1459,13 @@ cmd_kanban() {
   node "$BIN_DIR/tracker-cli.mjs" kanban "$JOB_DIR" "$@"
   echo; echo "tracker: $(jq -r '.settings.tracker.kind // "local"' "$JOBJ")$(jq -r '.tracker.url // empty | " · " + .' "$JOBJ")  · html: $JOB_DIR/kanban.html"
 }
-cmd_tracker() { load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync]" ;; esac; }
+cmd_tracker() {
+  if [[ ${1:-} == check ]]; then   # no job needed: the repo's settings (kit ⊕ yours ⊕ .deliver.json) against the live tracker
+    resolve_root; local f rc=0; f="$(mktemp)"; merged_settings > "$f"
+    node "$BIN_DIR/tracker-cli.mjs" check "$f" || rc=$?; rm -f "$f"; return $rc
+  fi
+  load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync|check]" ;; esac
+}
 cmd_reseal() { # human only (bash-guard): accept the current job.json/board.json after inspecting an outside change
   human_only "dl reseal"; DL_NO_SEAL_CHECK=1 load_job
   local reason=${1:-}; [[ -n $reason ]] || die 'usage: dl reseal "<what was changed outside dl and why it is accepted>"'

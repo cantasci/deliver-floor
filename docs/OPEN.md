@@ -66,7 +66,8 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | # | What | Why not here |
 | --- | --- | --- |
 | O1 | Seats and roles on non-Claude CLIs (Codex, Gemini, Grok, …) | no credentials for those vendors in this environment; covered by contract tests (`dl md-dispatch` / spawn requests) |
-| O2 | Jira against a live site | no Jira credentials; covered by the contract stub (`tests/jira-stub.mjs`) |
+| O2 | Jira against a live site | no Jira credentials; covered by the contract stub (`tests/jira-stub.mjs`), including `dl tracker check` (sign-in, project, issue types, a status per column, "Blocks") and doctor's credential check |
+| O3 | Claude through Bedrock, Vertex or an LLM gateway (`ANTHROPIC_BASE_URL`, e.g. another vendor's models behind LiteLLM) | no such accounts here; Claude Code's own settings, passed through unchanged — doctor names the one in use (`tests/run.sh`) |
 
 ## Delivery
 

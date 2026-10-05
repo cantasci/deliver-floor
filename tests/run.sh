@@ -792,6 +792,18 @@ git init -q --bare "$TMP/gh-origin.git"
 JR="$TMP/jira-repo"; mkdir -p "$JR" && cd "$JR" && git init -q -b main
 git remote add origin https://github.com/acme/demo.git && git config url."$TMP/gh-origin.git".insteadOf https://github.com/acme/demo.git
 echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"human","tracker":{"kind":"jira","jira":{"project":"WL"}}}' > .deliver.json && git add -A && git commit -qm i && git push -q origin main
+# Before any job: dl tracker check asks the site what the flow will need (read-only)
+out="$("$DL" tracker check 2>&1)"; rc=$?
+[[ $rc == 0 && $out == *"ok   signed in to $JIRA_BASE_URL as bot@example.com"* && $out == *"status for every column"* && $out == *"link type 'Blocks'"* ]] \
+  && ok "dl tracker check: signed in, project, issue types, a status per column, Blocks — before any job" || bad "tracker check: $out"
+contains "…a missing credential is named" "$(env -u JIRA_API_TOKEN "$DL" tracker check 2>&1)" "Jira credentials missing: JIRA_EMAIL + JIRA_API_TOKEN, or JIRA_PAT"
+contains "…a project the user cannot see fails" "$(jq '.tracker.jira.project = "NOPE"' .deliver.json > x.json && mv x.json .deliver.json && "$DL" tracker check 2>&1; git checkout -q .deliver.json)" "FAIL project NOPE is not visible"
+echo "To Do,In Progress,Code Review,Done,Blocked,Won't Do" > "$JSF"
+out="$("$DL" tracker check 2>&1)"; rc=$?
+[[ $rc == 1 && $out == *"FAIL the Task workflow has no status for: qa → 'QA'"* ]] && ok "…a workflow without a column's status fails, naming it" || bad "tracker check missing status: rc=$rc $out"
+rm -f "$JSF"
+contains "doctor runs the same check for a Jira repo" "$("$HERE/scripts/doctor.sh" "$JR" 2>&1)" "jira: signed in to $JIRA_BASE_URL as bot@example.com"
+contains "…and names missing Jira credentials" "$(env -u JIRA_EMAIL "$HERE/scripts/doctor.sh" "$JR" 2>&1)" "tracker jira: set JIRA_BASE_URL and JIRA_EMAIL + JIRA_API_TOKEN"
 "$DL" new "jira flow" "x" >/dev/null; JJ="$JR/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
 "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
@@ -1145,6 +1157,18 @@ out="$("$HERE/scripts/doctor.sh" "$R" 2>&1)"
 contains "doctor sees the install and the repo" "$out" "✔"$'\033[0m'" user: hook write-guard"
 [[ $out != *"hook "*" not in "* ]] && ok "…every installed hook found (none reported missing)" || bad "doctor misses hooks: $(grep 'not in' <<<"$out")"
 mkdir -p "$HOME/.config/munder-difflin"; echo '{}' > "$HOME/.claude.json"
+# Roles on other vendors' CLIs and how Claude signs in
+VR="$TMP/vendor"; mkdir -p "$VR" && git -C "$VR" init -q -b main
+echo '{"dispatch":"subagent","roles":{"backend":{"provider":"codex","model":"gpt-5-codex"}}}' > "$VR/.deliver.json"
+contains "doctor: a role on another vendor's CLI needs the floor" "$("$HERE/scripts/doctor.sh" "$VR" 2>&1)" "role backend runs on codex — other CLIs run only on the Munder Difflin floor"
+echo '{"dispatch":"munder","roles":{"backend":{"provider":"codex","model":"gpt-5-codex"}}}' > "$VR/.deliver.json"
+contains "…and its CLI on PATH" "$(PATH="/usr/bin:/bin:$(dirname "$(command -v node)")" "$HERE/scripts/doctor.sh" "$VR" 2>&1)" "role backend runs on codex but 'codex' is not on PATH"
+mkdir -p "$TMP/fakebin" && printf '#!/bin/sh\nexit 0\n' > "$TMP/fakebin/codex" && chmod +x "$TMP/fakebin/codex"
+contains "…found when installed" "$(PATH="$TMP/fakebin:$PATH" "$HERE/scripts/doctor.sh" "$VR" 2>&1)" "role backend runs on codex ($TMP/fakebin/codex)"
+na() { env -u ANTHROPIC_BASE_URL -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u CLAUDE_CODE_USE_BEDROCK -u CLAUDE_CODE_USE_VERTEX "$@"; }
+contains "doctor names how Claude signs in: an API key" "$(na ANTHROPIC_API_KEY=x "$HERE/scripts/doctor.sh" 2>&1)" "Anthropic API key (ANTHROPIC_API_KEY)"
+contains "…a gateway (another vendor's models behind ANTHROPIC_BASE_URL)" "$(na ANTHROPIC_BASE_URL=http://gw ANTHROPIC_API_KEY=x "$HERE/scripts/doctor.sh" 2>&1)" "an LLM gateway (ANTHROPIC_BASE_URL)"
+contains "…Bedrock" "$(na CLAUDE_CODE_USE_BEDROCK=1 "$HERE/scripts/doctor.sh" 2>&1)" "Amazon Bedrock"
 contains "doctor finds Munder Difflin and warns about Claude Code's unfinished first run" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run is not completed"
 echo '{"hasCompletedOnboarding":true}' > "$HOME/.claude.json"
 contains "…and is satisfied once it is done" "$("$HERE/scripts/doctor.sh" 2>&1)" "first run completed"

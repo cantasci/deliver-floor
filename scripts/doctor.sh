@@ -25,6 +25,18 @@ if have node; then
   nv="$(node -v | tr -d v)"; [[ ${nv%%.*} -ge 18 ]] && pass "node $nv" || fail "node $nv — need 18+"
 else fail "node 18+ — brew install node"; fi
 
+# How Claude Code signs in — Michael and every Claude seat use the same: a login, an API key, a cloud provider, or a gateway
+echo "Claude authentication"
+senv() { [[ -n ${!1:-} ]] || jq -e --arg k "$1" '.env[$k] // empty' "$HOME/.claude/settings.json" >/dev/null 2>&1; }
+if senv CLAUDE_CODE_USE_BEDROCK; then pass "Amazon Bedrock (CLAUDE_CODE_USE_BEDROCK) — AWS credentials from the usual AWS chain"
+elif senv CLAUDE_CODE_USE_VERTEX; then pass "Google Vertex AI (CLAUDE_CODE_USE_VERTEX) — gcloud application-default credentials"
+elif senv ANTHROPIC_BASE_URL; then pass "an LLM gateway (ANTHROPIC_BASE_URL) — its key in ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY"
+elif senv ANTHROPIC_API_KEY; then pass "Anthropic API key (ANTHROPIC_API_KEY) — billed per token on your Console account"
+elif senv CLAUDE_CODE_OAUTH_TOKEN; then pass "a long-lived login token (CLAUDE_CODE_OAUTH_TOKEN, from claude setup-token)"
+elif [[ -f $HOME/.claude/.credentials.json ]] || jq -e '.oauthAccount' "$HOME/.claude.json" >/dev/null 2>&1; then pass "Claude login (/login — your Claude subscription)"
+elif [[ $(uname) == Darwin ]]; then note "no API key or token set — a /login is kept in the macOS Keychain (not checked here); if claude asks you to log in, run it once"
+else note "no sign-in found — run claude once and /login, or set ANTHROPIC_API_KEY (docs/02-setup.md § Claude authentication)"; fi
+
 echo "Optional tools"
 have gh && pass "gh (PR creation)" || note "gh not found — needed for merge_mode human/semi/auto (gh auth login)"
 have timeout && pass "timeout (gate_timeout for verify commands)" || note "timeout not found — verify commands run without a time limit (brew install coreutils)"
@@ -175,6 +187,30 @@ if [[ -n $repo ]]; then
     [[ "$(jq -r '.munder.model // empty' "$repo/.deliver.json" 2>/dev/null)" == "" ]] && note "seats run on the kit's default model (munder.model: sonnet) — set munder.model to choose another; never the app's default"
   else
     pass "run mode: Claude Code subagents (dispatch: $disp, chosen in .deliver.json or ${DELIVER_HOME:-$HOME/.deliver}/config.json)"
+  fi
+  # what applies in this repo: kit defaults ⊕ the user's config ⊕ .deliver.json (as dl reads it)
+  KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/kit/skills/deliver"
+  eff="$(cat "$KIT/config.json")"
+  for f in "${DELIVER_HOME:-$HOME/.deliver}/config.json" "$repo/.deliver.json"; do
+    [[ -f $f ]] && eff="$(jq -s '.[0] * .[1]' <(printf '%s' "$eff") "$f" 2>/dev/null || printf '%s' "$eff")"
+  done
+  # Roles on other vendors' CLIs (Codex, Gemini, …) run only as seats on the floor; each CLI signs in its own way
+  while IFS=$'\t' read -r role prov; do
+    [[ -n $role ]] || continue
+    [[ "$(jq -r '.dispatch' <<<"$eff")" == munder ]] || { fail "role $role runs on $prov — other CLIs run only on the Munder Difflin floor (dispatch munder)"; continue; }
+    case $prov in codex) bin=codex ;; gemini) bin=gemini ;; qwen) bin=qwen ;; opencode) bin=opencode ;; crush) bin=crush ;; copilot) bin=copilot ;; cursor) bin=cursor-agent ;; *) bin="" ;; esac
+    if [[ -z $bin ]]; then note "role $role runs on $prov — make sure its CLI is installed and signed in on this machine (Munder Difflin starts it)"
+    elif have "$bin"; then pass "role $role runs on $prov ($(command -v "$bin")) — signed in with its own login or key (not checked)"
+    else fail "role $role runs on $prov but '$bin' is not on PATH — install and sign in to it, or drop the provider"; fi
+  done < <(jq -r '(.roles // {}) | to_entries[] | select((.value.provider // "claude") != "claude") | [.key, .value.provider] | @tsv' <<<"$eff")
+  if [[ "$(jq -r '.tracker.kind // "local"' <<<"$eff")" == jira ]]; then
+    if [[ -z ${JIRA_BASE_URL:-} ]] || [[ -z ${JIRA_PAT:-} && ( -z ${JIRA_EMAIL:-} || -z ${JIRA_API_TOKEN:-} ) ]]; then
+      fail "tracker jira: set JIRA_BASE_URL and JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center) — docs/10-trackers.md#jira"
+    else
+      tf="$(mktemp)"; printf '%s' "$eff" > "$tf"
+      while IFS= read -r l; do case $l in "ok   "*) pass "jira: ${l#ok   }" ;; *) fail "jira: ${l#FAIL }" ;; esac; done < <(node "$KIT/bin/tracker-cli.mjs" check "$tf" 2>&1)
+      rm -f "$tf"
+    fi
   fi
   [[ -f $repo/.work/ACTIVE ]] && note "active job: $(cat "$repo/.work/ACTIVE")"
 fi
