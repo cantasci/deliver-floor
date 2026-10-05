@@ -42,6 +42,22 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | --- | --- | --- |
 | R4 | A role runs on the model the owner names — in the request file, typed to Michael, or as the floor default (`munder.model`) | **Done — verified live**, judged from the session transcripts: runs 36 (file, headless), 37 (typed, interactive), 39 (floor: role model wins over the default, every role ≠ Michael's model). Non-Claude CLIs stay O1 |
 
+## The user's Mac report (2026-10-05) and what followed
+
+| # | What | Status |
+| --- | --- | --- |
+| F1 | `dl` did not run on macOS bash 3.2 (a `case` inside `$( )`, empty arrays under `set -u`) | **Fixed in code**, with a lint in `tests/run.sh` that finds exactly the reported lines. **Not run on bash 3.2 here** (running a downloaded bash was refused in this environment) — the owner checks on a Mac: `/bin/bash tests/run.sh` |
+| F2 | a seat was "live" though its worker died at startup | **Done** — `live` only after its `seated` message (`tests/run.sh`; runs 42–43) |
+| F3 | a worker crashing at startup was silent | **Done** — `dl md-seats` reads the app's crash log, the worker's transcript (API/credit errors), rejected requests and a timeout, and says why (`tests/run.sh`; runs 42–43: seen within ~45 s) |
+| F4 | no command to re-seat a stuck seat | **Done** — `dl md-reseat <seat> "<why>" [--model m]`, Michael's decision, listed in the PR (run 43) |
+| F5 | workers started on the app's default model (no credit), unreported | **Done** — every seat gets an explicit model (`munder.model`, default sonnet); a credit error shows as `failed` (runs 42–43) |
+| F6 | `/deliver` from a separate terminal raced the app's Michael for the inbox | **Done** — a floor job runs only from the app's Michael (run 41); `/deliver` in a terminal now opens the floor (F8) |
+| F7 | the floor is the default; subagents only by hand | **Done** — `dispatch: munder` default; `"dispatch": "subagent"`, `--subagent`, `dl dispatch` (human only) — run 40 |
+| F8 | `/deliver` in a terminal opens Munder Difflin on the repo's floor and hands the job to Michael | **Code + `tests/run.sh` done; live run in progress.** The app shows its floor picker at start: one click on Open (no setting skips it) |
+| F9 | plugin setup without scripts (postinstall) | **Done** — SessionStart setup + ECC as a dependency (run 44) |
+| F10 | a config file per project | **Done** — the first `/deliver` writes `.deliver.json` with a schema; per-role defaults reach the job (`tests/run.sh`) |
+| F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
+
 ## Verified by the owner, not here
 
 | # | What | Why not here |
