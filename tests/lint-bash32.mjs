@@ -20,6 +20,23 @@ const BASH4 = [
   [/\bcoproc\b|\bwait -n\b|\bEPOCHSECONDS\b|\bBASHPID\b/, "bash 4/5 builtin"],
 ];
 
+// true when the line has "{x, y}" inside double quotes, inside a $( ), inside double quotes (quote state tracked per level)
+function braceInNestedQuotes(l) {
+  const st = [{ dq: false }]; // one frame per $( ) level
+  for (let i = 0; i < l.length; i++) {
+    const c = l[i], top = st[st.length - 1];
+    if (c === "\\") { i++; continue; }
+    if (!top.dq && c === "'") { const k = l.indexOf("'", i + 1); if (k < 0) return false; i = k; continue; }
+    if (c === "$" && l[i + 1] === "(" && l[i + 2] !== "(") { st.push({ dq: false, outerDq: top.dq }); i++; continue; }
+    if (c === ")" && !top.dq && st.length > 1) { st.pop(); continue; }
+    if (c === '"') { top.dq = !top.dq; continue; }
+    if (c === "{" && top.dq && st.length > 1 && st.some((f, k) => k > 0 && f.outerDq)) {
+      const k = l.indexOf("}", i); if (k > 0 && /, /.test(l.slice(i, k)) && !l.slice(i, k).includes('"')) return true;
+    }
+  }
+  return false;
+}
+
 for (const f of process.argv.slice(2)) {
   const s = readFileSync(f, "utf8");
   // 1. case inside a command substitution: walk every $( and look for "case … in" before its closing paren depth 0,
@@ -49,7 +66,15 @@ for (const f of process.argv.slice(2)) {
       }
     }
   }
-  // 3. bash-4-only features (comments skipped)
+  // 3. two more traps found on a real Mac (fix/floor-robustness, d6d6455): "$name→" — bash 3.2 reads a non-ASCII byte right
+  //    after a name as part of it (use ${name}); and "…$(… "…{a, b}…" …)…" — a brace list in a double-quoted string inside
+  //    a $( ) that is itself inside double quotes is mangled.
+  s.split("\n").forEach((l, n) => {
+    if (/^\s*#/.test(l)) return;
+    if (/\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]/.test(l)) findings.push(`${f}:${n + 1}: "$name" followed by a non-ASCII character — bash 3.2 reads it as one name; use \${name}`);
+    if (braceInNestedQuotes(l)) findings.push(`${f}:${n + 1}: "{a, b}" in a double-quoted string inside a quoted $( ) — bash 3.2 mangles it`);
+  });
+  // 4. bash-4-only features (comments skipped)
   s.split("\n").forEach((l, n) => {
     if (/^\s*#/.test(l)) return;
     const code = l.replace(/'[^']*'|"(?:[^"\\]|\\.)*"/g, "''");   // patterns inside quoted strings are data

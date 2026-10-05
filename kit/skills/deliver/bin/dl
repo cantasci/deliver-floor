@@ -53,7 +53,8 @@
 #   dl config [--init]            the settings that apply in this repo (kit defaults ⊕ .deliver.json); --init writes .deliver.json
 #   dl floor-open "<request>"     /deliver from a terminal in a floor repo: open Munder Difflin on its floor, hand Michael the job
 #   dl dispatch munder|subagent "<why>"   (human) switch how this job's roles run: floor seats (default) or subagents
-#   dl md-reseat <seat> "<why>" [--model m]   a failed or stuck seat gets a new person (another model for a credit error)
+#   dl md-reseat <seat> "<why>" [--model m]   a failed or stuck seat gets a new person (another model for a credit error);
+#                                  also spelled dl md-hire --reseat <seat>
 #   dl md-send <seat|role> <task> <prompt-file> [--agent a]   a work order to a seat: role card + agent instructions + task
 #   dl md-done <seat> "<summary>"  record the seat's "done <task>" report; the seat is free again
 #   dl md-release                  end of job: send every seat home
@@ -287,9 +288,11 @@ cmd_new() {
   settings="$(jq 'if .merge_strategy then .merge_mode = (if .merge_strategy == "local" then "local" else (.merge_mode // "human") end) | del(.merge_strategy) else . end' <<<"$settings")"
   local mm; mm="$(jq -r .merge_mode <<<"$settings")"
   [[ " $MERGE_MODES " == *" $mm "* ]] || die "merge_mode must be one of: $MERGE_MODES (got '$mm')"
-  local tk; tk="$(jq -r '.tracker.kind // "local"' <<<"$settings")"
-  node --input-type=module -e "import {trackerKinds, loadTrackers} from '$BIN_DIR/tracker.mjs'; await loadTrackers(); process.exit(trackerKinds().includes('$tk') ? 0 : 1)" \
-    || die "tracker.kind '$tk' is not a known tracker ($(node --input-type=module -e "import {trackerKinds, loadTrackers} from '$BIN_DIR/tracker.mjs'; await loadTrackers(); console.log(trackerKinds().join(', '))"))"
+  local tk kinds; tk="$(jq -r '.tracker.kind // "local"' <<<"$settings")"
+  # Unquoted on purpose: bash 3.2 mangles "{a, b}" inside a $(…) that sits inside a double-quoted string (seen on macOS).
+  kinds=$(node --input-type=module -e "import {trackerKinds, loadTrackers} from '$BIN_DIR/tracker.mjs'; await loadTrackers(); console.log(trackerKinds().join(', '))") \
+    || die "the trackers in $BIN_DIR/trackers could not be loaded"
+  [[ ", $kinds, " == *", $tk, "* ]] || die "tracker.kind '$tk' is not a known tracker ($kinds)"
   base="$(jq -r .base_branch <<<"$settings")"
   if [[ $base == auto || $base == null ]]; then
     base="$(git -C "$ROOT" symbolic-ref --short HEAD 2>/dev/null)" || die "could not resolve base branch (detached HEAD?) — set base_branch in .deliver.json"
@@ -1140,6 +1143,8 @@ seat_eval() {
     [[ -n $tp && -f $tp ]] && last="$(sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' "$tp" | tr -d '\r' | { grep -v '^[[:space:]]*$' || true; } | tail -1 | cut -c1-160)"
     printf 'failed\tits process died (exit %s%s)%s\n' "$code" "${sig:+, signal $sig}" "${last:+ — last output: $last}"; return
   fi
+  err="$(jq -r --arg w "$w" '.agents[$w].lastError // empty' "$h/registry.json" 2>/dev/null || true)"
+  [[ -n $err ]] && { printf 'failed\tthe floor says: %s\n' "$err"; return; }   # Munder Difflin records why it could not start a worker
   tr="$(seat_transcript "$w" "$h")"
   if [[ -n $tr ]]; then
     err="$(jq -rs '[.[] | select(.type=="assistant")] | last // {} | select(.isApiErrorMessage == true)
@@ -1150,12 +1155,15 @@ seat_eval() {
   [[ $a == gone ]] && { printf 'gone\treleased or reaped by the floor\n'; return; }
   age="$(seat_age_min "$(seat_get "$s" .hired_at)")"; tmo="$(setting munder.seat_timeout_minutes)"; tmo=${tmo:-5}
   if [[ -f $h/spawn-requests/$req.json ]]; then
+    local cap; cap="$(jq -r '.workerCap // empty' "$h/fleet.json" 2>/dev/null || true)"
+    if [[ -n $cap && $(seat_list | wc -l | tr -d ' ') -gt $cap ]]; then printf 'pending\twaits for a free place: the floor runs at most %s workers at once (raise maxConcurrentWorkers in Munder Difflin, or lower a role'"'"'s count)\n' "$cap"; return; fi
     [[ $age -ge $tmo ]] && { printf 'failed\tthe app has not picked up its spawn request in %s min — is Munder Difflin running, with workers allowed?\n' "$age"; return; }
     printf 'pending\tin the spawn queue for %s min\n' "$age"; return
   fi
   sent="$({ find "$h/agents/$w/outbox" -maxdepth 2 -name '*.json' -exec cat {} + 2>/dev/null || true; } | jq -rs '[.[] | select((.subject // "") | startswith("seated"))] | length' 2>/dev/null || echo 0)"
+  [[ ${sent:-0} -gt 0 ]] || { [[ -f $h/log.jsonl ]] && jq -en --arg w "$w" 'any(inputs; .kind == "message" and .from == $w)' "$h/log.jsonl" >/dev/null 2>&1 && sent=1; }
   [[ ${sent:-0} -gt 0 ]] && { printf 'live\t\n'; return; }
-  [[ $age -ge $tmo ]] && { printf 'failed\tno "seated" message %s min after hiring (it may be stuck at a prompt or out of credit)\n' "$age"; return; }
+  [[ $age -ge $tmo ]] && { printf 'failed\tno "seated" message %s min after hiring — it never took its first turn (is the Munder Difflin window open and the screen unlocked? stuck at a prompt? out of credit?)\n' "$age"; return; }
   printf 'starting\ton the floor for %s min, no "seated" message yet\n' "$age"
 }
 seat_state() { seat_eval "$1" "$2" | cut -f1; }
@@ -1179,6 +1187,7 @@ CH
 }
 
 cmd_md_hire() { # [seat] — only that seat (md-reseat)
+  [[ ${1:-} == --reseat ]] && { cmd_md_reseat "${2:-}" "${3:-re-seated on request}" "${@:4}"; return; }   # the other branch's spelling
   load_job
   local only=${1:-}
   local hive; hive="$(md_hive)"
@@ -1230,6 +1239,7 @@ cmd_md_hire() { # [seat] — only that seat (md-reseat)
     log_event md-hire "$s → $w ($provider${model:+ $model}${ch:+, $ch})$([[ $st == none ]] || echo " — re-seated, was $st")"
     printf '%-16s %-8s %s\n' "$s" hired "$w"
   done < <(seat_list)
+  [[ -n $only ]] || md_cap_note "$hive"
 }
 
 # md-reseat: a seat that failed or is stuck gets a new person. The old worker is sent home (if it is still there), its
@@ -1253,6 +1263,13 @@ cmd_md_reseat() {
   [[ -z $task ]] || echo "send $task again once $seat is seated: dl md-send $seat $task <order file>"
 }
 
+# md_cap_note <hive> — the floor runs at most fleet.json's workerCap workers at once; more seats wait in the queue
+md_cap_note() {
+  local cap seats; cap="$(jq -r '.workerCap // empty' "$1/fleet.json" 2>/dev/null || true)"; seats="$(seat_list | wc -l | tr -d ' ')"
+  [[ -n $cap && $seats -gt $cap ]] || return 0
+  echo "note: this job has $seats seats but the floor runs at most $cap workers at once — $((seats - cap)) seat(s) wait until someone leaves. Raise \"maxConcurrentWorkers\" in Munder Difflin, or lower a role's count." >&2
+}
+
 cmd_md_seats() {
   load_job
   local hive s ev st why; hive="$(md_hive)"
@@ -1270,8 +1287,9 @@ cmd_md_seats() {
       pending|starting) echo "waiting  $s: $why" ;;
     esac
   done < <(seat_list)
-  [[ -z $miss ]] || echo "not seated: $miss→ dl md-hire"
-  [[ -z $bad ]] || echo "failed: $bad→ dl md-reseat <seat> \"<why>\" [--model <model>] (a credit or model error: pick another model)"
+  [[ -z $miss ]] || echo "not seated: ${miss}→ dl md-hire"
+  md_cap_note "$hive"
+  [[ -z $bad ]] || echo "failed: ${bad}→ dl md-reseat <seat> \"<why>\" [--model <model>] (a credit or model error: pick another model)"
 }
 
 # md_order <worker> <hive> <subject> <body> <conversation> — a message from god into the router's queue
@@ -1585,7 +1603,7 @@ main() {
     approve) cmd_approve "$@" ;;
     reject) cmd_reject "$@" ;;
     md-dispatch) cmd_md_dispatch "$@" ;;
-    md-hire) cmd_md_hire ;;
+    md-hire) cmd_md_hire "$@" ;;
     md-reseat) cmd_md_reseat "$@" ;;
     md-seats) cmd_md_seats ;;
     md-send) cmd_md_send "$@" ;;
@@ -1597,7 +1615,7 @@ main() {
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,68p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,69p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

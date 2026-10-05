@@ -6,7 +6,7 @@ set -uo pipefail
 # grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
 gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TMP="$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")"
+TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # resolved: macOS links /var and /tmp into /private
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
@@ -367,6 +367,10 @@ contains "dev may write its handoff" "$(wg "$R/.work/$JOB/handoffs/T-03.md" "$R"
 contains "dev may not write the main checkout" "$(wg "$R/src/x.ts" "$R" a1)" "rc=2"
 contains "dev may not write board.json" "$(wg "$R/.work/$JOB/board.json" "$R" a1)" "rc=2"
 contains "dev may not write the integration worktree" "$(wg "$R/.work/$JOB/wt/_integration/src/x.ts" "$R" a1)" "rc=2"
+ln -s "$R" "$TMP/repo-link"   # one repo, two spellings (macOS: /tmp → /private/tmp): the guard compares resolved paths
+contains "dev may not write the main checkout through a symlinked path" "$(wg "$TMP/repo-link/src/x.ts" "$R" a1)" "rc=2"
+contains "…nor a new file in a new folder there" "$(wg "$TMP/repo-link/src/new/y.ts" "$R" a1)" "rc=2"
+contains "…while its card worktree stays writable that way" "$(wg "$TMP/repo-link/.work/$JOB/wt/T-03/src/x.ts" "$R" a1)" "rc=0"
 contains "floor worker in its worktree may write there" "$(wg "$R/.work/$JOB/wt/T-03/a.ts" "$R/.work/$JOB/wt/T-03")" "rc=0"
 contains "Michael may write plan.md" "$(wg "$R/.work/$JOB/plan.md" "$R" "" "$TR")" "rc=0"
 contains "Michael may not write product code" "$(wg "$R/src/x.ts" "$R" "" "$TR")" "rc=2"
@@ -413,20 +417,24 @@ expect_ok "md-hire seats every role seat" "$DL" md-hire
 "$DL" roles >/dev/null
 [[ ! -e $R/.work/$JOB/munder/hires && ! -e $HIVE_ROOT/research/hires ]] && ok "no hire manifests that would need a click in the app" || bad "hire manifests written"
 contains "ROLES.md tells Michael the roles are people he seats" "$(cat "$R/.work/$JOB/ROLES.md")" "dl md-hire"
-[[ "$(ls "$HIVE_ROOT"/spawn-requests/seat-*.json | wc -l)" == "$nseat" ]] && ok "one spawn request per seat ($nseat) — every selected role, count seats each" || bad "seat requests: $(ls "$HIVE_ROOT"/spawn-requests)"
+[[ "$(ls "$HIVE_ROOT"/spawn-requests/seat-*.json | wc -l | tr -d " ")" == "$nseat" ]] && ok "one spawn request per seat ($nseat) — every selected role, count seats each" || bad "seat requests: $(ls "$HIVE_ROOT"/spawn-requests)"
 sreq="$(ls "$HIVE_ROOT"/spawn-requests/seat-*-backend-1-h1.json)"
 contains "a seat is a plain claude in the repo, no --agent, no isolation" "$(jq -c '{command,cwd,isolate}' "$sreq")" "{\"command\":\"claude\",\"cwd\":\"$R\",\"isolate\":false}"
 contains "…its charter: stay for the job, report each task, done only on release" "$(jq -r .objective "$sreq")" 'only when Michael sends you the release message'
 [[ "$(jq -r '[.munder.seats[].character] | (length == (unique | length))' "$R/.work/$JOB/job.json")" == true ]] && ok "every person on the floor has a face of their own" || bad "duplicate characters: $(jq -c '.munder.seats' "$R/.work/$JOB/job.json")"
 contains "a seat not on the floor yet is pending" "$("$DL" md-seats)" "pending"
 expect_ok "md-hire again does not hire twice" "$DL" md-hire
-[[ "$(ls "$HIVE_ROOT"/spawn-requests/seat-*.json | wc -l)" == "$nseat" ]] && ok "…same requests" || bad "hired twice"
+[[ "$(ls "$HIVE_ROOT"/spawn-requests/seat-*.json | wc -l | tr -d " ")" == "$nseat" ]] && ok "…same requests" || bad "hired twice"
 # Munder Difflin consumes the requests: workers on the floor (registry), requests archived to .done
 mkdir -p "$HIVE_ROOT/spawn-requests/.done"
 for f in "$HIVE_ROOT"/spawn-requests/seat-*.json; do w="worker-$(basename "$f" .json)"; mv "$f" "$HIVE_ROOT/spawn-requests/.done/"
   jq --arg w "$w" '.agents[$w] = {id:$w, role:"worker", status:"idle"}' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"; done
 contains "on the floor but silent: starting, not live (the registry alone proves nothing)" "$("$DL" md-seats)" "starting"
 contains "…and gets no order yet" "$("$DL" md-send backend#1 T-03 "$TMP/p.txt" 2>&1)" "not seated yet"
+# a message from the worker in the hive log also counts as "seated" (the router logs every delivery)
+w1s="$(jq -r '.munder.seats["ba#1"].worker' "$R/.work/$JOB/job.json")"
+jq -cn --arg w "$w1s" '{ts:0, kind:"message", from:$w, to:"god", act:"inform", subject:"hello"}' >> "$HIVE_ROOT/log.jsonl"
+grep -qE "^ba#1 +live" <<<"$("$DL" md-seats)" && ok "a worker's first message in the hive log seats it (any subject)" || bad "log seated: $("$DL" md-seats | head -3)"
 # each worker says "seated" (its outbox; the router moves it to .sent)
 for w in $(jq -r '.munder.seats[].worker' "$R/.work/$JOB/job.json"); do mkdir -p "$HIVE_ROOT/agents/$w/outbox/.sent"
   jq -n --arg w "$w" '{from:$w, to:"god", act:"inform", subject:"seated", body:"ready"}' > "$HIVE_ROOT/agents/$w/outbox/.sent/s1.json"; done
@@ -497,8 +505,17 @@ contains "md-reseat needs a reason" "$("$DL" md-reseat backend#1 2>&1)" "usage: 
 n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-reseat "$RS" "stuck: no answer for 20 min" >/dev/null
 contains "re-seating a live seat sends the old person home" "$(jq -r .subject "$(ls -t "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)")" "release — your seat is re-seated"
 [[ "$(jq -r --arg s "$RS" '.munder.seats[$s].worker' "$R/.work/$JOB/job.json")" != "$RW" ]] && ok "…and a new worker takes the seat" || bad "same worker"
+# the floor recorded why it could not start the worker (Munder Difflin: registry lastError)
+LW="$(seat_w ba#1)"; jq --arg w "$LW" '.agents[$w].lastError = "failed to start: no usage left for its model — \"You are out of usage credits.\""' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+contains "a worker the floor could not start is failed, with the floor's reason (lastError)" "$("$DL" md-seats)" "FAILED   ba#1: the floor says: failed to start: no usage left for its model"
+jq --arg w "$LW" 'del(.agents[$w].lastError)' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
+# more seats than the floor runs at once: said, not left pending without a word
+echo '{"workerCap":2,"agents":[]}' > "$HIVE_ROOT/fleet.json"
+contains "md-seats notes when the job has more seats than the floor's worker cap" "$("$DL" md-seats 2>&1)" "the floor runs at most 2 workers at once"
+rm -f "$HIVE_ROOT/fleet.json"
 contains "md-hire does not re-hire a failed seat blindly (same model, same failure)" "$("$DL" md-hire)" "→ dl md-reseat backend#1"
-"$DL" md-reseat backend#1 "the app rejected the request" >/dev/null
+expect_ok "md-hire --reseat <seat> is md-reseat (the other branch's spelling)" "$DL" md-hire --reseat backend#1 "the app rejected the request"
+contains "…logged as a re-seat on request" "$(grep $'\tmd-reseat\t' "$R/.work/$JOB/events.log" | tail -1)" "backend#1 (failed): the app rejected the request"
 # put everyone back on the floor for what follows
 for s in backend#1 "$RS"; do on_floor "$s"; w="$(seat_w "$s")"; mkdir -p "$HIVE_ROOT/agents/$w/outbox/.sent"; jq -n --arg w "$w" '{from:$w, subject:"seated"}' > "$HIVE_ROOT/agents/$w/outbox/.sent/s1.json"; done
 rm -f "$HOME/.claude/projects/p/sess-qa.jsonl"
@@ -670,7 +687,7 @@ grep -qE "backend#2 +IDLE +→ assign T-01, T-02" <<<"$("$DL" seats)" && ok "dl 
 grep -q "backend#1 busy (T-01)" "$AJ/kanban.html" && ok "kanban shows seat utilisation" || bad "kanban seats"
 [[ "$(jq -r '[.cards[] | select(.role=="backend") | .seat] | sort | join(",")' "$AJ/board.json")" == "backend#1,backend#2" ]] \
   && ok "two backend devs work in parallel on seats backend#1 and backend#2, each on its own branch" || bad "seats: $(jq -c '[.cards[]|{id,seat,branch}]' "$AJ/board.json")"
-[[ "$(git -C "$AR" branch --list '*--T-01' '*--T-02' | wc -l)" == 2 ]] && ok "…each on its own card branch" || bad "branches"
+[[ "$(git -C "$AR" branch --list '*--T-01' '*--T-02' | wc -l | tr -d " ")" == 2 ]] && ok "…each on its own card branch" || bad "branches"
 bedit "$AJ/board.json" '.cards += [(.cards[0] | .id="T-05" | .title="T-05" | .state="ready" | del(.seat))]'; cp "$AJ/specs/T-01.md" "$AJ/specs/T-05.md"
 out="$("$DL" wt add T-05 2>&1)"; contains "a third backend card waits: both backend seats are busy" "$out" "all 2 'backend' seats are busy"
 jq -e '[.cards[] | select(.id=="T-01") | .assignments[0] | .by=="michael" and .seat=="backend#1"] | all' "$AJ/board.json" >/dev/null && ok "assignment records michael + seat" || bad "assignment record"

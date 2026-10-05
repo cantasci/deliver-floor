@@ -104,11 +104,11 @@ card, released when it reports `done`) is still there for floors that want it, b
 
 | State | Meaning |
 | --- | --- |
-| `pending` | the spawn request waits in `spawn-requests/` — the app has not picked it up |
+| `pending` | the spawn request waits in `spawn-requests/` — the app has not picked it up (when the job has more seats than the floor's worker cap, `fleet.json` `workerCap`, md-seats says so: raise `maxConcurrentWorkers` or lower a role's count) |
 | `starting` | the worker is on the floor, but has not sent `seated` yet |
 | `live` | it sent `seated`, and its last Claude reply is not an error |
 | `gone` | released, archived or reaped — `not seated`, `dl md-hire` seats a replacement |
-| `failed` | one of: the app rejected the request (`spawn-requests/.failed/`) · its process died (the app's `log.jsonl` `agent-exit`, with the last line of its crash log — e.g. `Invalid API key`) · its last Claude reply is an API error (e.g. `Credit balance is too low`) · no `seated` within `munder.seat_timeout_minutes` (default 5), also for a request the app never picks up |
+| `failed` | one of: the app rejected the request (`spawn-requests/.failed/`) · the floor recorded why it could not start the worker (registry `lastError`, e.g. "no usage left for its model") · its process died (the app's `log.jsonl` `agent-exit`, with the last line of its crash log — e.g. `Invalid API key`) · its last Claude reply is an API error (e.g. `Credit balance is too low`) · no `seated` within `munder.seat_timeout_minutes` (default 5), also for a request the app never picks up |
 
 The app itself only writes an abnormal exit to `log.jsonl` and `crashes/`; it does not change the worker's registry entry.
 `dl` reads those files, so a crash is no longer silent.

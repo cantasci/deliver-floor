@@ -13,6 +13,15 @@ hk() { jq -r "$1 // empty" <<<"$input" 2>/dev/null; }
 # np turns either form into the latter, so every path comparison below compares like with like. A no-op elsewhere.
 np() { local p=${1//\\//}; if [[ $p =~ ^([A-Za-z]):(/.*)?$ ]]; then p="/$(printf '%s' "${BASH_REMATCH[1]}" | tr 'A-Z' 'a-z')${BASH_REMATCH[2]}"; fi; printf '%s' "$p"; }
 hkp() { np "$(hk "$1")"; }   # a path field of the hook input, normalised
+# canon_path <path> → symlinks resolved in its longest existing directory prefix. macOS links /tmp and /var into /private,
+# so one file has two spellings; dl's roots come from git (resolved), a tool call's path may not (fix/floor-robustness).
+canon_path() {
+  local p=$1 rest=""
+  while [[ ! -d $p ]]; do rest="/${p##*/}$rest"; p="${p%/*}"; [[ -n $p ]] || p=/; done
+  local base; base="$(cd -P "$p" 2>/dev/null && pwd -P)" || base=$p
+  [[ $base == / ]] && base=""
+  printf '%s%s\n' "$base" "$rest"
+}
 
 # active_jobs → lines "<job id>\t<repo root>"
 active_jobs() {

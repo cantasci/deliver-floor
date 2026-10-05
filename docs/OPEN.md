@@ -46,7 +46,7 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 
 | # | What | Status |
 | --- | --- | --- |
-| F1 | `dl` did not run on macOS bash 3.2 (a `case` inside `$( )`, empty arrays under `set -u`) | **Fixed in code**, with a lint in `tests/run.sh` that finds exactly the reported lines. **Not run on bash 3.2 here** (running a downloaded bash was refused in this environment) — the owner checks on a Mac: `/bin/bash tests/run.sh` |
+| F1 | `dl` did not run on macOS bash 3.2 | **Fixed; verified on a real Mac for the floor code** — the owner's branch `fix/floor-robustness` (d6d6455) ran `tests/run.sh` 393/393 on bash 3.2 and found two traps the lint here had missed (`"$miss→"`, `"{a, b}"` in nested quotes); both are fixed here and the lint now finds all five on the pre-fix `dl`. This branch has more code since — **the owner re-runs `/bin/bash tests/run.sh` on the Mac once** |
 | F2 | a seat was "live" though its worker died at startup | **Done** — `live` only after its `seated` message (`tests/run.sh`; runs 42–43) |
 | F3 | a worker crashing at startup was silent | **Done** — `dl md-seats` reads the app's crash log, the worker's transcript (API/credit errors), rejected requests and a timeout, and says why (`tests/run.sh`; runs 42–43: seen within ~45 s) |
 | F4 | no command to re-seat a stuck seat | **Done** — `dl md-reseat <seat> "<why>" [--model m]`, Michael's decision, listed in the PR (run 43) |
