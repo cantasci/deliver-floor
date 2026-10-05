@@ -11,6 +11,9 @@ set -euo pipefail
 repo="$(cd "${1:?repo path required}" && pwd)"; request="${2:-}"; rounds="${3:-10}"
 cd "$repo"
 command -v claude >/dev/null || { echo "claude CLI not found" >&2; exit 1; }
+# Unattended runs use Claude Code subagents; a floor job (Munder Difflin, the default) is run by the app's Michael.
+d="$(jq -r '.dispatch // empty' .deliver.json 2>/dev/null || true)"
+[[ $d == subagent ]] || { echo "run-headless: this repo runs on the Munder Difflin floor (dispatch: ${d:-munder, the default}). Unattended runs need \"dispatch\": \"subagent\" in .deliver.json — see docs/07-munder-difflin.md#choosing-the-mode" >&2; exit 1; }
 
 # auto: classifier-based approvals (no prompts). If your plan lacks auto mode, use
 # PERMISSION_MODE=acceptEdits and pre-allow Bash commands in .claude/settings.json (docs/02-setup.md § 4.5).

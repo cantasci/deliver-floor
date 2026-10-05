@@ -39,20 +39,35 @@ then `scripts/install.sh --user --plugin` once (env and attribution, which a plu
 
 Try it on a sandbox — nothing of yours is touched (a 2-requirement slice of a real POC document):
 
+**On the Munder Difflin floor — the default mode.** Install the app, make a sandbox, give the job to Michael in the app:
+
 ```bash
-scripts/sandbox.sh /tmp/wl watchlist-poc && cd /tmp/wl && claude
+scripts/sandbox.sh /tmp/wl watchlist-poc
+scripts/init.sh --munder --hive ~/md-hive --repo /tmp/wl
+```
+
+```text
+/deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md          (typed to Michael in the app)
+```
+
+**With Claude Code subagents — chosen by hand.** No app; one `claude` session, roles run as its subagents:
+
+```bash
+scripts/sandbox.sh --subagent /tmp/wl watchlist-poc && cd /tmp/wl && claude
 ```
 
 ```text
 /deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md
 ```
 
+Never start `/deliver` for a floor job from a separate terminal: `dl` refuses it, because a second Michael would read the
+same inbox. Switching modes and recovering seats: [docs/07 § Choosing the mode](docs/07-munder-difflin.md#choosing-the-mode).
+
 In a second terminal: `~/.claude/skills/deliver/bin/dl -C /tmp/wl kanban` (or open `/tmp/wl/.work/JOB-*/kanban.html`).
 
 No model at hand? `tests/replay-watchlist.sh` plays a whole job in your terminal with the real `dl` output.
 
-Want the office floor? `scripts/init.sh --munder --hive ~/md-hive --repo /tmp/wl` installs Munder Difflin from source and
-teaches Michael `/deliver` — [docs/07](docs/07-munder-difflin.md).
+`scripts/init.sh --munder` installs Munder Difflin from source and teaches Michael `/deliver` — [docs/07](docs/07-munder-difflin.md).
 
 ## Taking a normal project into the flow
 
@@ -76,7 +91,9 @@ scripts/init.sh --repo /path/to/your/repo          # writes a starter .deliver.j
    Whatever is missing becomes a question before any work starts; nothing is assumed.
 4. **Optional:** Jira instead of the local kanban ([docs/10](docs/10-trackers.md)); several devs per role (`"count": 2`);
    a role on another model or CLI ([docs/04](docs/04-roles.md#models-and-clis-per-role)).
-5. `scripts/doctor.sh /path/to/repo`, then in the repo: `claude` → `/deliver docs/requirements/feature.md`.
+5. `scripts/doctor.sh /path/to/repo` (it names the run mode), then `/deliver docs/requirements/feature.md` to Michael in the
+   Munder Difflin app — or, if you chose subagents (`scripts/init.sh --subagent --repo <path>`), in the repo: `claude` →
+   `/deliver …`.
 
 Full guide: [docs/02-setup.md](docs/02-setup.md).
 

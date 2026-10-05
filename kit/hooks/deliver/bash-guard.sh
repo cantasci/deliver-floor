@@ -45,14 +45,14 @@ grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*j
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 # dl as a word, a path (…/bin/dl) or the variable the playbook uses ("$DL", ${DL})
 dl_re='(^|[;&|[:space:](/"'"'"'])(dl|\$\{?DL\}?)"?[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
-if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|md-hire|md-send|md-done|md-release|md-inbox|cleanup)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|cleanup)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
 if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then
   [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write the question down (APPROVAL.md / QUESTIONS.md) and stop; the human answers in a terminal (dl approve | reject | clarify)."
 fi
-grep -Eq "${dl_re}(unfreeze|reseal)([[:space:]]|$)" <<<"$cmd" \
-  && deny "frozen decisions and seals are a human's call, from their own terminal (dl unfreeze | dl reseal \"<reason>\")."
+grep -Eq "${dl_re}(unfreeze|reseal|dispatch)([[:space:]]|$)" <<<"$cmd" \
+  && deny "frozen decisions, seals and the dispatch mode are a human's call, from their own terminal (dl unfreeze | dl reseal \"<reason>\" | dl dispatch munder|subagent \"<why>\")."
 grep -Eq "${dl_re}phase[[:space:]][^;&|]*--force" <<<"$cmd" \
   && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it, from their own terminal."
 grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [[ ${DELIVER_HEADLESS:-} == 1 ]] \

@@ -7,6 +7,7 @@
 #                                                     … and Munder Difflin from source: clone, install, native
 #                                                       modules, build, configure (hive, worker spawning, knowledge
 #                                                       graph), and teach Michael to run /deliver
+#   --subagent         the repo runs with Claude Code subagents instead of the Munder Difflin floor (the default)
 #   --project <repo>   install the kit into <repo>/.claude instead of ~/.claude
 #   --skip-onboarding  mark Munder Difflin's first-run wizard as done (headless / CI setups)
 #   --no-ecc           do not touch the ECC plugin
@@ -19,17 +20,18 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MD_REPO="https://github.com/chaitanyagiri/munder-difflin"
 ECC_MARKET="https://github.com/affaan-m/ECC"
 
-repo="" hive="" munder=0 mddir="${XDG_DATA_HOME:-$HOME/.local/share}/munder-difflin" project="" skip_onb=0 ecc=1
+repo="" hive="" munder=0 subagent=0 mddir="${XDG_DATA_HOME:-$HOME/.local/share}/munder-difflin" project="" skip_onb=0 ecc=1
 while [[ $# -gt 0 ]]; do
   case $1 in
     --repo) repo="$(cd "${2:?}" && pwd)"; shift 2 ;;
     --hive) hive="$2"; shift 2 ;;
     --munder) munder=1; shift ;;
+    --subagent) subagent=1; shift ;;
     --munder-dir) mddir="$2"; shift 2 ;;
     --project) project="$(cd "${2:?}" && pwd)"; shift 2 ;;
     --skip-onboarding) skip_onb=1; shift ;;
     --no-ecc) ecc=0; shift ;;
-    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -60,6 +62,13 @@ if [[ -n $repo && ! -f $repo/.deliver.json ]]; then
   mm=human; git -C "$repo" remote get-url origin >/dev/null 2>&1 || mm=local
   jq -n --arg v "${verify:-echo set verify_full && false}" --arg m "$mm" '{verify_full:$v, worktree_setup:"", merge_mode:$m}' > "$repo/.deliver.json"
   cat "$repo/.deliver.json"; echo "(edit verify_full / worktree_setup to match the repo — docs/03-settings.md)"
+fi
+[[ $munder == 1 && $subagent == 1 ]] && { echo "init: --munder and --subagent exclude each other" >&2; exit 1; }
+if [[ -n $repo && $subagent == 1 ]]; then
+  jq '.dispatch = "subagent"' "$repo/.deliver.json" > "$repo/.deliver.json.tmp" && mv "$repo/.deliver.json.tmp" "$repo/.deliver.json"
+  echo "$repo/.deliver.json: dispatch=subagent (roles run as Claude Code subagents — chosen by hand)"
+elif [[ $munder == 0 ]]; then
+  echo "note: Munder Difflin is the default mode — add --munder --hive <dir> to install it, or --subagent --repo <path> to run with Claude Code subagents (docs/07-munder-difflin.md#choosing-the-mode)"
 fi
 
 if [[ $munder -eq 1 ]]; then

@@ -17,7 +17,7 @@ human accepts it with `dl reseal "<reason>"`.
 | Key | Default | Effect |
 | --- | --- | --- |
 | `base_branch` | `"auto"` | Branch the job starts from and the PR targets (`auto` = the main checkout's current branch) |
-| `dispatch` | `"subagent"` | `subagent`: roles run as Claude Code subagents of Michael. `munder`: roles run as Munder Difflin floor workers (any CLI/model) — [07](07-munder-difflin.md) |
+| `dispatch` | `"munder"` | `munder` (default): every role is a person at a seat on the Munder Difflin floor, and only the app's Michael drives the job. `subagent`: roles run as Claude Code subagents of Michael in one `claude` session — chosen by hand, needed for unattended runs. Switching: [07 § Choosing the mode](07-munder-difflin.md#choosing-the-mode) |
 | `max_parallel` | `3` | Max cards running at once (all roles together). Seats per role are set on the role (`"count": N`) |
 | `max_attempts` | `2` | Tries per card (gate fail, QA fail, review "changes", conflict) before it is `blocked` and the human decides |
 | `gates.plan` | `false` | `true` = the human approves plan + board before any code. Off by default: the human is asked at readiness (only open business questions) and at the PR |
@@ -62,7 +62,8 @@ Details: [10-trackers](10-trackers.md).
 | --- | --- | --- |
 | `munder.hive_root` | `""` | The hive folder, when `dl` runs outside Munder Difflin (inside, `HIVE_ROOT` is set) |
 | `munder.claude_command` | `"claude"` | The command floor workers of Claude roles run (`<command> --agent <agent>`): a wrapper, a pinned path |
-| `munder.model` | `""` | Default model for floor workers (a role's own `model` wins) |
+| `munder.model` | `"sonnet"` | Model of every Claude seat whose role names none (a role's own `model` wins, a re-seat's `--model` wins over both). Seats never start on the app's default model |
+| `munder.seat_timeout_minutes` | `5` | A seat with no `seated` message this long after hiring (or a request the app never picks up) is `failed` in `dl md-seats` — [07 § 2a](07-munder-difflin.md#2a-seats-that-fail--seen-explained-re-seated) |
 | `munder.token_cap` | `0` | Token cap per floor worker (0 = none) |
 
 ## Per role (`job.roles[]`, set by Michael at intake)

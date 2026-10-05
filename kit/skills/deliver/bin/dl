@@ -49,7 +49,9 @@
 #   dl reject  plan "<note>"       record the human's rejection of the plan
 #   dl md-dispatch <card> <prompt-file>   Munder Difflin: run the card's dev as a worker on the floor
 #   dl md-hire                     Munder Difflin: seat one person per role seat (job.roles[].count) — the whole job
-#   dl md-seats                    who sits where: pending / live / gone, and each seat's open task
+#   dl md-seats                    who sits where: pending / starting / live / gone / failed (with why), each seat's open task
+#   dl dispatch munder|subagent "<why>"   (human) switch how this job's roles run: floor seats (default) or subagents
+#   dl md-reseat <seat> "<why>" [--model m]   a failed or stuck seat gets a new person (another model for a credit error)
 #   dl md-send <seat|role> <task> <prompt-file> [--agent a]   a work order to a seat: role card + agent instructions + task
 #   dl md-done <seat> "<summary>"  record the seat's "done <task>" report; the seat is free again
 #   dl md-release                  end of job: send every seat home
@@ -1062,15 +1064,53 @@ md_hive() {
 md_god() { jq -r '.godId // "god"' "$1/registry.json" 2>/dev/null || echo god; }
 seat_list() { jq -r '.roles[] | select(.agent != "artemis") | . as $r | range(1; (($r.count // 1) + 1)) | "\($r.role)#\(.)"' "$JOBJ"; }
 seat_get() { jq -r --arg s "$1" ".munder.seats[\$s]$2 // empty" "$JOBJ"; }
-# seat_state <seat> <hive> → none | pending (asked for, not on the floor yet) | live | gone (released/reaped) | failed
-seat_state() {
-  local w req; w="$(seat_get "$1" .worker)"; [[ -n $w ]] || { echo none; return; }
-  req=${w#worker-}
-  [[ -f $2/spawn-requests/$req.json ]] && { echo pending; return; }
-  [[ -f $2/spawn-requests/.failed/$req.json ]] && { echo failed; return; }
-  jq -r --arg w "$w" '.agents[$w] as $a | if $a == null then "pending" elif ($a.archived == true or $a.status == "gone") then "gone" else "live" end' \
-    "$2/registry.json" 2>/dev/null || echo pending
+# A seat is "live" only once its worker has said so: the registry alone cannot tell (a worker that died at startup stays
+# in it). seat_eval <seat> <hive> → "<state>\t<reason>", state one of
+#   none      nobody was hired for this seat
+#   pending   the spawn request waits in the queue (the app has not picked it up)
+#   starting  the worker is on the floor but has not sent its "seated" message yet
+#   live      it sent "seated" and shows no fatal error since
+#   gone      released, archived or reaped by the floor
+#   failed    the app rejected the request · its process died (hive log.jsonl agent-exit, crash tail) · its last Claude
+#             reply is an API error (credit, auth, rate limit…) · no "seated" within munder.seat_timeout_minutes
+seat_age_min() { jq -rn --arg t "$1" '(now - ($t | fromdateiso8601)) / 60 | floor' 2>/dev/null || echo 0; }
+seat_transcript() { # the worker's Claude session transcript, if any
+  local sid; sid="$(jq -r --arg w "$1" '.agents[$w].sessionId // empty' "$2/registry.json" 2>/dev/null)"
+  [[ -n $sid ]] || return 0
+  { find "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects" -maxdepth 2 -name "$sid.jsonl" 2>/dev/null || true; } | awk 'NR==1'
 }
+seat_eval() {
+  local s=$1 h=$2 w req a tr err ex sent age tmo
+  w="$(seat_get "$s" .worker)"; [[ -n $w ]] || { printf 'none\t\n'; return; }
+  req=${w#worker-}
+  if [[ -f $h/spawn-requests/.failed/$req.json ]]; then
+    printf 'failed\tthe app rejected the spawn request (%s)\n' "spawn-requests/.failed/$req.json"; return
+  fi
+  ex="$({ grep -F "\"agentId\":\"$w\"" "$h/log.jsonl" 2>/dev/null || true; } | jq -rs '[.[] | select(.kind=="agent-exit" and .abnormal==true)] | last // empty | "\(.exitCode // "?")\u001f\(.signal // "")\u001f\(.tailPath // "")"' 2>/dev/null || true)"
+  if [[ -n $ex ]]; then
+    local code sig tp last=""; IFS=$'\x1f' read -r code sig tp <<<"$ex"   # (a tab IFS would merge empty fields)
+    [[ -n $tp && -f $tp ]] && last="$(sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' "$tp" | tr -d '\r' | { grep -v '^[[:space:]]*$' || true; } | tail -1 | cut -c1-160)"
+    printf 'failed\tits process died (exit %s%s)%s\n' "$code" "${sig:+, signal $sig}" "${last:+ — last output: $last}"; return
+  fi
+  tr="$(seat_transcript "$w" "$h")"
+  if [[ -n $tr ]]; then
+    err="$(jq -rs '[.[] | select(.type=="assistant")] | last // {} | select(.isApiErrorMessage == true)
+                   | [.message.content[]? | .text? // empty] | join(" ") | .[0:160]' "$tr" 2>/dev/null || true)"
+    [[ -n $err ]] && { printf 'failed\tits last Claude reply is an API error: %s\n' "$err"; return; }
+  fi
+  a="$(jq -r --arg w "$w" '.agents[$w] | if . == null then "" elif (.archived == true or .status == "gone") then "gone" else "on" end' "$h/registry.json" 2>/dev/null || true)"
+  [[ $a == gone ]] && { printf 'gone\treleased or reaped by the floor\n'; return; }
+  age="$(seat_age_min "$(seat_get "$s" .hired_at)")"; tmo="$(setting munder.seat_timeout_minutes)"; tmo=${tmo:-5}
+  if [[ -f $h/spawn-requests/$req.json ]]; then
+    [[ $age -ge $tmo ]] && { printf 'failed\tthe app has not picked up its spawn request in %s min — is Munder Difflin running, with workers allowed?\n' "$age"; return; }
+    printf 'pending\tin the spawn queue for %s min\n' "$age"; return
+  fi
+  sent="$({ find "$h/agents/$w/outbox" -maxdepth 2 -name '*.json' -exec cat {} + 2>/dev/null || true; } | jq -rs '[.[] | select((.subject // "") | startswith("seated"))] | length' 2>/dev/null || echo 0)"
+  [[ ${sent:-0} -gt 0 ]] && { printf 'live\t\n'; return; }
+  [[ $age -ge $tmo ]] && { printf 'failed\tno "seated" message %s min after hiring (it may be stuck at a prompt or out of credit)\n' "$age"; return; }
+  printf 'starting\ton the floor for %s min, no "seated" message yet\n' "$age"
+}
+seat_state() { seat_eval "$1" "$2" | cut -f1; }
 seat_charter() { # seat_charter <seat> <role> <kind>
   cat <<CH
 You are $1 — the $2 seat ($3) of the /deliver job $JOB in $ROOT. You stay at your desk for the whole job.
@@ -1100,12 +1140,17 @@ cmd_md_hire() {
   used="$(jq -r '[.munder.seats // {} | .[] | .character // empty] | join(" ")' "$JOBJ")"
   while read -r s; do
     st="$(seat_state "$s" "$hive")"
-    case $st in pending|live) printf '%-16s %-8s %s\n' "$s" "$st" "$(seat_get "$s" .worker)"; continue ;; esac
+    case $st in pending|starting|live) printf '%-16s %-8s %s\n' "$s" "$st" "$(seat_get "$s" .worker)"; continue ;; esac
     role=${s%#*}; n=${s#*#}
     n_hire=$(( $(seat_get "$s" .hires || true) + 1 )) 2>/dev/null || n_hire=1
     req="$(printf 'seat-%s-%s-h%s' "${JOB:4:13}" "$s" "$n_hire" | tr -c 'A-Za-z0-9._-' '-')"; w="worker-$req"
     provider="$(jq -r --arg r "$role" '[.roles[] | select(.role==$r) | .provider // "claude"] | first' "$JOBJ")"
-    model="$(jq -r --arg r "$role" '[.roles[] | select(.role==$r) | .model // empty] | first // empty' "$JOBJ")"; model=${model:-$(setting munder.model)}
+    # The model is always explicit: the seat's override (md-reseat --model), else the role's, else munder.model —
+    # never the app's default model, which may be one the account has no credit for (seen on a user's machine).
+    model="$(seat_get "$s" .model)"
+    [[ -n $model ]] || model="$(jq -r --arg r "$role" '[.roles[] | select(.role==$r) | .model // empty] | first // empty' "$JOBJ")"
+    model=${model:-$(setting munder.model)}
+    [[ -n $model || $provider != claude ]] || refuse 1 "no model for the $role seat: set settings.munder.model (or the role's model) — seats never start on the app's default model"
     cap="$(setting munder.token_cap)"
     [[ " $MD_PROVIDERS " == *" $provider "* ]] || refuse 1 "provider '$provider' is not one Munder Difflin runs ($MD_PROVIDERS)"
     # One face per person: the role's own character for its first seat, then a cast member nobody on this job has yet.
@@ -1129,21 +1174,52 @@ cmd_md_hire() {
        + (if $ch != "" then {character:$ch} else {} end) + (if $ac != "" then {accent:$ac} else {} end)' \
       > "$hive/spawn-requests/.$req.tmp" && mv "$hive/spawn-requests/.$req.tmp" "$hive/spawn-requests/$req.json"
     jq_inplace "$JOBJ" --arg s "$s" --arg r "$role" --arg w "$w" --argjson h "$n_hire" --arg ch "$ch" --arg t "$(now)" \
-      '.munder.seats[$s] = {role:$r, worker:$w, hires:$h, character:$ch, hired_at:$t, task:null, orders:(.munder.seats[$s].orders // 0)}'
+      '.munder.seats[$s] = ((.munder.seats[$s] // {}) | {model} | with_entries(select(.value != null))) + {role:$r, worker:$w, hires:$h, character:$ch, hired_at:$t, task:null, orders:(.munder.seats[$s].orders // 0)}'
     log_event md-hire "$s → $w ($provider${model:+ $model}${ch:+, $ch})$([[ $st == none ]] || echo " — re-seated, was $st")"
     printf '%-16s %-8s %s\n' "$s" hired "$w"
   done < <(seat_list)
 }
 
+# md-reseat: a seat that failed or is stuck gets a new person. The old worker is sent home (if it is still there), its
+# queued request withdrawn, its open task cleared (Michael sends it again to the new person), and a new one is hired —
+# on another model with --model (a credit or model error). After the start this is Michael's decision: recorded for the PR.
+cmd_md_reseat() {
+  load_job
+  local seat=${1:-} why=${2:-} model=""
+  [[ -n $seat && -n $why ]] || die 'usage: dl md-reseat <seat> "<why>" [--model <model>]'
+  [[ ${3:-} == --model ]] && { model=${4:-}; [[ -n $model ]] || die "--model needs a model"; }
+  local hive; hive="$(md_hive)"
+  seat_list | grep -qxF "$seat" || refuse 1 "'$seat' is not a seat of this job (dl md-seats)"
+  local w req task st; w="$(seat_get "$seat" .worker)"; req=${w#worker-}; task="$(seat_get "$seat" .task)"; st="$(seat_state "$seat" "$hive")"
+  [[ -n $w ]] || refuse 1 "$seat was never hired — dl md-hire"
+  rm -f "$hive/spawn-requests/$req.json"
+  case $st in live|starting) md_order "$w" "$hive" "release — your seat is re-seated" "Your seat $seat is given to someone else ($why). Send act \"done\" to god now." "deliver-$JOB-reseat" ;; esac
+  jq_inplace "$JOBJ" --arg s "$seat" --arg m "$model" '.munder.seats[$s] += {worker:null, task:null, since:null} | if $m != "" then .munder.seats[$s].model = $m else . end'
+  log_event md-reseat "$seat ($st${task:+, was on $task}): $why${model:+ → model $model}"
+  after_start && pm_decision "re-seated $seat${model:+ on $model}${task:+ (its task $task is sent again)}" "$why"
+  cmd_md_hire | grep -F "$seat" || true
+  [[ -z $task ]] || echo "send $task again once $seat is seated: dl md-send $seat $task <order file>"
+}
+
 cmd_md_seats() {
   load_job
-  local hive s; hive="$(md_hive)"
+  local hive s ev st why; hive="$(md_hive)"
+  local miss="" bad=""
   { echo -e "SEAT\tSTATE\tWORKER\tTASK"
     while read -r s; do
-      printf '%s\t%s\t%s\t%s\n' "$s" "$(seat_state "$s" "$hive")" "$(seat_get "$s" .worker)" "$(seat_get "$s" .task)"
+      ev="$(seat_eval "$s" "$hive")"; st=${ev%%$'\t'*}
+      printf '%s\t%s\t%s\t%s\n' "$s" "$st" "$(seat_get "$s" .worker)" "$(seat_get "$s" .task)"
     done < <(seat_list); } | table
-  local miss="" st; while read -r s; do st="$(seat_state "$s" "$hive")"; [[ $st == none || $st == gone || $st == failed ]] && miss+="$s "; done < <(seat_list)
+  while read -r s; do
+    ev="$(seat_eval "$s" "$hive")"; st=${ev%%$'\t'*}; why=${ev#*$'\t'}
+    case $st in
+      none|gone) miss+="$s " ;;
+      failed) bad+="$s "; echo "FAILED   $s: $why" ;;
+      pending|starting) echo "waiting  $s: $why" ;;
+    esac
+  done < <(seat_list)
   [[ -z $miss ]] || echo "not seated: $miss→ dl md-hire"
+  [[ -z $bad ]] || echo "failed: $bad→ dl md-reseat <seat> \"<why>\" [--model <model>] (a credit or model error: pick another model)"
 }
 
 # md_order <worker> <hive> <subject> <body> <conversation> — a message from god into the router's queue
@@ -1185,10 +1261,12 @@ cmd_md_send() {
     fi
     dir="$(card_get "$task" .worktree)"
   fi
-  case "$(seat_state "$seat" "$hive")" in
+  local ev; ev="$(seat_eval "$seat" "$hive")"
+  case ${ev%%$'\t'*} in
     live) ;;
-    pending) refuse 1 "$seat is not on the floor yet — wait for its \"seated\" message (dl md-seats)" ;;
-    *) refuse 1 "$seat has no one at the desk ($(seat_state "$seat" "$hive")) — dl md-hire seats someone" ;;
+    pending|starting) refuse 1 "$seat is not seated yet (${ev#*$'\t'}) — wait for its \"seated\" message (dl md-seats)" ;;
+    failed) refuse 1 "$seat failed: ${ev#*$'\t'} — dl md-reseat $seat \"<why>\" [--model <model>]" ;;
+    *) refuse 1 "$seat has no one at the desk (${ev%%$'\t'*}) — dl md-hire seats someone" ;;
   esac
   local busy; busy="$(seat_get "$seat" .task)"
   [[ -z $busy ]] || refuse 1 "$seat is busy with $busy — dl md-done $seat \"<summary>\" when it reports"
@@ -1225,7 +1303,7 @@ cmd_md_release() {
   load_job
   local hive s w n=0; hive="$(md_hive)"
   while read -r s; do
-    [[ "$(seat_state "$s" "$hive")" == live ]] || continue
+    case "$(seat_state "$s" "$hive")" in live|starting) ;; *) continue ;; esac
     w="$(seat_get "$s" .worker)"
     md_order "$w" "$hive" "release — job $JOB is finished" "The job is finished and your seat is released. Thank you. Send act \"done\" to god now." "deliver-$JOB-release"
     log_event md-release "$s → $w"; n=$((n + 1))
@@ -1310,9 +1388,46 @@ cmd_jobs() {
   done | table
 }
 
+# Munder Difflin is the default (settings.dispatch "munder"). A floor job is driven only by the app's Michael
+# (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
+# same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
+# (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn wt card gate qa review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox cleanup "
+dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
+  resolve_root
+  local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
+  if [[ $1 != new && -n $j && -f $WORK/$j/job.json ]]; then d="$(jq -r '.settings.dispatch // empty' "$WORK/$j/job.json")"
+  else
+    [[ -f $ROOT/.deliver.json ]] && d="$(jq -r '.dispatch // empty' "$ROOT/.deliver.json" 2>/dev/null || true)"
+    d=${d:-$(jq -r '.dispatch // empty' "$CONFIG")}
+  fi
+  echo "${d:-munder}"
+}
+floor_guard() {
+  [[ $FLOW_CMDS == *" $1 "* && ${AGENT_ID:-} != god ]] || return 0
+  [[ "$(dispatch_of "$1")" == munder ]] || return 0
+  [[ ${AGENT_ID:-} == worker-* ]] && refuse 9 "a seat does not run the flow — Michael records every step"
+  refuse 9 "this job runs on the Munder Difflin floor (dispatch: munder, the default): give /deliver to Michael in the app — never from a separate terminal, where a second Michael would read the same inbox. To work without the floor (Claude Code subagents), switch by hand: \"dispatch\": \"subagent\" in .deliver.json for new jobs, or dl dispatch subagent \"<why>\" for this one — see docs/07-munder-difflin.md"
+}
+
+# dl dispatch munder|subagent "<why>" — the human switches how this job's roles run. Never Michael's call (bash-guard).
+cmd_dispatch() {
+  human_only "dl dispatch"; load_job
+  local to=${1:-} why=${2:-}
+  [[ ($to == munder || $to == subagent) && -n $why ]] || die 'usage: dl dispatch munder|subagent "<why>"'
+  [[ "$(setting dispatch)" == "$to" ]] && { echo "already $to"; return 0; }
+  [[ $to == subagent && -n "$(jq -r '[.munder.seats // {} | .[] | select(.worker != null and .task != null)] | first // empty' "$JOBJ")" ]] \
+    && refuse 1 "a seat still holds a task (dl md-seats) — let it report, or dl md-reseat it, before leaving the floor"
+  jq_inplace "$JOBJ" --arg d "$to" '.settings.dispatch = $d'
+  log_event dispatch "${DELIVER_APPROVER:-${USER:-human}}: $to — $why"
+  echo "this job now runs with dispatch $to$([[ $to == subagent ]] && echo " (Claude Code subagents; release the floor's seats with dl md-release from the app's Michael)")"
+}
+
 main() {
   local c=${1:-help}; shift || true
+  floor_guard "$c"
   case $c in
+    dispatch) cmd_dispatch "$@" ;;
     new) cmd_new "$@" ;;
     status) cmd_status ;;
     next) cmd_next ;;
@@ -1344,6 +1459,7 @@ main() {
     reject) cmd_reject "$@" ;;
     md-dispatch) cmd_md_dispatch "$@" ;;
     md-hire) cmd_md_hire ;;
+    md-reseat) cmd_md_reseat "$@" ;;
     md-seats) cmd_md_seats ;;
     md-send) cmd_md_send "$@" ;;
     md-done) cmd_md_done "$@" ;;
@@ -1354,7 +1470,7 @@ main() {
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,64p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,66p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

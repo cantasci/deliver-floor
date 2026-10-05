@@ -166,13 +166,29 @@ and `"tracker": {"kind": "jira", "jira": {"project": "WL"}}` — [10-trackers](1
 
 Try it on the sandbox first — nothing of yours is touched:
 
+**On the Munder Difflin floor — the default mode.** Install the app, make a sandbox, give the job to Michael in the app:
+
 ```bash
-scripts/sandbox.sh /tmp/wl watchlist-poc && cd /tmp/wl && claude
+scripts/sandbox.sh /tmp/wl watchlist-poc
+scripts/init.sh --munder --hive ~/md-hive --repo /tmp/wl
+```
+
+```text
+/deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md          (typed to Michael in the app)
+```
+
+**With Claude Code subagents — chosen by hand.** No app; one `claude` session, roles run as its subagents:
+
+```bash
+scripts/sandbox.sh --subagent /tmp/wl watchlist-poc && cd /tmp/wl && claude
 ```
 
 ```text
 /deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md
 ```
+
+Never start `/deliver` for a floor job from a separate terminal: `dl` refuses it, because a second Michael would read the
+same inbox. Switching modes and recovering seats: [07 § Choosing the mode](07-munder-difflin.md#choosing-the-mode).
 
 Then on your repo, something small: `/deliver Add a /health endpoint that returns {"status":"ok"}`.
 

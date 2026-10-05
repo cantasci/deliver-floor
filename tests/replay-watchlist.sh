@@ -39,7 +39,7 @@ qa() { # qa <card> <wt> — the "QA role": writes the integration tests for the 
 }
 
 step "0 · sandbox repo from examples/watchlist-poc/seed"
-"$HERE/scripts/sandbox.sh" "$SB" | sed 's/^/    /'
+"$HERE/scripts/sandbox.sh" --subagent "$SB" | sed 's/^/    /'
 cd "$SB"
 
 step "0 · INTAKE — Michael opens the job and picks the roles"

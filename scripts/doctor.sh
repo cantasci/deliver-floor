@@ -95,7 +95,7 @@ fi
 [[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@skills-shop + scripts/install.sh --user --plugin, or scripts/install.sh --user (or --project <repo>)"
 have dl && pass "dl on PATH ($(command -v dl))" || note "dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl"
 
-echo "Munder Difflin (optional)"
+echo "Munder Difflin (the default run mode)"
 if [[ -n ${HIVE_ROOT:-} ]]; then
   pass "running inside Munder Difflin (HIVE_ROOT=$HIVE_ROOT)"
   [[ -d $HIVE_ROOT/spawn-requests ]] && pass "spawn-requests/ exists (dispatch=munder possible once Settings → Autonomy allows worker spawning)" \
@@ -121,7 +121,8 @@ elif compgen -G "$HOME/Library/Application Support/*[Mm]under*" >/dev/null || co
       || fail "maxConcurrentWorkers is $v — a job's seats queue behind it: set ≥ 12 in $mcfg (scripts/init.sh --munder does)"
   fi
 else
-  note "Munder Difflin not detected — only needed for the office-floor run mode (docs/07-munder-difflin.md)"
+  md_missing=1
+  note "Munder Difflin not detected — it is the default run mode: scripts/init.sh --munder --hive <dir>, or choose Claude Code subagents by hand (\"dispatch\": \"subagent\" in .deliver.json — docs/07-munder-difflin.md#choosing-the-mode)"
 fi
 
 if [[ -n $repo ]]; then
@@ -146,6 +147,14 @@ if [[ -n $repo ]]; then
     else fail ".deliver.json is not valid JSON"; fi
   else
     note "no .deliver.json — defaults apply (verify_full: npm test, merge_mode: human). See docs/03-settings.md"
+  fi
+  disp="$(jq -r '.dispatch // empty' "$repo/.deliver.json" 2>/dev/null || true)"
+  if [[ ${disp:-munder} == munder ]]; then
+    pass "run mode: Munder Difflin floor (${disp:+set in .deliver.json}${disp:-the default}) — give /deliver to Michael in the app"
+    [[ ${md_missing:-0} == 1 ]] && fail "this repo runs on the Munder Difflin floor but the app is not installed — scripts/init.sh --munder --hive <dir> --repo $repo, or \"dispatch\": \"subagent\" in .deliver.json"
+    [[ "$(jq -r '.munder.model // empty' "$repo/.deliver.json" 2>/dev/null)" == "" ]] && note "seats run on the kit's default model (munder.model: sonnet) — set munder.model to choose another; never the app's default"
+  else
+    pass "run mode: Claude Code subagents (dispatch: $disp, chosen in .deliver.json)"
   fi
   [[ -f $repo/.work/ACTIVE ]] && note "active job: $(cat "$repo/.work/ACTIVE")"
 fi

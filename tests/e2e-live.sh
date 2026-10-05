@@ -53,7 +53,7 @@ else
 fi
 iso_env claude plugin list 2>/dev/null | gq ecc@ecc && ok "ECC plugin installed ($(iso_env claude plugin list 2>/dev/null | grep -A1 ecc@ecc | grep -o 'Version: [0-9.]*'))" || bad "ECC plugin not installed"
 iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
-SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" "$SB" "$EXN" > /dev/null
+SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null
 if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
   git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"

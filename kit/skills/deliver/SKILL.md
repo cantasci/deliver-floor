@@ -21,6 +21,11 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 - **Target repo.** Normally the current directory's git repo. If you run elsewhere (e.g. Munder Difflin, where Michael's
   folder is the hive), the request names the repo (`REPO: /path`) or there is exactly one in `registeredRepos`; then call
   every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
+- **Run mode.** Munder Difflin is the default (`settings.dispatch: "munder"`): you run as Michael inside the app, and every
+  role is a person at a seat (see **Munder Difflin** below). Claude Code subagents are used only when the human chose them
+  by hand (`"dispatch": "subagent"` in `.deliver.json`, or `dl dispatch subagent "<why>"`). If `dl` refuses with "this job
+  runs on the Munder Difflin floor", you are not the app's Michael: stop and tell the human exactly that message — never
+  change the mode yourself.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.
 - **Agent names.** This playbook, job.json and board.json use plain names (`backend-dev`). When the kit is installed as a
   plugin, ROLES.md and the role cards list its agents with the plugin prefix (`deliver:backend-dev`): `subagent_type` is
@@ -320,9 +325,15 @@ human talks only to you; every role the requirements call for is a person on the
 
 1. **Hire the seats** right after `"$DL" phase readiness` (and again whenever the roles change): `"$DL" md-hire`. One person
    per seat — every selected role, `count` seats each (default 1): ba, the leads, every dev seat, qa, the reviewers, the
-   specialists. No click in the app is needed. Each new person sends you `seated <seat>`; `"$DL" md-seats` shows who sits where.
-   Someone whose desk is empty (released, reaped after a long idle) shows as `not seated`: `"$DL" md-hire` again seats a
-   replacement with the same face.
+   specialists. No click in the app is needed. Each seat starts on an explicit model (the role's, else `munder.model`), never
+   the app's default. A seat is `live` only after its person sends you `seated <seat>`; until then it is `starting`.
+   `"$DL" md-seats` shows who sits where and, for every seat that is not live, why. Someone whose desk is empty (released,
+   reaped after a long idle) shows as `not seated`: `"$DL" md-hire` again seats a replacement with the same face.
+   **A seat that `FAILED`** — the process died at startup, its last reply is an API error (credit, auth), the app rejected the
+   request, or no `seated` within `munder.seat_timeout_minutes` — gets a new person: `"$DL" md-reseat <seat> "<why>"`, with
+   `--model <model>` when the error is about the model or its credit. That is your decision (recorded for the PR), not a
+   question for the human. A seat that took a task and never reports is stuck: re-seat it the same way and send the task
+   again once the new person is seated.
 2. **Every "call Agent(subagent_type: X)" in this playbook is a work order to X's seat on the floor.** Write the same prompt to
    `.work/<job>/prompts/<task>-<role>.md`, then `"$DL" md-send <role|seat> <task> <prompt file> --agent X`.
    `<task>` is the card id for card work (dev, QA, review) or the plan step (`readiness`, `plan`, `cards-<lead role>`,
