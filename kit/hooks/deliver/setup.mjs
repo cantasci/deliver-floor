@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { homedir, platform } from "node:os";
 import { fileURLToPath } from "node:url";
+import { findBash } from "./bash-path.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const kit = process.env.CLAUDE_PLUGIN_ROOT ?? join(here, "..", "..");
@@ -65,13 +66,7 @@ if (projCfg && projCfg.commit?.ai_attribution !== true) {
 if (!has("git")) warn.push("git is missing — install git");
 if (!has("jq")) warn.push(`jq is missing — ${win ? "winget install jqlang.jq" : platform() === "darwin" ? "brew install jq" : "apt install jq"}`);
 if (Number(process.versions.node.split(".")[0]) < 18) warn.push(`node ${process.versions.node} — /deliver needs Node 18+`);
-if (win) {
-  const gb = process.env.CLAUDE_CODE_GIT_BASH_PATH;
-  if (!(gb && existsSync(gb)) && !has("bash")) {
-    const guess = [process.env.ProgramFiles, process.env.LOCALAPPDATA && join(process.env.LOCALAPPDATA, "Programs")].filter(Boolean).map((b) => join(b, "Git", "bin", "bash.exe")).find(existsSync);
-    if (!guess) warn.push("Git Bash not found — install Git for Windows (dl and the guards run in bash), or set CLAUDE_CODE_GIT_BASH_PATH");
-  }
-}
+if (win && !findBash()) warn.push("Git Bash not found — install Git for Windows (dl and the guards run in bash), or set CLAUDE_CODE_GIT_BASH_PATH");
 const installed = readJson(join(cfgDir, "plugins", "installed_plugins.json"), {}).plugins ?? {};
 const copied = existsSync(join(cfgDir, "skills", "deliver"));
 if (!Object.keys(installed).some((k) => k.startsWith("ecc@")) && !existsSync(join(cfgDir, "agents", "architect.md")))

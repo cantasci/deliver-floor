@@ -982,6 +982,22 @@ OLD="$TMP/oldhome"; mkdir -p "$OLD/.claude"; echo '{"hooks":{"Stop":[{"hooks":[{
 HOME="$OLD" "$HERE/scripts/install.sh" --user >/dev/null 2>&1
 contains "upgrading a copied install replaces the old .sh hook entries (no double guards)" "$(jq -c '[.hooks.Stop[].hooks[].command]' "$OLD/.claude/settings.json")" "[\"node \\\"$OLD/.claude/hooks/deliver\\\"/run.mjs stop-guard\"]"
 
+echo "Windows"
+grep -q '^\* text=auto eol=lf' "$HERE/.gitattributes" && ok ".gitattributes keeps LF in every checkout (a CRLF .sh breaks bash on Windows)" || bad ".gitattributes"
+crlf="$(cd "$HERE" && git ls-files kit scripts tests | grep -E '\.(sh|mjs|cjs|json|md)$|/bin/dl$' | xargs grep -lI $'\r' 2>/dev/null | head -3)"
+[[ -z $crlf ]] && ok "no CRLF in any script or config" || bad "CRLF in: $crlf"
+contains "Git Bash is found on Windows: CLAUDE_CODE_GIT_BASH_PATH, next to git.exe, the install folders — or reported missing" "$(node --input-type=module -e '
+import { findBash } from "'"$HERE"'/kit/hooks/deliver/bash-path.mjs";
+const ex = (p) => ["G:/Git/bin/bash.exe","C:/PF/Git/bin/bash.exe"].includes(p.replace(/\\/g,"/")), f = (p) => (p ?? "null").replace(/\\/g,"/");
+console.log([findBash({}, "linux"), f(findBash({CLAUDE_CODE_GIT_BASH_PATH:"G:/Git/bin/bash.exe"}, "win32", ex, () => "")),
+  f(findBash({}, "win32", ex, () => "C:/PF/Git/cmd/git.exe\r\n")), f(findBash({ProgramFiles:"C:/PF"}, "win32", ex, () => { throw 1; })),
+  f(findBash({}, "win32", () => false, () => ""))].join(" "))')" "bash G:/Git/bin/bash.exe C:/PF/Git/bin/bash.exe C:/PF/Git/bin/bash.exe null"
+lp() { bash -c '. "$1/kit/hooks/deliver/lib.sh"; np "$2"' _ "$HERE" "$1"; }
+[[ "$(lp 'C:\Users\a b\repo')" == "/c/Users/a b/repo" && "$(lp 'C:/x/y')" == "/c/x/y" && "$(lp /home/u)" == "/home/u" ]] \
+  && ok "hooks compare Windows paths (C:\\… from Claude Code) with Git Bash paths (/c/… from dl)" || bad "np: $(lp 'C:\Users\a b\repo')"
+WG="$(jq -n --arg f 'C:\x\.work\JOB-1\board.json' '{tool_input:{file_path:$f},cwd:"C:\\x"}')"
+contains "write-guard reads a Windows file path as absolute (not glued to the cwd)" "$(bash -c '. "$1/kit/hooks/deliver/lib.sh"; input=$2; hkp .tool_input.file_path' _ "$HERE" "$WG")" "/c/x/.work/JOB-1/board.json"
+
 echo "plugin packaging"
 claude_ok=0; command -v claude >/dev/null && claude_ok=1
 jq -e '.name=="deliver"' "$HERE/kit/.claude-plugin/plugin.json" >/dev/null && ok "plugin manifest names the plugin deliver" || bad "plugin.json"

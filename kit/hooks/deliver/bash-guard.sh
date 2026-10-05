@@ -24,7 +24,7 @@ if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]].*push' <<<"$cmd"; then
   # Agents may push only their own card branch (job/<JOB>--T-xx…), from inside its worktree; never main, never the job
   # branch, never another card's branch. Michael (dl) pushes card branches and the job branch.
   if is_agent; then
-    own="$(git -C "$(hk .cwd)" symbolic-ref --short -q HEAD 2>/dev/null || true)"
+    own="$(git -C "$(hkp .cwd)" symbolic-ref --short -q HEAD 2>/dev/null || true)"
     [[ $own == job/*--T-* ]] || deny "agents push only their own card branch, from inside its worktree (this directory is not a card worktree)."
     grep -Eq "(^|[[:space:]:])(job/[^[:space:]:]*)" <<<"$cmd" || deny "name the branch explicitly: git push origin $own"
     for ref in $(grep -Eo "job/[^[:space:]:]+" <<<"$cmd"); do
