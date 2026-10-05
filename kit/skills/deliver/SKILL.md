@@ -317,12 +317,19 @@ OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
 
 On the office floor **you use no subagents** (the agent-guard hook refuses the Agent tool while a floor job is active). The
 human talks only to you; every role the requirements call for is a person on the floor, hired by you, working at their desk.
+**You are the floor's Michael**: a floor job runs from Michael's seat in Munder Difflin. A session outside the app is refused
+by every `md-*` command while Michael has a seat (two orchestrators would share one inbox) — hand over: tell the human to give
+Michael `/deliver resume` with `REPO: <repo>`.
 
 1. **Hire the seats** right after `"$DL" phase readiness` (and again whenever the roles change): `"$DL" md-hire`. One person
    per seat — every selected role, `count` seats each (default 1): ba, the leads, every dev seat, qa, the reviewers, the
-   specialists. No click in the app is needed. Each new person sends you `seated <seat>`; `"$DL" md-seats` shows who sits where.
-   Someone whose desk is empty (released, reaped after a long idle) shows as `not seated`: `"$DL" md-hire` again seats a
-   replacement with the same face.
+   specialists. No click in the app is needed. Each new person sends you `seated <seat>`; `"$DL" md-seats` shows who sits where:
+   `pending` (queued — more seats than the floor's worker cap wait, md-seats says so), `starting` (on the floor, not seated
+   yet), `live`, and the ones needing you — `stuck` (no `seated` within `settings.munder.seat_timeout`, 300 s), `failed` (the
+   floor names why, e.g. no usage left for the model) or `gone` (released, reaped after a long idle). `"$DL" md-hire` again
+   sends a stuck person home and seats a replacement with the same face; a failure the floor named is fixed first (another
+   model: `dl jobset '.settings.munder.model="…"'`, recorded with `dl pm-decide`). Someone wedged mid-task:
+   `"$DL" md-hire --reseat <seat>`, then send the open task again. Work orders go only to `live` seats.
 2. **Every "call Agent(subagent_type: X)" in this playbook is a work order to X's seat on the floor.** Write the same prompt to
    `.work/<job>/prompts/<task>-<role>.md`, then `"$DL" md-send <role|seat> <task> <prompt file> --agent X`.
    `<task>` is the card id for card work (dev, QA, review) or the plan step (`readiness`, `plan`, `cards-<lead role>`,

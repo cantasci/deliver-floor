@@ -10,6 +10,16 @@ DELIVER_REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
 
 hk() { jq -r "$1 // empty" <<<"$input" 2>/dev/null; }
 
+# canon_path <path> → the path with symlinks resolved in its longest existing directory prefix. macOS links /tmp and
+# /var into /private, so one file has two spellings; dl's roots come from git (resolved), a tool call's path may not.
+canon_path() {
+  local p=$1 rest="" base
+  while [[ ! -d $p ]]; do rest="/${p##*/}$rest"; p="${p%/*}"; [[ -n $p ]] || p=/; done
+  base="$(cd -P "$p" 2>/dev/null && pwd -P)" || base=$p
+  [[ $base == / ]] && base=""
+  printf '%s%s\n' "$base" "$rest"
+}
+
 # active_jobs → lines "<job id>\t<repo root>"
 active_jobs() {
   local roots=() r f id seen=""
