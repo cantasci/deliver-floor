@@ -2,6 +2,7 @@
 // board.json validator — runs on the Leads' cards before execution starts (and on every guarded phase change).
 // Error → exit 1 (execution must not start). Warning → exit 0, but Michael should fix it.
 // If job.json / plan.md sit next to board.json, cards are also checked against the job's roles and the plan's ACs.
+import { nodeTestDirArgs } from "./node-test-args.mjs";
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { globToRegExp } from "./scope.mjs";
@@ -56,6 +57,13 @@ for (const c of cards) {
   }
   if (typeof c.verify === "string" && /^\s*(true|:|echo\b|exit 0)/.test(c.verify))
     errors.push(`${id}: verify '${c.verify}' proves nothing — it must run the card's tests`);
+}
+
+for (const c of cards) {
+  for (const k of ["verify", "qa_verify"]) {
+    const bad = nodeTestDirArgs(c[k]);
+    if (bad.length) errors.push(`${c.id ?? "(no id)"}: ${k} runs 'node --test ${bad.join(" ")}' — a directory fails on Node 22+ (MODULE_NOT_FOUND); name the files or a glob: node --test '${bad[0].replace(/\/$/, "")}/**/*.test.mjs'`);
+  }
 }
 
 // The QA role writes the card's integration/e2e tests in qa_scope and runs them with qa_verify; the dev never touches them.

@@ -106,10 +106,13 @@ export function checkJobRoles(job, cat) {
     if (r.always && !(job.roles ?? []).some((s) => s.role === name)) errors.push(`role '${name}' is always selected`);
   const devs = (job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev");
   if (!devs.length) errors.push("no dev role selected — nobody could build the cards");
-  if (!(job.roles ?? []).some((r) => r.role?.startsWith("reviewer"))) errors.push("no stack reviewer selected (role 'reviewer')");
+  // The stack reviewer follows the language. In a repo without code the language is decided at readiness (ARC-stack — the
+  // request or the human, never a default), so until then the job may have no reviewer yet; from planning on it must.
+  const stackOpen = !(job.stack ?? []).length && ["intake", "readiness", "awaiting_clarification"].includes(job.phase);
+  if (!stackOpen && !(job.roles ?? []).some((r) => r.role?.startsWith("reviewer"))) errors.push("no stack reviewer selected (role 'reviewer')");
   const PROVIDERS = ["claude", "codex", "gemini", "grok", "kimi", "qwen", "opencode", "crush", "pi", "copilot", "cursor", "antigravity"];
   for (const r of job.roles ?? []) if (r.provider && !PROVIDERS.includes(r.provider)) errors.push(`role '${r.role}': provider '${r.provider}' is not one of ${PROVIDERS.join(", ")}`);
-  const sa = (job.roles ?? []).filter((r) => (r.provider ?? "claude") !== "claude" && (job.settings?.dispatch ?? "subagent") !== "munder");
+  const sa = (job.roles ?? []).filter((r) => (r.provider ?? "claude") !== "claude" && (job.settings?.dispatch ?? "munder") !== "munder");
   for (const r of sa) errors.push(`role '${r.role}' runs on ${r.provider}: non-Claude roles run as Munder Difflin floor workers — set dispatch "munder"`);
   return errors;
 }

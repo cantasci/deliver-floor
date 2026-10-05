@@ -37,6 +37,11 @@ ready_all() { # ready_all [<id> open] — the BA's readiness review: every appli
 }
 SDIR="$HERE/kit/skills/deliver"
 
+echo "Node 22: node --test <directory> fails (MODULE_NOT_FOUND) — caught before it costs an attempt"
+nt() { node "$HERE/kit/skills/deliver/bin/node-test-args.mjs" "$1" >/dev/null; echo $?; }
+[[ "$(nt 'node --test test/x/')$(nt 'node --test test/x')$(nt "node --test 'test/**/*.test.mjs'")$(nt 'node --test test/a.test.mjs')$(nt 'npm test && node --test --test-reporter=spec test/int/')$(nt 'node --test')" == 110010 ]] \
+  && ok "a directory argument to node --test is found (with or without /, after options); files, globs and none are fine" || bad "node-test-args"
+
 echo "macOS bash 3.2"
 expect_ok "dl, hooks and scripts parse and run on bash 3.2 (no case in \$( ), no bare empty arrays, no bash-4 features)" \
   node "$HERE/tests/lint-bash32.mjs" "$HERE/kit/skills/deliver/bin/dl" "$HERE/kit/skills/deliver/bin/md-brief.sh" "$HERE"/kit/hooks/deliver/*.sh "$HERE"/scripts/*.sh
@@ -96,6 +101,15 @@ out="$("$DL" readiness 2>&1)"
 contains "a quote that is not in the request is an error (an interpretation, not a decision)" "$out" "quote not found in the request"
 contains "a decision from the request without its quote is an error" "$out" "decided from a source needs \`quote\`"
 [[ $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): decided from a source"* && $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): quote"* ]] && ok "an answer from the human needs no quote" || bad "human source asked for a quote"
+# The language is never a PM default: ARC-stack is the repo's, the request's or the human's
+jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"human: t 2026-10-05"}])} | (.items[] | select(.id=="ARC-stack")) |= {id, status:"decided", answer:"Node.js", source:"pm: michael 2026-10-05 — fastest to write"}' "$TMP/appl.json" > "$RJ/readiness.json"
+contains "a PM-decided language is refused (no stack by default)" "$("$DL" readiness 2>&1)" "ARC-stack: the language and runtime are not a PM detail"
+jq '(.items[] | select(.id=="ARC-stack")) |= {id, status:"open", owner:"pm", question:"Python or Node?"}' "$RJ/readiness.json" > "$RJ/r.json" && mv "$RJ/r.json" "$RJ/readiness.json"
+contains "…and an open language question belongs to the human" "$("$DL" readiness 2>&1)" "ARC-stack: the language is the human's choice"
+EJ='{"phase":"intake","stack":[],"roles":[{"role":"ba","agent":"business-analyst"},{"role":"qa","agent":"qa-tester"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"}]}'
+contains "a repo without code may start with no stack reviewer (the language is decided at readiness)…" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; console.log(JSON.stringify(checkJobRoles($EJ, loadCatalog())))")" '[]'
+contains "…but not into planning" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; const j=$EJ; j.phase='planning'; console.log(JSON.stringify(checkJobRoles(j, loadCatalog())))")" "no stack reviewer selected"
+contains "the stack check is in the playbook: no default language" "$(cat "$HERE/kit/skills/deliver/SKILL.md")" "A repo without code has no stack yet — never pick one by"
 printf 'Orders are kept for 90 days.\n' > "$R/RETENTION.md"
 jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])} | .items[0].source = "RETENTION.md" | .items[0].quote = "kept for 90   days"' "$TMP/appl.json" > "$RJ/readiness.json"
 out="$("$DL" readiness 2>&1)"; [[ $out != *"quote not found"* ]] && ok "a quote from the repo file named in the source counts (whitespace-insensitive)" || bad "repo-file quote: $out"
@@ -281,6 +295,12 @@ W3="$("$DL" wt add T-03)"
 echo 'export * from "./add/add.mjs";' > "$W3/src/index.mjs"
 printf 'import {test} from "node:test"; test("index", () => {});\n' > "$W3/test/index.test.mjs"
 git -C "$W3" add -A && git -C "$W3" commit -qm "T-03: index"
+contains "a running card's verify command can be fixed (a form Node 22 rejects is refused by the validator)" "$("$DL" card T-03 set qa_verify "node --test test/qa/" "try a directory" 2>&1)" "a directory fails on Node 22+"
+QV0="$(jq -r '.cards[] | select(.id=="T-03") | .qa_verify' "$B")"; AT0="$(jq -r '.cards[] | select(.id=="T-03") | .attempts' "$B")"
+bedit "$B" '(.cards[] | select(.id=="T-03")).qa_verify = "node --test test/qa/"'
+contains "the gate refuses a node --test directory before running it…" "$("$DL" gate T-03 2>&1)" "T-03's qa_verify cannot pass"
+[[ "$(jq -r '.cards[] | select(.id=="T-03") | .attempts' "$B")" == "$AT0" && "$(jq -r '.cards[] | select(.id=="T-03") | .gate.result // "none"' "$B")" == none ]] && ok "…without using an attempt or recording a FAIL" || bad "gate pre-check cost an attempt"
+expect_ok "…and the fix is one command on the running card" "$DL" card T-03 set qa_verify "$QV0" "back to the file form"
 IWT="$R/.work/$JOB/wt/_integration"
 echo 'export const v = 1;' > "$IWT/src/index.mjs"; git -C "$IWT" add -A; git -C "$IWT" commit -qm "hotfix on job branch"
 "$DL" gate T-03 >/dev/null && qa_tests "$W3" T-03 && "$DL" qa T-03 pass "ok" >/dev/null && "$DL" review T-03 approve "ok" >/dev/null

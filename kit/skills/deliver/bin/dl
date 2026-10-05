@@ -746,7 +746,10 @@ cmd_card() {
     set) # dl card <id> set <field> <value | JSON> "<reason>"
       local field=$val value=${4:-} reason=${5:-}
       [[ " $CARD_FIELDS " == *" $field "* && -n $value && -n $reason ]] || die "usage: dl card $card set <$(tr ' ' '|' <<<"$CARD_FIELDS")> <value> \"<reason>\""
-      [[ $cur == ready || $cur == blocked ]] || refuse 1 "$card is $cur — a card's contract changes only while it is ready or blocked"
+      # The command that runs the tests may be fixed on a running card too (e.g. a form Node 22 rejects) — validated and logged;
+      # the rest of the contract changes only while the card is ready or blocked.
+      [[ $cur == ready || $cur == blocked || ( ($field == verify || $field == qa_verify) && ($cur == running || $cur == review) ) ]] \
+        || refuse 1 "$card is $cur — a card's contract changes only while it is ready or blocked (verify / qa_verify: also while running)"
       local json; json="$(jq -c . <<<"$value" 2>/dev/null)" || json="$(jq -cn --arg v "$value" '$v')"
       cp "$BOARD" "$BOARD.bak"
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.history = ((.history // []) + [{"at":$t,"by":"michael","field":$f,"from":.[$f],"to":$v,"reason":$r}]) | .[$f] = $v)' \
@@ -773,6 +776,11 @@ cmd_gate() {
   wt="$(card_get "$card" .worktree)"; verify="$(card_get "$card" .verify)"; attempt="$(card_get "$card" .attempts)"
   branch="$(card_get "$card" .branch)"; scope="$(card_get "$card" '.scope')"
   local qscope qverify qhead; qscope="$(card_get "$card" '.qa_scope // []')"; qverify="$(card_get "$card" '.qa_verify // ""')"; qhead="$(card_get "$card" '.qa.head // ""')"
+  local k v hint
+  for k in verify qa_verify; do   # a command that cannot pass on this Node is fixed before it costs the card an attempt
+    v="$(card_get "$card" ".$k // \"\"")"
+    hint="$(node "$BIN_DIR/node-test-args.mjs" "$v")" || refuse 1 "$card's $k cannot pass: $hint — fix it: dl card $card set $k \"<command>\" \"<why>\" (no attempt was used)"
+  done
   [[ -d $wt ]] || die "$card has no worktree — run: dl wt add $card"
   log="$JOB_DIR/gates/$card-a$attempt-$(date +%H%M%S).log"
   tmo="$(setting gate_timeout)"; tmo=${tmo:-1800}

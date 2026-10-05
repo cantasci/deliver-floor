@@ -69,9 +69,14 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 
 1. `"$DL" new "<short title, ≤6 words>" "<the full request text>"` → prints the job id.
    (For a requirements file the request text is: `Requirements: <abs path>` + its content.)
-2. Detect the stack from the repo (`stack_hints` in `roles.yaml`): `"$DL" jobset '.stack=["javascript"]'`.
+2. **The stack comes from the repo, or it is not decided yet.** Detect it from the repo's files (`stack_hints` in `roles.yaml`),
+   e.g. a `pyproject.toml` → `"$DL" jobset '.stack=["python"]'`. **A repo without code has no stack yet — never pick one by
+   default** (not even the language you would write fastest): leave `.stack` empty. The language and runtime are then the
+   readiness item `ARC-stack`: decided only by the request (quoted) or by the human at the start, with the options and the
+   evidence the request gives (libraries, tools and platforms it names — e.g. `yfinance` or a "Python client" point to
+   Python). Once it is decided, record `.stack` and pick the stack reviewer; `dl` refuses planning before that.
 3. **Select the roles from the request** — read `roles.yaml` (the only catalog). For each role apply its `when` to what the request
-   asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer from `stack_reviewers`
+   asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer (once the stack is known) from `stack_reviewers`
    (most specific match) as role `reviewer` (a second one, e.g. for a React UI next to a Node API, as `reviewer-ui`).
    Write a one-line reason per role that quotes the part of the request it serves:
    `"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule"},…]'`
