@@ -964,6 +964,18 @@ contains "doctor: a team would queue behind 4 workers" "$out" "maxConcurrentWork
 echo '{"orchestratorMaySpawn":true,"workerIdleTimeoutMinutes":480,"maxConcurrentWorkers":12}' > "$HOME/.config/munder-difflin/config.json"
 out="$("$HERE/scripts/doctor.sh" 2>&1)"
 [[ $out == *"seats are not sent home"* && $out == *"room for a whole team"* && $out == *"Michael may seat people"* ]] && ok "doctor: satisfied with the settings init writes" || bad "doctor seats: $out"
+# Which Munder Difflin init installed: upstream's build has no floor fixes (seats never start) — the build tells
+MD="$TMP/md"; git init -q "$MD"; git -C "$MD" remote add origin https://example.test/upstream/munder-difflin
+mkdir -p "$MD/out/main"; echo 'console.log("upstream")' > "$MD/out/main/index.js"; git -C "$MD" add -A; git -C "$MD" commit -qm md
+out="$(MUNDER_DIR="$MD" "$HERE/scripts/doctor.sh" 2>&1)"
+contains "doctor names where init's Munder Difflin comes from" "$out" "init's Munder Difflin: https://example.test/upstream/munder-difflin @"
+contains "…flags a build without the floor fixes (seats would never start)" "$out" "built without the floor fixes"
+contains "…and a build that is not from the checked-out commit" "$out" "build is not from the checked-out commit"
+echo 'const firstPrompt = "Your task was sent to your hive inbox by god. Read your inbox now";' > "$MD/out/main/index.js"
+git -C "$MD" rev-parse HEAD > "$MD/out/.built-from"
+out="$(MUNDER_DIR="$MD" "$HERE/scripts/doctor.sh" 2>&1)"
+[[ $out == *"built with the floor fixes"* && $out != *"not from the checked-out commit"* && $out != *"built without"* ]] \
+  && ok "doctor: satisfied with the fork's build of the checked-out commit" || bad "doctor munder source: $out"
 
 echo
 echo "result: $pass passed, $failn failed"
