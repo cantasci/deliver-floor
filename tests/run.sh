@@ -349,6 +349,14 @@ bedit "$B" '.cards[2].state="running"'
 contains "stop-guard lets Michael wait for floor workers (munder)" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
 "$DL" jobset '.settings.dispatch="subagent"'; unset AGENT_ID; rm -f "$R/.work/$JOB/.stop-blocks"
 contains "interactive: waiting for background agents is allowed" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
+# a card in review whose QA or review agent is already at work (the user's report: three agents running, the guard said "do not stop")
+bedit "$B" '.cards[2].state="review"'; rm -f "$R/.work/$JOB/.stop-blocks"
+contains "interactive, a card in review and no agent at work: Michael is held (its QA/review is his to start)" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"
+hook agent-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\",\"tool_input\":{\"subagent_type\":\"qa-tester\",\"run_in_background\":true}}" >/dev/null
+contains "…an agent sent to work and not back yet: Michael may wait for it (it reports back on its own)" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
+printf '%s\tagent\tqa-tester a1: done\n' "$(date -u +%FT%TZ)" >> "$R/.work/$JOB/events.log"; rm -f "$R/.work/$JOB/.stop-blocks"
+contains "…once it is back and the card waits on him, he is held again" "$(hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"
+bedit "$B" '.cards[2].state="running"'; rm -f "$R/.work/$JOB/.stop-blocks"
 contains "headless: Michael may not stop while agents run in the foreground flow" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"
 contains "agent-guard: headless background dispatch is denied" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":true,"subagent_type":"backend-dev"}}')" "rc=2"
 contains "agent-guard: headless foreground dispatch is fine" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":false}}')" "rc=0"
@@ -1036,7 +1044,8 @@ MD
 cd "$TMP/kn" && git init -q -b main && echo x > a && echo '{"dispatch":"subagent"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "know" "x" >/dev/null; KJ="$(cat .work/ACTIVE)"
 "$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
-"$DL" learn qa "Check rounding at .5 boundaries — QA missed it in JOB-1" >/dev/null
+contains "a lesson without what happened is refused (no lessons on assumptions)" "$("$DL" learn qa "Check rounding" --topic rounding 2>&1)" "a lesson needs what happened"
+"$DL" learn qa "Check rounding at .5 boundaries — QA missed it in JOB-1" --topic rounding-boundaries --evidence "JOB-1: AC-4 failed in production at 2.5" >/dev/null
 "$DL" phase readiness >/dev/null
 grep -q "MUST: Map domain errors" ".work/$KJ/roles/backend.md" && ok "company standard's Must reaches the dev role" || bad "dev standard"
 grep -q "MUST: Map domain errors" ".work/$KJ/roles/qa.md" && bad "standard leaked to a role it does not apply to" || ok "applies_to filters roles"
@@ -1044,7 +1053,7 @@ grep -q "Tests live in test/<area>/" ".work/$KJ/roles/qa.md" && ! grep -q "Every
 grep -q "Never leak stack traces" ".work/$KJ/roles/reviewer.md" && ok "reviewer gets the review standards" || bad "reviewer standard"
 grep -q "Background" ".work/$KJ/roles/backend.md" && bad "whole document pasted" || ok "only Must bullets are copied (rest by reference)"
 grep -q "rounding at .5" ".work/$KJ/roles/qa.md" && ok "memory: a learned lesson reaches the next role cards" || bad "lesson"
-mkdir -p "$TMP/mphive/agents/god"; HIVE_ROOT="$TMP/mphive" "$DL" learn all "Name QA tests after the AC id" >/dev/null
+mkdir -p "$TMP/mphive/agents/god"; HIVE_ROOT="$TMP/mphive" "$DL" learn all "Name QA tests after the AC id" --topic qa-test-names --evidence "review: tests named t1..t9" >/dev/null
 grep -q "/deliver lesson for kn .*Name QA tests after the AC id" "$TMP/mphive/agents/god/memory.md" \
   && ok "on the floor a lesson also lands in Michael's memory.md (mined into MemPalace)" || bad "lesson not in god memory"
 mkdir -p "$TMP/res"; cat > "$TMP/res/kg-core.cjs" <<'JS'
@@ -1056,8 +1065,57 @@ JS
 touch "$TMP/res/kg.cjs"
 KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md >/dev/null
 out="$(KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md)"
-contains "sync-md re-ingests without duplicates" "$out" "3 document(s) ingested (3 older version(s) replaced)"
-[[ "$(jq length "$TMP/kgroot/idx.json")" == 3 ]] && ok "knowledge graph holds 3 docs (2 standards + lessons)" || bad "kg docs: $(cat "$TMP/kgroot/idx.json")"
+contains "sync-md re-ingests without duplicates" "$out" "2 document(s) ingested (2 older version(s) replaced)"
+[[ "$(jq length "$TMP/kgroot/idx.json")" == 2 ]] && ok "knowledge graph holds the 2 standards (lessons join once a PR accepted them)" || bad "kg docs: $(cat "$TMP/kgroot/idx.json")"
+
+echo "knowledge: lessons with what happened, into the project (and the shared repo) through the job's PR; a topic seen thrice becomes a standard"
+SB="$TMP/shared.git"; git init -q --bare -b main "$SB"; SW="$TMP/shared-w"; git clone -q "$SB" "$SW" 2>/dev/null
+mkdir -p "$SW/standards" && printf -- '---\napplies_to: [dev]\n---\n# Observability\n## Must\n- Log with the request id.\n' > "$SW/standards/observability.md"
+git -C "$SW" add -A && git -C "$SW" commit -qm "docs: observability standard" && git -C "$SW" push -q origin main
+KP="$TMP/kp"; mkdir -p "$KP/.deliver/knowledge" && cd "$KP" && git init -q -b main
+jq -n --arg r "$SB" '{dispatch:"subagent", verify_full:"true", merge_mode:"local", knowledge:{repo:$r}}' > .deliver.json
+printf '# Lessons — kp\n\n## 2026-09-01 · JOB-A · qa · topic: qa-verify-files\nqa_verify runs files.\n- evidence: gate T-02 FAIL\n\n## 2026-09-10 · JOB-B · lead · topic: qa-verify-files\nverify lists files.\n- evidence: gate T-01 FAIL\n' > .deliver/knowledge/lessons.md
+git add -A && git commit -qm i
+"$DL" new "Knowledge" "x" >/dev/null 2>&1; KJ2="$KP/.work/$(cat .work/ACTIVE)"
+[[ -d $DELIVER_HOME/shared/shared.git/.git || -d $DELIVER_HOME/shared/shared/.git ]] && ok "dl new clones the shared knowledge repo (settings.knowledge.repo)" || bad "no shared clone: $(ls "$DELIVER_HOME/shared" 2>&1)"
+"$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+grep -q "MUST: Log with the request id" "$KJ2/roles/backend.md" && ok "…its standards reach the role cards" || bad "shared standard not in the role card"
+grep -q "qa_verify runs files" "$KJ2/roles/qa.md" && ok "accepted project lessons (.deliver/knowledge/lessons.md) reach the role cards" || bad "project lesson not in the role card"
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$KJ2/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -f src/ok",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$KJ2/board.json"
+"$DL" phase executing >/dev/null; WK="$("$DL" wt add T-01)"
+mkdir -p "$WK/src" && echo 1 > "$WK/src/a" && git -C "$WK" add -A && git -C "$WK" commit -qm "T-01: one"
+"$DL" gate T-01 >/dev/null 2>&1; echo 1 > "$WK/src/ok" && git -C "$WK" add -A && git -C "$WK" commit -qm "T-01: ok"
+"$DL" wt add T-01 >/dev/null; "$DL" gate T-01 >/dev/null
+mkdir -p "$WK/it" && echo t > "$WK/it/t" && git -C "$WK" add -A && git -C "$WK" commit -qm "T-01 QA: it"
+"$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve ok >/dev/null
+out="$("$DL" learn qa "qa_verify and verify run test files, never a bare directory" --topic qa-verify-files --card T-01 2>&1)"
+contains "dl learn --card attaches what happened (the card's gate FAIL from the event log)" "$(jq -r '.[0].evidence | join(" | ")' "$KJ2/lessons.json")" "gate: T-01 FAIL"
+contains "…and a topic seen in three jobs asks for a standard" "$out" "PROMOTE: topic 'qa-verify-files' was learned in 3 jobs"
+contains "a standard grows only out of recorded lessons" "$("$DL" knowledge promote nothing-learned "x" 2>&1)" "no lesson on topic 'nothing-learned'"
+"$DL" knowledge promote qa-verify-files "verify and qa_verify run test files, never a bare directory" --applies-to qa,lead >/dev/null
+"$DL" learn all "Name integration tests after the AC" --topic qa-test-names --evidence "review T-01: tests named t1..t9" --scope shared >/dev/null
+"$DL" learn all "The stop-guard held Michael while three agents worked" --topic stop-guard-wait --evidence "stop hook fired 4 times with T-04 QA running" --scope kit >/dev/null
+"$DL" followup "suite_v2._balanced accepts an empty industry_keys map" --card T-01 --evidence "T-05 QA report" >/dev/null
+"$DL" integrate T-01 >/dev/null && "$DL" phase integrating >/dev/null && "$DL" verify-all >/dev/null && "$DL" phase closing >/dev/null
+echo "# Report" > "$KJ2/report.md"
+out="$("$DL" ship 2>&1)"; contains "ship goes through after the lessons commit (verify-all ran on the code; only .deliver/knowledge changed since)" "$out" "SHIPPED"
+contains "the project's lessons file on main carries the lesson with its evidence" "$(cat .deliver/knowledge/lessons.md)" "topic: qa-verify-files"$'\n'"qa_verify and verify run test files, never a bare directory"$'\n'"- evidence: "
+contains "…and the new standard, its rule under ## Must" "$(cat .deliver/knowledge/qa-verify-files.md 2>&1)" "## Must"$'\n'"- verify and qa_verify run test files, never a bare directory"
+contains "…committed in the repo's commit format" "$(git log --format=%s -n 5)" "Lessons learned in JOB-"
+! grep -q "stop-guard" .deliver/knowledge/lessons.md && ok "kit lessons do not become project rules" || bad "kit lesson in project lessons"
+R2="$(cat "$KJ2/report.md")"
+[[ $R2 == *"## Lessons learned"* && $R2 == *"## Feedback for the deliver kit"* && $R2 == *"The stop-guard held Michael"* && $R2 == *"### New standards"* && $R2 == *"## Follow-ups (found during the job, outside its scope)"* && $R2 == *"suite_v2._balanced"* ]] \
+  && ok "the PR body lists the lessons, the new standard, the kit feedback and the follow-ups" || bad "report: $R2"
+contains "shared lessons go to their own branch in the shared repo (a PR there)" "$(git -C "$SB" show "deliver/$(basename "$KJ2"):lessons.md" 2>&1)" "- project: kp"
+"$DL" cleanup --all >/dev/null 2>&1
+"$DL" new "Next" "x" >/dev/null 2>&1; KJ3="$KP/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null
+grep -q "MUST: verify and qa_verify run test files" "$KJ3/roles/qa.md" && ok "the next job's QA card carries the new standard as a MUST rule" || bad "promoted standard not in the next role card"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "merge modes: human / semi / auto (fake gh, bare origin)"

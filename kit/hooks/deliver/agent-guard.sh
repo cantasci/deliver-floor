@@ -16,7 +16,16 @@ if [[ ${AGENT_ID:-} == god ]]; then
     exit 2
   done < <(active_jobs)
 fi
-[[ ${DELIVER_HEADLESS:-} == 1 ]] || exit 0
+# Interactive: record each agent sent to work, so the stop-guard knows Michael is waiting for agents that report back
+# (their SubagentStop is logged as "agent" by subagent-log).
+if [[ ${DELIVER_HEADLESS:-} != 1 ]]; then
+  . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+  if owned="$(owned_job)"; then
+    IFS=$'\t' read -r job root <<<"$owned"
+    printf '%s\tdispatch\t%s\n' "$(date -u +%FT%TZ)" "$(jq -r '.tool_input.subagent_type // "agent"' <<<"$input")" >> "$root/.work/$job/events.log"
+  fi
+  exit 0
+fi
 # With background tasks disabled (scripts/run-headless.sh sets this) the Agent tool has no background mode at all.
 [[ ${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS:-} == 1 ]] && exit 0
 # Otherwise current Claude Code runs subagents in the background BY DEFAULT, so headless dispatch must say false explicitly.

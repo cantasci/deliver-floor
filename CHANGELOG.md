@@ -4,6 +4,25 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.5.0 — 2026-10-05
+
+**Lessons and standards live in git, shared through PRs**
+- `dl learn` takes a topic and what happened (`--card T-xx` attaches the card's failures from the event log, or
+  `--evidence`); a lesson without it is refused. Scopes: `project` → `.deliver/knowledge/lessons.md`, `shared` → the shared
+  knowledge repo, `kit` → "Feedback for the deliver kit" in the PR.
+- `dl ship` writes the job's lessons onto the job branch (one commit in the repo's commit format), so the PR shows them
+  and merging it accepts them; shared lessons go to a branch with a PR in the shared repo.
+- The shared knowledge repo (`knowledge.repo`) is cloned and updated at every `dl new`; its standards reach the role cards.
+- A topic learned in three jobs asks for a standard: `dl knowledge promote <topic> "<rule>"` writes it (`## Must`, with
+  the lessons behind it) in the same PR. `dl knowledge topics` lists the topics.
+- `dl followup "<finding>"`: a defect seen outside the job's scope, listed in the PR under "Follow-ups".
+
+**From a user's job**
+- The stop-guard no longer holds Michael while the agents he sent are still working (interactive subagent mode).
+- QA gets the commit the gate passed (DEV'S COMMIT) and never searches the history for it; QA tests may not depend on the
+  state of the git working tree.
+- A defect found in merged work is fixed by a card, never by a standing instruction repeated in later prompts.
+
 ## 0.4.1 — 2026-10-05
 
 **Commit messages follow your repo's convention**

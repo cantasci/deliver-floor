@@ -61,6 +61,14 @@
         "jira": { "type": "object" }
       }
     },
+    "knowledge": {
+      "type": "object",
+      "description": "The shared knowledge repo — standards and lessons several projects share. dl new clones it (into ~/.deliver/shared/) and updates it at every job's start; shared lessons are proposed to it as a PR. Without it, each project keeps its own in .deliver/knowledge/.",
+      "properties": {
+        "repo": { "type": "string", "description": "git URL or path of the shared knowledge repo (standards/*.md, lessons.md)." },
+        "branch": { "type": "string", "description": "Its branch (default: the clone's default branch)." }
+      }
+    },
     "commit": {
       "type": "object",
       "properties": {
