@@ -4,7 +4,7 @@
 #   scripts/install.sh --user                 → ~/.claude            (every project)
 #   scripts/install.sh --project <repo path>  → <repo>/.claude       (one project, can be committed)
 #   add --dry-run to only print what would happen, --uninstall to remove the kit again
-#   --plugin: the kit itself comes from the plugin (/plugin install deliver@skills-shop); only merge the settings a
+#   --plugin: the kit itself comes from the plugin (/plugin install deliver@deliver-floor); only merge the settings a
 #   plugin cannot set (env, attribution) into <target>/settings.json — no files are copied, no hooks are added
 #   --keep-attribution: keep Claude Code's "Co-Authored-By"/"Generated with" lines in commits and PRs
 #   (by default the kit sets attribution.commit/pr to "" so delivered history carries no AI attribution)
@@ -114,8 +114,8 @@ if [[ $plugin -eq 1 ]]; then
   cat <<EOF
 
 Done (settings only — the plugin brings the skill, agents and hooks). Next steps:
-  1. In Claude Code:   /plugin marketplace add https://github.com/cantasci/skills-shop
-                       /plugin install deliver@skills-shop
+  1. In Claude Code:   /plugin marketplace add https://github.com/cantasci/deliver-floor
+                       /plugin install deliver@deliver-floor
                        /plugin marketplace add https://github.com/affaan-m/ECC
                        /plugin install ecc@ecc        (if not installed yet), then restart Claude Code
   2. Start a job:      /deliver <what you want built>   (or /deliver:deliver; agents are called deliver:<name> — ROLES.md lists them)

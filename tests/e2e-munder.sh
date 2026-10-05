@@ -66,10 +66,10 @@ git -C "$SB" add .deliver.json && git -C "$SB" commit -qm "deliver: dispatch on 
 SKD="$ISO_HOME/.claude/skills/deliver"
 if [[ ${E2E_PLUGIN:-0} == 1 ]]; then
   { iso_env bash "$HERE/scripts/install.sh" --user --uninstall && iso_env claude plugin marketplace add "$HERE" \
-      && iso_env claude plugin install deliver@skills-shop && iso_env bash "$HERE/scripts/install.sh" --user --plugin; } > "$W/plugin.log" 2>&1 \
+      && iso_env claude plugin install deliver@deliver-floor && iso_env bash "$HERE/scripts/install.sh" --user --plugin; } > "$W/plugin.log" 2>&1 \
     || { bad "plugin install failed (plugin.log)"; tail -20 "$W/plugin.log"; exit 1; }
-  SKD="$(ls -d "$ISO_HOME"/.claude/plugins/cache/skills-shop/deliver/*/skills/deliver 2>/dev/null | tail -1)"
-  [[ -n $SKD && ! -e $ISO_HOME/.claude/skills/deliver ]] && ok "the kit runs as the plugin deliver@skills-shop (copied kit removed): $SKD" || bad "plugin layout: $SKD"
+  SKD="$(ls -d "$ISO_HOME"/.claude/plugins/cache/deliver-floor/deliver/*/skills/deliver 2>/dev/null | tail -1)"
+  [[ -n $SKD && ! -e $ISO_HOME/.claude/skills/deliver ]] && ok "the kit runs as the plugin deliver@deliver-floor (copied kit removed): $SKD" || bad "plugin layout: $SKD"
   iso_env env DELIVER_SKILL_DIR="$SKD" bash "$HERE/scripts/md-brief.sh" "$W/hive" "$SB" > /dev/null && grep -q "$SKD" "$W/hive/CLAUDE.md" \
     && ok "Michael's brief points at the plugin's playbook" || bad "brief does not name the plugin"
   out="$(iso_env bash "$HERE/scripts/doctor.sh" "$SB" 2>&1)"; printf '%s\n' "$out" > "$W/doctor-plugin.log"

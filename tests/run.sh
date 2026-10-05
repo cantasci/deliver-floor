@@ -597,7 +597,7 @@ out="$(cat "$R/.work/$JOB/ROLES.md")"
 [[ $out == *'`backend-dev`'* && $out != *deliver:* ]] && ok "a copied install (no plugin) keeps plain names" || bad "plain names: $out"
 # Claude Code may load an installed plugin straight from a local marketplace folder: the kit's manifest + the plugin
 # listed in installed_plugins.json is enough.
-mkdir -p "$HOME/.claude/plugins"; echo '{"version":2,"plugins":{"deliver@skills-shop":[{"scope":"user"}]}}' > "$HOME/.claude/plugins/installed_plugins.json"
+mkdir -p "$HOME/.claude/plugins"; echo '{"version":2,"plugins":{"deliver@deliver-floor":[{"scope":"user"}]}}' > "$HOME/.claude/plugins/installed_plugins.json"
 "$DL" roles >/dev/null; contains "an installed plugin loaded from its source folder is detected" "$(cat "$R/.work/$JOB/ROLES.md")" '`deliver:backend-dev`'
 rm -f "$HOME/.claude/plugins/installed_plugins.json"; "$DL" roles >/dev/null
 [[ "$(cat "$R/.work/$JOB/ROLES.md")" != *deliver:* ]] && ok "…and not when the plugin is not installed" || bad "namespace without plugin"

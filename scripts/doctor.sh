@@ -78,7 +78,7 @@ echo "Kit install"
 found=0
 check_install "$HOME/.claude" "user" && found=1
 if [[ -n $repo ]]; then check_install "$repo/.claude" "project" && found=1; fi
-# As a plugin (/plugin install deliver@skills-shop): skill, agents and hooks come from the plugin; settings.json only
+# As a plugin (/plugin install deliver@deliver-floor): skill, agents and hooks come from the plugin; settings.json only
 # carries what a plugin cannot set (scripts/install.sh --plugin).
 pdir="$(jq -r '[.plugins | to_entries[] | select(.key | startswith("deliver@")) | .value[].installPath] | last // empty' "$ipj" 2>/dev/null)"
 if [[ -n $pdir && -d $pdir ]]; then
@@ -92,7 +92,7 @@ if [[ -n $pdir && -d $pdir ]]; then
   [[ $found -eq 1 ]] && fail "the kit is installed twice (plugin AND copied into .claude/) — skill and hooks load twice: scripts/install.sh --user --uninstall, then scripts/install.sh --user --plugin"
   found=1
 fi
-[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@skills-shop + scripts/install.sh --user --plugin, or scripts/install.sh --user (or --project <repo>)"
+[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@deliver-floor + scripts/install.sh --user --plugin, or scripts/install.sh --user (or --project <repo>)"
 have dl && pass "dl on PATH ($(command -v dl))" || note "dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl"
 
 echo "Munder Difflin (the default run mode)"

@@ -5,7 +5,7 @@ About 15 minutes. `scripts/init.sh` does steps 1–3 for you; the rest is per re
 ## 1. One command: `scripts/init.sh`
 
 ```bash
-git clone https://github.com/cantasci/skills-shop && cd skills-shop
+git clone https://github.com/cantasci/deliver-floor && cd deliver-floor
 scripts/init.sh --repo /path/to/your/repo                        # ECC + the kit (~/.claude) + .deliver.json + doctor
 scripts/init.sh --repo /path/to/repo --munder --hive ~/md-hive   # … and Munder Difflin from source (see 07)
 ```
@@ -209,7 +209,7 @@ scripts/init.sh --munder --hive ~/md-hive --repo /tmp/wl
 ```
 
 ```text
-/deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md          (typed to Michael in the app)
+/deliver /path/to/deliver-floor/examples/watchlist-poc/JOB.md          (typed to Michael in the app)
 ```
 
 **With Claude Code subagents — chosen by hand.** No app; one `claude` session, roles run as its subagents:
@@ -219,7 +219,7 @@ scripts/sandbox.sh --subagent /tmp/wl watchlist-poc && cd /tmp/wl && claude
 ```
 
 ```text
-/deliver /path/to/skills-shop/examples/watchlist-poc/JOB.md
+/deliver /path/to/deliver-floor/examples/watchlist-poc/JOB.md
 ```
 
 Never start `/deliver` for a floor job from a separate terminal: `dl` refuses it, because a second Michael would read the
