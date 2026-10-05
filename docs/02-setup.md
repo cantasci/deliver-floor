@@ -129,6 +129,11 @@ Do this once per repository. It is the difference between a flow that works and 
 
 ### 4.1 `.deliver.json` — how this repo is verified and delivered
 
+You do not write it from scratch: the first `/deliver` (or `dl config --init`) writes it from what the repo says — the test
+command from your `Makefile`/`package.json`/`pyproject.toml`/…, the install command from your lockfile, the merge mode from
+the remote — and prints where each value came from ([03 § What is read from the repo](03-settings.md#what-is-read-from-the-repo)).
+Check those values and make them what your CI runs; a repo that adds a lint or `.env` step, for example, ends up with:
+
 ```json
 {
   "verify_full": "npm run typecheck && npm run lint && npm test",

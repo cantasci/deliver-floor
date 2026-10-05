@@ -233,22 +233,16 @@ push_card() {
 # The project's config file: .deliver.json at the repo root manages /deliver for that repo (run mode, models per role,
 # merge mode, verify command, tracker…). The first /deliver writes a complete one; `dl config` shows what applies.
 SCHEMA_URL="https://raw.githubusercontent.com/cantasci/deliver-floor/main/kit/skills/deliver/deliver.schema.json"
-project_config_template() {
-  local verify="npm test" mm=human
-  [[ -f $ROOT/package.json ]] || verify=""
-  [[ -f $ROOT/pyproject.toml || -f $ROOT/requirements.txt ]] && verify="pytest -q"
-  [[ -f $ROOT/go.mod ]] && verify="go test ./..."
-  [[ -f $ROOT/pom.xml ]] && verify="mvn -q test"
-  [[ -f $ROOT/Cargo.toml ]] && verify="cargo test"
-  git -C "$ROOT" remote get-url origin >/dev/null 2>&1 || mm=local
-  # from the kit defaults ⊕ the user's own config ($DELIVER_HOME/config.json), so the new file starts from what they chose
-  jq -n --arg schema "$SCHEMA_URL" --arg v "${verify:-}" --arg m "$mm" --slurpfile c <(merged_settings) '
+project_config_template() { # what the repo says (detect.mjs: test script, lockfile, remote, the floor it is registered on)
+  local d; d="$(node "$BIN_DIR/detect.mjs" "$ROOT")" || die "could not read $ROOT to write .deliver.json"
+  # over the kit defaults ⊕ the user's own config ($DELIVER_HOME/config.json), so the new file starts from what they chose
+  jq -n --arg schema "$SCHEMA_URL" --argjson d "$d" --slurpfile c <(merged_settings) '
     {"$schema": $schema,
      dispatch: $c[0].dispatch,
-     verify_full: $v, worktree_setup: "", merge_mode: $m,
+     verify_full: $d.verify_full, worktree_setup: $d.worktree_setup, worktree_exclude: ((($c[0].worktree_exclude // []) + $d.worktree_exclude) | unique), merge_mode: $d.merge_mode,
      max_parallel: $c[0].max_parallel, max_attempts: $c[0].max_attempts,
      roles: {},
-     munder: ($c[0].munder | {hive_root, model, seat_timeout_minutes, app_command: ""}),
+     munder: ($c[0].munder | {hive_root: (if $d.hive_root != "" then $d.hive_root else .hive_root end), model, seat_timeout_minutes, app_command: ""}),
      tracker: {kind: "local"},
      commit: $c[0].commit}'
 }
@@ -256,7 +250,9 @@ ensure_project_config() { # writes .deliver.json when the repo has none; says so
   [[ -f $ROOT/.deliver.json ]] && return 0
   local t; t="$(project_config_template)" || die "could not write $ROOT/.deliver.json"
   printf '%s\n' "$t" > "$ROOT/.deliver.json"
-  echo "created $ROOT/.deliver.json — this repo's /deliver settings (run mode, models per role, merge mode, verify). Edit it any time; dl config shows what applies." >&2
+  echo "created $ROOT/.deliver.json — this repo's /deliver settings, read from the repo:" >&2
+  node "$BIN_DIR/detect.mjs" "$ROOT" | jq -r --slurpfile f "$ROOT/.deliver.json" '.evidence | to_entries[] | . as $e | ($f[0] | if $e.key == "hive_root" then .munder.hive_root else .[$e.key] end | tostring) as $v | "  \($e.key): \(if $v == "" then "(empty)" else $v end) — \($e.value)"' >&2 2>/dev/null || true
+  echo "Edit it any time; dl config shows what applies." >&2
 }
 cmd_config() { # dl config [--init] — the settings that apply in this repo (kit defaults ⊕ .deliver.json)
   resolve_root

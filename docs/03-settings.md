@@ -26,11 +26,27 @@ human accepts it with `dl reseal "<reason>"`.
 | `max_parallel` | `3` | Max cards running at once (all roles together). Seats per role are set on the role (`"count": N`) |
 | `max_attempts` | `2` | Tries per card (gate fail, QA fail, review "changes", conflict) before it is `blocked` and the human decides |
 | `gates.plan` | `false` | `true` = the human approves plan + board before any code. Off by default: the human is asked at readiness (only open business questions) and at the PR |
-| `verify_full` | `""` | The full suite on the job branch after all cards merged (`dl verify-all`). Detected from the repo (package.json → `npm test`, pyproject → `pytest -q`, go.mod, pom.xml, Cargo.toml) when `.deliver.json` is written; no default language, so a repo without code gets it once the stack is decided |
-| `worktree_setup` | `""` | Runs inside every new card worktree (deps, env) — [02 § 4.1](02-setup.md#41-deliverjson--how-this-repo-is-verified-and-delivered) |
+| `verify_full` | `""` | The full suite on the job branch after all cards merged (`dl verify-all`). Read from the repo when `.deliver.json` is written — see [what is read from the repo](#what-is-read-from-the-repo); never a guess, so a repo without tests or without code gets `""` until the stack is decided |
+| `worktree_setup` | `""` | Runs inside every new card worktree (deps, env). Read from the repo's lockfile (`npm ci`, `pnpm install --frozen-lockfile`, `uv sync`, …) — [02 § 4.1](02-setup.md#41-deliverjson--how-this-repo-is-verified-and-delivered) |
 | `worktree_exclude` | `node_modules, .venv, .env, .claude/settings.local.json` | Paths `worktree_setup` creates that must never count as changes (added to `.git/info/exclude`) |
 | `gate_timeout` | `1800` | Seconds a card's `verify` / `qa_verify` may run in the gate |
 | `stop_guard_max` | `5` | How many times the Stop hook may hold Michael before letting him stop (loop protection) |
+
+## What is read from the repo
+
+The first `/deliver` in a repo (or `dl config --init`, or `scripts/init.sh --repo`) writes `.deliver.json` from what the
+repo itself says, and prints where each value came from (`kit/skills/deliver/bin/detect.mjs`):
+
+| Value | Read from |
+| --- | --- |
+| `verify_full` | a `Makefile` `test:` target → `make test`; else `package.json` scripts (`typecheck`, `lint`, `test` — run with the package manager its lockfile names; npm's placeholder `"no test specified"` is **not** a test suite); Python with pytest in its project files (`uv run` / `poetry run` from the lockfile), or `python -m unittest discover` for a `tests/` folder; `go.mod`, `Cargo.toml`, `pom.xml`/`mvnw`, Gradle/`gradlew`, `mix.exs`, `Gemfile`, `composer.json`, `Package.swift`, `pubspec.yaml`, `deno.json`. No project at the root: each top-level folder's own (`(cd api && go test ./...) && (cd web && npm test)`). Nothing found → `""` |
+| `worktree_setup` | the lockfile's install command (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`, `bun install`, `uv sync`, `poetry install`) |
+| `worktree_exclude` | the kit's list plus what that setup creates (`node_modules`, `.venv`, per folder) |
+| `merge_mode` | `human` with an `origin` remote, `local` without |
+| `munder.hive_root` | the floor whose app config lists this repo |
+
+Everything else comes from the kit defaults and your own `$DELIVER_HOME/config.json`. An existing `.deliver.json` is never
+rewritten.
 
 ## Merge modes
 
@@ -65,7 +81,7 @@ Details: [10-trackers](10-trackers.md).
 
 | Key | Default | Effect |
 | --- | --- | --- |
-| `munder.hive_root` | `""` | The hive folder, when `dl` runs outside Munder Difflin (inside, `HIVE_ROOT` is set) |
+| `munder.hive_root` | `""` | This repo's floor (the app's folder). Filled in when the repo is registered on a floor (`scripts/init.sh --munder --hive <dir> --repo <repo>`, or the app lists the repo); inside the app `HIVE_ROOT` is set |
 | `munder.claude_command` | `"claude"` | The command floor workers of Claude roles run (`<command> --agent <agent>`): a wrapper, a pinned path |
 | `munder.model` | `"sonnet"` | Model of every Claude seat whose role names none (a role's own `model` wins, a re-seat's `--model` wins over both). Seats never start on the app's default model |
 | `munder.seat_timeout_minutes` | `5` | A seat with no `seated` message this long after hiring (or a request the app never picks up) is `failed` in `dl md-seats` — [07 § 2a](07-munder-difflin.md#2a-seats-that-fail--seen-explained-re-seated) |

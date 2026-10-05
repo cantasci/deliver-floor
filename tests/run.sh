@@ -620,6 +620,24 @@ contains "an app open on another floor is not hijacked" "$(cd "$FO" && HOME="$FX
 PC="$TMP/projcfg"; mkdir -p "$PC" && (cd "$PC" && git init -q -b main && echo '{"scripts":{"test":"node --test"}}' > package.json && git add -A && git commit -qm i)
 out="$(cd "$PC" && AGENT_ID=god "$DL" new t r 2>&1)"; contains "the first /deliver in a repo writes its config file" "$out" "created $PC/.deliver.json"
 contains "…complete: run mode, verify, merge mode, roles, the floor, with its schema" "$(jq -c '{d:.dispatch,v:.verify_full,m:.merge_mode,r:.roles,mm:.munder.model,s:(."$schema"|endswith("deliver.schema.json"))}' "$PC/.deliver.json")" '{"d":"munder","v":"npm test","m":"local","r":{},"mm":"sonnet","s":true}'
+contains "…and says where each value came from" "$out" "verify_full: npm test — package.json scripts test"
+# What goes into .deliver.json is what the repo says, never a guess (detect.mjs)
+DT="$HERE/kit/skills/deliver/bin/detect.mjs"; DR="$TMP/detect"; mkdir -p "$DR"
+det() { node "$DT" "$DR/$1" | jq -c "$2"; }
+mkdir -p "$DR/placeholder" && echo '{"scripts":{"test":"echo \"Error: no test specified\" && exit 1"}}' > "$DR/placeholder/package.json"
+contains "npm's placeholder test script is not a test suite: verify_full stays empty" "$(det placeholder '{v:.verify_full,e:.evidence.verify_full}')" '{"v":"","e":"package.json has no test script (only npm'"'"'s placeholder) — verify_full left empty"}'
+mkdir -p "$DR/pnpm" && echo '{"scripts":{"test":"vitest run","typecheck":"tsc --noEmit"}}' > "$DR/pnpm/package.json" && touch "$DR/pnpm/pnpm-lock.yaml"
+contains "the lockfile names the package manager (pnpm), typecheck runs before the tests" "$(det pnpm '{v:.verify_full,s:.worktree_setup}')" '{"v":"pnpm typecheck && pnpm test","s":"pnpm install --frozen-lockfile"}'
+mkdir -p "$DR/py" && printf '[project]\nname = "x"\n[dependency-groups]\ndev = ["pytest"]\n' > "$DR/py/pyproject.toml" && touch "$DR/py/uv.lock"
+contains "Python with uv: uv run pytest, uv sync in each worktree" "$(det py '{v:.verify_full,s:.worktree_setup,x:.worktree_exclude}')" '{"v":"uv run pytest -q","s":"uv sync","x":[".venv"]}'
+mkdir -p "$DR/mono/web" "$DR/mono/api" && echo '{"scripts":{"test":"jest"}}' > "$DR/mono/web/package.json" && touch "$DR/mono/web/package-lock.json" && echo 'module x' > "$DR/mono/api/go.mod"
+contains "a repo with a project per folder: each one's tests, in its folder" "$(det mono '{v:.verify_full,s:.worktree_setup}')" '{"v":"(cd api && go test ./...) && (cd web && npm test)","s":"(cd web && npm ci)"}'
+mkdir -p "$DR/make" && printf 'test:\n\tgo test ./...\n' > "$DR/make/Makefile" && echo 'module x' > "$DR/make/go.mod"
+contains "the repo's own Makefile test target wins" "$(det make .verify_full)" '"make test"'
+mkdir -p "$DR/empty"
+contains "a repo without code: no test command and no language assumed" "$(det empty '{v:.verify_full,s:.worktree_setup}')" '{"v":"","s":""}'
+mkdir -p "$DR/cfg/munder-difflin" && jq -n --arg r "$DR/pnpm" '{harnessHome:"/floors/pnpm", registeredRepos:[$r]}' > "$DR/cfg/munder-difflin/config.json"
+contains "the floor the repo is registered on becomes its munder.hive_root" "$(XDG_CONFIG_HOME="$DR/cfg" node "$DT" "$DR/pnpm" | jq -c '{h:.hive_root}')" '{"h":"/floors/pnpm"}'
 expect_ok "…valid against the shipped schema's keys" node -e 'const s=require(process.argv[1]),c=require(process.argv[2]);for(const k of Object.keys(c)) if(!(k in s.properties)) {console.error("unknown key "+k);process.exit(1)}' "$HERE/kit/skills/deliver/deliver.schema.json" "$PC/.deliver.json"
 contains "dl config shows what applies (kit defaults ⊕ .deliver.json)" "$(cd "$PC" && "$DL" config)" "kit defaults ⊕ $PC/.deliver.json"
 (cd "$PC" && AGENT_ID=god "$DL" phase aborted >/dev/null 2>&1; AGENT_ID=god "$DL" cleanup --all >/dev/null 2>&1; jq '.roles = {"backend":{"model":"haiku","count":2},"qa":{"model":"sonnet"}}' .deliver.json > x && mv x .deliver.json && AGENT_ID=god "$DL" new t2 r2 >/dev/null 2>&1)

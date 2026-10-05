@@ -165,7 +165,7 @@ if [[ -n $repo ]]; then
       if [[ $mm != local ]] && ! have gh; then fail "merge_mode=$mm needs the GitHub CLI (gh auth login)"; fi
     else fail ".deliver.json is not valid JSON"; fi
   else
-    note "no .deliver.json — defaults apply (verify_full: npm test, merge_mode: human). See docs/03-settings.md"
+    note "no .deliver.json yet — the first /deliver (or dl config --init) writes one from what the repo says (test script, lockfile, remote). See docs/03-settings.md"
   fi
   disp="$(jq -r '.dispatch // empty' "$repo/.deliver.json" 2>/dev/null || true)"
   if [[ ${disp:-munder} == munder ]]; then

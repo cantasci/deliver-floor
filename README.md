@@ -80,19 +80,25 @@ No model at hand? `tests/replay-watchlist.sh` plays a whole job in your terminal
 
 ## Manage it per repository: `.deliver.json`
 
-The first `/deliver` writes a complete `.deliver.json` at the repo root (with a JSON schema, so your editor completes and
-explains every key). Commit it; change it any time; `dl config` shows what applies.
+The first `/deliver` writes a complete `.deliver.json` at the repo root — read from the repo, not guessed: the test command
+from your `Makefile` or `package.json` scripts (with the package manager your lockfile names), `pyproject.toml`, `go.mod`,
+`Cargo.toml` and others; the install command for each card's worktree from the lockfile; `local` merging when there is no
+remote; the floor your repo is registered on. It prints where each value came from, and a repo without tests or code gets
+an empty `verify_full` rather than an invented one. The file has a JSON schema, so your editor completes and explains every
+key. Commit it; change it any time; `dl config` shows what applies. For a pnpm + TypeScript repo on a floor, for example:
+
+```text
+created .deliver.json — this repo's /deliver settings, read from the repo:
+  verify_full: pnpm typecheck && pnpm test — package.json scripts typecheck, test; pnpm-lock.yaml → pnpm
+  worktree_setup: pnpm install --frozen-lockfile — the install command for the package manager/lockfile found
+  merge_mode: human — origin remote → a PR you merge
+  hive_root: ~/floors/my-app — Munder Difflin (munder-difflin/config.json) lists this repo
+```
+
+Then add what only you know, such as models per role:
 
 ```json
-{
-  "$schema": "https://raw.githubusercontent.com/cantasci/deliver-floor/main/kit/skills/deliver/deliver.schema.json",
-  "dispatch": "munder",
-  "verify_full": "npm test",
-  "merge_mode": "human",
-  "roles": { "ba": { "model": "opus" }, "backend": { "model": "sonnet", "count": 2 } },
-  "munder": { "hive_root": "~/floors/my-app", "model": "sonnet" },
-  "tracker": { "kind": "local" }
-}
+  "roles": { "ba": { "model": "opus" }, "backend": { "model": "sonnet", "count": 2 } }
 ```
 
 `roles` sets the project's defaults per role; what you tell Michael at the start (or a Staffing section in the request)
@@ -103,7 +109,7 @@ wins. `merge_mode` decides who merges: `human` (a PR you merge), `semi` (auto-me
 
 Every claim above was run, live, with real Claude Code sessions and real agents — and recorded, failures included:
 
-- **467 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
+- **480 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
   hooks on Windows paths, bash 3.2 (macOS) compatibility.
 - **40+ live runs** ([HISTORY](docs/verification/HISTORY.md), raw outputs in [docs/verification](docs/verification/)): headless,
   interactive (a person typing in the TUI), and the Munder Difflin app driven like a user, with screenshots of each person
