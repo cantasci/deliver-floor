@@ -113,8 +113,9 @@ dl md-reseat qa#1 "credit balance too low on the default model" --model sonnet
 ```
 
 The queued request is withdrawn, a live or starting worker is sent home, the seat's open task is cleared (Michael sends it
-again once the new person is seated), and a new person is hired — on `--model` when given. The re-seat is logged and, after
-the start, listed in the PR among Michael's decisions. `dl md-send` refuses a seat that is not live and names the reason.
+again once the new person is seated), and a new person is hired for that seat only — on `--model` when given. Every re-seat
+is logged and listed in the PR under "Decisions Michael took himself". `dl md-hire` never re-hires a failed seat by itself
+(the same model would fail the same way); `dl md-send` refuses a seat that is not live and names the reason.
 
 **The model is always explicit.** A seat starts on the re-seat's `--model` if it was given one, else on its role's `model`,
 else on `munder.model` (kit default `sonnet`) — never on the app's default model, which may be one the account has no credit

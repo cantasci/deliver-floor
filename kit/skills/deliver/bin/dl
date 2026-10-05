@@ -524,11 +524,11 @@ cmd_pm_decide() {
   [[ -z $card ]] || card_exists "$card"
   pm_decision "$what" "$why" "$card"; reset_stop_guard; echo "recorded: $what"
 }
-# report.md is the PR body: Michael's decisions after the start are appended once, at ship time
+# report.md is the PR body: the decisions Michael took himself (after the start, and every re-seat) are appended once, at ship time
 report_decisions() {
   local n; n="$(jq '(.pm_decisions // []) | length' "$JOBJ")"
   grep -q '<!-- deliver:pm-decisions -->' "$JOB_DIR/report.md" && return 0
-  { printf '\n<!-- deliver:pm-decisions -->\n## Decisions Michael took after the start\n\n'
+  { printf '\n<!-- deliver:pm-decisions -->\n## Decisions Michael took himself\n\nTaken without asking you (you are asked only at the start); each with its reason.\n\n'
     if [[ $n -eq 0 ]]; then echo "None: every decision was taken with the human before planning."
     else jq -r '.pm_decisions[] | "- " + (if .card then "**\(.card)** — " else "" end) + "\(.what) — _\(.why)_ (\(.at))"' "$JOBJ"; fi
   } >> "$JOB_DIR/report.md"
@@ -1130,8 +1130,9 @@ Your first task now: send god an inform with subject "seated $1" and body "ready
 CH
 }
 
-cmd_md_hire() {
+cmd_md_hire() { # [seat] — only that seat (md-reseat)
   load_job
+  local only=${1:-}
   local hive; hive="$(md_hive)"
   [[ "$(setting dispatch)" == munder ]] || refuse 1 "seats are for dispatch munder (dl jobset '.settings.dispatch=\"munder\"')"
   mkdir -p "$hive/spawn-requests"
@@ -1139,8 +1140,11 @@ cmd_md_hire() {
   cat="$(node "$BIN_DIR/roles.mjs" catalog)"
   used="$(jq -r '[.munder.seats // {} | .[] | .character // empty] | join(" ")' "$JOBJ")"
   while read -r s; do
+    [[ -z $only || $s == "$only" ]] || continue
     st="$(seat_state "$s" "$hive")"
     case $st in pending|starting|live) printf '%-16s %-8s %s\n' "$s" "$st" "$(seat_get "$s" .worker)"; continue ;; esac
+    # A failed seat is not re-hired blindly (the same model would fail the same way): md-reseat, with its reason.
+    [[ $st == failed && -z $only ]] && { printf '%-16s %-8s %s\n' "$s" failed "→ dl md-reseat $s \"<why>\" [--model <model>]"; continue; }
     role=${s%#*}; n=${s#*#}
     n_hire=$(( $(seat_get "$s" .hires || true) + 1 )) 2>/dev/null || n_hire=1
     req="$(printf 'seat-%s-%s-h%s' "${JOB:4:13}" "$s" "$n_hire" | tr -c 'A-Za-z0-9._-' '-')"; w="worker-$req"
@@ -1196,8 +1200,8 @@ cmd_md_reseat() {
   case $st in live|starting) md_order "$w" "$hive" "release — your seat is re-seated" "Your seat $seat is given to someone else ($why). Send act \"done\" to god now." "deliver-$JOB-reseat" ;; esac
   jq_inplace "$JOBJ" --arg s "$seat" --arg m "$model" '.munder.seats[$s] += {worker:null, task:null, since:null} | if $m != "" then .munder.seats[$s].model = $m else . end'
   log_event md-reseat "$seat ($st${task:+, was on $task}): $why${model:+ → model $model}"
-  after_start && pm_decision "re-seated $seat${model:+ on $model}${task:+ (its task $task is sent again)}" "$why"
-  cmd_md_hire | grep -F "$seat" || true
+  pm_decision "re-seated $seat${model:+ on $model}${task:+ (its task $task is sent again)}" "$why"   # never a question: listed in the PR
+  cmd_md_hire "$seat"
   [[ -z $task ]] || echo "send $task again once $seat is seated: dl md-send $seat $task <order file>"
 }
 

@@ -180,7 +180,7 @@ if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
       [[ ( $st == archived || $st == merged ) ]] && ok "$c was decided by Michael: now $st" || bad "$c is still $st"
       [[ $st == merged || -n $dec ]] && ok "…with a recorded decision: ${dec:0:110}" || bad "$c archived without a recorded decision"
     done
-    grep -q "## Decisions Michael took after the start" "$J/report.md" && [[ "$(sed -n '/deliver:pm-decisions/,$p' "$J/report.md" | grep -c '^- ')" -ge 1 ]] \
+    grep -q "## Decisions Michael took himself" "$J/report.md" && [[ "$(sed -n '/deliver:pm-decisions/,$p' "$J/report.md" | grep -c '^- ')" -ge 1 ]] \
       && ok "the PR body lists his decisions" || bad "the PR body does not list the decisions"
     log "note: a dropped card leaves its requirement undelivered — the oracle result above shows the effect"
   fi

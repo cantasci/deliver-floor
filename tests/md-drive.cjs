@@ -49,7 +49,9 @@ async function answer(win) {
   if (await open.count()) { await open.click(); log('opened the hive'); }
   await win.waitForSelector('textarea[placeholder="Message Michael"]', { timeout: 120000 });
   await win.waitForTimeout(20000); // let Michael's Claude session finish booting
-  await win.screenshot({ path: `${shots}/00-floor.png` });
+  // A busy floor (many terminals starting at once) can stall a screenshot: skip that one, never end the run on it.
+  const snap = async (p) => { try { await win.screenshot({ path: p, timeout: 30000 }); } catch (e) { log(`screenshot skipped: ${String(e.message ?? e).split('\n')[0].slice(0, 120)}`); } };
+  await snap(`${shots}/00-floor.png`);
   await win.fill('textarea[placeholder="Message Michael"]', message);
   await win.keyboard.press('Enter');
   log(`briefed Michael: ${message}`);
@@ -83,7 +85,7 @@ async function answer(win) {
     if (!shown) { log(`select ${name}: the Command Center does not show ${b.worker} — no screenshot`); await select('Michael'); return; }
     await win.waitForTimeout(600);
     const file = `p${String(++ns).padStart(3, '0')}-${seat.replace('#', '')}-${b.task}-${tag}.png`;
-    await win.screenshot({ path: `${shots}/${file}` }); log(`shot ${file} (${name}'s own terminal, ${b.worker})`);
+    await snap(`${shots}/${file}`); log(`shot ${file} (${name}'s own terminal, ${b.worker})`);
     await select('Michael');
   };
   const tab = async (name) => { const b = win.locator('button', { hasText: new RegExp(`^\\s*${name}\\s*$`, 'i') }).first(); if (await b.count()) await b.click().catch(() => {}); };
@@ -92,7 +94,7 @@ async function answer(win) {
     // While floor workers run: the Command Center's workers tab, a screenshot every 5 s (they can finish within a minute).
     if (burst > 0) {
       if (burst === 8) await tab('workers');
-      await win.screenshot({ path: `${shots}/w${String(++nb).padStart(3, '0')}-workers.png` });
+      await snap(`${shots}/w${String(++nb).padStart(3, '0')}-workers.png`);
       if (--burst === 0) await tab('terminal');
     }
     const j = job() ?? lastJob(), ev = events();
@@ -116,18 +118,18 @@ async function answer(win) {
       lastAsk = Date.now();
       try { await answer(win); } catch (e) { log(`answering failed: ${String(e.message ?? e).slice(0, 200)}`); }
     }
-    if (shot <= 120 && (Date.now() - t0) / 60000 >= shot) await win.screenshot({ path: `${shots}/${String(shot++).padStart(2, '0')}-floor.png` });
+    if (shot <= 120 && (Date.now() - t0) / 60000 >= shot) await snap(`${shots}/${String(shot++).padStart(2, '0')}-floor.png`);
     if (j && ['done', 'awaiting_pr_merge', 'aborted'].includes(j.phase)) {
-      log(`finished: ${j.phase}`); await win.screenshot({ path: `${shots}/98-finished.png` });
+      log(`finished: ${j.phase}`); await snap(`${shots}/98-finished.png`);
       // Seats on the floor: wait (≤ 4 min) for Michael's release and for every seat to leave, so the run ends as a user's would.
       const seats = Object.values(j.munder?.seats ?? {}).map((x) => x.worker);
       const gone = () => { try { const r = JSON.parse(fs.readFileSync(path.join(hiveRoot(), 'registry.json'), 'utf8')); return seats.every((w) => !r.agents[w] || r.agents[w].archived || r.agents[w].status === 'gone'); } catch { return true; } };
       for (let k = 0; seats.length && k < 48 && !gone(); k++) await win.waitForTimeout(5000);
       log(seats.length ? (gone() ? `all ${seats.length} seats released` : 'seats still on the floor after 4 minutes') : 'no seats');
       for (const e of events().slice(lastLen)) log(`event ${e.split('\t').slice(1).join(' ').slice(0, 150)}`);
-      await win.screenshot({ path: `${shots}/99-final.png` }); await closeApp(app); process.exit(j.phase === 'aborted' ? 1 : 0);
+      await snap(`${shots}/99-final.png`); await closeApp(app); process.exit(j.phase === 'aborted' ? 1 : 0);
     }
-    if (Date.now() - lastChange > 20 * 60000) { log('stalled: no event for 20 minutes'); await win.screenshot({ path: `${shots}/99-stalled.png` }); await closeApp(app); process.exit(1); }
+    if (Date.now() - lastChange > 20 * 60000) { log('stalled: no event for 20 minutes'); await snap(`${shots}/99-stalled.png`); await closeApp(app); process.exit(1); }
   }
-  log('timeout'); await win.screenshot({ path: `${shots}/99-timeout.png` }); await closeApp(app); process.exit(1);
+  log('timeout'); await snap(`${shots}/99-timeout.png`); await closeApp(app); process.exit(1);
 })().catch((e) => { console.error('ERR', e.message); process.exit(1); });
