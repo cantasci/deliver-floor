@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/cantasci/deliver-floor/main/kit/skills/deliver/deliver.schema.json",
+  "title": ".deliver.json — how /deliver runs in this repository",
+  "description": "Per-repo settings for the deliver plugin. Deep-merged over the kit defaults (kit/skills/deliver/config.json). `dl config` shows what applies; a running job keeps the snapshot it took at `dl new`. Reference: docs/03-settings.md.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "dispatch": {
+      "enum": ["munder", "subagent"],
+      "default": "munder",
+      "description": "munder (default): every role is a person at a seat on the Munder Difflin floor; /deliver in a terminal opens the app and hands the job to Michael there. subagent: roles run as Claude Code subagents in one claude session (no app; required for unattended runs). Chosen by the human; Michael never switches it."
+    },
+    "base_branch": { "type": "string", "default": "auto", "description": "Branch the job starts from and the PR targets (auto = the main checkout's current branch)." },
+    "verify_full": { "type": "string", "default": "npm test", "description": "The full test suite, run on the job branch after every card merged (what your CI runs)." },
+    "worktree_setup": { "type": "string", "default": "", "description": "Runs in every new card worktree (install deps, copy .env, …)." },
+    "worktree_exclude": { "type": "array", "items": { "type": "string" }, "description": "Paths worktree_setup creates that never count as changes." },
+    "merge_mode": {
+      "enum": ["human", "semi", "auto", "local"],
+      "default": "human",
+      "description": "human: a PR you merge · semi: auto-merge armed, you approve · auto: merged on green CI · local: merged into the base branch locally, no remote."
+    },
+    "max_parallel": { "type": "integer", "minimum": 1, "default": 3, "description": "Cards running at once (all roles together)." },
+    "max_attempts": { "type": "integer", "minimum": 1, "default": 2, "description": "Tries per card before it is blocked and Michael decides (split, replace or drop — listed in the PR)." },
+    "gates": {
+      "type": "object",
+      "properties": { "plan": { "type": "boolean", "default": false, "description": "true: you approve the plan and board before any code." } }
+    },
+    "gate_timeout": { "type": "integer", "default": 1800, "description": "Seconds a card's verify / qa_verify may run." },
+    "stop_guard_max": { "type": "integer", "default": 5 },
+    "push_branches": { "enum": ["auto", true, false], "default": "auto" },
+    "roles": {
+      "type": "object",
+      "description": "Project defaults per role, applied when Michael picks the roles. A role entry that names its own value (from the request's Staffing, or what you tell Michael at the start) keeps it. Role names: ba, backend, frontend, mobile, database, qa, backend-lead, frontend-lead, reviewer-<stack>, security, accessibility, performance, …",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "model": { "type": "string", "description": "e.g. opus, sonnet, haiku, or another CLI's model (gpt-5-codex)." },
+          "provider": { "type": "string", "enum": ["claude", "codex", "gemini", "grok", "kimi", "qwen", "opencode", "crush", "pi", "copilot", "cursor", "antigravity"], "description": "Which CLI runs the role (non-Claude needs dispatch munder)." },
+          "count": { "type": "integer", "minimum": 1, "description": "Seats of this role working in parallel (backend#1, backend#2 …)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "munder": {
+      "type": "object",
+      "properties": {
+        "hive_root": { "type": "string", "description": "The Munder Difflin hive folder for this repo (the app's harnessHome). /deliver opens the app on it." },
+        "app_command": { "type": "string", "description": "How to start Munder Difflin when it is not running (default: the installed app, or `npm run preview` in the source checkout scripts/init.sh made)." },
+        "model": { "type": "string", "default": "sonnet", "description": "Model of every Claude seat whose role names none. Seats never start on the app's default model." },
+        "seat_timeout_minutes": { "type": "integer", "minimum": 0, "default": 5, "description": "A seat with no 'seated' message this long after hiring is failed (dl md-seats says why; Michael re-seats it)." },
+        "claude_command": { "type": "string", "default": "claude", "description": "Command the Claude seats run (a wrapper or pinned path)." },
+        "token_cap": { "type": "integer", "minimum": 0, "default": 0 }
+      }
+    },
+    "tracker": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "default": "local", "description": "local (kanban + kanban.html), jira, or a registered tracker plugin." },
+        "columns": { "type": "object" },
+        "jira": { "type": "object" }
+      }
+    },
+    "commit": {
+      "type": "object",
+      "properties": {
+        "ai_attribution": { "type": "boolean", "default": false, "description": "false: commits must not carry AI attribution (the gate checks)." },
+        "role_in_message": { "type": "boolean", "default": false, "description": "true: every card commit carries a 'Role: <seat>' trailer." }
+      }
+    }
+  }
+}

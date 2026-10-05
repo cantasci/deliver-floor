@@ -548,6 +548,17 @@ expect_ok "…and opened by the app's Michael" bash -c "cd '$NF' && AGENT_ID=god
 contains "…as a floor job" "$(jq -r .settings.dispatch "$NF/.work/$(cat "$NF/.work/ACTIVE")/job.json")" "munder"
 (cd "$NF" && git rm -q --cached a >/dev/null; rm -rf .work; echo '{"dispatch":"subagent"}' > .deliver.json)
 expect_ok "subagents are an explicit choice: \"dispatch\": \"subagent\" in .deliver.json, dl new from any terminal" bash -c "cd '$NF' && env -u AGENT_ID '$DL' new t2 r2"
+# The project's config file: the first /deliver writes a complete .deliver.json; its per-role defaults reach the job
+PC="$TMP/projcfg"; mkdir -p "$PC" && (cd "$PC" && git init -q -b main && echo '{"scripts":{"test":"node --test"}}' > package.json && git add -A && git commit -qm i)
+out="$(cd "$PC" && AGENT_ID=god "$DL" new t r 2>&1)"; contains "the first /deliver in a repo writes its config file" "$out" "created $PC/.deliver.json"
+contains "…complete: run mode, verify, merge mode, roles, the floor, with its schema" "$(jq -c '{d:.dispatch,v:.verify_full,m:.merge_mode,r:.roles,mm:.munder.model,s:(."$schema"|endswith("deliver.schema.json"))}' "$PC/.deliver.json")" '{"d":"munder","v":"npm test","m":"local","r":{},"mm":"sonnet","s":true}'
+expect_ok "…valid against the shipped schema's keys" node -e 'const s=require(process.argv[1]),c=require(process.argv[2]);for(const k of Object.keys(c)) if(!(k in s.properties)) {console.error("unknown key "+k);process.exit(1)}' "$HERE/kit/skills/deliver/deliver.schema.json" "$PC/.deliver.json"
+contains "dl config shows what applies (kit defaults ⊕ .deliver.json)" "$(cd "$PC" && "$DL" config)" "kit defaults ⊕ $PC/.deliver.json"
+(cd "$PC" && AGENT_ID=god "$DL" phase aborted >/dev/null 2>&1; AGENT_ID=god "$DL" cleanup --all >/dev/null 2>&1; jq '.roles = {"backend":{"model":"haiku","count":2},"qa":{"model":"sonnet"}}' .deliver.json > x && mv x .deliver.json && AGENT_ID=god "$DL" new t2 r2 >/dev/null 2>&1)
+(cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x"},{"role":"qa","agent":"qa-tester","why":"y","model":"opus"}]' >/dev/null)
+PJ="$PC/.work/$(cat "$PC/.work/ACTIVE")/job.json"
+contains "per-role defaults from .deliver.json reach the job's roles" "$(jq -c '[.roles[] | {role,model,count}]' "$PJ")" '[{"role":"backend","model":"haiku","count":2},{"role":"qa","model":"opus","count":null}]'
+contains "…a role that names its own model keeps it (qa: opus from the request, not the default sonnet), logged" "$(grep $'\troles-defaults\t' "$PC/.work/$(cat "$PC/.work/ACTIVE")/events.log")" "backend: model haiku, count 2"
 contains "the human switches the job to subagents by hand (dl dispatch)" "$(env -u AGENT_ID "$DL" dispatch subagent "leave the floor for the rest of the tests" 2>&1)" "now runs with dispatch subagent"
 contains "…logged with who and why" "$(grep $'\tdispatch\t' "$R/.work/$JOB/events.log" | tail -1)" "subagent — leave the floor"
 unset HIVE_ROOT AGENT_ID

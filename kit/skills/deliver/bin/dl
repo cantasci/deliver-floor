@@ -50,6 +50,7 @@
 #   dl md-dispatch <card> <prompt-file>   Munder Difflin: run the card's dev as a worker on the floor
 #   dl md-hire                     Munder Difflin: seat one person per role seat (job.roles[].count) — the whole job
 #   dl md-seats                    who sits where: pending / starting / live / gone / failed (with why), each seat's open task
+#   dl config [--init]            the settings that apply in this repo (kit defaults ⊕ .deliver.json); --init writes .deliver.json
 #   dl dispatch munder|subagent "<why>"   (human) switch how this job's roles run: floor seats (default) or subagents
 #   dl md-reseat <seat> "<why>" [--model m]   a failed or stuck seat gets a new person (another model for a credit error)
 #   dl md-send <seat|role> <task> <prompt-file> [--agent a]   a work order to a seat: role card + agent instructions + task
@@ -226,6 +227,39 @@ push_card() {
   fi
 }
 
+# The project's config file: .deliver.json at the repo root manages /deliver for that repo (run mode, models per role,
+# merge mode, verify command, tracker…). The first /deliver writes a complete one; `dl config` shows what applies.
+SCHEMA_URL="https://raw.githubusercontent.com/cantasci/deliver-floor/main/kit/skills/deliver/deliver.schema.json"
+project_config_template() {
+  local verify="npm test" mm=human
+  [[ -f $ROOT/package.json ]] || verify=""
+  [[ -f $ROOT/pyproject.toml || -f $ROOT/requirements.txt ]] && verify="pytest -q"
+  [[ -f $ROOT/go.mod ]] && verify="go test ./..."
+  [[ -f $ROOT/pom.xml ]] && verify="mvn -q test"
+  [[ -f $ROOT/Cargo.toml ]] && verify="cargo test"
+  git -C "$ROOT" remote get-url origin >/dev/null 2>&1 || mm=local
+  jq -n --arg schema "$SCHEMA_URL" --arg v "${verify:-echo 'set verify_full in .deliver.json' && false}" --arg m "$mm" --slurpfile c "$CONFIG" '
+    {"$schema": $schema,
+     dispatch: $c[0].dispatch,
+     verify_full: $v, worktree_setup: "", merge_mode: $m,
+     max_parallel: $c[0].max_parallel, max_attempts: $c[0].max_attempts,
+     roles: {},
+     munder: ($c[0].munder | {hive_root, model, seat_timeout_minutes, app_command: ""}),
+     tracker: {kind: "local"},
+     commit: $c[0].commit}'
+}
+ensure_project_config() { # writes .deliver.json when the repo has none; says so
+  [[ -f $ROOT/.deliver.json ]] && return 0
+  project_config_template > "$ROOT/.deliver.json"
+  echo "created $ROOT/.deliver.json — this repo's /deliver settings (run mode, models per role, merge mode, verify). Edit it any time; dl config shows what applies." >&2
+}
+cmd_config() { # dl config [--init] — the settings that apply in this repo (kit defaults ⊕ .deliver.json)
+  resolve_root
+  if [[ ${1:-} == --init ]]; then [[ -f $ROOT/.deliver.json ]] && { echo "$ROOT/.deliver.json exists"; return 0; }; ensure_project_config; return 0; fi
+  if [[ -f $ROOT/.deliver.json ]]; then echo "# kit defaults ⊕ $ROOT/.deliver.json"; jq -s '.[0] * .[1] | del(."$schema")' "$CONFIG" "$ROOT/.deliver.json"
+  else echo "# kit defaults (no .deliver.json yet — dl config --init writes one)"; cat "$CONFIG"; fi
+}
+
 cmd_new() {
   resolve_root
   local title=${1:-} request=${2:-${1:-}}
@@ -240,10 +274,11 @@ cmd_new() {
   id="JOB-$(date +%Y%m%d-%H%M)-$slug"
   [[ ! -e "$WORK/$id" ]] || die "already exists: $id"
 
+  ensure_project_config
   # Settings: skill config.json, overridden by .deliver.json at the repo root if present.
   local settings
   if [[ -f "$ROOT/.deliver.json" ]]; then
-    settings="$(jq -s '.[0] * .[1]' "$CONFIG" "$ROOT/.deliver.json")" || die ".deliver.json is not valid JSON"
+    settings="$(jq -s '.[0] * .[1] | del(."$schema")' "$CONFIG" "$ROOT/.deliver.json")" || die ".deliver.json is not valid JSON"
   else
     settings="$(cat "$CONFIG")"
   fi
@@ -480,6 +515,7 @@ cmd_jobset() {
   local changed; changed="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" '[$ok[] | select($a[.] != $b[.])] | join(",")')"
   jq_inplace "$JOBJ" "$1"
   [[ -n $changed ]] && log_event jobset "$changed: $1"
+  apply_role_defaults
   return 0
 }
 
@@ -573,6 +609,16 @@ cmd_knowledge() {
   esac
 }
 
+# .deliver.json "roles": {"backend": {"model": "sonnet", "count": 2}, …} — the project's defaults per role. A role entry that
+# names its own model/provider/count (from the request, or the human at the start) keeps it.
+apply_role_defaults() {
+  local d; d="$(jq -c '.settings.roles // {}' "$JOBJ")"; [[ $d != "{}" ]] || return 0
+  local before; before="$(jq -c '.roles // []' "$JOBJ")"
+  jq_inplace "$JOBJ" '. as $j | if (.roles | type) == "array" then .roles |= map(. as $x
+    | ((($j.settings.roles // {})[$x.role] // {}) | {model, provider, count} | with_entries(select(.value != null))) + $x) else . end'
+  local after; after="$(jq -c '.roles // []' "$JOBJ")"
+  [[ $before == "$after" ]] || log_event roles-defaults "from .deliver.json: $(jq -r --argjson d "$d" '[.roles[] | select($d[.role]) | "\(.role): " + ([($d[.role] | to_entries[] | select(.key == "model" or .key == "provider" or .key == "count")) | "\(.key) \(.value)"] | join(", "))] | join(" · ")' "$JOBJ")"
+}
 cmd_roles() { load_job; node "$BIN_DIR/roles.mjs" render "$JOB_DIR" && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
 
 _wt_reserve() { with_lock assign _wt_reserve_sub "$@"; }
@@ -1433,6 +1479,7 @@ main() {
   floor_guard "$c"
   case $c in
     dispatch) cmd_dispatch "$@" ;;
+    config) cmd_config "$@" ;;
     new) cmd_new "$@" ;;
     status) cmd_status ;;
     next) cmd_next ;;
@@ -1475,7 +1522,7 @@ main() {
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,66p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) sed -n '2,67p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }
