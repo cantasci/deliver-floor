@@ -41,11 +41,16 @@ You get the request, repository facts and a list of readiness items (`id`, `q`).
   the requirements**: the evidence the request gives, quoted (e.g. it names `yfinance` and a "Python KAP client" → Python;
   a React screen → TypeScript), and the alternatives with why they fit less. Michael decides it with that evidence. Owner
   `"business"` only when the request contradicts itself (names two stacks) or the choice changes the scope.
+  **Except** for the items marked `ask: human` in the catalog
+  (scope, architecture style and components, UI, API/middleware, new dependencies, data store, integrations,
+  deployment): those shape the product, and only the request's own words decide them. When the request is silent, they
+  are `open`, owner `"business"`, and a repo convention (e.g. "no npm dependencies — CLAUDE.md") is one of the options.
 - `n_a` — it truly does not apply to this delivery: say why, with the source that shows it.
 - `open` — nobody can answer it from the request or the repo, **or the request is ambiguous or contradicts itself**: write
   the question, the options you see, the impact of each, and its **owner**:
   - `"business"` — the answer changes scope, observable behaviour, a public contract, or a business rule (a WL value, a sign,
-    a threshold, what is in or out). The human answers these.
+    a threshold, what is in or out). Michael asks the human and records the answer — he is the single point of contact;
+    you never ask the human yourself. Your `open` item is your question to Michael.
   - `"pm"` — an implementation detail with none of those effects (internal structure, immutability of a constant, file layout,
     naming that is not in the contract). Michael decides these as PM — still recorded, with a rationale.
   When unsure, it is `"business"`.

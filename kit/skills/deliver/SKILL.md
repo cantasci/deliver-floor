@@ -129,7 +129,11 @@ REPO: <absolute repo root>   STACK: <stack>   ROLES: <job.roles>
 READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.mjs applicable <job dir>>
 ```
 
-2. **Verify the BA's work yourself, item by item** — you are the PM: is each source real, does each `n_a` truly not apply, does the
+2. **Verify the BA's work yourself, item by item** — you are the PM. Items marked `ask: human` in `readiness.yaml` (scope,
+   architecture, UI, API/middleware, new dependencies, data, integrations, deployment) are never yours or the BA's to settle: only the
+   request's own words or the human's answer close them (`dl readiness` refuses a repo file or a convention as their source).
+   You are the single point of contact: the BA raises them to you as open business items, you ask the human, nobody else does.
+   Then: is each source real, does each `n_a` truly not apply, does the
    architecture cover every part of the request (each service/app/db, its stack, its owner, and paths that hold both its
    code and its tests — cards' `scope` and `qa_scope` must fit inside them once frozen)? Send the BA back with what is
    missing. Then write the JSON to `.work/<job>/readiness.json` and run `"$DL" readiness` (writes `readiness.md` and
