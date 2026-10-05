@@ -103,13 +103,16 @@ contains "a decision from the request without its quote is an error" "$out" "dec
 [[ $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): decided from a source"* && $out != *"$(jq -r '.items[2].id' "$RJ/readiness.json"): quote"* ]] && ok "an answer from the human needs no quote" || bad "human source asked for a quote"
 # The language is never a PM default: ARC-stack is the repo's, the request's or the human's
 jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"human: t 2026-10-05"}])} | (.items[] | select(.id=="ARC-stack")) |= {id, status:"decided", answer:"Node.js", source:"pm: michael 2026-10-05 — fastest to write"}' "$TMP/appl.json" > "$RJ/readiness.json"
-contains "a PM-decided language is refused (no stack by default)" "$("$DL" readiness 2>&1)" "ARC-stack: the language and runtime are not a PM detail"
-jq '(.items[] | select(.id=="ARC-stack")) |= {id, status:"open", owner:"pm", question:"Python or Node?"}' "$RJ/readiness.json" > "$RJ/r.json" && mv "$RJ/r.json" "$RJ/readiness.json"
-contains "…and an open language question belongs to the human" "$("$DL" readiness 2>&1)" "ARC-stack: the language is the human's choice"
+out="$("$DL" readiness 2>&1)"
+contains "a language picked out of habit is refused: the choice must quote what in the request points to it" "$out" "quoting the request words that point to it"
+contains "…and name the alternatives it weighed" "$out" "must name the alternatives it weighed"
+REQ0="$(jq -r .request "$RJ/job.json")"; QW="$(printf '%s' "$REQ0" | tr -s ' \n' ' ' | cut -d' ' -f1-3)"
+jq --arg q "$QW" '(.items[] | select(.id=="ARC-stack")).source = ("pm: michael 2026-10-05 — the request says \"" + $q + "\"; chosen over Python, which the repo would add as a second runtime")' "$RJ/readiness.json" > "$RJ/r.json" && mv "$RJ/r.json" "$RJ/readiness.json"
+[[ "$("$DL" readiness 2>&1)" != *"ARC-stack"* ]] && ok "a best-fit choice with the request's words and the alternatives is the team's decision" || bad "ARC-stack: $("$DL" readiness 2>&1 | grep ARC-stack)"
 EJ='{"phase":"intake","stack":[],"roles":[{"role":"ba","agent":"business-analyst"},{"role":"qa","agent":"qa-tester"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"}]}'
 contains "a repo without code may start with no stack reviewer (the language is decided at readiness)…" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; console.log(JSON.stringify(checkJobRoles($EJ, loadCatalog())))")" '[]'
 contains "…but not into planning" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; const j=$EJ; j.phase='planning'; console.log(JSON.stringify(checkJobRoles(j, loadCatalog())))")" "no stack reviewer selected"
-contains "the stack check is in the playbook: no default language" "$(cat "$HERE/kit/skills/deliver/SKILL.md")" "A repo without code has no stack yet — never pick one by"
+contains "the stack check is in the playbook: no default language, the best fit for the requirements" "$(cat "$HERE/kit/skills/deliver/SKILL.md")" "never pick one by default"
 printf 'Orders are kept for 90 days.\n' > "$R/RETENTION.md"
 jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])} | .items[0].source = "RETENTION.md" | .items[0].quote = "kept for 90   days"' "$TMP/appl.json" > "$RJ/readiness.json"
 out="$("$DL" readiness 2>&1)"; [[ $out != *"quote not found"* ]] && ok "a quote from the repo file named in the source counts (whitespace-insensitive)" || bad "repo-file quote: $out"

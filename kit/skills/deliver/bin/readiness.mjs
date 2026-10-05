@@ -110,11 +110,16 @@ export function check(jobDir) {
     if (i.status === "open" && !i.question) errors.push(`${i.id}: open needs a question`);
     if (i.status === "open" && !["business", "pm"].includes(i.owner)) errors.push(`${i.id}: open needs owner "business" (scope/behaviour/contract/business rule) or "pm" (implementation detail)`);
   }
-  // The language and runtime are never a default and never a PM detail: the repo's code, the request (quoted) or the human
-  // at the start decides them (seen: a POC whose requirements name Python libraries was started in Node "by default").
+  // The language is never a default (seen: a POC whose requirements name Python libraries was started in Node). It comes from
+  // the repo's code, the request (quoted), or — in a repo without code — the team chooses the best fit for the requirements:
+  // a PM decision whose rationale quotes the request words that point to it (e.g. "yfinance") and names what was weighed.
   const st = byId.get("ARC-stack");
-  if (st?.status === "decided" && /^pm:/.test(String(st.source ?? ""))) errors.push("ARC-stack: the language and runtime are not a PM detail — the repo's code, the request (quoted) or the human decides them (make it open, owner \"business\", with the options and what the request names)");
-  if (st?.status === "open" && st.owner === "pm") errors.push("ARC-stack: the language is the human's choice when neither the repo nor the request fixes it — owner \"business\"");
+  if (st?.status === "decided" && /^pm:/.test(String(st.source ?? ""))) {
+    const why = String(st.source).replace(/^pm:\s*\S+\s*\S*\s*—?\s*/, "");
+    const cited = [...why.matchAll(/["“`']([^"”`']{3,})["”`']/g)].map((m) => norm(m[1])).filter((q) => norm(job.request ?? "").includes(q));
+    if (!cited.length) errors.push("ARC-stack decided by the PM must say why this language fits the requirements, quoting the request words that point to it (e.g. \"yfinance\") — not a habit or a default");
+    if (!/\b(over|instead of|rather than|vs\.?|versus|alternative|considered)\b/i.test(why)) errors.push("ARC-stack decided by the PM must name the alternatives it weighed (\"… over Node.js because …\")");
+  }
   errors.push(...checkArchitecture(job, architecture).map((e) => `architecture: ${e}`));
   // A decided item that needs a specialist brings that ECC role onto the job (e.g. an a11y target → ecc:a11y-architect).
   const onJob = new Set((job.roles ?? []).map((r) => r.role)), cat = catalog();

@@ -581,6 +581,9 @@ cmd_decide() {
   node "$BIN_DIR/readiness.mjs" decide "$JOB_DIR" "$id" "$decision" "$why" || exit 1
   node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || true
   reset_stop_guard; log_event decide "$id: $decision — $why"
+  # The language of a repo without code is the team's choice — the reviewer of the PR sees it with its reasons.
+  [[ $id == ARC-stack ]] && pm_decision "language and runtime: $decision" "$why"
+  return 0
 }
 cmd_reopen() {
   load_job

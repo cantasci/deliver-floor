@@ -69,14 +69,19 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 
 1. `"$DL" new "<short title, ≤6 words>" "<the full request text>"` → prints the job id.
    (For a requirements file the request text is: `Requirements: <abs path>` + its content.)
-2. **The stack comes from the repo, or it is not decided yet.** Detect it from the repo's files (`stack_hints` in `roles.yaml`),
-   e.g. a `pyproject.toml` → `"$DL" jobset '.stack=["python"]'`. **A repo without code has no stack yet — never pick one by
-   default** (not even the language you would write fastest): leave `.stack` empty. The language and runtime are then the
-   readiness item `ARC-stack`: decided only by the request (quoted) or by the human at the start, with the options and the
-   evidence the request gives (libraries, tools and platforms it names — e.g. `yfinance` or a "Python client" point to
-   Python). Once it is decided, record `.stack`, pick the stack reviewer, and set the full test command for that stack if the
-   repo has none (`"$DL" jobset '.settings.verify_full="pytest -q"'`); `dl` refuses planning without a reviewer and
-   `verify-all` without a test command.
+2. **The stack comes from the repo — or, in a repo without code, it is chosen for the requirements.** Detect it from the
+   repo's files (`stack_hints` in `roles.yaml`), e.g. a `pyproject.toml` → `"$DL" jobset '.stack=["python"]'`. **A repo
+   without code has no stack yet — never pick one by default** (not the language you write fastest, not the tool's
+   example): leave `.stack` empty. The readiness review then chooses the **best fit for the requirements** (`ARC-stack`):
+   the language the request names wins; otherwise the libraries, tools, platforms and data sources it names decide (e.g.
+   `yfinance` and a "Python KAP client" → Python), then company standards (`dl knowledge`). Record it as your decision with
+   the evidence quoted and the alternatives weighed:
+   `"$DL" decide ARC-stack "Python 3.12 + FastAPI" "the request names \"yfinance (free library)\" and a \"Python KAP client\"; chosen over Node.js, which has neither"`
+   — `dl` refuses a choice without a quote from the request or without the alternatives, and the PR lists it. Ask the human
+   only when the request itself contradicts (two stacks named) or the choice changes the business scope. Then record
+   `.stack`, pick the stack reviewer, and set the full test command if the repo has none
+   (`"$DL" jobset '.settings.verify_full="pytest -q"'`); `dl` refuses planning without a reviewer and `verify-all` without a
+   test command.
 3. **Select the roles from the request** — read `roles.yaml` (the only catalog). For each role apply its `when` to what the request
    asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer (once the stack is known) from `stack_reviewers`
    (most specific match) as role `reviewer` (a second one, e.g. for a React UI next to a Node API, as `reviewer-ui`).
