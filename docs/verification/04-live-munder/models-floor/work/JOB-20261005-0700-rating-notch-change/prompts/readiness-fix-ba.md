@@ -1,0 +1,7 @@
+MODE: READINESS (fix round)
+ROLE CARD: /tmp/claude-0/e2e-mC2/munder/repo/.work/JOB-20261005-0700-rating-notch-change/roles/ba.md
+Your previous answer: /tmp/claude-0/e2e-mC2/munder/repo/.work/JOB-20261005-0700-rating-notch-change/out/readiness-ba.json. The readiness checker (dl readiness) rejected it:
+1. Every "quote" must be ONE exact, contiguous substring of the request file (/home/user/skills-shop/examples/watchlist-poc/JOB-models-plain.md) or of the file named in "source" (e.g. /tmp/claude-0/e2e-mC2/munder/repo/CLAUDE.md, the role card). Do not join sentences from different sections with "." or "…", and keep the original characters (backticks such as `String.prototype.trim()`, `src/ratings/notch.mjs`). Pick the single most relevant passage. Failing items: PRD-scope, PRD-acceptance, PRD-conflicts, CON-interface, CON-errors, ARC-style, ARC-components, ARC-stack, NFR-security, TST-strategy, DEL-ci, DEL-docs. Copy-paste from the file (check with grep -F) rather than retyping.
+2. architecture.components[ratings].reviewer must be the reviewer ROLE on this job: "reviewer" (not the agent name).
+3. DEL-docs: the request requires no docs/changelog/runbook → status "n_a" with that reason (a "decided" DEL-docs means a docs role is required).
+Keep everything else. WRITE the corrected full JSON to: /tmp/claude-0/e2e-mC2/munder/repo/.work/JOB-20261005-0700-rating-notch-change/out/readiness-ba.json — then report done.
