@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "__HOOKS_DIR__/stop-guard.sh",
+            "command": "node __HOOKS_DIR__/run.mjs stop-guard",
             "timeout": 15
           }
         ]
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "__HOOKS_DIR__/bash-guard.sh",
+            "command": "node __HOOKS_DIR__/run.mjs bash-guard",
             "timeout": 10
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "__HOOKS_DIR__/write-guard.sh",
+            "command": "node __HOOKS_DIR__/run.mjs write-guard",
             "timeout": 10
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "__HOOKS_DIR__/agent-guard.sh",
+            "command": "node __HOOKS_DIR__/run.mjs agent-guard",
             "timeout": 10
           }
         ]
@@ -51,8 +51,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "__HOOKS_DIR__/subagent-log.sh",
+            "command": "node __HOOKS_DIR__/run.mjs subagent-log",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node __HOOKS_DIR__/setup.mjs",
+            "timeout": 20
           }
         ]
       }

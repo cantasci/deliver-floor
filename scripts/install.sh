@@ -54,7 +54,8 @@ copy() { # copy <src> <dst> — skips if identical, backs up an existing differe
 }
 
 # Hook commands: absolute path for --user, $CLAUDE_PROJECT_DIR for --project (portable when committed)
-if [[ $mode == user ]]; then hooks_dir="$target/hooks/deliver"; else hooks_dir='"${CLAUDE_PROJECT_DIR}"/.claude/hooks/deliver'; fi
+# Hooks run through node (run.mjs finds bash — Git Bash on Windows — for the .sh guards); the dir is quoted for spaces.
+if [[ $mode == user ]]; then hooks_dir="\"$target/hooks/deliver\""; else hooks_dir='"${CLAUDE_PROJECT_DIR}/.claude/hooks/deliver"'; fi
 snippet="$(jq --arg d "$hooks_dir" --argjson keep "$keep_attr" '(.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; $d)
   | if $keep == 1 then del(.attribution) else . end' "$KIT/settings.hooks.json")"
 # The plugin brings its own hooks (kit/hooks/hooks.json); settings.json only gets env and attribution.
@@ -77,7 +78,7 @@ if [[ $uninstall -eq 1 ]]; then
   [[ $plugin -eq 0 && -e $target/hooks/deliver ]] && backup "$target/hooks/deliver"
   # Remove every hook entry whose command points into hooks/deliver/, and our env keys if unchanged.
   cleaned="$(jq --argjson k "$snippet" '
-    (if .hooks then .hooks |= (with_entries(.value |= map(select(([.hooks[]?.command] | any(test("hooks/deliver/"))) | not)))
+    (if .hooks then .hooks |= (with_entries(.value |= map(select(([.hooks[]?.command] | any(test("hooks/deliver[/\"]"))) | not)))
                                | with_entries(select(.value | length > 0))) else . end)
     | (if .env then .env |= with_entries(select(. as $e | ($k.env[$e.key] // null) != $e.value)) else . end)
     | (if .attribution == $k.attribution then del(.attribution) else . end)
@@ -100,6 +101,8 @@ merged="$(jq --argjson k "$snippet" '
   | .env = (($k.env // {}) + ((.env // {}) | with_entries(select(
       # keep the user'"'"'s own values; replace values an older kit version wrote (they mention .work/)
       (($k.env[.key] // null) == null) or ((.value | tostring | test("\\.work/")) | not)))))
+  # entries an older kit version wrote (…/hooks/deliver/<name>.sh) are replaced, never kept beside the new ones
+  | .hooks = ((.hooks // {}) | with_entries(.value |= map(select(([.hooks[]?.command // ""] | any(test("hooks/deliver/[a-z-]+\\.sh"))) | not))))
   | .hooks = ((.hooks // {}) as $h
     | reduce (($k.hooks // {}) | keys[]) as $ev ($h;
         .[$ev] = ((.[$ev] // []) + [ $k.hooks[$ev][]

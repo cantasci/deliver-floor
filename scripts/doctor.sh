@@ -66,7 +66,7 @@ check_install() { # check_install <claude dir> <label>
   [[ -x $d/skills/deliver/bin/dl ]] && pass "$label: dl executable" || fail "$label: dl not executable (chmod +x)"
   s=$d/settings.json
   for h in stop-guard bash-guard write-guard agent-guard subagent-log; do
-    grep -q "$h.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
+    grep -qE "run\.mjs\\?\"? $h|$h\.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
   done
   for h in "$d"/skills/deliver*.bak* "$d"/skills/deliver.bak*; do
     [[ -e $h ]] && fail "$label: stale backup $h is loaded as a second skill — delete it (newer install.sh backs up to .deliver-backups/)"
@@ -85,10 +85,10 @@ if [[ -n $pdir && -d $pdir ]]; then
   pass "plugin: deliver ($pdir)"
   [[ -x $pdir/skills/deliver/bin/dl ]] && pass "plugin: dl executable" || fail "plugin: dl not executable — reinstall the plugin"
   for h in stop-guard bash-guard write-guard agent-guard subagent-log; do
-    grep -q "$h.sh" "$pdir/hooks/hooks.json" 2>/dev/null && pass "plugin: hook $h" || fail "plugin: hook $h missing from hooks/hooks.json — update the plugin"
+    grep -qE "run\.mjs\\?\"? $h" "$pdir/hooks/hooks.json" 2>/dev/null && pass "plugin: hook $h" || fail "plugin: hook $h missing from hooks/hooks.json — update the plugin"
   done
   [[ "$(jq -r '.env.GATEGUARD_EXEMPT_GLOBS // empty' "$HOME/.claude/settings.json" 2>/dev/null)" == .work/* ]] \
-    && pass "plugin: settings carry the GateGuard exemption" || note "plugin: a plugin cannot set env/attribution — run scripts/install.sh --user --plugin"
+    && pass "plugin: settings carry the GateGuard exemption" || note "plugin: the GateGuard exemption is not in ~/.claude/settings.json yet — the plugin's first session writes it (restart once), or scripts/install.sh --user --plugin"
   [[ $found -eq 1 ]] && fail "the kit is installed twice (plugin AND copied into .claude/) — skill and hooks load twice: scripts/install.sh --user --uninstall, then scripts/install.sh --user --plugin"
   found=1
 fi

@@ -944,11 +944,32 @@ out="$("$DL" ship 2>&1)"; contains "auto: merged on green" "$out" "merged automa
 contains "auto: phase done" "$(jq -r .phase .work/*/job.json)" "done"
 unset DELIVER_GH; cd "$R"
 
+echo "hooks on every platform: node launcher + SessionStart setup (the plugin's postinstall)"
+contains "the node launcher runs a bash guard with its stdin and exit code (Windows: via Git Bash)" "$(printf '%s' '{"tool_input":{"command":"dl clarify CON-interface x"},"agent_id":"a1","cwd":"/"}' | node "$HERE/kit/hooks/deliver/run.mjs" bash-guard 2>&1; echo "rc=$?")" "rc=2"
+contains "…an unknown hook name is a no-op, never a block" "$(echo '{}' | node "$HERE/kit/hooks/deliver/run.mjs" nope 2>&1; echo "rc=$?")" "rc=0"
+SH="$TMP/setuphome"; SP="$TMP/setupproj"; mkdir -p "$SH" "$SP" && (cd "$SP" && git init -q -b main && echo '{"dispatch":"subagent"}' > .deliver.json)
+su() { echo "{\"cwd\":\"$SP\"}" | CLAUDE_CONFIG_DIR="$SH" CLAUDE_PLUGIN_ROOT="$HERE/kit" CLAUDE_PLUGIN_DATA="$SH/data" CLAUDE_PROJECT_DIR="$SP" node "$HERE/kit/hooks/deliver/setup.mjs"; }
+out="$(su)"; jq -e . >/dev/null <<<"$out" && ok "setup speaks JSON to Claude Code (systemMessage + additionalContext)" || bad "setup output: $out"
+contains "first session after install: the env a plugin cannot set goes into ~/.claude/settings.json" "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$SH/settings.json")" ".work/"
+contains "…and the user is told to restart once" "$(jq -r .systemMessage <<<"$out")" "restart Claude Code once"
+contains "a /deliver repo gets no AI attribution — in that repo only (.claude/settings.local.json)" "$(jq -c .attribution "$SP/.claude/settings.local.json")" '{"commit":"","pr":""}'
+[[ ! -e $SH/settings.json || "$(jq -r '.attribution // "none"' "$SH/settings.json")" == none ]] && ok "…never in the user's global settings" || bad "global attribution changed"
+contains "missing prerequisites are named with the fix (ECC here)" "$(jq -r .systemMessage <<<"$out")" "ECC plugin is not installed"
+out2="$(su)"; [[ "$(jq -r .systemMessage <<<"$out2")" != *"first-run setup"* && "$(jq -r .systemMessage <<<"$out2")" != *"settings.local.json"* ]] && ok "the setup runs once per version; later sessions only check" || bad "setup repeated: $out2"
+mkdir -p "$SH/plugins"; echo '{"plugins":{"ecc@ecc":[{}],"deliver@deliver-floor":[{}]}}' > "$SH/plugins/installed_plugins.json"
+[[ -z "$(su)" ]] && ok "all well: the setup prints nothing" || bad "setup output when all is well: $(su)"
+(cd "$SP" && echo '{}' > .deliver.json); out3="$(su)"
+if compgen -G "$HOME/.config/munder-difflin/config.json" >/dev/null; then ok "(Munder Difflin installed here — floor check skipped)"
+else contains "a floor repo (the default) without the app: told how to install it or choose subagents" "$(jq -r .systemMessage <<<"$out3")" "Munder Difflin floor (the default) but the app is not set up"; fi
+OLD="$TMP/oldhome"; mkdir -p "$OLD/.claude"; echo '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"/x/.claude/hooks/deliver/stop-guard.sh"}]}]}}' > "$OLD/.claude/settings.json"
+HOME="$OLD" "$HERE/scripts/install.sh" --user >/dev/null 2>&1
+contains "upgrading a copied install replaces the old .sh hook entries (no double guards)" "$(jq -c '[.hooks.Stop[].hooks[].command]' "$OLD/.claude/settings.json")" "[\"node \\\"$OLD/.claude/hooks/deliver\\\"/run.mjs stop-guard\"]"
+
 echo "plugin packaging"
 claude_ok=0; command -v claude >/dev/null && claude_ok=1
 jq -e '.name=="deliver"' "$HERE/kit/.claude-plugin/plugin.json" >/dev/null && ok "plugin manifest names the plugin deliver" || bad "plugin.json"
 jq -e '.plugins[] | select(.name=="deliver" and .source=="./kit")' "$HERE/.claude-plugin/marketplace.json" >/dev/null && ok "the repo is a marketplace offering ./kit" || bad "marketplace.json"
-gen="$(jq -S '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver")))}' "$HERE/kit/settings.hooks.json")"
+gen="$(jq -S '{hooks: ((.hooks | (.. | objects | select(has("command")) | .command) |= sub("__HOOKS_DIR__"; "\"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"")))}' "$HERE/kit/settings.hooks.json")"
 [[ "$gen" == "$(jq -S . "$HERE/kit/hooks/hooks.json")" ]] && ok "plugin hooks.json matches settings.hooks.json" \
   || bad "kit/hooks/hooks.json is stale — regenerate it from kit/settings.hooks.json (docs/02-setup.md)"
 for f in "$HERE"/kit/hooks/deliver/*.sh "$HERE/kit/skills/deliver/bin/dl"; do [[ -x $f ]] || bad "not executable in the plugin: $f"; done
@@ -980,7 +1001,7 @@ echo "install / uninstall"
 INST="$HERE/scripts/install.sh"
 expect_ok "install --user" "$INST" --user
 expect_ok "install is idempotent" "$INST" --user
-[[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 5 ]] && ok "5 hooks, no duplicates" || bad "hook count"
+[[ "$(jq '[.hooks[][] .hooks[] | select(.command|test("hooks/deliver"))] | length' "$HOME/.claude/settings.json")" == 6 ]] && ok "6 hooks (5 guards + the SessionStart setup), no duplicates" || bad "hook count"
 [[ -f $HOME/.claude/agents/qa-tester.md ]] && ok "qa-tester agent installed" || bad "qa-tester missing"
 [[ "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$HOME/.claude/settings.json")" == .work/* ]] && ok "GateGuard exemption set" || bad "env"
 [[ "$(jq -c .attribution "$HOME/.claude/settings.json")" == '{"commit":"","pr":""}' ]] && ok "Claude Code commit/PR attribution switched off" || bad "attribution"

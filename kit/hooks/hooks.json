@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver/stop-guard.sh",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"/run.mjs stop-guard",
             "timeout": 15
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver/bash-guard.sh",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"/run.mjs bash-guard",
             "timeout": 10
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver/write-guard.sh",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"/run.mjs write-guard",
             "timeout": 10
           }
         ]
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver/agent-guard.sh",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"/run.mjs agent-guard",
             "timeout": 10
           }
         ]
@@ -48,8 +48,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/deliver/subagent-log.sh",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"/run.mjs subagent-log",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deliver\"/setup.mjs",
+            "timeout": 20
           }
         ]
       }
