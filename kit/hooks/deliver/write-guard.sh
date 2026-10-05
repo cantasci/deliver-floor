@@ -14,9 +14,11 @@ command -v jq >/dev/null || exit 0
 f="$(hk .tool_input.file_path)"; [[ -n $f ]] || f="$(hk .tool_input.notebook_path)"
 [[ -n $f ]] || exit 0
 [[ $f == /* ]] || f="$(hk .cwd)/$f"
+f="$(canon_path "$f")"
 deny() { echo "deliver write-guard: $1" >&2; exit 2; }
 
 while IFS=$'\t' read -r job root; do
+  root="$(canon_path "$root")"
   [[ $f == "$root"/* ]] || continue
   jd="$root/.work/$job"
   if is_agent; then
