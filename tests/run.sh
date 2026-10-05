@@ -464,6 +464,7 @@ for w in $(jq -r '.munder.seats[].worker' "$R/.work/$JOB/job.json"); do mkdir -p
 out="$("$DL" md-seats)"; [[ $out != *pending* && $out != *starting* && $out == *live* && $out != *"not seated"* ]] && ok "md-seats: everyone said seated — live" || bad "md-seats: $out"
 contains "every seat gets an explicit model — never the app's default (kit default sonnet)" "$(jq -c '[.model]' "$HIVE_ROOT/spawn-requests/.done/$(basename "$sreq")")" '["sonnet"]'
 echo "Build T-03 test-first." > "$TMP/order.md"
+out="$("$DL" md-seats)"; [[ $out != *pending* && $out != *starting* && $out == *live* && $out != *"not seated"* ]] && ok "md-seats: everyone is at their desk" || bad "md-seats: $out"
 out="$("$DL" md-send backend T-03 "$TMP/order.md" 2>&1)"; contains "md-send gives a running card to its role's seat" "$out" "T-03 → backend#1"
 ord="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)"
 contains "the order goes from Michael's outbox to that seat's worker" "$(jq -c '{to:(.to|startswith("worker-seat-")),act}' "$ord")" '{"to":true,"act":"request"}'
@@ -1087,6 +1088,23 @@ expect_ok "uninstall" "$INST" --user --uninstall
 [[ ! -e $HOME/.claude/skills/deliver && "$(jq -c '[.hooks.Stop[].hooks[].command]' "$HOME/.claude/settings.json")" == '["/usr/bin/true"]' && "$(jq -r .env.MINE "$HOME/.claude/settings.json")" == 1 ]] \
   && ok "uninstall keeps foreign hooks and env" || bad "uninstall: $(cat "$HOME/.claude/settings.json")"
 "$INST" --user >/dev/null
+# A reinstall keeps what the user changed in the installed config.json: it moves into $DELIVER_HOME/config.json
+IC="$HOME/.claude/skills/deliver/config.json"
+jq '.dispatch = "subagent" | .munder.model = "opus"' "$IC" > "$IC.t" && mv "$IC.t" "$IC"
+out="$("$INST" --user 2>&1)"
+[[ $out != *"cannot"* ]] && ok "a reinstall in the same second as the last one backs up beside the old backup" || bad "reinstall: $out"
+contains "a reinstall keeps the user's changes to the installed config" "$out" "kept your settings: $DELIVER_HOME/config.json"
+[[ "$(jq -c . "$DELIVER_HOME/config.json")" == '{"dispatch":"subagent","munder":{"model":"opus"}}' ]] \
+  && ok "…in \$DELIVER_HOME/config.json, only what they changed" || bad "user config: $(cat "$DELIVER_HOME/config.json")"
+cmp -s "$IC" "$SDIR/config.json" && ok "…and the installed config is the shipped defaults again" || bad "installed config not reset: $(diff "$IC" "$SDIR/config.json" | head -5)"
+out="$("$INST" --user 2>&1)"; [[ $out == *"unchanged: $HOME/.claude/skills/deliver"* && $out != *"kept your settings"* ]] \
+  && ok "an untouched reinstall moves nothing" || bad "untouched reinstall: $out"
+# dl reads the user's settings over the shipped defaults, and a repo's .deliver.json over both
+for u in u1 u2; do mkdir -p "$TMP/$u" && git -C "$TMP/$u" init -q -b main && git -C "$TMP/$u" commit -q --allow-empty -m i; done
+echo '{"dispatch":"munder"}' > "$TMP/u2/.deliver.json"
+for u in u1 u2; do (cd "$TMP/$u" && AGENT_ID=god "$HOME/.claude/skills/deliver/bin/dl" new "u" "x" >/dev/null 2>&1); done
+contains "dl new takes the user's settings (\$DELIVER_HOME/config.json)" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u1/.work/JOB-*/job.json)" '{"d":"subagent","m":"opus"}'
+contains "…and a repo's .deliver.json over them" "$(jq -c '{d:.settings.dispatch,m:.settings.munder.model}' "$TMP"/u2/.work/JOB-*/job.json)" '{"d":"munder","m":"opus"}'
 out="$("$HERE/scripts/doctor.sh" "$R" 2>&1)"
 contains "doctor sees the install and the repo" "$out" "user: hook write-guard"
 mkdir -p "$HOME/.config/munder-difflin"; echo '{}' > "$HOME/.claude.json"
@@ -1100,6 +1118,18 @@ contains "doctor: a team would queue behind 4 workers" "$out" "maxConcurrentWork
 echo '{"orchestratorMaySpawn":true,"workerIdleTimeoutMinutes":480,"maxConcurrentWorkers":12}' > "$HOME/.config/munder-difflin/config.json"
 out="$("$HERE/scripts/doctor.sh" 2>&1)"
 [[ $out == *"seats are not sent home"* && $out == *"room for a whole team"* && $out == *"Michael may seat people"* ]] && ok "doctor: satisfied with the settings init writes" || bad "doctor seats: $out"
+# Which Munder Difflin init installed: upstream's build has no floor fixes (seats never start) — the build tells
+MD="$TMP/md"; git init -q "$MD"; git -C "$MD" remote add origin https://example.test/upstream/munder-difflin
+mkdir -p "$MD/out/main"; echo 'console.log("upstream")' > "$MD/out/main/index.js"; git -C "$MD" add -A; git -C "$MD" commit -qm md
+out="$(MUNDER_DIR="$MD" "$HERE/scripts/doctor.sh" 2>&1)"
+contains "doctor names where init's Munder Difflin comes from" "$out" "init's Munder Difflin: https://example.test/upstream/munder-difflin @"
+contains "…flags a build without the floor fixes (seats would never start)" "$out" "built without the floor fixes"
+contains "…and a build that is not from the checked-out commit" "$out" "build is not from the checked-out commit"
+echo 'const firstPrompt = "Your task was sent to your hive inbox by god. Read your inbox now";' > "$MD/out/main/index.js"
+git -C "$MD" rev-parse HEAD > "$MD/out/.built-from"
+out="$(MUNDER_DIR="$MD" "$HERE/scripts/doctor.sh" 2>&1)"
+[[ $out == *"built with the floor fixes"* && $out != *"not from the checked-out commit"* && $out != *"built without"* ]] \
+  && ok "doctor: satisfied with the fork's build of the checked-out commit" || bad "doctor munder source: $out"
 
 echo
 echo "result: $pass passed, $failn failed"

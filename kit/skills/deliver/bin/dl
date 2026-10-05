@@ -50,7 +50,7 @@
 #   dl md-dispatch <card> <prompt-file>   Munder Difflin: run the card's dev as a worker on the floor
 #   dl md-hire                     Munder Difflin: seat one person per role seat (job.roles[].count) — the whole job
 #   dl md-seats                    who sits where: pending / starting / live / gone / failed (with why), each seat's open task
-#   dl config [--init]            the settings that apply in this repo (kit defaults ⊕ .deliver.json); --init writes .deliver.json
+#   dl config [--init]            the settings that apply in this repo (kit defaults ⊕ ~/.deliver/config.json ⊕ .deliver.json)
 #   dl floor-open "<request>"     /deliver from a terminal in a floor repo: open Munder Difflin on its floor, hand Michael the job
 #   dl dispatch munder|subagent "<why>"   (human) switch how this job's roles run: floor seats (default) or subagents
 #   dl md-reseat <seat> "<why>" [--model m]   a failed or stuck seat gets a new person (another model for a credit error);
@@ -72,6 +72,7 @@ set -euo pipefail
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$BIN_DIR/.." && pwd)"
 CONFIG="$SKILL_DIR/config.json"
+USER_CONFIG="${DELIVER_HOME:-$HOME/.deliver}/config.json"   # the user's settings — install and plugin updates leave it alone
 REG="${DELIVER_HOME:-$HOME/.deliver}/jobs"
 
 # Installed as a Claude Code plugin, the kit's agents are namespaced (<plugin>:<agent>, e.g. deliver:backend-dev).
@@ -240,7 +241,8 @@ project_config_template() {
   [[ -f $ROOT/pom.xml ]] && verify="mvn -q test"
   [[ -f $ROOT/Cargo.toml ]] && verify="cargo test"
   git -C "$ROOT" remote get-url origin >/dev/null 2>&1 || mm=local
-  jq -n --arg schema "$SCHEMA_URL" --arg v "${verify:-}" --arg m "$mm" --slurpfile c "$CONFIG" '
+  # from the kit defaults ⊕ the user's own config ($DELIVER_HOME/config.json), so the new file starts from what they chose
+  jq -n --arg schema "$SCHEMA_URL" --arg v "${verify:-}" --arg m "$mm" --slurpfile c <(merged_settings) '
     {"$schema": $schema,
      dispatch: $c[0].dispatch,
      verify_full: $v, worktree_setup: "", merge_mode: $m,
@@ -252,14 +254,15 @@ project_config_template() {
 }
 ensure_project_config() { # writes .deliver.json when the repo has none; says so
   [[ -f $ROOT/.deliver.json ]] && return 0
-  project_config_template > "$ROOT/.deliver.json"
+  local t; t="$(project_config_template)" || die "could not write $ROOT/.deliver.json"
+  printf '%s\n' "$t" > "$ROOT/.deliver.json"
   echo "created $ROOT/.deliver.json — this repo's /deliver settings (run mode, models per role, merge mode, verify). Edit it any time; dl config shows what applies." >&2
 }
 cmd_config() { # dl config [--init] — the settings that apply in this repo (kit defaults ⊕ .deliver.json)
   resolve_root
   if [[ ${1:-} == --init ]]; then [[ -f $ROOT/.deliver.json ]] && { echo "$ROOT/.deliver.json exists"; return 0; }; ensure_project_config; return 0; fi
-  if [[ -f $ROOT/.deliver.json ]]; then echo "# kit defaults ⊕ $ROOT/.deliver.json"; jq -s '.[0] * .[1] | del(."$schema")' "$CONFIG" "$ROOT/.deliver.json"
-  else echo "# kit defaults (no .deliver.json yet — dl config --init writes one)"; cat "$CONFIG"; fi
+  echo "# kit defaults$([[ -f $USER_CONFIG ]] && echo " ⊕ $USER_CONFIG (yours)")$([[ -f $ROOT/.deliver.json ]] && echo " ⊕ $ROOT/.deliver.json" || echo " (no .deliver.json yet — dl config --init writes one)")"
+  merged_settings
 }
 
 cmd_new() {
@@ -277,13 +280,14 @@ cmd_new() {
   [[ ! -e "$WORK/$id" ]] || die "already exists: $id"
 
   ensure_project_config
-  # Settings: skill config.json, overridden by .deliver.json at the repo root if present.
-  local settings
-  if [[ -f "$ROOT/.deliver.json" ]]; then
-    settings="$(jq -s '.[0] * .[1] | del(."$schema")' "$CONFIG" "$ROOT/.deliver.json")" || die ".deliver.json is not valid JSON"
-  else
-    settings="$(cat "$CONFIG")"
-  fi
+  # Settings: the skill's config.json (shipped defaults, replaced by every install and plugin update), overridden by the
+  # user's own $DELIVER_HOME/config.json (survives both), overridden by .deliver.json at the repo root.
+  local settings f
+  settings="$(cat "$CONFIG")"
+  for f in "$USER_CONFIG" "$ROOT/.deliver.json"; do
+    [[ -f $f ]] || continue
+    settings="$(jq -s '.[0] * .[1] | del(."$schema")' <(printf '%s' "$settings") "$f")" || die "$f is not valid JSON"
+  done
   # Older .deliver.json files said merge_strategy: pr|local.
   settings="$(jq 'if .merge_strategy then .merge_mode = (if .merge_strategy == "local" then "local" else (.merge_mode // "human") end) | del(.merge_strategy) else . end' <<<"$settings")"
   local mm; mm="$(jq -r .merge_mode <<<"$settings")"
@@ -1204,7 +1208,7 @@ cmd_md_hire() { # [seat] — only that seat (md-reseat)
   local hive; hive="$(md_hive)"
   [[ "$(setting dispatch)" == munder ]] || refuse 1 "seats are for dispatch munder (dl jobset '.settings.dispatch=\"munder\"')"
   mkdir -p "$hive/spawn-requests"
-  local cat used="" s role n st req w n_hire provider model cap cmd ch ac kind obj name
+  local cat used="" s role n st req w n_hire provider model cap cmd ch ac kind obj name old
   cat="$(node "$BIN_DIR/roles.mjs" catalog)"
   used="$(jq -r '[.munder.seats // {} | .[] | .character // empty] | join(" ")' "$JOBJ")"
   while read -r s; do
@@ -1480,6 +1484,7 @@ dispatch_of() { # the dispatch a command would run under: the active job's, or f
   if [[ $1 != new && -n $j && -f $WORK/$j/job.json ]]; then d="$(jq -r '.settings.dispatch // empty' "$WORK/$j/job.json")"
   else
     [[ -f $ROOT/.deliver.json ]] && d="$(jq -r '.dispatch // empty' "$ROOT/.deliver.json" 2>/dev/null || true)"
+    [[ -z $d && -f $USER_CONFIG ]] && d="$(jq -r '.dispatch // empty' "$USER_CONFIG" 2>/dev/null || true)"
     d=${d:-$(jq -r '.dispatch // empty' "$CONFIG")}
   fi
   echo "${d:-munder}"
@@ -1527,8 +1532,16 @@ md_app_start() { # munder.app_command, else the installed app, else the source c
   if [[ -f $src/package.json ]]; then (cd "$src" && nohup npm run preview >"$log" 2>&1 &); return 0; fi
   return 1
 }
-project_setting() { # a key from .deliver.json over the kit defaults (no job needed)
-  if [[ -f $ROOT/.deliver.json ]]; then jq -rs ".[0] * .[1] | .$1 // empty" "$CONFIG" "$ROOT/.deliver.json"; else jq -r ".$1 // empty" "$CONFIG"; fi
+project_setting() { # a key from the layered settings (kit defaults ⊕ the user's config ⊕ .deliver.json), no job needed
+  merged_settings | jq -r ".$1 // empty"
+}
+merged_settings() {
+  local settings f; settings="$(cat "$CONFIG")"
+  for f in "$USER_CONFIG" "$ROOT/.deliver.json"; do
+    [[ -f $f ]] || continue
+    settings="$(jq -s '.[0] * .[1] | del(."$schema")' <(printf '%s' "$settings") "$f")" || die "$f is not valid JSON"
+  done
+  printf '%s\n' "$settings"
 }
 cmd_floor_open() {
   resolve_root

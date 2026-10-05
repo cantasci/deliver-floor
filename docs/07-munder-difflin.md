@@ -61,10 +61,10 @@ scripts/init.sh --munder --hive ~/md-hive --repo /path/to/repo
 
 | Step | What happens |
 | --- | --- |
-| source | `git clone https://github.com/chaitanyagiri/munder-difflin` into `~/.local/share/munder-difflin` (`--munder-dir` to change), or fast-forward it |
-| dependencies | `npm install` |
+| source | `git clone https://github.com/cantasci/munder-difflin` into `~/.local/share/munder-difflin` (`--munder-dir` to change). That is the fork, not upstream (`chaitanyagiri/munder-difflin`): only the fork gives a spawn-queue worker — every `/deliver` seat — a first prompt, cards it on the floor and records why one failed to start; upstream, seats never start. `--munder-repo <url\|path>` / `--munder-ref <branch\|tag>` pick another source. An existing checkout is pointed at that repo and moved to that ref (detached; a checkout with local edits other than `package-lock.json` is left as it is) |
+| dependencies | `npm install` — again whenever the source's committed `package-lock.json` changes |
 | native modules | `node-pty` rebuilt against the local Node headers (N-API, Electron loads it), `better-sqlite3` from the official Electron prebuild — works where Electron's header download is blocked |
-| build | `npm run build` |
+| build | `npm run build` — whenever the checked-out commit is not the one `out/.built-from` names (new source is never run from a stale build) |
 | configure | `~/.config/munder-difflin/config.json` (macOS: `~/Library/Application Support/munder-difflin/`): `harnessHome` = the hive, repo in `registeredRepos`, `orchestratorMaySpawn: true` (Michael may seat people), `workerIdleTimeoutMinutes` ≥ 480 (a seat waits between tasks — QA
 for the devs — and must not be sent home after the default 20 idle minutes), `maxConcurrentWorkers` ≥ 12 (a job's seats all at
 once instead of queueing behind the default 4), Knowledge Graph on; `--skip-onboarding` marks the first-run wizard done |

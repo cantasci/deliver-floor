@@ -124,6 +124,25 @@ else
   md_missing=1
   note "Munder Difflin not detected — it is the default run mode: scripts/init.sh --munder --hive <dir>, or choose Claude Code subagents by hand (\"dispatch\": \"subagent\" in .deliver.json — docs/07-munder-difflin.md#choosing-the-mode)"
 fi
+# Which Munder Difflin: /deliver's seats need the fork's floor fixes (a spawn-queue worker gets a first prompt and appears on
+# the floor). Upstream lacks them and its seats never start. The fix leaves a fingerprint in the build: the first prompt.
+md_fixed() { grep -q 'Your task was sent to your hive inbox' "$1/out/main/index.js" 2>/dev/null; }
+mddir="${MUNDER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/munder-difflin}"
+if [[ -d $mddir/.git ]]; then
+  mdhead="$(git -C "$mddir" rev-parse HEAD 2>/dev/null)"
+  pass "init's Munder Difflin: $(git -C "$mddir" remote get-url origin 2>/dev/null) @ ${mdhead:0:7} ($mddir)"
+  if [[ ! -f $mddir/out/main/index.js ]]; then fail "…not built — scripts/init.sh --munder --hive <hive>"
+  elif md_fixed "$mddir"; then pass "…built with the floor fixes (seats get a first prompt and appear on the floor)"
+  else fail "…built without the floor fixes: /deliver seats never start — scripts/init.sh --munder --hive <hive> installs the fork"; fi
+  [[ "$(cat "$mddir/out/.built-from" 2>/dev/null)" == "$mdhead" ]] \
+    || note "…its build is not from the checked-out commit — rebuild: cd $mddir && npm run build (or scripts/init.sh --munder)"
+fi
+# The running app can come from another checkout than init's: judge the one that runs (preview runs <checkout>/out).
+while IFS= read -r d; do
+  [[ -n $d ]] || continue
+  if md_fixed "$d"; then pass "running Munder Difflin from $d — with the floor fixes"
+  else fail "running Munder Difflin from $d — without the floor fixes (/deliver seats never start): quit it, start $mddir"; fi
+done < <(ps -axo command= 2>/dev/null | sed -n -E 's#^(/.*)/node_modules/electron/dist/(Electron\.app/Contents/MacOS/Electron|electron) \.$#\1#p' | sort -u)
 
 if [[ -n $repo ]]; then
   echo "Repo: $repo"

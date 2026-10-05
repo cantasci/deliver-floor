@@ -39,8 +39,10 @@ backup_dir="$target/.deliver-backups/$ts"
 
 backup() { # backup <path> — moves it under .deliver-backups, keeping its relative path
   local p=$1 rel=${1#"$target"/}
-  run mkdir -p "$(dirname "$backup_dir/$rel")"
-  run mv "$p" "$backup_dir/$rel"; echo "backup: $backup_dir/$rel"
+  local dst="$backup_dir/$rel" n=1
+  while [[ -e $dst ]]; do n=$((n + 1)); dst="$backup_dir/$rel.$n"; done   # two installs in one second: never mv into an old backup
+  run mkdir -p "$(dirname "$dst")"
+  run mv "$p" "$dst"; echo "backup: $dst"
 }
 
 copy() { # copy <src> <dst> — skips if identical, backs up an existing different destination
@@ -88,9 +90,34 @@ if [[ $uninstall -eq 1 ]]; then
   exit 0
 fi
 
+# The installed config.json holds the shipped defaults and copy() replaces it. What the user changed there moves into their
+# own file first ($DELIVER_HOME/config.json — dl reads it over the defaults; plugin updates never touch it), so a reinstall
+# keeps it. "Changed" = differs from the defaults installed last time (recorded below), not from today's defaults.
+user_cfg="${DELIVER_HOME:-$HOME/.deliver}/config.json"; defaults_rec="${DELIVER_HOME:-$HOME/.deliver}/config.installed-defaults.json"
+keep_user_settings() {
+  local old="$target/skills/deliver/config.json" base="$KIT/skills/deliver/config.json" diff
+  [[ -f $old ]] || return 0
+  [[ -f $defaults_rec ]] && base="$defaults_rec"
+  diff="$(jq -n --slurpfile o "$old" --slurpfile n "$base" '
+    def d(o; n): reduce (o | keys[]) as $k ({};
+      if (n | has($k) | not) then .[$k] = o[$k]
+      elif o[$k] == n[$k] then .
+      elif (o[$k] | type) == "object" and (n[$k] | type) == "object" then (d(o[$k]; n[$k])) as $v | if $v == {} then . else .[$k] = $v end
+      else .[$k] = o[$k] end);
+    d($o[0]; $n[0])')" || return 0
+  [[ $diff != "{}" ]] || return 0
+  if [[ $dry -eq 1 ]]; then echo "DRY: would keep your settings in $user_cfg: $(jq -c . <<<"$diff")"; return 0; fi
+  mkdir -p "$(dirname "$user_cfg")"
+  if [[ -f $user_cfg ]]; then jq -s '.[0] * .[1]' <(printf '%s' "$diff") "$user_cfg" > "$user_cfg.tmp"   # the user file wins
+  else jq . <<<"$diff" > "$user_cfg.tmp"; fi
+  mv "$user_cfg.tmp" "$user_cfg"; echo "kept your settings: $user_cfg $(jq -c . <<<"$diff")"
+}
+
 if [[ $plugin -eq 0 ]]; then
   for f in "$KIT"/agents/*.md; do copy "$f" "$target/agents/$(basename "$f")"; done
+  keep_user_settings
   copy "$KIT/skills/deliver" "$target/skills/deliver"
+  [[ $dry -eq 1 ]] || { mkdir -p "$(dirname "$defaults_rec")"; cp "$KIT/skills/deliver/config.json" "$defaults_rec"; }
   copy "$KIT/hooks/deliver" "$target/hooks/deliver"
   run chmod +x "$target/skills/deliver/bin/dl" "$target/skills/deliver/bin/"*.mjs "$target"/hooks/deliver/*.sh
 fi

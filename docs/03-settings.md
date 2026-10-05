@@ -3,10 +3,15 @@
 ## Layers
 
 ```text
-kit/skills/deliver/config.json   defaults for every repo          (installed to ~/.claude/skills/deliver/config.json)
+kit/skills/deliver/config.json   shipped defaults                 (installed to ~/.claude/skills/deliver/config.json)
+~/.deliver/config.json           your settings, every repo        ($DELIVER_HOME; install and plugin updates leave it alone)
 <repo>/.deliver.json             per-repo overrides (deep merge)  (commit it)
 .work/<job>/job.json .settings   snapshot taken at `dl new`       (what this job actually uses; sealed)
 ```
+
+Put your own defaults (e.g. `{"dispatch": "munder"}`) in `~/.deliver/config.json`, not in the installed `config.json`: a
+reinstall and a plugin update replace the installed copy. `scripts/install.sh` moves what you had changed there into
+`~/.deliver/config.json` before it replaces it ("kept your settings: …"), comparing with the defaults it installed last time.
 
 Changing `.deliver.json` mid-job has no effect on the running job. `dl jobset '.settings.max_parallel=2'` changes the
 running job (logged in `events.log`). Editing `job.json` / `board.json` by hand is detected (sha256 seals) and refused until a

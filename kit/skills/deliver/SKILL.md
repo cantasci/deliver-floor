@@ -335,6 +335,9 @@ OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
 
 On the office floor **you use no subagents** (the agent-guard hook refuses the Agent tool while a floor job is active). The
 human talks only to you; every role the requirements call for is a person on the floor, hired by you, working at their desk.
+**You are the floor's Michael**: a floor job runs from Michael's seat in Munder Difflin. A session outside the app is refused
+by every `md-*` command while Michael has a seat (two orchestrators would share one inbox) — hand over: tell the human to give
+Michael `/deliver resume` with `REPO: <repo>`.
 
 1. **Hire the seats** right after `"$DL" phase readiness` (and again whenever the roles change): `"$DL" md-hire`. One person
    per seat — every selected role, `count` seats each (default 1): ba, the leads, every dev seat, qa, the reviewers, the
