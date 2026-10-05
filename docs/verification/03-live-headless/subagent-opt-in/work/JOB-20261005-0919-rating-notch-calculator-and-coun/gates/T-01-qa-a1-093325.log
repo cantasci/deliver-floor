@@ -1,0 +1,173 @@
+# qa_verify: node --test test/integration/notch/
+TAP version 13
+# Subtest: AC-1: RATING_SCALE is the frozen 19-step scale and push throws TypeError
+ok 1 - AC-1: RATING_SCALE is the frozen 19-step scale and push throws TypeError
+  ---
+  duration_ms: 2.486076
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE cannot be mutated by assignment or sort in strict mode
+ok 2 - AC-1: RATING_SCALE cannot be mutated by assignment or sort in strict mode
+  ---
+  duration_ms: 0.317117
+  type: 'test'
+  ...
+# Subtest: AC-2: worse current gives a positive notch count
+ok 3 - AC-2: worse current gives a positive notch count
+  ---
+  duration_ms: 0.278931
+  type: 'test'
+  ...
+# Subtest: AC-3: better current gives a negative notch count
+ok 4 - AC-3: better current gives a negative notch count
+  ---
+  duration_ms: 0.178701
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange(r, r) is +0 (never -0) for all 19 ratings
+ok 5 - AC-4: notchChange(r, r) is +0 (never -0) for all 19 ratings
+  ---
+  duration_ms: 0.395757
+  type: 'test'
+  ...
+# Subtest: AC-5: notchChange accepts case and surrounding whitespace
+ok 6 - AC-5: notchChange accepts case and surrounding whitespace
+  ---
+  duration_ms: 0.207723
+  type: 'test'
+  ...
+# Subtest: AC-5: notchCalculator accepts case and surrounding whitespace
+ok 7 - AC-5: notchCalculator accepts case and surrounding whitespace
+  ---
+  duration_ms: 0.237589
+  type: 'test'
+  ...
+# Subtest: AC-6: notchChange throws RangeError for every invalid value as previous
+ok 8 - AC-6: notchChange throws RangeError for every invalid value as previous
+  ---
+  duration_ms: 0.584051
+  type: 'test'
+  ...
+# Subtest: AC-6: notchChange throws RangeError for every invalid value as current
+ok 9 - AC-6: notchChange throws RangeError for every invalid value as current
+  ---
+  duration_ms: 0.663995
+  type: 'test'
+  ...
+# Subtest: AC-6: notchCalculator throws RangeError for every invalid value as previous
+ok 10 - AC-6: notchCalculator throws RangeError for every invalid value as previous
+  ---
+  duration_ms: 3.281744
+  type: 'test'
+  ...
+# Subtest: AC-6: notchCalculator throws RangeError for every invalid value as current
+ok 11 - AC-6: notchCalculator throws RangeError for every invalid value as current
+  ---
+  duration_ms: 0.588364
+  type: 'test'
+  ...
+# Subtest: AC-6: missing arguments throw RangeError in both functions
+ok 12 - AC-6: missing arguments throw RangeError in both functions
+  ---
+  duration_ms: 0.338995
+  type: 'test'
+  ...
+# Subtest: AC-6: exotic objects (null prototype, throwing toString, symbol) still give RangeError
+ok 13 - AC-6: exotic objects (null prototype, throwing toString, symbol) still give RangeError
+  ---
+  duration_ms: 0.316782
+  type: 'test'
+  ...
+# Subtest: AC-6: a String object / object coercing to a valid rating is still rejected
+ok 14 - AC-6: a String object / object coercing to a valid rating is still rejected
+  ---
+  duration_ms: 0.2944
+  type: 'test'
+  ...
+# Subtest: AC-6: error message names the argument
+ok 15 - AC-6: error message names the argument
+  ---
+  duration_ms: 0.268431
+  type: 'test'
+  ...
+# Subtest: AC-7: notchCalculator returns exactly { notches, direction, wl } for downgrades
+ok 16 - AC-7: notchCalculator returns exactly { notches, direction, wl } for downgrades
+  ---
+  duration_ms: 0.134095
+  type: 'test'
+  ...
+# Subtest: AC-8: notchCalculator BBB+ -> BBB is 1 notch downgrade with WL 0 (Indicator 13)
+ok 17 - AC-8: notchCalculator BBB+ -> BBB is 1 notch downgrade with WL 0 (Indicator 13)
+  ---
+  duration_ms: 0.239676
+  type: 'test'
+  ...
+# Subtest: AC-9: notchCalculator upgrades and unchanged
+ok 18 - AC-9: notchCalculator upgrades and unchanged
+  ---
+  duration_ms: 0.215076
+  type: 'test'
+  ...
+# Subtest: AC-9: notchCalculator unchanged is +0 for all 19 ratings
+ok 19 - AC-9: notchCalculator unchanged is +0 for all 19 ratings
+  ---
+  duration_ms: 0.218857
+  type: 'test'
+  ...
+# Subtest: AC-10: all 361 ordered pairs satisfy the notchCalculator invariants
+ok 20 - AC-10: all 361 ordered pairs satisfy the notchCalculator invariants
+  ---
+  duration_ms: 3.168032
+  type: 'test'
+  ...
+# Subtest: AC-10: wl thresholds at the boundaries 1->0, 2->1, 3->2 and every negative -> 0
+ok 21 - AC-10: wl thresholds at the boundaries 1->0, 2->1, 3->2 and every negative -> 0
+  ---
+  duration_ms: 0.206938
+  type: 'test'
+  ...
+# Subtest: AC-10: returned objects are independent (mutating one does not affect the next)
+ok 22 - AC-10: returned objects are independent (mutating one does not affect the next)
+  ---
+  duration_ms: 0.168812
+  type: 'test'
+  ...
+# Subtest: AC-15: module exports exactly RATING_SCALE, notchCalculator, notchChange; no default
+ok 23 - AC-15: module exports exactly RATING_SCALE, notchCalculator, notchChange; no default
+  ---
+  duration_ms: 0.317489
+  type: 'test'
+  ...
+# Subtest: AC-15: results are synchronous, not Promises
+ok 24 - AC-15: results are synchronous, not Promises
+  ---
+  duration_ms: 0.141605
+  type: 'test'
+  ...
+# Subtest: AC-16: package.json has no dependencies or devDependencies
+ok 25 - AC-16: package.json has no dependencies or devDependencies
+  ---
+  duration_ms: 0.23413
+  type: 'test'
+  ...
+# Subtest: AC-16: notch.mjs has no non-relative imports, require, I/O, process or console
+ok 26 - AC-16: notch.mjs has no non-relative imports, require, I/O, process or console
+  ---
+  duration_ms: 0.866179
+  type: 'test'
+  ...
+# Subtest: AC-16: the dev unit-test file passes when run with node --test
+ok 27 - AC-16: the dev unit-test file passes when run with node --test
+  ---
+  duration_ms: 194.192386
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 344.702451
