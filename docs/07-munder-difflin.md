@@ -71,7 +71,7 @@ once instead of queueing behind the default 4), Knowledge Graph on; `--skip-onbo
 | brief | `scripts/md-brief.sh` writes the `/deliver` section into the hive's `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` (any CLI that runs Michael reads its file) |
 
 Start it: `cd ~/.local/share/munder-difflin && npm run preview` (Linux as root / in containers:
-`ELECTRON_DISABLE_SANDBOX=1 npm run preview -- --no-sandbox`). Open the hive, and message Michael:
+`ELECTRON_DISABLE_SANDBOX=1 npm run preview -- --noSandbox`). Open the hive, and message Michael:
 
 ```text
 /deliver /path/to/requirements.md

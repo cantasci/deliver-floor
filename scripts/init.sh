@@ -120,7 +120,7 @@ if [[ $munder -eq 1 ]]; then
   fi
   step "teach Michael /deliver ($hive/CLAUDE.md)"
   "$HERE/scripts/md-brief.sh" "$hive" ${repo:+"$repo"}
-  echo "start it: cd $mddir && npm run preview      (Linux root/containers: ELECTRON_DISABLE_SANDBOX=1 … -- --no-sandbox)"
+  echo "start it: cd $mddir && npm run preview      (Linux root/containers: ELECTRON_DISABLE_SANDBOX=1 npm run preview -- --noSandbox)"
 fi
 
 step "doctor"
