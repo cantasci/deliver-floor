@@ -58,7 +58,7 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | F10 | a config file per project | **Done** — the first `/deliver` writes `.deliver.json` with a schema; per-role defaults reach the job (`tests/run.sh`) |
 | F12 | Munder Difflin restores a previous job's workers when it is reopened (seen in run 45); they idle and take no orders, but crowd the floor | **App behaviour, open** — to raise with Munder Difflin (a released seat should not come back) |
 | F13 | slow floor runs / agents waiting | **Measured (run 45): not the floor** — its handoffs cost 2–18 s each (~3 of 23.5 min); 10 min went to a QA command Node 22 rejects (`node --test <dir>`), seen in runs 29, 33, 45. Now refused at validation and before the gate, fixable on a running card (`tests/run.sh`). Proposed, not done: QA writes its tests in parallel with the dev |
-| F14 | the POC was written in Node.js by default | **Done** — no default language: ARC-stack only from the repo, the request (quoted) or the human; `npm test` default removed. Run 46: Michael asked, with the request's evidence for Python |
+| F14 | the POC was written in Node.js by default | **Done — verified live** (run 47): in a repo without code the team chooses the best fit for the requirements — Python + FastAPI, quoting "yfinance" and "Python KAP client", Node.js and Java weighed — as Michael's decision listed in the PR; no default language, no `npm test` default |
 | F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
 
 ## Verified by the owner, not here
