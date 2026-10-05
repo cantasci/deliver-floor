@@ -1550,11 +1550,16 @@ cmd_floor_open() {
   resolve_root
   local req=${1:-}; [[ -n $req ]] || die 'usage: dl floor-open "<the /deliver request: text or a path to a requirements .md>"'
   [[ "$(dispatch_of new)" == munder ]] || refuse 1 "this repo runs with subagents (dispatch: subagent) — just run /deliver here"
+  local created=0; [[ -f $ROOT/.deliver.json ]] || { ensure_project_config; created=1; }   # the repo is known: its settings, read from it
   local home cfg h; cfg="$(md_app_config)"
   home="$(project_setting munder.hive_root)"; home=${home%/}; [[ $(basename "${home:-x}") == hive && -f $home/registry.json ]] && home="$(dirname "$home")"
   [[ -n $home ]] || home="$(jq -r '.harnessHome // empty' "$cfg" 2>/dev/null || true)"
   [[ -n $home ]] || refuse 1 "no floor for this repo: set \"munder\": {\"hive_root\": \"<folder>\"} in .deliver.json (scripts/init.sh --munder --hive <folder> --repo $ROOT does it all)"
   home="${home/#\~/$HOME}"; mkdir -p "$home"
+  if [[ $created == 1 && -z "$(jq -r '.munder.hive_root // empty' "$ROOT/.deliver.json")" ]]; then   # the file just written: record the floor it uses
+    jq --arg h "$home" '.munder.hive_root = $h' "$ROOT/.deliver.json" > "$ROOT/.deliver.json.tmp" && mv "$ROOT/.deliver.json.tmp" "$ROOT/.deliver.json"
+    echo "  munder.hive_root: $home — the floor this repo opens" >&2
+  fi
   local started=0
   if md_app_running "$home" "$cfg"; then
     h="$(jq -r '.harnessHome // empty' "$cfg" 2>/dev/null || true)"

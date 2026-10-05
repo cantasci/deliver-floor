@@ -34,13 +34,14 @@ human accepts it with `dl reseal "<reason>"`.
 
 ## What is read from the repo
 
-The first `/deliver` in a repo (or `dl config --init`, or `scripts/init.sh --repo`) writes `.deliver.json` from what the
+The first `/deliver` in a repo — on the floor too: typed in a terminal, it writes the file before opening the app, with the
+floor it opens as `munder.hive_root` — (or `dl config --init`, or `scripts/init.sh --repo`) writes `.deliver.json` from what the
 repo itself says, and prints where each value came from (`kit/skills/deliver/bin/detect.mjs`):
 
 | Value | Read from |
 | --- | --- |
 | `verify_full` | a `Makefile` `test:` target → `make test`; else `package.json` scripts (`typecheck`, `lint`, `test` — run with the package manager its lockfile names; npm's placeholder `"no test specified"` is **not** a test suite); Python with pytest in its project files (`uv run` / `poetry run` from the lockfile), or `python -m unittest discover` for a `tests/` folder; `go.mod`, `Cargo.toml`, `pom.xml`/`mvnw`, Gradle/`gradlew`, `mix.exs`, `Gemfile`, `composer.json`, `Package.swift`, `pubspec.yaml`, `deno.json`. No project at the root: each top-level folder's own (`(cd api && go test ./...) && (cd web && npm test)`). Nothing found → `""` |
-| `worktree_setup` | the lockfile's install command (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`, `bun install`, `uv sync`, `poetry install`) |
+| `worktree_setup` | the lockfile's install command (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`, `bun install`, `uv sync`, `poetry install`); nothing for a `package.json` without dependencies (an install would only leave a new lockfile in every card) |
 | `worktree_exclude` | the kit's list plus what that setup creates (`node_modules`, `.venv`, per folder) |
 | `merge_mode` | `human` with an `origin` remote, `local` without |
 | `munder.hive_root` | the floor whose app config lists this repo |

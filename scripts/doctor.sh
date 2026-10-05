@@ -66,7 +66,7 @@ check_install() { # check_install <claude dir> <label>
   [[ -x $d/skills/deliver/bin/dl ]] && pass "$label: dl executable" || fail "$label: dl not executable (chmod +x)"
   s=$d/settings.json
   for h in stop-guard bash-guard write-guard agent-guard subagent-log; do
-    grep -qE "run\.mjs\\?\"? $h|$h\.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
+    grep -qE "run\.mjs[\\\"]* $h|$h\.sh" "$s" 2>/dev/null && pass "$label: hook $h" || fail "$label: hook $h not in $s (re-run install.sh)"
   done
   for h in "$d"/skills/deliver*.bak* "$d"/skills/deliver.bak*; do
     [[ -e $h ]] && fail "$label: stale backup $h is loaded as a second skill — delete it (newer install.sh backs up to .deliver-backups/)"
@@ -85,7 +85,7 @@ if [[ -n $pdir && -d $pdir ]]; then
   pass "plugin: deliver ($pdir)"
   [[ -x $pdir/skills/deliver/bin/dl ]] && pass "plugin: dl executable" || fail "plugin: dl not executable — reinstall the plugin"
   for h in stop-guard bash-guard write-guard agent-guard subagent-log; do
-    grep -qE "run\.mjs\\?\"? $h" "$pdir/hooks/hooks.json" 2>/dev/null && pass "plugin: hook $h" || fail "plugin: hook $h missing from hooks/hooks.json — update the plugin"
+    grep -qE "run\.mjs[\\\"]* $h" "$pdir/hooks/hooks.json" 2>/dev/null && pass "plugin: hook $h" || fail "plugin: hook $h missing from hooks/hooks.json — update the plugin"
   done
   [[ "$(jq -r '.env.GATEGUARD_EXEMPT_GLOBS // empty' "$HOME/.claude/settings.json" 2>/dev/null)" == .work/* ]] \
     && pass "plugin: settings carry the GateGuard exemption" || note "plugin: the GateGuard exemption is not in ~/.claude/settings.json yet — the plugin's first session writes it (restart once), or scripts/install.sh --user --plugin"
@@ -168,12 +168,13 @@ if [[ -n $repo ]]; then
     note "no .deliver.json yet — the first /deliver (or dl config --init) writes one from what the repo says (test script, lockfile, remote). See docs/03-settings.md"
   fi
   disp="$(jq -r '.dispatch // empty' "$repo/.deliver.json" 2>/dev/null || true)"
+  [[ -n $disp ]] || disp="$(jq -r '.dispatch // empty' "${DELIVER_HOME:-$HOME/.deliver}/config.json" 2>/dev/null || true)"   # the user's own config
   if [[ ${disp:-munder} == munder ]]; then
-    pass "run mode: Munder Difflin floor (${disp:+set in .deliver.json}${disp:-the default}) — give /deliver to Michael in the app"
+    pass "run mode: Munder Difflin floor (${disp:+chosen}${disp:-the default}) — give /deliver to Michael in the app"
     [[ ${md_missing:-0} == 1 ]] && fail "this repo runs on the Munder Difflin floor but the app is not installed — scripts/init.sh --munder --hive <dir> --repo $repo, or \"dispatch\": \"subagent\" in .deliver.json"
     [[ "$(jq -r '.munder.model // empty' "$repo/.deliver.json" 2>/dev/null)" == "" ]] && note "seats run on the kit's default model (munder.model: sonnet) — set munder.model to choose another; never the app's default"
   else
-    pass "run mode: Claude Code subagents (dispatch: $disp, chosen in .deliver.json)"
+    pass "run mode: Claude Code subagents (dispatch: $disp, chosen in .deliver.json or ${DELIVER_HOME:-$HOME/.deliver}/config.json)"
   fi
   [[ -f $repo/.work/ACTIVE ]] && note "active job: $(cat "$repo/.work/ACTIVE")"
 fi
