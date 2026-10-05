@@ -40,7 +40,8 @@
 #   dl review <card> approve|changes "<summary>" [--by <role>]   record a reviewer's verdict (needs gate PASS + QA pass);
 #                                  a card with "reviewers": [...] needs every one of them to approve the same commit
 #   dl integrate <card>            --no-ff merge into the job branch → merged (needs gate PASS + QA pass +
-#                                  review approve, all on the current commit; exit 3 on conflict)
+#                                  review approve, all on the current commit; exit 3 on conflict, 5 when the
+#                                  repo's commit rules refuse the merge message)
 #   dl verify-all                  run verify_full in the integration worktree
 #   dl ship                        deliver per merge_mode: human|semi|auto → push + PR (+ auto-merge / merge on green),
 #                                  local → merge into the base branch. Needs verify-all PASS + report.md (phase closing)
@@ -244,14 +245,14 @@ project_config_template() { # what the repo says (detect.mjs: test script, lockf
      roles: {},
      munder: ($c[0].munder | {hive_root: (if $d.hive_root != "" then $d.hive_root else .hive_root end), model, seat_timeout_minutes, app_command: ""}),
      tracker: {kind: "local"},
-     commit: $c[0].commit}'
+     commit: ($c[0].commit + (if ($c[0].commit.convention // "auto") == "auto" then {convention: $d.commit_convention} else {} end))}'
 }
 ensure_project_config() { # writes .deliver.json when the repo has none; says so
   [[ -f $ROOT/.deliver.json ]] && return 0
   local t; t="$(project_config_template)" || die "could not write $ROOT/.deliver.json"
   printf '%s\n' "$t" > "$ROOT/.deliver.json"
   echo "created $ROOT/.deliver.json — this repo's /deliver settings, read from the repo:" >&2
-  node "$BIN_DIR/detect.mjs" "$ROOT" | jq -r --slurpfile f "$ROOT/.deliver.json" '.evidence | to_entries[] | . as $e | ($f[0] | if $e.key == "hive_root" then .munder.hive_root else .[$e.key] end | tostring) as $v | "  \($e.key): \(if $v == "" then "(empty)" else $v end) — \($e.value)"' >&2 2>/dev/null || true
+  node "$BIN_DIR/detect.mjs" "$ROOT" | jq -r --slurpfile f "$ROOT/.deliver.json" '.evidence | to_entries[] | . as $e | ($f[0] | if $e.key == "hive_root" then .munder.hive_root elif $e.key == "commit" then .commit.convention else .[$e.key] end | tostring) as $v | "  \($e.key): \(if $v == "" then "(empty)" else $v end) — \($e.value)"' >&2 2>/dev/null || true
   echo "Edit it any time; dl config shows what applies." >&2
 }
 cmd_config() { # dl config [--init] — the settings that apply in this repo (kit defaults ⊕ .deliver.json)
@@ -286,6 +287,12 @@ cmd_new() {
   done
   # Older .deliver.json files said merge_strategy: pr|local.
   settings="$(jq 'if .merge_strategy then .merge_mode = (if .merge_strategy == "local" then "local" else (.merge_mode // "human") end) | del(.merge_strategy) else . end' <<<"$settings")"
+  # Commit messages follow the repo's convention (dl's own merges, the devs', QA's): "auto" is resolved now, from the tools that
+  # enforce one (commitlint, commitizen, a commit-msg hook) or the history, and kept with the job.
+  if [[ "$(jq -r '.commit.convention // "auto"' <<<"$settings")" == auto ]]; then
+    local cc; cc="$(node "$BIN_DIR/detect.mjs" --commit "$ROOT")" || cc='{"convention":"plain","source":"not detected"}'
+    settings="$(jq --argjson c "$cc" '.commit.convention = $c.convention | .commit.convention_source = $c.source' <<<"$settings")"
+  fi
   local mm; mm="$(jq -r .merge_mode <<<"$settings")"
   [[ " $MERGE_MODES " == *" $mm "* ]] || die "merge_mode must be one of: $MERGE_MODES (got '$mm')"
   local tk kinds; tk="$(jq -r '.tracker.kind // "local"' <<<"$settings")"
@@ -475,11 +482,15 @@ cmd_phase() {
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       executing)
+        # only after planning (the readiness review and its freeze), or back from later for a fix card — never skipping them
+        [[ " planning awaiting_plan_approval executing integrating closing awaiting_pr_merge " == *" $cur "* ]] \
+          || refuse 1 "executing comes after planning — the readiness review and the plan first (now: $cur)"
         if [[ "$(jq -r .settings.gates.plan "$JOBJ")" != false && "$(jq -r '.gates.plan.status // ""' "$JOBJ")" != approved ]]; then
           refuse 1 "the plan is not approved by the human (gates.plan). Ask them; record with dl approve plan"
         fi
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       integrating)
+        [[ $cur == executing || $cur == integrating ]] || refuse 1 "integrating comes after executing (now: $cur)"
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
           || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl card add …) or drop it (dl card <id> state archived \"<reason>\")" ;;
       closing)
@@ -677,6 +688,15 @@ cmd_wt() {
       # 1. checks + reservation, atomically (two parallel assignments can't take the same seat or exceed a limit);
       # 2. worktree + setup outside the lock, so a slow setup never holds up other assignments.
       assert_frozen
+      # QA's work is recorded before anyone else touches the card: commits that changed only QA tests since QA's last record
+      # (or since the gate) would otherwise be counted as the dev's at the next gate.
+      local qh gh hb base; qh="$(card_get "$card" '.qa.head // ""')"; gh="$(card_get "$card" '.gate.head // ""')"
+      hb="$(git -C "$ROOT" rev-parse -q --verify "refs/heads/$branch" 2>/dev/null || true)"
+      base="$qh"; [[ -n $base ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null || base="$gh"
+      if [[ -n $hb && -n $base && $hb != "$base" ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null \
+         && [[ -n "$(git -C "$ROOT" diff --name-only "$base" "$hb")" && -z "$(outside "$base" "$hb" "$(card_get "$card" '.qa_scope // []')")" ]]; then
+        refuse 1 "$card has QA commits that are not recorded yet (${base:0:9}..${hb:0:9} changed only QA tests) — record QA's round first: dl qa $card pass|fail \"<AC results>\", then send the card on"
+      fi
       local prev; prev="$(card_get "$card" '{state, attempts, seat}')"
       _wt_reserve "$card" "$flag" || exit $?
       if [[ ! -d $path ]]; then
@@ -839,6 +859,20 @@ cmd_gate() {
       else echo "ok    every commit names its role"; fi
     fi
 
+    # Commit messages follow the repo's convention: its own commitlint when installed (exactly its rules), else the
+    # Conventional Commits header. The dev's and QA's commits alike — a merge later would carry them into the history.
+    if [[ "$(setting commit.convention)" == conventional ]]; then
+      local cl="$ROOT/node_modules/.bin/commitlint" bad
+      if [[ -x $cl ]]; then
+        if bad="$(cd "$ROOT" && "$cl" --from "$JOB_BRANCH" --to "$(git -C "$wt" rev-parse HEAD)" --cwd "$ROOT" 2>&1 </dev/null)"; then echo "ok    commit messages pass the repo's commitlint"
+        else echo "FAIL  commit messages refused by the repo's commitlint — rewrite them (one commit: git commit --amend -m '<message>'; several: git reset --soft $JOB_BRANCH, then one commit):"; sed 's/^/        /' <<<"$bad" | awk 'NR<=25'; fail=1; fi
+      else
+        bad="$(git -C "$wt" log --no-merges --format='%h %s' "$JOB_BRANCH..HEAD" | grep -vE '^[0-9a-f]+ (feat|fix|chore|docs|test|tests|refactor|perf|build|ci|style|revert)(\([^)]*\))?!?: [^A-Z]' || true)"
+        if [[ -n $bad ]]; then echo "FAIL  commits not in this repo's Conventional Commits format ('<type>(<scope>): <summary>', e.g. 'feat: add notch change (T-01)'); rewrite them (one commit: git commit --amend -m '<message>'; several: git reset --soft $JOB_BRANCH, then one commit):"; sed 's/^/        /' <<<"$bad" | awk 'NR<=10'; fail=1
+        else echo "ok    commit messages follow Conventional Commits ($(setting commit.convention_source))"; fi
+      fi
+    fi
+
     echo "----- verify: $verify"
     local runner=(bash -c "$verify")
     command -v timeout >/dev/null && runner=(timeout "$tmo" bash -c "$verify")
@@ -930,6 +964,35 @@ cmd_review() {
   echo "review: $card $by $verdict  (card: $(card_get "$card" .review.verdict)$(card_get "$card" '.review.pending | if length>0 then ", waiting for " + join(", ") else "" end'))"
 }
 
+# Every commit dl makes follows the repo's commit convention, and the repo's own hooks (commitlint, a commit-msg hook) are
+# never skipped. dl_merge tries the message forms that fit, in order; a hook that refuses one is not a conflict.
+#   dl_merge <dir> <branch> <what: T-01 | job/…> <title>   → 0 merged · 3 conflict · 5 every message refused (hook output on stderr)
+dl_merge() {
+  local dir=$1 br=$2 what=$3 title=$4 conv tpl key low subj m out last="" msgs=() trailer=""
+  conv="$(setting commit.convention)"; tpl="$(setting commit.merge_message)"
+  key="$( [[ $what == T-* ]] && card_get "$what" '.tracker.key // ""' || true)"
+  low="$(printf '%s' "${title:0:1}" | tr '[:upper:]' '[:lower:]')${title:1}"   # a Conventional subject starts lower-case
+  [[ $what == T-* && "$(setting commit.role_in_message)" == true ]] && trailer=$'\n\n'"Role: michael (integration of $(card_get "$what" '.seat // .role'))"
+  if [[ -n $tpl ]]; then
+    m="${tpl//\{card\}/$what}"; m="${m//\{title\}/$title}"; m="${m//\{key\}/$key}"; msgs+=("$m")
+  fi
+  local w=$what; [[ $what == job/* ]] && w="${what#job/}"; w="${w%%-[a-z]*}"   # job/JOB-20261005-1952-slug → JOB-20261005-1952
+  subj="merge $w${key:+ ($key)} - $low"   # ASCII only: cut to the header limit (100) without splitting a character
+  if [[ $conv == conventional ]]; then msgs+=("chore: ${subj:0:93}" "chore(deliver): ${subj:0:84}" "Merge $what${key:+ ($key)}: $title")
+  else msgs+=("Merge $what${key:+ ($key)}: $title" "chore: ${subj:0:93}"); fi
+  for m in ${msgs[@]+"${msgs[@]}"}; do
+    if out="$(git_locked -C "$dir" merge --no-ff -q -m "$m$trailer" "$br" 2>&1)"; then return 0; fi
+    if [[ -n "$(git -C "$dir" diff --name-only --diff-filter=U 2>/dev/null)" ]]; then git_locked -C "$dir" merge --abort 2>/dev/null || true; return 3; fi
+    git_locked -C "$dir" merge --abort 2>/dev/null || true
+    last="$out"; log_event merge-refused "$what: \"$m\" — $(tr '\n' ' ' <<<"$out" | cut -c1-160)"
+  done
+  printf '%s\n' "$last" >&2
+  return 5
+}
+merge_refused_msg() { # what Michael does when the repo refuses every merge message dl can write
+  echo "NOT A CONFLICT: the repo refused dl's merge commit for $1 (its commit-msg hook / commitlint, output above) — the card is fine; do not re-dispatch the dev. Write a merge message this repo accepts and run it again: dl jobset '.settings.commit.merge_message=\"<message with {card} {title} {key}>\"' (record it for the next jobs: commit.merge_message in .deliver.json), then dl $2" >&2
+}
+
 cmd_integrate() {
   load_job; assert_frozen
   local card=${1:-}; [[ -n $card ]] || die "usage: dl integrate <card>"
@@ -946,13 +1009,13 @@ cmd_integrate() {
     || refuse 1 "$card: no Lead review approval on commit ${head:0:9} — review, then: dl review $card approve"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
     || refuse 1 "the integration worktree has uncommitted changes — nothing may be written there by hand (git -C $IWT status)"
-  local mmsg="Merge $card: $title"
-  [[ "$(setting commit.role_in_message)" == true ]] && mmsg+=$'\n\n'"Role: michael (integration of $(card_get "$card" '.seat // .role'))"
-  if ! git_locked -C "$IWT" merge --no-ff -q -m "$mmsg" "$branch" >/dev/null 2>&1; then
-    git_locked -C "$IWT" merge --abort 2>/dev/null || true
+  local rc=0; dl_merge "$IWT" "$branch" "$card" "$title" || rc=$?
+  if [[ $rc == 3 ]]; then
     log_event integrate "$card CONFLICT"
     echo "CONFLICT: $card conflicts with $JOB_BRANCH. Re-dispatch the dev (dl wt add $card) with: run 'git merge $JOB_BRANCH' in the worktree, resolve, run verify, commit. Then gate + review + integrate again." >&2
     exit 3
+  elif [[ $rc != 0 ]]; then
+    log_event integrate "$card REFUSED by the repo's commit rules"; merge_refused_msg "$card" "integrate $card"; exit 5
   fi
   card_set "$card" '(.cards[] | select(.id==$id)).state="merged"'
   local path="$JOB_DIR/wt/$card"; [[ -d $path ]] && git_locked -C "$ROOT" worktree remove --force "$path"
@@ -1002,7 +1065,9 @@ cmd_ship() {
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
     [[ $on == "$base" ]] || refuse 1 "merge_mode=local merges into '$base' in the main checkout, which is on '${on:-detached}'. Switch it to $base (or merge yourself: git merge --no-ff $JOB_BRANCH)"
     [[ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ]] || refuse 1 "the main checkout has uncommitted changes — commit or stash them first"
-    git -C "$ROOT" merge --no-ff -q -m "Merge $JOB_BRANCH: $(jq -r .title "$JOBJ")" "$JOB_BRANCH" || { git -C "$ROOT" merge --abort 2>/dev/null; refuse 3 "merge into $base conflicted (base moved on) — merged nothing"; }
+    local rc=0; dl_merge "$ROOT" "$JOB_BRANCH" "$JOB_BRANCH" "$(jq -r .title "$JOBJ")" || rc=$?
+    [[ $rc == 3 ]] && refuse 3 "merge into $base conflicted (base moved on) — merged nothing"
+    [[ $rc == 0 ]] || { merge_refused_msg "$JOB_BRANCH" ship; exit 5; }
     jq_inplace "$JOBJ" --arg t "$(now)" --arg c "$(git -C "$ROOT" rev-parse HEAD)" '.shipped=true | .delivery={"mode":"local","commit":$c,"at":$t} | .phase="done"'
     reset_stop_guard; log_event ship "local merge into $base"; echo "SHIPPED: $JOB_BRANCH merged into $base (local). Phase: done — dl cleanup"
     return 0

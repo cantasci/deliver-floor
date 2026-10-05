@@ -365,6 +365,13 @@ contains "force push denied" "$(bg 'git push -f origin job/x')" "rc=2"
 contains "job branch push allowed for Michael" "$(bg "git -C x push -u origin job/$JOB")" "rc=0"
 contains "an agent outside a card worktree cannot push" "$(bg 'git push origin job/x--T-01' "$R/.work/$JOB/wt/T-01")" "rc=2"
 contains "rm -rf .work denied" "$(bg 'rm -rf .work')" "rc=2"
+W1="$R/.work/$JOB/wt/T-01"
+contains "the main session (Michael / Claude itself, subagent mode) cannot reset a card worktree" "$(bg "git -C $W1 reset --hard 30388981")" "rc=2"
+contains "…nor merge into one, even with its shell cd'ed inside" "$(bg "git merge job/$JOB" "$W1")" "rc=2"
+contains "…nor commit in the integration worktree" "$(bg "cd $R/.work/$JOB/wt/_integration && git commit -qm x")" "rc=2"
+contains "…reading is fine (git log / status / diff)" "$(bg "git -C $W1 log --oneline")" "rc=0"
+contains "the dev subagent commits in its own worktree" "$(bg "git commit -qm 'feat: x (T-01)'" "$W1" abc123)" "rc=0"
+contains "git in the repo outside .work is not affected" "$(bg "git commit -qm x" "$R")" "rc=0"
 contains "subagent dl integrate denied" "$(bg 'dl integrate T-01' "$R" abc123)" "rc=2"
 contains "subagent dl status allowed" "$(bg 'dl status' "$R" abc123)" "rc=0"
 contains "Michael dl gate allowed" "$(bg '/x/bin/dl gate T-01')" "rc=0"
@@ -910,6 +917,63 @@ out="$("$DL" gate T-01 2>&1)"; contains "role_in_message on: a commit without 'R
 git -C "$WC" commit -q --amend -m "T-01: one" -m "Role: backend#1"
 expect_ok "…and passes with the trailer" "$DL" gate T-01
 "$DL" jobset '.settings.commit.role_in_message=false'
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+echo "commit messages follow the repo's convention — the devs', QA's and dl's own merges; its hooks are never skipped"
+for k in cl hist plain; do mkdir -p "$TMP/cc-$k" && git -C "$TMP/cc-$k" init -q -b main; done
+echo 'export default { extends: ["@commitlint/config-conventional"] };' > "$TMP/cc-cl/commitlint.config.mjs"
+for i in 1 2 3 4; do git -C "$TMP/cc-hist" commit -q --allow-empty -m "feat: thing $i"; git -C "$TMP/cc-plain" commit -q --allow-empty -m "Thing $i"; done
+contains "detected: commitlint config → Conventional Commits, enforced" "$(node "$HERE/kit/skills/deliver/bin/detect.mjs" --commit "$TMP/cc-cl")" '{"convention":"conventional","source":"commitlint.config.mjs (commitlint)","enforced":true}'
+contains "…from the history when no tool enforces it" "$(node "$HERE/kit/skills/deliver/bin/detect.mjs" --commit "$TMP/cc-hist" | jq -r .source)" "the history: 4 of the last 4 commits"
+contains "…plain when neither says so" "$(node "$HERE/kit/skills/deliver/bin/detect.mjs" --commit "$TMP/cc-plain" | jq -r .convention)" "plain"
+# phases cannot be skipped: no executing straight from readiness (no readiness review, no freeze), no integrating before it
+SK="$TMP/skip"; mkdir -p "$SK" && git -C "$SK" init -q -b main && (cd "$SK" && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i && "$DL" new s x >/dev/null 2>&1 \
+  && "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null && "$DL" phase readiness >/dev/null)
+contains "readiness → executing is refused (the readiness review and its freeze cannot be skipped)" "$(cd "$SK" && "$DL" phase executing 2>&1)" "executing comes after planning"
+contains "readiness → integrating is refused" "$(cd "$SK" && "$DL" phase integrating 2>&1)" "integrating comes after executing"
+CC="$TMP/cc-cl"; cd "$CC"
+# the repo's commit-msg hook (what husky + commitlint do): Conventional Commits only — also for merges
+printf '#!/bin/sh\ngrep -qE "^(feat|fix|chore|test|docs|refactor)(\\(.+\\))?: [a-z]" "$1" || { echo "commitlint: subject may not be empty / type must be one of [feat, fix, …]" >&2; exit 1; }\n' > .git/hooks/commit-msg; chmod +x .git/hooks/commit-msg
+echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm "chore: init"
+out="$("$DL" new "Notch change" "x" 2>&1)"; CJ="$CC/.work/$(cat .work/ACTIVE)"
+contains "dl new keeps the detected convention with the job" "$(jq -c '{c:.settings.commit.convention,s:.settings.commit.convention_source}' "$CJ/job.json")" '{"c":"conventional","s":"commitlint.config.mjs (commitlint)"}'
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+contains "role cards give the devs and QA this repo's commit format" "$(cat "$CJ/roles/backend.md")" "this repo uses Conventional Commits (commitlint.config.mjs (commitlint))"
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$CJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"Notch change",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$CJ/board.json"
+"$DL" phase executing >/dev/null; WC="$("$DL" wt add T-01)"
+mkdir -p "$WC/src" && echo 1 > "$WC/src/a" && git -C "$WC" add -A && git -C "$WC" -c core.hooksPath=/dev/null commit -qm "T-01: notch change"
+out="$("$DL" gate T-01 2>&1)"; contains "the gate refuses a card commit outside the repo's convention (a hook skipped is caught too)" "$out" "commits not in this repo's Conventional Commits format"
+git -C "$WC" commit -q --amend -m "feat: notch change (T-01)"
+expect_ok "…and passes once it follows it" "$DL" gate T-01
+mkdir -p "$WC/it" && echo t > "$WC/it/t" && git -C "$WC" add -A && git -C "$WC" commit -qm "test: integration tests for AC-1 (T-01)"
+out="$("$DL" wt add T-01 2>&1)"; contains "QA's commits must be recorded before the card goes anywhere else (dl wt add refuses)" "$out" "has QA commits that are not recorded yet"
+"$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve "ok" >/dev/null
+out="$("$DL" integrate T-01 2>&1)"; rc=$?
+[[ $rc == 0 && "$(git -C "$CJ/wt/_integration" log -1 --format=%s)" == "chore: merge T-01 - notch change" ]] \
+  && ok "dl's own merge commit follows the convention and passes the repo's hook: \"chore: merge T-01 - notch change\"" || bad "integrate under commitlint: rc=$rc $out / $(git -C "$CJ/wt/_integration" log -1 --format=%s)"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null
+# a hook that refuses every form dl can write: not a conflict — the hook's words, exit 5, the card untouched
+printf '#!/bin/sh\ncase "$(head -1 "$1")" in *TICKET-*) exit 0 ;; esac; echo "commit-msg: every subject needs a TICKET-n reference" >&2; exit 1\n' > .git/hooks/commit-msg
+"$DL" new "Second" "x" >/dev/null 2>&1; CJ="$CC/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$CJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"Second",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$CJ/board.json"
+"$DL" phase executing >/dev/null; WC="$("$DL" wt add T-01)"
+mkdir -p "$WC/src" "$WC/it" && echo 2 > "$WC/src/b" && git -C "$WC" add src && git -C "$WC" commit -qm "feat: second TICKET-1 (T-01)"
+"$DL" gate T-01 >/dev/null; echo t > "$WC/it/u" && git -C "$WC" add it && git -C "$WC" commit -qm "test: second TICKET-1 (T-01)"
+"$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve "ok" >/dev/null
+out="$("$DL" integrate T-01 2>&1)"; rc=$?
+[[ $rc == 5 && $out == *"every subject needs a TICKET-n reference"* && $out == *"NOT A CONFLICT"* && $out != *"Re-dispatch the dev"* ]] \
+  && ok "a hook refusing every merge message: exit 5, the hook's own words, 'not a conflict' — never 're-dispatch the dev'" || bad "refused merge: rc=$rc $out"
+[[ "$(jq -r '.cards[0].state' "$CJ/board.json")" == review && -z "$(git -C "$CJ/wt/_integration" status --porcelain)" ]] && ok "…nothing half-merged, the card still waits in review" || bad "state after refused merge"
+"$DL" jobset '.settings.commit.merge_message="chore: merge {card} TICKET-1 — {title}"' >/dev/null
+out="$("$DL" integrate T-01 2>&1)"; rc=$?
+[[ $rc == 0 && "$(git -C "$CJ/wt/_integration" log -1 --format=%s)" == "chore: merge T-01 TICKET-1 — Second" ]] && ok "…Michael sets commit.merge_message and the merge goes through, the hook still run" || bad "merge_message: rc=$rc $out"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "tracker factory: a new tracker is one file in bin/trackers/"

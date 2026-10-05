@@ -33,6 +33,18 @@ if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]].*push' <<<"$cmd"; then
   fi
 fi
 
+# Card branches change only through the roles that own them (the dev, QA — in their worktree) and dl (gate, integrate).
+# Michael never rewrites them by hand: a merge, reset or commit of his in a card or integration worktree makes the next
+# gate count it as the dev's, and hides what happened from the record. He records the step with dl and re-dispatches.
+# "Not a role" = no subagent id and not a floor seat — the main Claude session (Michael, or Claude itself) even when its
+# shell has cd'ed into a card worktree.
+if [[ -z "$(hk .agent_id)" ]] && ! is_floor_seat && grep -Eq '(^|[^[:alnum:]_-])git[[:space:]]([^;&|]*[[:space:]])?(merge|reset|rebase|commit|cherry-pick|revert|checkout|switch|restore|stash|am|apply|pull|rm|mv|add|tag)([[:space:]]|$)' <<<"$cmd"; then
+  wtcwd="$(hkp .cwd)"
+  if grep -Eq '\.work/[^[:space:]]*/wt/' <<<"$cmd" || [[ $wtcwd == */.work/JOB-*/wt/* ]]; then
+    deny "card and integration worktrees change only through the roles and dl — never by hand. Record what happened (dl qa | dl review | dl card <id> note), then re-dispatch the role that owns the change (dl wt add <card>) or let dl merge (dl integrate)."
+  fi
+fi
+
 grep -Eq 'rm[[:space:]]+-[[:alpha:]]*[rR][[:alpha:]]*[[:space:]]+([^;&|]*[[:space:]])?[^[:space:]]*\.work(/|[[:space:]]|$)' <<<"$cmd" \
   && deny ".work/ must not be deleted — job state lives there. Use 'dl cleanup'."
 

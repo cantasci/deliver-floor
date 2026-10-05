@@ -4,6 +4,24 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.4.1 — 2026-10-05
+
+**Commit messages follow your repo's convention**
+- Detected when `.deliver.json` is written and at every `dl new`: commitlint (config file, `package.json`, a husky or
+  lefthook commit-msg hook), commitizen, a pre-commit commit-msg hook, else the history (`commit.convention`:
+  `conventional` | `plain`, with where it came from).
+- `dl`'s own merge commits follow it (`chore: merge T-01 - notch change`) and go through the repo's hooks, never around
+  them. When a hook refuses every form `dl` can write, `dl integrate` stops with exit 5 and the hook's own words —
+  **not a conflict**, so no developer is sent to fix a card that is fine; Michael sets `commit.merge_message` and goes on.
+  Before, any refused merge was reported as a conflict, with the hook's output hidden.
+- Phases cannot be skipped: `executing` only after planning (the readiness review and its freeze), `integrating` only
+  after executing.
+- Card branches change only through the roles and `dl`, in every mode: the main session (Michael, or Claude itself in
+  subagent mode) is refused git that changes a card or integration worktree, and `dl wt add` refuses while QA's commits
+  are unrecorded — so a QA fix is never counted as the developer's.
+- The gate checks every card commit against the convention — with the repo's own commitlint when it is installed — and
+  the role cards tell the developers and QA the exact format.
+
 ## 0.4.0 — 2026-10-05
 
 **Settings**

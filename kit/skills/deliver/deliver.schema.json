@@ -64,6 +64,8 @@
     "commit": {
       "type": "object",
       "properties": {
+        "convention": { "enum": ["auto", "conventional", "plain"], "default": "auto", "description": "The repo's commit message convention — every commit of a job follows it (the devs', QA's and dl's own merges; the gate checks the card's commits, with the repo's own commitlint when installed). Detected when this file is written: commitlint / commitizen / a commit-msg hook, else the history." },
+        "merge_message": { "type": "string", "default": "", "description": "The message of dl's merge commits, when the convention's default forms are refused by the repo's hooks: {card}, {title} and {key} (the tracker key) are filled in. Empty: dl picks a form that fits the convention." },
         "ai_attribution": { "type": "boolean", "default": false, "description": "false: commits must not carry AI attribution (the gate checks)." },
         "role_in_message": { "type": "boolean", "default": false, "description": "true: every card commit carries a 'Role: <seat>' trailer." }
       }
