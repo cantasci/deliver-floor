@@ -14,7 +14,8 @@ calculator (REQ-06-02) are built on. It is small: one card.
 
 - C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.
   A notch is one step on this scale. Input is trimmed with `String.prototype.trim()` and case-insensitive ("bbb+" = "BBB+").
-- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError.
+- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object
+  such as `new String('A')` is a non-string. No banking-regulation or internal-policy constraint applies to this slice.
 - C3. The result is signed: downgrade positive, upgrade negative, unchanged 0.
 - C4. No UI, CLI or printed output; other parts of the POC import the function.
 

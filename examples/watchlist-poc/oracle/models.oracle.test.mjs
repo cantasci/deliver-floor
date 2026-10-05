@@ -23,4 +23,5 @@ test("C1/C2: trimmed, case-insensitive; every invalid input throws RangeError", 
   assert.throws(() => notchChange("BBB+", "ZZZ"), RangeError);
   assert.throws(() => notchChange("", "A"), RangeError);
   assert.throws(() => notchChange(5, "A"), RangeError);
+  assert.throws(() => notchChange(new String("A"), "A"), RangeError);
 });
