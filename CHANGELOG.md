@@ -16,6 +16,12 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
   while the developers waited).
 - Fixed: `dl next` and `dl md-inbox` read tab-separated fields, and bash merged empty ones — values shifted into the wrong
   place.
+- Fixed (live floor run): parallel `dl jobset` calls lost each other's changes — now one at a time; a seal read while
+  another `dl` was writing looked like tampering — now checked again once the writer is done; `dl md-release` sends each
+  seat home once.
+
+Measured on the floor, same request with two developer seats: 26.5 min → **10.1 min**; each card assigned → merged in about
+3 minutes.
 
 ## 0.5.0 — 2026-10-05
 
