@@ -1,0 +1,37 @@
+2026-10-06T01:15:10Z	new	Rating notch change
+2026-10-06T01:15:21Z	jobset	stack: .stack=["node"]
+2026-10-06T01:15:22Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notchChange domain logic in src/ratings/notch.mjs"},{"role":"backend","agent":"backend-dev","model":"haiku","why":"Staffing: \"The backend developer works on the haiku model\"; builds RATING_SCALE and notchChange"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack node: plain Node ESM (.mjs) code"}]
+2026-10-06T01:15:22Z	jobset	assumptions: .assumptions += ["Single-card job: one backend card covers RATING_SCALE and notchChange; no tech-lead, security or other specialist roles apply (no auth/PII/external input beyond rating strings)"]
+2026-10-06T01:15:22Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T01:15:22Z	phase	readiness
+2026-10-06T01:18:43Z	agent	business-analyst ad00a82a: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Provide the shared notch-change primitive: the signed number of steps between two ratings on th
+2026-10-06T01:19:20Z	readiness	30 items: 18 decided, 8 n/a, 4 open
+2026-10-06T01:19:26Z	decide	DEL-docs: JSDoc on RATING_SCALE and notchChange stating the sign convention and the RangeError; no README change — Implementation detail with no behaviour impact; the exports are the contract other cards import, and the README already documents the layout
+2026-10-06T01:19:27Z	decide	X-scale-immutability: RATING_SCALE is a frozen array: Object.freeze([...19 ratings]) — The contract says best-first ordered list; freezing stops consumers from silently changing the scale notchChange relies on; behaviour is unchanged
+2026-10-06T01:19:27Z	decide	X-error-message: Validate previous first, then current; RangeError message names the argument and a safely formatted value (typeof for non-strings, no string concatenation of Symbols); tests assert the type only — C2 fixes only the type; a safe message avoids a TypeError masking the required RangeError
+2026-10-06T01:19:27Z	decide	X-test-coverage: Cover all 19 ratings (adjacent +1/-1), extremes AAA<->CCC- = +/-18, the three REQ-06-02 examples, trim and case, and each C2 invalid class for both arguments; no numeric coverage threshold — Request sets no threshold; the input domain is small so full enumeration is cheap
+2026-10-06T01:19:49Z	readiness	30 items: 21 decided, 9 n/a, 0 open
+2026-10-06T01:19:50Z	freeze	readiness + architecture frozen (2fe985c4007d)
+2026-10-06T01:19:50Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T01:19:50Z	phase	planning
+2026-10-06T01:21:20Z	agent	business-analyst aadca626: # Plan ## Goal Deliver the notch-change primitive for the Watchlist POC: a pure, synchronous ES module `src/ratings/notch.mjs` that exports `RATING_SCALE` (the 
+2026-10-06T01:22:51Z	agent	ecc:architect ae240f79: ```json [ { "tmp_id": "B1", "title": "ratings: add RATING_SCALE and notchChange(previous, current) in src/ratings/notch.mjs, with unit tests", "role": "backend"
+2026-10-06T01:24:27Z	agent	business-analyst a66d5b19: === T-01 === # T-01: ratings: add RATING_SCALE and notchChange(previous, current) in src/ratings/notch.mjs, with unit tests ## User story As a developer buildin
+2026-10-06T01:25:02Z	phase	executing
+2026-10-06T01:25:02Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-06T01:28:15Z	agent	backend-dev a27ddf8c: Perfect! My work is complete. Let me create the final summary. ## Summary **Status:** done **Commit:** bf2863fa5bd4d6b0046e124ae2096a066eebcd9b **Verify:** pass
+2026-10-06T01:28:17Z	gate	T-01 PASS
+2026-10-06T01:29:24Z	agent	qa-tester a1afa114: All 18 acceptance criteria pass, and both `qa_verify` and `npm test` exit 0. I committed the tests as `e129b9b`, but the push did not happen. The repo has no `o
+2026-10-06T01:29:27Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-18 pass: test/integration/ratings/notch.int.test.mjs (21 tests) against dev commit bf2863f; qa_verify and npm test exit 0
+2026-10-06T01:29:47Z	agent	ecc:typescript-reviewer a6a569ad: {"verdict":"approve","blocking":[],"nits":["In /tmp/claude-0/live/k050c/models/repo/.work/JOB-20261006-0115-rating-notch-change/wt/T-01/test/ratings/notch.test.
+2026-10-06T01:29:54Z	review	T-01 reviewer approve — approve, no blocking items; nits: use \u escapes for NBSP/BOM in dev tests, name String objects in @throws JSDoc
+2026-10-06T01:29:55Z	integrate	T-01 merged
+2026-10-06T01:30:01Z	followup	T-01: Reviewer nits (non-blocking): notchChange JSDoc @throws does not name String objects; dev tests use literal invisible NBSP/BOM characters instead of \u escapes (AC-10, AC-14) and AC-10 repeats (' A ','A'); QA's !(e instanceof TypeError) check in AC-16 is vacuous (RangeError is never a TypeError)
+2026-10-06T01:30:01Z	phase	integrating
+2026-10-06T01:30:02Z	verify-all	PASS
+2026-10-06T01:30:04Z	phase	closing
+2026-10-06T01:31:10Z	agent	business-analyst afd0417e: I checked all 18 ACs against the merged code and none failed: 17 are met and AC-16 is partial. The partial status is not a defect. AC-16 says the tests assert o
+2026-10-06T01:31:27Z	followup	T-01: Dev test title 'previous is checked first' (AC-16) asserts only the error type; rename or comment that the order is confirmed in review
+2026-10-06T01:31:30Z	learn	reviewer (project, review-evidence): When an AC hands a check to code review (e.g. validation order, message safety), state the result of that check explicitly in the review verdict
+2026-10-06T01:31:30Z	knowledge	lessons/standards committed to job/JOB-20261006-0115-rating-notch-change: .deliver/knowledge/lessons.md 
+2026-10-06T01:31:30Z	ship	local merge into main

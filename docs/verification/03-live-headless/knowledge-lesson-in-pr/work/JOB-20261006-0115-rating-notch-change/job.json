@@ -1,0 +1,136 @@
+{
+  "id": "JOB-20261006-0115-rating-notch-change",
+  "title": "Rating notch change",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-models.md\nRating notch change (Watchlist POC — one task)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch\ncalculator (REQ-06-02) are built on. It is small: one card.\n\n## Requirement\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 (part) | Given a previous and a current rating, the system computes the notch change between them | BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.\n  A notch is one step on this scale. Input is trimmed with `String.prototype.trim()` and case-insensitive (\"bbb+\" = \"BBB+\").\n- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object\n  such as `new String('A')` is a non-string. No banking-regulation or internal-policy constraint applies to this slice.\n- C3. The result is signed: downgrade positive, upgrade negative, unchanged 0.\n- C4. No UI, CLI or printed output; other parts of the POC import the function.\n\n## Contract\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer (C3).\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.\n\n## Staffing\n\n- The backend developer works on the **haiku** model.",
+  "created": "2026-10-06T01:15:10Z",
+  "repo": "/tmp/claude-0/live/k050c/models/repo",
+  "phase": "done",
+  "stack": [
+    "node"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-06-02: notchChange domain logic in src/ratings/notch.mjs"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "model": "haiku",
+      "why": "Staffing: \"The backend developer works on the haiku model\"; builds RATING_SCALE and notchChange"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack node: plain Node ESM (.mjs) code"
+    }
+  ],
+  "assumptions": [
+    "Single-card job: one backend card covers RATING_SCALE and notchChange; no tech-lead, security or other specialist roles apply (no auth/PII/external input beyond rating strings)"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261006-0115-rating-notch-change",
+  "integration_worktree": "/tmp/claude-0/live/k050c/models/repo/.work/JOB-20261006-0115-rating-notch-change/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "9cc539fc7ece2b01680059222d0ec263f4013c2f",
+    "log": "/tmp/claude-0/live/k050c/models/repo/.work/JOB-20261006-0115-rating-notch-change/gates/verify-all-013001.log",
+    "at": "2026-10-06T01:30:02Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 3,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "npm test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      ".claude/settings.local.json",
+      ".env",
+      ".venv",
+      "node_modules"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "f79168555fad3ea07c3c0d1a25bc34be61676a37",
+    "at": "2026-10-06T01:31:30Z"
+  },
+  "frozen": {
+    "readiness_sha256": "2fe985c4007d6c67cbd7ab4c8007620c79477602aa229512ababf4fe6e935fef",
+    "at": "2026-10-06T01:19:50Z"
+  },
+  "followups": [
+    {
+      "text": "Reviewer nits (non-blocking): notchChange JSDoc @throws does not name String objects; dev tests use literal invisible NBSP/BOM characters instead of \\u escapes (AC-10, AC-14) and AC-10 repeats (' A ','A'); QA's !(e instanceof TypeError) check in AC-16 is vacuous (RangeError is never a TypeError)",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T01:30:01Z"
+    },
+    {
+      "text": "Dev test title 'previous is checked first' (AC-16) asserts only the error type; rename or comment that the order is confirmed in review",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T01:31:27Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "42cc6d58ca5059fc614e429eaa80aa79fc979389",
+    "shared_pr": ""
+  }
+}

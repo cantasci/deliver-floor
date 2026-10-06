@@ -1,0 +1,115 @@
+# gate: T-01  attempt: 1  2026-10-06T01:28:17Z
+ok    on job/JOB-20261006-0115-rating-notch-change--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/integration/ratings/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/*.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE is an array of 19 ratings
+ok 1 - AC-1: RATING_SCALE is an array of 19 ratings
+  ---
+  duration_ms: 2.621045
+  type: 'test'
+  ...
+# Subtest: AC-2: RATING_SCALE is frozen
+ok 2 - AC-2: RATING_SCALE is frozen
+  ---
+  duration_ms: 0.547955
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange returns a non-Promise integer
+ok 3 - AC-3: notchChange returns a non-Promise integer
+  ---
+  duration_ms: 0.175999
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange(BBB+, BB+) returns 3 (downgrade)
+ok 4 - AC-4: notchChange(BBB+, BB+) returns 3 (downgrade)
+  ---
+  duration_ms: 0.104649
+  type: 'test'
+  ...
+# Subtest: AC-5: notchChange(BB+, BBB+) returns -3 (upgrade)
+ok 5 - AC-5: notchChange(BB+, BBB+) returns -3 (upgrade)
+  ---
+  duration_ms: 0.129216
+  type: 'test'
+  ...
+# Subtest: AC-6: notchChange(A, A) returns 0 (unchanged)
+ok 6 - AC-6: notchChange(A, A) returns 0 (unchanged)
+  ---
+  duration_ms: 0.10237
+  type: 'test'
+  ...
+# Subtest: AC-7: All 361 pairs follow j - i pattern
+ok 7 - AC-7: All 361 pairs follow j - i pattern
+  ---
+  duration_ms: 0.516473
+  type: 'test'
+  ...
+# Subtest: AC-8: Adjacent pairs return ±1
+ok 8 - AC-8: Adjacent pairs return ±1
+  ---
+  duration_ms: 0.114307
+  type: 'test'
+  ...
+# Subtest: AC-9: Scale endpoints are 18 notches apart
+ok 9 - AC-9: Scale endpoints are 18 notches apart
+  ---
+  duration_ms: 0.551562
+  type: 'test'
+  ...
+# Subtest: AC-10: Padded inputs behave like trimmed ratings
+ok 10 - AC-10: Padded inputs behave like trimmed ratings
+  ---
+  duration_ms: 0.387038
+  type: 'test'
+  ...
+# Subtest: AC-11: Case-insensitive matching
+ok 11 - AC-11: Case-insensitive matching
+  ---
+  duration_ms: 1.27308
+  type: 'test'
+  ...
+# Subtest: AC-12: Non-string primitives throw RangeError
+ok 12 - AC-12: Non-string primitives throw RangeError
+  ---
+  duration_ms: 0.519802
+  type: 'test'
+  ...
+# Subtest: AC-13: Objects throw RangeError (no coercion)
+ok 13 - AC-13: Objects throw RangeError (no coercion)
+  ---
+  duration_ms: 0.414831
+  type: 'test'
+  ...
+# Subtest: AC-14: Empty or whitespace-only strings throw RangeError
+ok 14 - AC-14: Empty or whitespace-only strings throw RangeError
+  ---
+  duration_ms: 0.190476
+  type: 'test'
+  ...
+# Subtest: AC-15: Unknown ratings throw RangeError
+ok 15 - AC-15: Unknown ratings throw RangeError
+  ---
+  duration_ms: 0.32071
+  type: 'test'
+  ...
+# Subtest: AC-16: When both invalid, previous is checked first; never TypeError
+ok 16 - AC-16: When both invalid, previous is checked first; never TypeError
+  ---
+  duration_ms: 0.227383
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 69.531843
+ok    verify passed

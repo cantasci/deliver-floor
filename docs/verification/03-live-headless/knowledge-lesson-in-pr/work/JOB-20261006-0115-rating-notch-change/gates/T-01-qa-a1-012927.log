@@ -1,0 +1,137 @@
+# qa_verify: node --test test/integration/ratings/*.test.mjs
+TAP version 13
+# Subtest: module exposes exactly RATING_SCALE and notchChange, no default export
+ok 1 - module exposes exactly RATING_SCALE and notchChange, no default export
+  ---
+  duration_ms: 1.772464
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE has the 19 ratings, best first, ASCII signs only
+ok 2 - AC-1: RATING_SCALE has the 19 ratings, best first, ASCII signs only
+  ---
+  duration_ms: 0.501491
+  type: 'test'
+  ...
+# Subtest: AC-2: RATING_SCALE is frozen and rejects every mutation with TypeError
+ok 3 - AC-2: RATING_SCALE is frozen and rejects every mutation with TypeError
+  ---
+  duration_ms: 0.471937
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange returns a synchronous integer number, +0 for unchanged
+ok 4 - AC-3: notchChange returns a synchronous integer number, +0 for unchanged
+  ---
+  duration_ms: 3.184667
+  type: 'test'
+  ...
+# Subtest: AC-4: BBB+ -> BB+ is a downgrade of 3
+ok 5 - AC-4: BBB+ -> BB+ is a downgrade of 3
+  ---
+  duration_ms: 3.249557
+  type: 'test'
+  ...
+# Subtest: AC-5: BB+ -> BBB+ is an upgrade of -3
+ok 6 - AC-5: BB+ -> BBB+ is an upgrade of -3
+  ---
+  duration_ms: 0.181733
+  type: 'test'
+  ...
+# Subtest: AC-6: A -> A is unchanged (0)
+ok 7 - AC-6: A -> A is unchanged (0)
+  ---
+  duration_ms: 0.174073
+  type: 'test'
+  ...
+# Subtest: AC-7: all 361 pairs return j - i and are antisymmetric
+ok 8 - AC-7: all 361 pairs return j - i and are antisymmetric
+  ---
+  duration_ms: 0.690476
+  type: 'test'
+  ...
+# Subtest: AC-8: the 18 adjacent pairs are +1 forward and -1 backward
+ok 9 - AC-8: the 18 adjacent pairs are +1 forward and -1 backward
+  ---
+  duration_ms: 0.39926
+  type: 'test'
+  ...
+# Subtest: AC-9: extremes are 18 and -18 and nothing is outside -18..18
+ok 10 - AC-9: extremes are 18 and -18 and nothing is outside -18..18
+  ---
+  duration_ms: 1.728364
+  type: 'test'
+  ...
+# Subtest: AC-10: padded inputs behave like the trimmed rating
+ok 11 - AC-10: padded inputs behave like the trimmed rating
+  ---
+  duration_ms: 0.215651
+  type: 'test'
+  ...
+# Subtest: AC-11: matching is case-insensitive
+ok 12 - AC-11: matching is case-insensitive
+  ---
+  duration_ms: 0.28203
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string primitives throw RangeError in both positions
+ok 13 - AC-12: non-string primitives throw RangeError in both positions
+  ---
+  duration_ms: 0.626365
+  type: 'test'
+  ...
+# Subtest: AC-13: non-string objects (incl. String objects) throw RangeError, no coercion
+ok 14 - AC-13: non-string objects (incl. String objects) throw RangeError, no coercion
+  ---
+  duration_ms: 0.298214
+  type: 'test'
+  ...
+# Subtest: AC-14: empty and whitespace-only strings throw RangeError
+ok 15 - AC-14: empty and whitespace-only strings throw RangeError
+  ---
+  duration_ms: 0.210306
+  type: 'test'
+  ...
+# Subtest: AC-15: unknown ratings throw RangeError (incl. look-alikes and prototype keys)
+ok 16 - AC-15: unknown ratings throw RangeError (incl. look-alikes and prototype keys)
+  ---
+  duration_ms: 0.418163
+  type: 'test'
+  ...
+# Subtest: AC-16: both arguments invalid still gives RangeError, never TypeError
+ok 17 - AC-16: both arguments invalid still gives RangeError, never TypeError
+  ---
+  duration_ms: 0.166554
+  type: 'test'
+  ...
+# Subtest: Edge: extra arguments are ignored
+ok 18 - Edge: extra arguments are ignored
+  ---
+  duration_ms: 0.053606
+  type: 'test'
+  ...
+# Subtest: AC-17: source has no import/require/console/process (comments included)
+ok 19 - AC-17: source has no import/require/console/process (comments included)
+  ---
+  duration_ms: 0.510544
+  type: 'test'
+  ...
+# Subtest: AC-17: valid and invalid calls write nothing to stdout or stderr
+ok 20 - AC-17: valid and invalid calls write nothing to stdout or stderr
+  ---
+  duration_ms: 23.94581
+  type: 'test'
+  ...
+# Subtest: AC-17: package.json declares no dependencies or devDependencies
+ok 21 - AC-17: package.json declares no dependencies or devDependencies
+  ---
+  duration_ms: 0.260127
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 110.886746
