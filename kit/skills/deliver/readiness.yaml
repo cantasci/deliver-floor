@@ -6,6 +6,11 @@
 # area: always | backend | frontend | mobile | data | integration | ui     (derived from the selected roles + request)
 # requires_role: when the item is DECIDED (not n_a), this role must be on the job — it is how the decision gets
 #   checked by the right ECC specialist (security → ecc:security-reviewer, a11y → ecc:a11y-architect, …)
+# ask: human — the item shapes the product (scope, architecture, UI, data, integrations, deployment). It is settled only
+#   by the request's own words (decided/n_a with a quote from the request) or by the human's answer — which Michael, the
+#   single point of contact, asks for and records (dl clarify). A repo file, a convention or silence is never enough: when
+#   the request does not say it, the BA marks the item open, owner business, and the repo's conventions are at most one of
+#   the options. The BA never asks the human; it raises the item to Michael.
 # Format: the same small YAML subset as roles.yaml.
 
 items:
@@ -18,6 +23,7 @@ items:
     q: "Who uses it (roles/personas), and what may each role see or do?"
   - id: PRD-scope
     area: always
+    ask: human
     q: "What is explicitly in scope and out of scope for this delivery?"
   - id: PRD-acceptance
     area: always
@@ -43,21 +49,34 @@ items:
   # ---- architecture -------------------------------------------------------------------------------------------------
   - id: ARC-style
     area: always
+    ask: human
     q: "Architecture style: monolith, modular monolith, microservices, library? Where does this change live?"
   - id: ARC-components
     area: always
+    ask: human
     q: "Every component (service, BFF, app, library, worker, database) with its stack, repo path and owning role — written to readiness.json → architecture."
+  - id: ARC-ui
+    area: always
+    ask: human
+    q: "Is there a user interface — none, web, desktop or mobile app? Who uses it, and with which stack?"
   - id: ARC-layer
-    area: backend
-    q: "Which layer owns the logic: BFF/API gateway, core/domain service, shared library, client?"
+    area: always
+    ask: human
+    q: "Which layer owns the logic: BFF/API gateway or other middleware, core/domain service, shared library, client? Is there an API, and for whom?"
   - id: ARC-stack
     area: always
-    q: "Languages, frameworks and runtime versions — and are new dependencies allowed (licences)? From the repo's code or the request (quoted). A repo without code and a request that names no language → the best fit for the requirements, never a default: open, owner pm, with the evidence the request gives (the libraries, tools, platforms and data sources it names) and the alternatives — Michael decides it with that evidence quoted."
+    q: "Languages, frameworks and runtime versions From the repo's code or the request (quoted). A repo without code and a request that names no language → the best fit for the requirements, never a default: open, owner pm, with the evidence the request gives (the libraries, tools, platforms and data sources it names) and the alternatives — Michael decides it with that evidence quoted."
+  - id: ARC-deps
+    area: always
+    ask: human
+    q: "May the delivery add new dependencies or libraries (which, under which licences), or must it stay on what the repo already uses?"
   - id: ARC-data
-    area: data
-    q: "What data is stored, in which store, with which schema and migrations; who owns it?"
+    area: always
+    ask: human
+    q: "Is there a database or other store? What data is stored, in which store, with which schema and migrations; who owns it?"
   - id: ARC-integration
-    area: integration
+    area: always
+    ask: human
     q: "Which external systems are called — protocol, auth, rate limits, timeouts, retries, failure behaviour?"
   - id: ARC-async
     area: backend
@@ -124,6 +143,7 @@ items:
     q: "Which checks must pass to merge (lint, typecheck, tests, security scans)?"
   - id: DEL-deploy
     area: always
+    ask: human
     q: "How and where is it deployed or consumed; feature flags; rollback; migration order?"
   - id: DEL-docs
     area: always

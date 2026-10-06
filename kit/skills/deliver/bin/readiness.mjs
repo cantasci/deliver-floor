@@ -89,6 +89,21 @@ function quoteError(i, job) {
   return miss.length ? `quote not found in the request${/\.\w+\b/.test(src) ? " or the named file" : ""}: "${miss[0].slice(0, 80)}" — quote the exact words, or make the item open` : null;
 }
 
+// An item that shapes the product (`ask: human` in readiness.yaml) is settled by the request's own words or by the human —
+// never by a repo file, a convention or an inference. (Seen live: a seed repo's "pure functions, no I/O" in CLAUDE.md was
+// taken as the whole product's architecture — no UI, no database, no API, no fetchers — and none of it was asked.)
+const askHuman = () => new Set(catalog().filter((c) => c.ask === "human").map((c) => c.id));
+const ASK_HUMAN = 'shapes the product (scope · architecture · UI · data · integrations · deployment): it is settled only by the request\'s own words (quote them) or by the human\'s answer, which Michael asks for and records (dl clarify). A repo file, a convention or silence is not enough — make it open, owner "business", for Michael to ask, and offer the repo\'s conventions as one of the options';
+function humanError(i, job) {
+  const src = String(i.source ?? "");
+  if (/^\s*human:/i.test(src)) return null;
+  if (/^\s*pm:/i.test(src)) return `decided by the PM, but it ${ASK_HUMAN}`;
+  const fr = String(i.quote ?? "").split(/\s*(?:…|\.\.\.)\s*/).map(norm).filter(Boolean);
+  const req = norm(job.request ?? "");
+  if (fr.length && fr.every((f) => req.includes(f))) return null;
+  return `${i.status} ${fr.length ? "from words that are not in the request" : "without quoting the request"} — it ${ASK_HUMAN}`;
+}
+
 export function check(jobDir) {
   const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
   const file = join(jobDir, "readiness.json");
@@ -99,8 +114,10 @@ export function check(jobDir) {
   if (!Array.isArray(items)) return { errors: ["readiness.json: items must be an array"], open: [], items: [] };
   const byId = new Map(items.map((i) => [i.id, i]));
   for (const c of applicable(job)) if (!byId.has(c.id)) errors.push(`${c.id} (${c.q}) is not answered`);
-  const known = new Set(catalog().map((c) => c.id));
+  const known = new Set(catalog().map((c) => c.id)), human = askHuman();
   for (const i of items) {
+    if (human.has(i.id) && (i.status === "decided" || i.status === "n_a")) { const e = humanError(i, job); if (e) errors.push(`${i.id}: ${e}`); }
+    if (human.has(i.id) && i.status === "open" && i.owner === "pm") errors.push(`${i.id}: open for the PM, but it ${ASK_HUMAN}`);
     if (!i.id) { errors.push("an item has no id"); continue; }
     if (!known.has(i.id) && !String(i.id).startsWith("X-")) errors.push(`${i.id}: unknown id (extra items start with "X-")`);
     if (!["decided", "n_a", "open"].includes(i.status)) errors.push(`${i.id}: status must be decided | n_a | open`);
@@ -157,7 +174,7 @@ export function decide(jobDir, id, decision, rationale) { // the PM closes an im
   const i = items.find((x) => x.id === id);
   if (!i) throw new Error(`no readiness item ${id}`);
   if (i.status !== "open") throw new Error(`${id} is not open`);
-  if (i.owner !== "pm") throw new Error(`${id} belongs to the business — only the human answers it (dl clarify)`);
+  if (i.owner !== "pm" || askHuman().has(id)) throw new Error(`${id} belongs to the business — only the human answers it (dl clarify)`);
   i.history = [...(i.history ?? []), { status: i.status, question: i.question, at: new Date().toISOString() }];
   Object.assign(i, { status: "decided", answer: decision, source: `pm: michael ${new Date().toISOString().slice(0, 10)} — ${rationale}` });
   writeFileSync(file, JSON.stringify(raw, null, 2) + "\n");
