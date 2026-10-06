@@ -513,8 +513,27 @@ expect_ok "md-done records the seat's report" "$DL" md-done backend#1 "T-03 buil
 contains "…in the event log" "$(tail -1 "$R/.work/$JOB/events.log")" "md-done	T-03 backend#1: T-03 built"
 echo "Write the readiness review." > "$TMP/ba.md"
 out="$("$DL" md-send ba readiness "$TMP/ba.md" --agent business-analyst 2>&1)"; contains "plan steps go to a seat too (BA: readiness)" "$out" "readiness → ba#1"
-contains "…working in the repo, writing its analysis to out/" "$(jq -r .body "$(ls -t "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)")" "Work in: $R"
-"$DL" md-done ba#1 "readiness in out/readiness.json" >/dev/null
+bao="$(jq -r .body "$(ls -t "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)")"
+contains "…working in the repo" "$bao" "Work in: $R"
+contains "…the order names the one answer file (md-done checks it)" "$bao" "Your answer goes to exactly one file: $R/.work/$JOB/out/readiness-ba.md (or $R/.work/$JOB/out/readiness-ba.json"
+contains "…and md-send prints it" "$out" "answer: $R/.work/$JOB/out/readiness-ba.md|.json"
+[[ $body != *"Your answer goes to exactly one file"* ]] && ok "a dev's order names no answer file (the commits are the work)" || bad "dev order names an answer file"
+n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"
+out="$("$DL" md-done ba#1 "readiness written" 2>&1)"; rc=$?
+[[ $rc != 0 && $out == *"ba#1's done for readiness is not accepted: $R/.work/$JOB/out/readiness-ba.md (or .json) does not exist"* ]] \
+  && ok "md-done refuses a done whose answer file is not there (run 53: the write was refused, done was sent)" || bad "md-done without file: rc=$rc $out"
+contains "…the seat is told, in the task's conversation" "$(jq -c '{s:.subject, c:.conversation}' "$(ls -t "$HIVE_ROOT"/agents/god/outbox/*.json | head -1)")" "{\"s\":\"readiness — your done is not accepted\",\"c\":\"deliver-$JOB-readiness\"}"
+contains "…and keeps the task" "$(jq -r '.munder.seats["ba#1"].task' "$R/.work/$JOB/job.json")" "readiness"
+contains "…logged" "$(tail -1 "$R/.work/$JOB/events.log")" "md-done-refused	readiness ba#1"
+echo '{"items": [' > "$R/.work/$JOB/out/readiness-ba.json"
+contains "an answer that is not valid JSON is refused too" "$("$DL" md-done ba#1 "readiness written" 2>&1)" "readiness-ba.json is not valid JSON"
+echo '{"items": []}' > "$R/.work/$JOB/out/readiness-ba.json"
+out="$("$DL" md-done ba#1 "readiness written" 2>&1)"; contains "with the file there, md-done records it and prints the file" "$out" "ba#1 is free (readiness done) — answer: $R/.work/$JOB/out/readiness-ba.json"
+"$DL" md-send ba readiness "$TMP/ba.md" >/dev/null 2>&1
+[[ ! -e $R/.work/$JOB/out/readiness-ba.json && -n "$(ls "$R/.work/$JOB/out/.prev/" | grep '^readiness-ba.json.')" ]] \
+  && ok "a new order for the same task moves the earlier answer aside — never taken for the new one" || bad "stale answer: $(ls -a "$R/.work/$JOB/out" "$R/.work/$JOB/out/.prev" 2>&1)"
+contains "…so a done without a new answer is refused" "$("$DL" md-done ba#1 "again" 2>&1)" "is not accepted"
+echo "# readiness" > "$R/.work/$JOB/out/readiness-ba.md"; "$DL" md-done ba#1 "again" >/dev/null
 # A seat reaped by the floor is noticed and re-seated
 w1="$(jq -r '.munder.seats["backend#1"].worker' "$R/.work/$JOB/job.json")"
 jq --arg w "$w1" '.agents[$w].status = "gone"' "$HIVE_ROOT/registry.json" > "$TMP/reg" && mv "$TMP/reg" "$HIVE_ROOT/registry.json"
@@ -599,7 +618,15 @@ jq -n --arg w "$wq" --arg t "$qtask" '{id:"m1", from:$w, act:"inform", subject:(
 out="$("$DL" md-inbox)"; contains "md-inbox shows a report with the sender as its seat" "$out" "qa#1 · inform · done $qtask qa#1"
 [[ ! -e $GI/m1.json && -f $GI/.done/m1.json ]] && ok "…and archives exactly what it showed" || bad "inbox archive"
 contains "a report archived without md-done is flagged as unrecorded" "$("$DL" md-inbox)" "UNRECORDED  qa#1 reported \"done $qtask\""
+echo "6/6 pass" > "$(jq -r '.munder.seats["qa#1"].out' "$R/.work/$JOB/job.json").md"
 "$DL" md-done qa#1 "6/6" >/dev/null; contains "…until it is recorded" "$("$DL" md-inbox)" "(no new messages)"
+contains "md-wait with no open task and an empty inbox does not wait" "$("$DL" md-wait 5)" "nothing to wait for"
+"$DL" md-send qa#1 plan-check "$TMP/qa.md" >/dev/null 2>&1
+( sleep 2; jq -n --arg w "$wq" '{id:"m2", from:$w, act:"inform", subject:"done plan-check qa#1", body:"ok", created_at:"2999-01-01T00:00:01.000Z"}' > "$GI/.m2.tmp" && mv "$GI/.m2.tmp" "$GI/m2.json" ) &
+t0=$SECONDS; out="$("$DL" md-wait 30)"; dt=$((SECONDS - t0)); wait
+[[ $out == *"done plan-check qa#1"* && $dt -lt 10 ]] && ok "md-wait returns as a message arrives and shows it (${dt}s)" || bad "md-wait: ${dt}s $out"
+contains "…a timed-out wait says so" "$("$DL" md-wait 1)" "(waited 1s — run dl md-wait again)"
+echo ok > "$(jq -r '.munder.seats["qa#1"].out' "$R/.work/$JOB/job.json").md"; "$DL" md-done qa#1 "ok" >/dev/null
 nlive="$("$DL" md-seats | grep -cE '^[^ ]+ +(live|starting) ')"
 n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-release >/dev/null
 [[ $nlive == "$nseat" && $(( $(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l) - n0 )) == "$nlive" ]] && ok "md-release sends every live seat home" || bad "release orders"
@@ -618,6 +645,10 @@ contains "a seat may not write the main checkout, even with the job in its trans
 contains "a seat may not write board.json" "$(AGENT_ID=worker-seat-x wg "$R/.work/$JOB/board.json" "$R" "" "$TR")" "rc=2"
 contains "Michael may not move his inbox files (md-inbox reads them)" "$(AGENT_ID=god bg 'H=/h; mv $H/agents/god/inbox/*.json $H/agents/god/inbox/.done/')" "rc=2"
 contains "…reading them is fine" "$(AGENT_ID=god bg 'cat /h/agents/god/inbox/*.json')" "rc=0"
+contains "Michael may not poll his inbox with a loop of his own (md-wait)" "$(AGENT_ID=god bg 'I=/h/agents/god/inbox; for i in $(seq 1 55); do n=$(ls $I | wc -l); [ $n -gt 0 ] && break; sleep 10; done')" "rc=2"
+contains "nobody searches the whole disk (run 53: find / ran into the 2-minute timeout)" "$(AGENT_ID=god bg "find / -name 'readiness-ba.json' 2>/dev/null")" "rc=2"
+contains "…also spelled find -L /* or find \"/\"" "$(AGENT_ID=worker-seat-x bg 'find -L "/" -name x; find /* -name y')" "rc=2"
+contains "…a search of a named directory is fine" "$(AGENT_ID=god bg 'ls /; find /tmp/job/out -name x')" "rc=0"
 contains "…and a seat still files its own inbox" "$(AGENT_ID=worker-seat-x bg 'mv inbox/m1.json inbox/.done/')" "rc=0"
 contains "a seat may not hand out work orders" "$(AGENT_ID=worker-seat-x bg '"$DL" md-send backend T-03 o.md')" "rc=2"
 contains "…nor record decisions" "$(AGENT_ID=worker-seat-x bg '"$DL" pm-decide x y')" "rc=2"
@@ -695,6 +726,8 @@ contains "…logged" "$(grep $'\troles-defaults\t' "$(dirname "$PJ")/events.log"
 contains "…a QA count somebody gave is kept" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[1]'
 (cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":1},{"role":"qa","agent":"qa-tester","why":"y"}]' >/dev/null)
 contains "…one developer seat: one QA seat" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[null]'
+(cd "$PC" && FORCE_COLOR=1 AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":2},{"role":"qa","agent":"qa-tester","why":"y"}]' >/dev/null 2>&1)
+contains "…also where the terminal forces colour (the floor's, run 54: node coloured the count and dl could not read it)" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[2]'
 # parallel jobsets (Michael's parallel tool calls) must not lose each other's changes — seen live
 (cd "$PC" && for k in a b c d e f; do AGENT_ID=god "$DL" jobset ".assumptions += [\"$k\"]" >/dev/null & done; wait)
 contains "six jobsets at once: none is lost (they run one at a time)" "$(jq -c '.assumptions | map(select(length == 1)) | sort' "$PJ")" '["a","b","c","d","e","f"]'
@@ -1212,6 +1245,7 @@ SH="$TMP/setuphome"; SP="$TMP/setupproj"; mkdir -p "$SH" "$SP" && (cd "$SP" && g
 su() { echo "{\"cwd\":\"$SP\"}" | CLAUDE_CONFIG_DIR="$SH" CLAUDE_PLUGIN_ROOT="$HERE/kit" CLAUDE_PLUGIN_DATA="$SH/data" CLAUDE_PROJECT_DIR="$SP" node "$HERE/kit/hooks/deliver/setup.mjs"; }
 out="$(su)"; jq -e . >/dev/null <<<"$out" && ok "setup speaks JSON to Claude Code (systemMessage + additionalContext)" || bad "setup output: $out"
 contains "first session after install: the env a plugin cannot set goes into ~/.claude/settings.json" "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$SH/settings.json")" ".work/"
+contains "…GateGuard lets the seats write their answer files (run 53: every out/ file was refused once)" "$(jq -r .env.GATEGUARD_EXEMPT_GLOBS "$SH/settings.json")" ".work/*/out/**"
 contains "…and the user is told to restart once" "$(jq -r .systemMessage <<<"$out")" "restart Claude Code once"
 contains "a /deliver repo gets no AI attribution — in that repo only (.claude/settings.local.json)" "$(jq -c .attribution "$SP/.claude/settings.local.json")" '{"commit":"","pr":""}'
 [[ ! -e $SH/settings.json || "$(jq -r '.attribution // "none"' "$SH/settings.json")" == none ]] && ok "…never in the user's global settings" || bad "global attribution changed"

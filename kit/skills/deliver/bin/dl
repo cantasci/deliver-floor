@@ -60,9 +60,11 @@
 #   dl md-reseat <seat> "<why>" [--model m]   a failed or stuck seat gets a new person (another model for a credit error);
 #                                  also spelled dl md-hire --reseat <seat>
 #   dl md-send <seat|role> <task> <prompt-file> [--agent a]   a work order to a seat: role card + agent instructions + task
-#   dl md-done <seat> "<summary>"  record the seat's "done <task>" report; the seat is free again
+#   dl md-done <seat> "<summary>"  record the seat's "done <task>" report; the seat is free again — refused (the seat is told)
+#                                  while the answer file its work order named is missing, empty or invalid JSON
 #   dl md-release                  end of job: send every seat home
 #   dl md-inbox                    your inbox on the floor: each new message once (sender as seat), then archived; flags unrecorded reports
+#   dl md-wait [seconds]           wait for the inbox (default 110 s, back within a second of a message), then md-inbox
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
 #   dl jobs                        jobs known on this machine (registry)
 #   dl seats                       role seats: busy / IDLE, and the card each idle seat should take
@@ -1476,6 +1478,8 @@ to work in. How you work:
 - Never run state-changing dl commands (phase, gate, qa, review, integrate, card, wt …) — Michael records every result.
 - When the task is finished, write ONE outbox message to god: act "inform", subject "done <task id> $1", body = 3–6 lines
   (what you did, files, commits, your verdict), in_reply_to = the order's id, conversation = the order's conversation.
+- An order that names an answer file: write that file first, and report done only after the write succeeded — never in
+  the same step as the write (a hook can refuse a write; a done for a file that is not there is not accepted).
 - Blocked or unsure: act "query" to god with the question — do not guess.
 - Your work is finished only when Michael sends you the release message: then, and only then, send act "done" to god.
   Until then, after each task, wait for the next order. That is what "when finished" means for this seat.
@@ -1555,7 +1559,7 @@ cmd_md_reseat() {
   [[ -n $w ]] || refuse 1 "$seat was never hired — dl md-hire"
   rm -f "$hive/spawn-requests/$req.json"
   case $st in live|starting) md_order "$w" "$hive" "release — your seat is re-seated" "Your seat $seat is given to someone else ($why). Send act \"done\" to god now." "deliver-$JOB-reseat" ;; esac
-  jq_inplace "$JOBJ" --arg s "$seat" --arg m "$model" '.munder.seats[$s] += {worker:null, task:null, since:null} | if $m != "" then .munder.seats[$s].model = $m else . end'
+  jq_inplace "$JOBJ" --arg s "$seat" --arg m "$model" '.munder.seats[$s] += {worker:null, task:null, since:null, out:null} | if $m != "" then .munder.seats[$s].model = $m else . end'
   log_event md-reseat "$seat ($st${task:+, was on $task}): $why${model:+ → model $model}"
   pm_decision "re-seated $seat${model:+ on $model}${task:+ (its task $task is sent again)}" "$why"   # never a question: listed in the PR
   cmd_md_hire "$seat"
@@ -1643,29 +1647,67 @@ cmd_md_send() {
   [[ -n $agent ]] || refuse 1 "role '$role' is not selected for this job"
   local rolecard="$JOB_DIR/roles/$role.md"; [[ -f $rolecard ]] || cmd_roles >/dev/null
   mkdir -p "$JOB_DIR/out"
-  local w body; w="$(seat_get "$seat" .worker)"
-  body="$(printf '# Work order %s for %s\n\nWork in: %s\nAnalysis, plans and verdicts (no code) go to files under: %s/out/\nWhen finished: inform to god, subject "done %s %s".\n\n---\n\n## Your role card\n\n' \
-            "$task" "$seat" "$dir" "$JOB_DIR" "$task" "$seat"
+  # Every task but code answers in one file, named here: md-done accepts the report only once that file is there (run 53:
+  # a seat reported "done" for a write a hook had refused, and Michael searched the whole disk for it for two minutes).
+  local w body out="" outline f; w="$(seat_get "$seat" .worker)"
+  if [[ ! ( $iscard == 1 && $role == "$(card_get "$task" .role)" ) && ! $task =~ ^T-[0-9]+-tests$ ]]; then
+    out="$JOB_DIR/out/$task-$role"
+    for f in "$out.md" "$out.json"; do   # an earlier answer to the same task is kept, never taken for the new one
+      [[ -e $f ]] && { mkdir -p "$JOB_DIR/out/.prev"; mv "$f" "$JOB_DIR/out/.prev/$(basename "$f").$(date -u +%Y%m%dT%H%M%S)"; }
+    done
+    outline="Your answer goes to exactly one file: $out.md (or $out.json when the task asks for JSON). Write it before you report done, and check the write succeeded — a done without that file is not accepted."
+  else
+    outline="Your commits are your work; analysis or notes (no code) go to files under: $JOB_DIR/out/"
+  fi
+  body="$(printf '# Work order %s for %s\n\nWork in: %s\n%s\nWhen finished: inform to god, subject "done %s %s".\n\n---\n\n## Your role card\n\n' \
+            "$task" "$seat" "$dir" "$outline" "$task" "$seat"
           cat "$rolecard"
           printf '\n---\n\n## Instructions for this task — %s\n\n' "$(agent_call "$agent")"; agent_body "$agent"
           printf '\n---\n\n## The task\n\n'; cat "$pfile")"
   md_order "$w" "$hive" "$task — $role ($seat)" "$body" "deliver-$JOB-$task"
-  jq_inplace "$JOBJ" --arg s "$seat" --arg k "$task" --arg t "$(now)" '.munder.seats[$s] += {task:$k, since:$t, orders:((.munder.seats[$s].orders // 0) + 1)}'
+  jq_inplace "$JOBJ" --arg s "$seat" --arg k "$task" --arg t "$(now)" --arg o "$out" \
+    '.munder.seats[$s] += {task:$k, since:$t, out:(if $o == "" then null else $o end), orders:((.munder.seats[$s].orders // 0) + 1)}'
   [[ $iscard == 1 ]] && card_set "$task" '(.cards[] | select(.id==$id)).md_workers += [{"role":$r,"seat":$s,"worker":$w,"at":$t}]' \
     --arg r "$role" --arg s "$seat" --arg w "$w" --arg t "$(now)"
   log_event md-send "$task $seat ($agent) → $w"
-  echo "$task → $seat ($w)"
+  echo "$task → $seat ($w)${out:+ — answer: $out.md|.json}"
 }
 
 cmd_md_done() {
   load_job
   local seat=${1:-} summary=${2:-}
   [[ -n $seat && -n $summary ]] || die "usage: dl md-done <seat> \"<the seat's summary>\""
-  local task; task="$(seat_get "$seat" .task)"
+  local task out f="" why=""; task="$(seat_get "$seat" .task)"; out="$(seat_get "$seat" .out)"
   [[ -n $task ]] || refuse 1 "$seat has no open task"
-  jq_inplace "$JOBJ" --arg s "$seat" --arg t "$(now)" '.munder.seats[$s] += {task:null, since:null, last_done:$t}'
+  if [[ -n $out ]]; then   # the answer file the work order named: there, not empty, and valid JSON when it is .json
+    if [[ -s $out.json ]]; then f=$out.json; jq empty "$f" 2>/dev/null || why="$f is not valid JSON"
+    elif [[ -s $out.md ]]; then f=$out.md
+    else why="$out.md (or .json) does not exist or is empty"; fi
+    if [[ -n $why ]]; then
+      md_order "$(seat_get "$seat" .worker)" "$(md_hive)" "$task — your done is not accepted" \
+        "Your report \"done $task $seat\" is not accepted: $why. A write a hook refused did not happen — read the tool result. Write your answer to $out.md (or $out.json), then report \"done $task $seat\" again." \
+        "deliver-$JOB-$task"
+      log_event md-done-refused "$task $seat: $why"
+      refuse 1 "$seat's done for $task is not accepted: $why — the seat was told and keeps the task; wait for its next report (dl md-wait)"
+    fi
+  fi
+  jq_inplace "$JOBJ" --arg s "$seat" --arg t "$(now)" '.munder.seats[$s] += {task:null, since:null, out:null, last_done:$t}'
   log_event md-done "$task $seat: $summary"
-  echo "$seat is free ($task done)"
+  echo "$seat is free ($task done)${f:+ — answer: $f}"
+}
+
+# Michael waits for his inbox with this, never a loop of his own (run 53: 10-second sleeps, a wait.sh): it returns within a
+# second of a message, then shows it as md-inbox does. The default fits one Bash call (2 min).
+cmd_md_wait() {
+  load_job
+  local max=${1:-110} t=0 hive dir; [[ $max =~ ^[0-9]+$ ]] || die "usage: dl md-wait [seconds — default 110]"
+  hive="$(md_hive)"; dir="$hive/agents/$(md_god "$hive")/inbox"
+  if [[ "$(jq '[.munder.seats // {} | .[] | select(.task != null)] | length' "$JOBJ")" == 0 ]] && ! find "$dir" -maxdepth 1 -name '*.json' 2>/dev/null | grep -q .; then
+    echo "no seat has an open task and the inbox is empty — nothing to wait for"; return 0
+  fi
+  while ! find "$dir" -maxdepth 1 -name '*.json' 2>/dev/null | grep -q . && [[ $t -lt $max ]]; do sleep 1; t=$((t + 1)); done
+  cmd_md_inbox
+  [[ $t -lt $max ]] || echo "(waited ${max}s — run dl md-wait again)"
 }
 
 # Once per seat: a second md-release (parallel calls, seen live) sends nobody home twice.
@@ -1771,7 +1813,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -1936,6 +1978,7 @@ main() {
     md-done) cmd_md_done "$@" ;;
     md-release) cmd_md_release ;;
     md-inbox) cmd_md_inbox ;;
+    md-wait) cmd_md_wait "$@" ;;
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;

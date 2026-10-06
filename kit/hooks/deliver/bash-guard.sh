@@ -15,6 +15,17 @@ if [[ ${AGENT_ID:-} == god ]] && grep -q 'god/inbox' <<<"$cmd" && grep -Eq '(^|[
   deny "read your inbox with \"\$DL\" md-inbox — it shows each message once and archives exactly those. Moving inbox files yourself can file a report unread."
 fi
 
+# Michael waits with dl md-wait, never a loop of his own: run 53 polled with 10-second sleeps and a hand-written wait.sh.
+if [[ ${AGENT_ID:-} == god ]] && grep -q 'god/inbox' <<<"$cmd" && grep -Eq '(^|[^[:alnum:]_-])(sleep|watch|inotifywait)([[:space:]]|$)' <<<"$cmd"; then
+  deny "wait for your inbox with \"\$DL\" md-wait — it returns within a second of a message and shows it (md-inbox)."
+fi
+
+# --- everyone: no search of the whole disk ---------------------------------------------------------------------
+# Run 53: Michael ran find / for a seat's answer file; it hit the 2-minute Bash timeout. The job's files are named.
+if grep -Eq '(^|[^[:alnum:]_-])find([[:space:]]+-[HLP])*[[:space:]]+["'"'"']?/\*?["'"'"']?([[:space:]]|;|\||&|$)' <<<"$cmd"; then
+  deny "searching the whole disk is refused — it outlasts the command timeout. The job's files are under <repo>/.work/<job>/ (dl status prints it); a seat's answer is the file its work order named, and dl md-done prints it."
+fi
+
 # --- git: everyone ---------------------------------------------------------------------------------------------
 if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]].*push' <<<"$cmd"; then
   grep -Eq -- '(--force|--force-with-lease|--mirror|--delete|[[:space:]]-f([[:space:]]|$)|[[:space:]]-d([[:space:]]|$)|[[:space:]]\+[[:alnum:]_/.-]+)' <<<"$cmd" \
@@ -60,7 +71,7 @@ grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*j
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 # dl as a word, a path (…/bin/dl) or the variable the playbook uses ("$DL", ${DL})
 dl_re='(^|[;&|[:space:](/"'"'"'])(dl|\$\{?DL\}?)"?[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
-if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|cleanup)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|md-wait|cleanup)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
 if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then

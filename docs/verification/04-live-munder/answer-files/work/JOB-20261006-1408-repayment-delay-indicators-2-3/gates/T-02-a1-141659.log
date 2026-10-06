@@ -1,0 +1,49 @@
+# gate: T-02  attempt: 1  2026-10-06T14:16:59Z
+ok    on job/JOB-20261006-1408-repayment-delay-indicators-2-3--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/delayCount.mjs","test/indicators/delayCount.test.mjs"] (+ QA tests ["test/integration/indicators/delayCount.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/delayCount.test.mjs
+TAP version 13
+# Subtest: DELAY_COUNT_OPTIONS is exact, ordered and frozen
+ok 1 - DELAY_COUNT_OPTIONS is exact, ordered and frozen
+  ---
+  duration_ms: 5.229706
+  type: 'test'
+  ...
+# Subtest: valid options map to WL
+ok 2 - valid options map to WL
+  ---
+  duration_ms: 0.285997
+  type: 'test'
+  ...
+# Subtest: surrounding whitespace is trimmed
+ok 3 - surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.220665
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError
+ok 4 - invalid strings throw RangeError
+  ---
+  duration_ms: 9.323324
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError
+ok 5 - non-strings throw RangeError
+  ---
+  duration_ms: 4.092568
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 430.306555
+ok    verify passed

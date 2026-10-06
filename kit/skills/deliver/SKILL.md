@@ -397,17 +397,21 @@ Michael `/deliver resume` with `REPO: <repo>`.
    `.work/<job>/prompts/<task>-<role>.md`, then `"$DL" md-send <role|seat> <task> <prompt file> --agent X`.
    `<task>` is the card id for card work (dev, QA, review; QA-WRITE while the dev builds: `T-xx-tests`) or the plan step (`readiness`, `plan`, `cards-<lead role>`,
    `spec-T-xx`, `closing`). The order carries the role card, X's instructions (an ECC or kit agent definition, the skills to
-   load) and your prompt; you choose X and what to load for each task. Tell analysis roles where to write their answer:
-   `.work/<job>/out/<task>-<role>.md|json` (the BA's readiness JSON, the plan, the Lead's cards, the specs, QA and review
-   verdicts) — then copy, check and record it exactly as you would a subagent's answer. Several Agent calls in one message =
+   load) and your prompt; you choose X and what to load for each task. Every task but code answers in one file, and the
+   work order names it: `.work/<job>/out/<task>-<role>.md|json` (the BA's readiness JSON, the plan, the Lead's cards, the
+   specs, QA and review verdicts) — md-send prints it; never name another file in your prompt. Then copy, check and record
+   it exactly as you would a subagent's answer. Several Agent calls in one message =
    several md-send to different seats, all at once.
 3. Each person reports in your inbox with an inform `done <task> <seat>` (or a `query` when blocked: answer it in their
    conversation). **Read your inbox only with `"$DL" md-inbox`** — it shows each new message once, archives exactly those, and
    lists any `UNRECORDED` report (archived but never recorded). Never move inbox files yourself: a glob move files a report that
-   arrived a second earlier unread, and you wait for it forever. Record each report: `"$DL" md-done <seat> "<their summary>"` — the seat is free for the next order — and continue
+   arrived a second earlier unread, and you wait for it forever. Record each report: `"$DL" md-done <seat> "<their summary>"` — the seat is free for the next order, and md-done prints
+   the answer file. While that file is missing, empty or not valid JSON, md-done refuses the report and tells the seat; the
+   seat keeps the task and reports again — never search for the file. Wait for your inbox with `"$DL" md-wait` (back
+   within a second of a message), never a loop of your own. Then continue
    exactly as the phase says (gate, QA, review, integrate …). A seat takes one task at a time; dev cards go to the seat
    `dl wt add` assigned.
-4. While only people on the floor are working you may stop — the inbox wakes you. Questions for the human exist only at the
+4. While only people on the floor are working, wait with `"$DL" md-wait`, or stop — the inbox wakes you. Questions for the human exist only at the
    start (an ASK ME card, `tasks.json` → `humanQA`, for the readiness questions); after that you decide (invariant 7).
 5. After `dl ship` (or when the job is aborted): `"$DL" md-release` — everyone goes home.
 

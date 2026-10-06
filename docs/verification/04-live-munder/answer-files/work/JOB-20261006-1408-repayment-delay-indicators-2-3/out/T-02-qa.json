@@ -1,0 +1,12 @@
+{"verdict":"pass",
+ "tests":["test/integration/indicators/delayCount.integration.test.mjs"],
+ "criteria":[
+  {"ac":"AC-6","status":"pass","evidence":"AC-6: DELAY_COUNT_OPTIONS deep-equals [\"0\",\"1\",\">1\"] in order and is frozen → pass"},
+  {"ac":"AC-7","status":"pass","evidence":"AC-7: valid options map to plain numbers 0, 1, 2 (+ WL range test) → pass"},
+  {"ac":"AC-8","status":"pass","evidence":"AC-8: surrounding whitespace is trimmed first (incl. NBSP) → pass"},
+  {"ac":"AC-9","status":"pass","evidence":"AC-9: invalid strings throw RangeError; case-sensitive/inner whitespace test → pass"},
+  {"ac":"AC-10","status":"pass","evidence":"AC-10: non-strings throw RangeError; no-argument call → pass"},
+  {"ac":"AC-11","status":"pass","evidence":"AC-11: every invalid input throws instanceof RangeError, not TypeError → pass"},
+  {"ac":"AC-12","status":"pass","evidence":"AC-12: statelessness + source imports nothing/no daysWithDelay → pass; qa_verify 11/11 pass on dev commit fa90fa2 (HEAD 609eaad)"}],
+ "failures":[],
+ "notes":"No tests changed in QA-RUN. Out of scope: none."}
