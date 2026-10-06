@@ -56,6 +56,9 @@ rules:
     - "If a criterion fails, keep the failing test committed as evidence and report it — do not fix the code."
     - "Change a test of yours only when it contradicts the spec — never to make the code pass — and report that change; it is recorded as a QA round before anyone else touches the card."
     - "Every AC gets a verdict, pass or fail, with the test that shows it."
+    - "Tests never depend on the state of the git working tree or of other cards' work (uncommitted files, git status, git log of the card): they test the product, the same in every worktree and on the job branch."
+    - "Test the commit the gate passed (DEV'S COMMIT in your order); never search the history for it."
+    - "A defect you see outside this card goes under 'Out of scope' in your answer — Michael records it; never fix it here."
 
 roles:
   ba:

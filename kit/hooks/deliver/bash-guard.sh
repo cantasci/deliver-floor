@@ -24,7 +24,10 @@ if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]].*push' <<<"$cmd"; then
   # Agents may push only their own card branch (job/<JOB>--T-xx…), from inside its worktree; never main, never the job
   # branch, never another card's branch. Michael (dl) pushes card branches and the job branch.
   if is_agent; then
-    own="$(git -C "$(hkp .cwd)" symbolic-ref --short -q HEAD 2>/dev/null || true)"
+    gdir="$(hkp .cwd)"   # the repo git acts on: `git -C <dir> push …` names it, else the shell's directory
+    cdir="$(grep -Eo 'git[[:space:]]+-C[[:space:]]+[^[:space:];&|]+' <<<"$cmd" | awk 'NR==1 {print $3}' | tr -d "\"'")"
+    [[ -n $cdir ]] && { [[ $cdir == /* ]] && gdir="$cdir" || gdir="$gdir/$cdir"; }
+    own="$(git -C "$gdir" symbolic-ref --short -q HEAD 2>/dev/null || true)"
     [[ $own == job/*--T-* ]] || deny "agents push only their own card branch, from inside its worktree (this directory is not a card worktree)."
     grep -Eq "(^|[[:space:]:])(job/[^[:space:]:]*)" <<<"$cmd" || deny "name the branch explicitly: git push origin $own"
     for ref in $(grep -Eo "job/[^[:space:]:]+" <<<"$cmd"); do
@@ -57,7 +60,7 @@ grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*j
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 # dl as a word, a path (…/bin/dl) or the variable the playbook uses ("$DL", ${DL})
 dl_re='(^|[;&|[:space:](/"'"'"'])(dl|\$\{?DL\}?)"?[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
-if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|cleanup)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|review|integrate|verify-all|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|cleanup)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
 if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then

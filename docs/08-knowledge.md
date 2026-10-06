@@ -1,17 +1,20 @@
 # 08 — Knowledge: company standards, memory, code graph, and feeding Munder Difflin
 
-Every role starts from its role card, and the role card carries what the house has learned. Four sources feed it, most
-general first; a later file with the same name overrides an earlier one:
+Every role starts from its role card, and the role card carries what the house has learned. **The source of truth is git**:
+each project keeps its own standards and lessons, an optional shared knowledge repo holds what several projects share, and
+both change only through a PR a human merges. Everything else (the role cards, Munder Difflin's Knowledge Graph and
+MemPalace) is a mirror refreshed from git. Sources, most general first; a later file with the same name wins:
 
-| # | Source | Where | Who writes it |
+| # | Source | Where | How it changes |
 | --- | --- | --- | --- |
-| 1 | **Company standards** | `~/.deliver/knowledge/*.md` — or `DELIVER_KNOWLEDGE=<dir>`, e.g. a cloned `company-standards` repo | architecture/QA/security owners |
-| 2 | **Project standards** | `<repo>/.deliver/knowledge/*.md` (committed with the code) | the team |
-| 3 | **Memory: lessons** | `~/.deliver/knowledge/lessons/<repo>.md` | Michael, at closing: `dl learn <role\|all> "<lesson>"` |
-| 4 | **Code graph** | `<repo>/graphify-out/GRAPH_REPORT.md` | graphify (below) |
+| 1 | **Shared standards** | `<shared repo>/standards/*.md` — `"knowledge": {"repo": "<git url or path>"}` in `.deliver.json` or `~/.deliver/config.json`; `dl new` clones it once and brings it up to date at every job's start | a PR in that repo |
+| 2 | **Local company standards** (older setup) | `~/.deliver/knowledge/*.md` or `DELIVER_KNOWLEDGE=<dir>` | by hand |
+| 3 | **Project standards** | `<repo>/.deliver/knowledge/*.md` | a PR in the project — also the job's own, when Michael promotes a lesson |
+| 4 | **Lessons** | `<repo>/.deliver/knowledge/lessons.md` · `<shared repo>/lessons.md` · this job's proposals | `dl learn` in a job → the job's PR |
+| 5 | **Code graph** | `<repo>/graphify-out/GRAPH_REPORT.md` | graphify (below) |
 
-`dl knowledge list` shows what each role gets; `dl roles` (run on every phase change into readiness/planning) regenerates
-the cards.
+`dl knowledge list` shows what each role gets; `dl knowledge topics` the lesson topics and how many jobs learned each; `dl
+roles` (run on every phase change into readiness/planning) regenerates the cards.
 
 ## 1. A standard
 
@@ -43,16 +46,40 @@ security baseline, accessibility target (WCAG level), definition of done, commit
 
 ## 2. Memory: lessons from earlier jobs
 
-At closing Michael records what went wrong in a way a rule would have prevented — a QA failure that repeated, a blocking
-review item:
+A lesson is what to do differently, **with what happened** — never an opinion. At closing (or the moment it happens) Michael
+records every QA failure, blocking review item, refused merge or blocked card that a rule would have prevented:
 
 ```bash
-dl learn qa "Boundary values of the notch scale (AAA, CCC-) need their own AC tests"
-dl learn all "Spring services: run ./gradlew check, not test — the gate missed a lint failure"
+dl learn qa "verify and qa_verify run test files, never a bare directory" --topic qa-verify-files --card T-01
+dl learn all "Name integration tests after the AC" --topic qa-test-names --evidence "review T-03: tests named t1..t9" --scope shared
+dl learn all "The stop-guard held Michael while three agents worked" --topic stop-guard-wait --evidence "…" --scope kit
 ```
 
-The next jobs' role cards show the last 15 lessons for that role. A lesson that keeps coming back belongs in a standard:
-move it into a `## Must` list and delete it from the lessons file.
+- `--card T-xx` attaches the card's failures from the event log (gate FAIL, QA fail, review "changes", a block, a refused
+  merge); `--evidence` says it in words. A lesson without either is refused.
+- `--topic` is a short slug; Michael reuses one that `dl knowledge topics` lists, so the same lesson is counted, not copied.
+- `--scope`: `project` (default) → `.deliver/knowledge/lessons.md`; `shared` → the shared repo's `lessons.md`, with the
+  project's name; `kit` → a defect of the flow itself, listed in the PR under "Feedback for the deliver kit" (for
+  [deliver-floor issues](https://github.com/cantasci/deliver-floor/issues)), never stored as a rule for the project.
+
+Until the job ships the lessons are **proposed**: they are already in this job's role cards ("proposed by this job"), and
+`dl ship` writes them into the job branch — one commit in the repo's commit format, through its hooks — so the PR shows
+them under "Lessons learned" and merging the PR accepts them. Shared lessons go to a branch `deliver/<JOB>` in the shared
+repo, pushed with a PR (`gh`) of their own. Each lesson in `lessons.md`:
+
+```markdown
+## 2026-10-05 · JOB-20261005-1952-… · qa · topic: qa-verify-files
+verify and qa_verify run test files, never a bare directory
+- evidence: 2026-10-05T11:05:56Z gate: T-01 FAIL
+```
+
+**From lesson to standard.** When `dl learn` records a topic that three jobs have learned and no standard covers yet, it says
+`PROMOTE`. Michael writes the rule: `dl knowledge promote qa-verify-files "<one checkable rule>" --applies-to qa,lead
+[--scope shared]` — a standard file with that `## Must` rule and the lessons behind it under Background, in the same PR. From
+the next job on, every matching role card has it as a `MUST:` rule.
+
+**Follow-ups.** A defect seen outside the job's scope (a QA or review report) is not a lesson: `dl followup "<finding>"
+--card T-xx` — the PR lists it under "Follow-ups".
 
 ## 3. The code graph (graphify)
 
@@ -77,6 +104,8 @@ Munder Difflin has two memory layers of its own; `/deliver` feeds both.
 | --- | --- | --- |
 | **Knowledge Graph** (Settings → Knowledge Graph) | your documents and policies, searchable by every agent on the floor (`node "$KG_CLI" search "<topic>"`) | `dl knowledge sync-md` — from a floor terminal (where `KG_CLI`, `KG_ROOT` are set): ingests every company/project standard (tagged `deliver`, `standards`, origin, `applies_to`, stack) and the lessons file (tagged `lessons`). Re-running replaces the earlier copies (matched by source), so run it after standards change — Michael runs it before the first job (SKILL.md) |
 | **MemPalace** (semantic memory) | each agent's `hive/agents/<id>/memory.md`, mined into a shared, searchable palace (needs `uv tool install mempalace`; Munder Difflin's Prerequisites page installs it) | `dl learn` on the floor also appends the lesson to Michael's `hive/agents/god/memory.md`, so it is mined into the palace; workers' own notes are mined from their memory files as usual |
+
+`sync-md` ingests the accepted lessons (the project's and the shared repo's `lessons.md`), not a job's proposals.
 
 Role cards on the floor say that the standards are also in the Knowledge Graph, so a worker can search them by topic.
 

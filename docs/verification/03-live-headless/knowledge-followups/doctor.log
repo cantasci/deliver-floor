@@ -1,0 +1,41 @@
+Required tools
+  ✔ Claude Code 2.1.290
+  ✔ git 2.43.0
+  ✔ jq jq-1.7
+  ✔ node 22.22.0
+Claude authentication
+  ✔ an LLM gateway (ANTHROPIC_BASE_URL) — its key in ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY
+Optional tools
+  ✔ gh (PR creation)
+  ✔ timeout (gate_timeout for verify commands)
+  ! adb not found — only for mobile jobs
+ECC plugin
+  ✔ ecc installed (/tmp/claude-0/live/k050b/models/home/.claude/plugins/cache/ecc/ecc/2.2.3)
+  ✔ ecc agents present (planner, architect, reviewers, e2e-runner)
+  ✔ ecc skills present (tdd-workflow, backend-patterns, frontend-patterns)
+  ! ECC hook profile: standard. GateGuard (standard/strict) asks for facts before the first edit of each file; the kit exempts .work/ bookkeeping (GATEGUARD_EXEMPT_GLOBS). Set ECC_GATEGUARD=off if agents loop on it
+Kit install
+  ✔ user: deliver skill
+  ✔ user: agent backend-dev
+  ✔ user: agent frontend-dev
+  ✔ user: agent mobile-dev
+  ✔ user: dl executable
+  ✔ user: hook stop-guard
+  ✔ user: hook bash-guard
+  ✔ user: hook write-guard
+  ✔ user: hook agent-guard
+  ✔ user: hook subagent-log
+  ! dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl
+Munder Difflin (the default run mode)
+  ! Munder Difflin not detected — it is the default run mode: scripts/init.sh --munder --hive <dir>, or choose Claude Code subagents by hand ("dispatch": "subagent" in .deliver.json — docs/07-munder-difflin.md#choosing-the-mode)
+Repo: /tmp/claude-0/live/k050b/models/repo
+  ✔ git repository
+  ✔ on branch main
+  ✔ has commits
+  ✔ working tree clean
+  ! no remote 'origin' — use merge_mode local
+  ✔ git identity set
+  ! no .deliver.json yet — the first /deliver (or dl config --init) writes one from what the repo says (test script, lockfile, remote). See docs/03-settings.md
+  ✔ run mode: Claude Code subagents (dispatch: subagent, chosen in .deliver.json or /tmp/claude-0/live/k050b/models/home/.deliver/config.json)
+
+result: 26 ok, 6 warning(s), 0 problem(s)

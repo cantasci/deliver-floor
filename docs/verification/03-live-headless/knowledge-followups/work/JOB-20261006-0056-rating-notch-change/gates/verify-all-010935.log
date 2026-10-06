@@ -1,0 +1,376 @@
+
+> watchlist-poc@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: T-01 notchChange (integration)
+    # Subtest: AC-1: RATING_SCALE is the 19 ratings, best first, frozen and push throws TypeError
+    ok 1 - AC-1: RATING_SCALE is the 19 ratings, best first, frozen and push throws TypeError
+      ---
+      duration_ms: 2.092255
+      type: 'test'
+      ...
+    # Subtest: AC-2: exactly two named exports, no default, notchChange is a function
+    ok 2 - AC-2: exactly two named exports, no default, notchChange is a function
+      ---
+      duration_ms: 0.171638
+      type: 'test'
+      ...
+    # Subtest: AC-3: BBB+ -> BB+ is a downgrade of +3
+    ok 3 - AC-3: BBB+ -> BB+ is a downgrade of +3
+      ---
+      duration_ms: 0.281701
+      type: 'test'
+      ...
+    # Subtest: AC-4: BB+ -> BBB+ is an upgrade of -3
+    ok 4 - AC-4: BB+ -> BBB+ is an upgrade of -3
+      ---
+      duration_ms: 0.114053
+      type: 'test'
+      ...
+    # Subtest: AC-5: A -> A is 0, and r -> r is 0 for every rating
+    ok 5 - AC-5: A -> A is 0, and r -> r is 0 for every rating
+      ---
+      duration_ms: 0.266075
+      type: 'test'
+      ...
+    # Subtest: AC-6: all 361 pairs equal index(c) - index(p), are integers and antisymmetric
+    ok 6 - AC-6: all 361 pairs equal index(c) - index(p), are integers and antisymmetric
+      ---
+      duration_ms: 1.923282
+      type: 'test'
+      ...
+    # Subtest: AC-6: spot values
+    ok 7 - AC-6: spot values
+      ---
+      duration_ms: 0.177589
+      type: 'test'
+      ...
+    # Subtest: AC-7: ends of the scale are +18 / -18 and every result is within [-18, 18]
+    ok 8 - AC-7: ends of the scale are +18 / -18 and every result is within [-18, 18]
+      ---
+      duration_ms: 0.577897
+      type: 'test'
+      ...
+    # Subtest: AC-8: result is a plain number, not a Promise or thenable
+    ok 9 - AC-8: result is a plain number, not a Promise or thenable
+      ---
+      duration_ms: 0.239201
+      type: 'test'
+      ...
+    # Subtest: AC-9: case-insensitive input
+    ok 10 - AC-9: case-insensitive input
+      ---
+      duration_ms: 0.372365
+      type: 'test'
+      ...
+    # Subtest: AC-10: leading and trailing whitespace removed by trim() is accepted
+    ok 11 - AC-10: leading and trailing whitespace removed by trim() is accepted
+      ---
+      duration_ms: 0.095077
+      type: 'test'
+      ...
+    # Subtest: AC-11: whitespace inside a rating is rejected with RangeError
+    ok 12 - AC-11: whitespace inside a rating is rejected with RangeError
+      ---
+      duration_ms: 0.140664
+      type: 'test'
+      ...
+    # Subtest: AC-12: unknown rating symbols throw RangeError in both positions
+    ok 13 - AC-12: unknown rating symbols throw RangeError in both positions
+      ---
+      duration_ms: 0.474475
+      type: 'test'
+      ...
+    # Subtest: AC-13: empty and whitespace-only strings throw RangeError in both positions
+    ok 14 - AC-13: empty and whitespace-only strings throw RangeError in both positions
+      ---
+      duration_ms: 0.206715
+      type: 'test'
+      ...
+    # Subtest: AC-14: non-string arguments throw RangeError (not TypeError) in both positions
+    ok 15 - AC-14: non-string arguments throw RangeError (not TypeError) in both positions
+      ---
+      duration_ms: 0.33263
+      type: 'test'
+      ...
+    # Subtest: AC-14: missing arguments throw RangeError
+    ok 16 - AC-14: missing arguments throw RangeError
+      ---
+      duration_ms: 0.070799
+      type: 'test'
+      ...
+    # Subtest: AC-15: both arguments invalid throws RangeError with no return value
+    ok 17 - AC-15: both arguments invalid throws RangeError with no return value
+      ---
+      duration_ms: 0.1001
+      type: 'test'
+      ...
+    # Subtest: edge: extra arguments are ignored
+    ok 18 - edge: extra arguments are ignored
+      ---
+      duration_ms: 0.04012
+      type: 'test'
+      ...
+    # Subtest: AC-16: importing and calling prints nothing and exits 0
+    ok 19 - AC-16: importing and calling prints nothing and exits 0
+      ---
+      duration_ms: 23.032071
+      type: 'test'
+      ...
+    # Subtest: AC-16: source has no import statement and no console. call
+    ok 20 - AC-16: source has no import statement and no console. call
+      ---
+      duration_ms: 0.337332
+      type: 'test'
+      ...
+    # Subtest: AC-16: RATING_SCALE is unchanged after valid and invalid calls
+    ok 21 - AC-16: RATING_SCALE is unchanged after valid and invalid calls
+      ---
+      duration_ms: 0.198768
+      type: 'test'
+      ...
+    # Subtest: AC-17: dev's unit test file exists, uses node:test and node:assert/strict, mentions AC-1..AC-16 and passes
+    ok 22 - AC-17: dev's unit test file exists, uses node:test and node:assert/strict, mentions AC-1..AC-16 and passes
+      ---
+      duration_ms: 111.413611
+      type: 'test'
+      ...
+    # Subtest: AC-17: package.json declares no dependencies or devDependencies
+    ok 23 - AC-17: package.json declares no dependencies or devDependencies
+      ---
+      duration_ms: 0.440468
+      type: 'test'
+      ...
+    1..23
+ok 1 - T-01 notchChange (integration)
+  ---
+  duration_ms: 144.627853
+  type: 'suite'
+  ...
+# Subtest: RATING_SCALE
+    # Subtest: AC-1: RATING_SCALE has correct values and is frozen
+    ok 1 - AC-1: RATING_SCALE has correct values and is frozen
+      ---
+      duration_ms: 1.890657
+      type: 'test'
+      ...
+    1..1
+ok 2 - RATING_SCALE
+  ---
+  duration_ms: 2.9098
+  type: 'suite'
+  ...
+# Subtest: Module exports
+    # Subtest: AC-2: Correct named exports, no default export
+    ok 1 - AC-2: Correct named exports, no default export
+      ---
+      duration_ms: 0.43313
+      type: 'test'
+      ...
+    1..1
+ok 3 - Module exports
+  ---
+  duration_ms: 0.574769
+  type: 'suite'
+  ...
+# Subtest: notchChange basic functionality
+    # Subtest: AC-3: Downgrade BBB+ to BB+ returns 3
+    ok 1 - AC-3: Downgrade BBB+ to BB+ returns 3
+      ---
+      duration_ms: 0.276984
+      type: 'test'
+      ...
+    # Subtest: AC-4: Upgrade BB+ to BBB+ returns -3
+    ok 2 - AC-4: Upgrade BB+ to BBB+ returns -3
+      ---
+      duration_ms: 0.123906
+      type: 'test'
+      ...
+    # Subtest: AC-5: No change returns 0 for all 19 ratings
+    ok 3 - AC-5: No change returns 0 for all 19 ratings
+      ---
+      duration_ms: 0.289048
+      type: 'test'
+      ...
+    1..3
+ok 4 - notchChange basic functionality
+  ---
+  duration_ms: 0.909215
+  type: 'suite'
+  ...
+# Subtest: notchChange all pairs and spot values
+    # Subtest: AC-6: All 361 pairs follow formula and antisymmetry
+    ok 1 - AC-6: All 361 pairs follow formula and antisymmetry
+      ---
+      duration_ms: 4.334857
+      type: 'test'
+      ...
+    # Subtest: AC-6: Spot values
+    ok 2 - AC-6: Spot values
+      ---
+      duration_ms: 0.313063
+      type: 'test'
+      ...
+    1..2
+ok 5 - notchChange all pairs and spot values
+  ---
+  duration_ms: 5.049313
+  type: 'suite'
+  ...
+# Subtest: notchChange range and synchronicity
+    # Subtest: AC-7: Min and max values
+    ok 1 - AC-7: Min and max values
+      ---
+      duration_ms: 0.58199
+      type: 'test'
+      ...
+    # Subtest: AC-8: Result is synchronous (not Promise)
+    ok 2 - AC-8: Result is synchronous (not Promise)
+      ---
+      duration_ms: 0.248488
+      type: 'test'
+      ...
+    1..2
+ok 6 - notchChange range and synchronicity
+  ---
+  duration_ms: 1.069108
+  type: 'suite'
+  ...
+# Subtest: notchChange case insensitivity
+    # Subtest: AC-9: Case-insensitive matching
+    ok 1 - AC-9: Case-insensitive matching
+      ---
+      duration_ms: 0.219758
+      type: 'test'
+      ...
+    1..1
+ok 7 - notchChange case insensitivity
+  ---
+  duration_ms: 0.305529
+  type: 'suite'
+  ...
+# Subtest: notchChange whitespace handling
+    # Subtest: AC-10: Trim leading/trailing whitespace
+    ok 1 - AC-10: Trim leading/trailing whitespace
+      ---
+      duration_ms: 0.210906
+      type: 'test'
+      ...
+    # Subtest: AC-11: Reject inner whitespace
+    ok 2 - AC-11: Reject inner whitespace
+      ---
+      duration_ms: 0.151086
+      type: 'test'
+      ...
+    1..2
+ok 8 - notchChange whitespace handling
+  ---
+  duration_ms: 0.449806
+  type: 'suite'
+  ...
+# Subtest: notchChange invalid symbols
+    # Subtest: AC-12: Reject unknown symbols
+    ok 1 - AC-12: Reject unknown symbols
+      ---
+      duration_ms: 0.707519
+      type: 'test'
+      ...
+    1..1
+ok 9 - notchChange invalid symbols
+  ---
+  duration_ms: 0.782473
+  type: 'suite'
+  ...
+# Subtest: notchChange empty/whitespace strings
+    # Subtest: AC-13: Reject empty or whitespace-only strings
+    ok 1 - AC-13: Reject empty or whitespace-only strings
+      ---
+      duration_ms: 0.300176
+      type: 'test'
+      ...
+    1..1
+ok 10 - notchChange empty/whitespace strings
+  ---
+  duration_ms: 0.376318
+  type: 'suite'
+  ...
+# Subtest: notchChange non-string inputs
+    # Subtest: AC-14: Reject non-string inputs
+    ok 1 - AC-14: Reject non-string inputs
+      ---
+      duration_ms: 0.528627
+      type: 'test'
+      ...
+    # Subtest: AC-14: Missing arguments throw RangeError
+    ok 2 - AC-14: Missing arguments throw RangeError
+      ---
+      duration_ms: 0.129008
+      type: 'test'
+      ...
+    1..2
+ok 11 - notchChange non-string inputs
+  ---
+  duration_ms: 0.760451
+  type: 'suite'
+  ...
+# Subtest: notchChange error messages
+    # Subtest: AC-15: Error message names the argument
+    ok 1 - AC-15: Error message names the argument
+      ---
+      duration_ms: 0.149151
+      type: 'test'
+      ...
+    # Subtest: AC-15: Both invalid gives error about previous
+    ok 2 - AC-15: Both invalid gives error about previous
+      ---
+      duration_ms: 0.086164
+      type: 'test'
+      ...
+    1..2
+ok 12 - notchChange error messages
+  ---
+  duration_ms: 0.315736
+  type: 'suite'
+  ...
+# Subtest: notchChange purity and module integrity
+    # Subtest: AC-16: No imports or console statements in source
+    ok 1 - AC-16: No imports or console statements in source
+      ---
+      duration_ms: 0.772182
+      type: 'test'
+      ...
+    # Subtest: AC-16: RATING_SCALE remains frozen and unchanged after calls
+    ok 2 - AC-16: RATING_SCALE remains frozen and unchanged after calls
+      ---
+      duration_ms: 0.23186
+      type: 'test'
+      ...
+    1..2
+ok 13 - notchChange purity and module integrity
+  ---
+  duration_ms: 1.133539
+  type: 'suite'
+  ...
+# Subtest: notchChange edge cases
+    # Subtest: Extra arguments are ignored
+    ok 1 - Extra arguments are ignored
+      ---
+      duration_ms: 0.129433
+      type: 'test'
+      ...
+    1..1
+ok 14 - notchChange edge cases
+  ---
+  duration_ms: 0.195084
+  type: 'suite'
+  ...
+1..14
+# tests 44
+# suites 14
+# pass 44
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 219.703714

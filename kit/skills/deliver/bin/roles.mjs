@@ -181,14 +181,14 @@ export function renderRole(sel, job, cat) {
     ...projectFacts(job).map((x) => `- ${x}`),
     "",
     componentsSection(sel, r, job, cat),
-    job.repo ? knowledgeSection(job.repo, { kind: r.kind, role: sel.role, stack: job.stack ?? [] }) : "",
+    job.repo ? knowledgeSection(job.repo, { kind: r.kind, role: sel.role, stack: job.stack ?? [], jobDir: job.dir }) : "",
   ].join("\n");
   return { md, rules, entry: r };
 }
 
 
 export function render(jobDir) {
-  const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
+  const job = { ...JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8")), dir: jobDir };
   const cat = loadCatalog();
   const errors = checkJobRoles(job, cat);
   if (errors.length) { for (const e of errors) console.error(`ERROR ${e}`); process.exit(1); }

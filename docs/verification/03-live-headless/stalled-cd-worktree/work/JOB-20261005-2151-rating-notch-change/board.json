@@ -1,0 +1,94 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "ratings-lib",
+      "state": "review",
+      "attempts": 1,
+      "notes": [],
+      "depends_on": [],
+      "context": "WHY: Indicators 11-13 and the REQ-06-02 notch calculator will later need the signed number of notches between a previous and a current credit rating. This card adds that one pure, synchronous function. It does nothing else. The repo has no code yet (only src/.gitkeep and test/.gitkeep). package.json already has \"type\":\"module\" and \"test\":\"node --test\". Read CLAUDE.md first.\n\nFILES (create exactly these two, touch nothing else): (1) src/ratings/notch.mjs (2) test/ratings/notch.test.mjs. Do NOT change package.json, README.md or any other file. Add no npm dependencies.\n\nCONTRACT (exact):\n- `export const RATING_SCALE = Object.freeze([...])`. It holds exactly these 19 strings in this order, best first: 'AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-' (indices 0..18; BBB+=7, BB+=10). The '-' is ASCII hyphen-minus U+002D.\n- `export function notchChange(previous, current)` returns `index(current) - index(previous)`, an integer from -18 to +18. A downgrade is positive, an upgrade is negative, no change is 0. Examples: ('BBB+','BB+') -> 3, ('BB+','BBB+') -> -3, ('A','A') -> 0, ('AAA','CCC-') -> 18.\n- NAMED EXPORTS ONLY. No `export default`: `'default' in module` must be false. No other exports are needed.\n- Synchronous. Do not use async and do not return a Promise.\n- Extra arguments are ignored: notchChange('A','A','x') -> 0.\n\nNORMALISATION (do it in this order for each argument): (a) if `typeof arg !== 'string'`, throw RangeError; (b) `s = arg.trim()` (String.prototype.trim, which removes NBSP U+00A0 and BOM U+FEFF but NOT zero-width space U+200B); (c) `s = s.toUpperCase()` (NOT toLocaleUpperCase); (d) look `s` up in the scale. If it is not found, throw RangeError. Empty strings after trim (for example '' or '   ') are not found, so they throw RangeError. Use an exact-match lookup such as RATING_SCALE.indexOf(s) or a Map built once at module load. Do NOT use regex, startsWith or includes-style matching: 'AAA+', 'BBB+u', 'BBB+ (neg)', 'BBB +' and 'B B' must all be rejected. Do not normalise Unicode dashes: 'BBB\\u2212' and 'BBB\\u2010' must be rejected.\n\nERRORS (binding decision): EVERY invalid argument throws `RangeError`, never TypeError and never any other type. This covers non-strings too: undefined, null, 3, 0, NaN, true, {}, [], ['A'], new String('A'), Symbol('A'), 10n, () => 'A', and missing arguments. Use `typeof arg === 'string'` as the only string check. That rejects String objects (new String('A') has typeof 'object') and arrays. Never coerce with String(arg) or arg + '' before validating, because ['A'] would then pass. If both arguments are invalid, either error is fine; only the type RangeError matters.\n\nERROR MESSAGE (must NEVER throw while being built): the message names the argument ('previous' or 'current') and describes the received value. Example: `Invalid rating for previous: \"D\"` or `Invalid rating for current: non-string value of type object`. Build it safely with a helper. For string inputs, use JSON.stringify(arg). For other primitives (number, boolean, undefined, bigint, symbol), call `String(arg)` explicitly (String(Symbol('x')) is safe). For objects and functions (including null-prototype objects, objects with a throwing toString, and String objects), DO NOT convert the value; describe it only by `typeof` (and 'null' for null). TRAPS: a template literal `${sym}` or `'' + sym` THROWS a TypeError on a Symbol. String(Object.create(null)) throws. String({toString(){throw new Error('boom')}}) throws. As a final guard you may wrap the description in try/catch and fall back to a fixed text. Unit tests assert only the error TYPE (assert.throws(fn, RangeError)), not the message text.\n\n+0 NOT -0: for equal ratings the result must satisfy Object.is(result, 0). Compute exactly `curIdx - prevIdx` (x - x is +0). Do NOT write `-(prevIdx - curIdx)` or anything that negates a zero, because that gives -0, which assert.strictEqual(-0, 0) rejects.\n\nFROZEN SCALE: build it with Object.freeze([...]). Callers in strict ESM code that run RATING_SCALE.push('D'), RATING_SCALE[0]='X' or RATING_SCALE.reverse() must get a TypeError, and the scale must stay unchanged. Never mutate the scale inside the module, for example by calling sort or reverse on it.\n\nPURITY / NO I/O (CLAUDE.md): import nothing. No `node:` modules, no console.*, no process.*. Nothing may be written to stdout or stderr.\n\nNODE 18 COMPATIBILITY: the local runtime is Node 22, but the code must run on Node 18. Avoid newer APIs such as Array.prototype.toSorted/toReversed, Object.groupBy, Set methods (union, etc.) and String.prototype.isWellFormed. Plain indexOf, Map, Object.freeze, trim and toUpperCase are all safe.\n\nJSDOC (required): put a JSDoc block on RATING_SCALE that describes the 19 values, best first, and says the array is frozen. Put a JSDoc block on notchChange with @param previous {string}, @param current {string}, @returns {number}, and @throws {RangeError}. Its text must state: a downgrade is positive, an upgrade is negative, no change is 0, input is trimmed and matched case-insensitively, and any invalid input (unknown, empty or whitespace-only, or not a string primitive) throws RangeError.\n\nUNIT TESTS (test/ratings/notch.test.mjs): use `import { test } from 'node:test'` (or describe/it) and `import assert from 'node:assert/strict'`. Import from '../../src/ratings/notch.mjs'. Cover AC-1..AC-15:\n- REQ examples (3, -3, +0 checked with Object.is for 'A', 'AAA' and 'CCC-').\n- Scale: deep-equal to a LITERAL 19-element array written out in the test, never derived from the module. Check length 19, Array.isArray and Object.isFrozen. Check that push, index assignment and reverse each throw TypeError, and that afterwards [0]==='AAA', length===19 and ('BBB+','BB+')===3.\n- Exports: `import * as m`. Check that typeof m.notchChange is 'function' and that 'default' in m is false.\n- All 361 pairs: loop i, j over the LITERAL array. Assert the result is exactly j-i and Number.isInteger. Also test the concrete table: AAA->CCC- 18, CCC-->AAA -18, AA+->AA 1, A-->BBB+ 1, BBB-->BB+ 1, BB+->BBB- -1, B-->CCC+ 1, AAA->AA+ 1, CCC->CCC- 1, A->BBB 3.\n- Case: 'bbb+','bb+' 3; 'Bb+','bBb+' -3; 'aaa','ccc-' 18; 'a','A' 0.\n- Trim: ' BBB+ ','BB+' 3; '\\tbb+\\n','  BBB+' -3; '\\u00A0A\\u00A0','A' 0; '\\uFEFFAAA','AA+' 1. Write these characters as escape sequences in the test source.\n- RangeError: '\\u200BA'; 'BBB +'; 'B B' (as current).\n- Unknown strings as previous (current='A') AND as current (previous='A'): 'D','CC','C','SD','NR','WD','AAA+','A++','Baa1','BBB+ (neg)','BBB+u','BBB\\u2212','BBB\\u2010'.\n- Empty or whitespace-only strings in both positions: '', '   ', '\\t\\n', '\\u00A0'.\n- Non-strings in both positions: undefined, null, 3, 0, NaN, true, {}, [], ['A'], new String('A'), new String('BBB+'), Symbol('A'), 10n, () => 'A'. Also notchChange() and notchChange('A').\n- Both arguments invalid: ('X', null) and ('', '').\n- Message builder safety: (Object.create(null),'A'), ('A',Symbol('x')), ({toString(){throw new Error('boom')}},'A'). Each must throw RangeError.\nUse assert.throws(fn, RangeError) everywhere. Do not assert message text.\n\nCOMMIT: plain message, e.g. `T-01: add rating notch change module and unit tests`. Do not include AI attribution lines. Before finishing, run `node --test test/ratings/notch.test.mjs` and `npm test`. Both must exit 0, and the test count must not be 0.",
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/ratings/notch.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/ratings/notch.integration.test.mjs",
+      "acceptance": [
+        "AC-1: notchChange('BBB+','BB+') → 3",
+        "AC-2: notchChange('BB+','BBB+') → -3",
+        "AC-3: notchChange('A','A'), ('AAA','AAA'), ('CCC-','CCC-') → Object.is(result, 0) true and Object.is(result, -0) false",
+        "AC-4: RATING_SCALE → deep-equals the literal 19-element best-first list, length 19, Array.isArray true, Object.isFrozen true",
+        "AC-5: RATING_SCALE.push('D'), RATING_SCALE[0]='X', RATING_SCALE.reverse() in ESM → each throws TypeError; afterwards [0]==='AAA', length===19, notchChange('BBB+','BB+')===3",
+        "AC-6: import * as m → typeof m.notchChange==='function', m.RATING_SCALE is the AC-4 array, 'default' in m === false",
+        "AC-7: for all 361 pairs i,j in 0..18 → notchChange(RATING_SCALE[i], RATING_SCALE[j]) === j-i and is an integer number primitive; concrete table holds",
+        "AC-8: 'bbb+','bb+' → 3; 'Bb+','bBb+' → -3; 'aaa','ccc-' → 18; 'a','A' → 0",
+        "AC-9: ' BBB+ ','BB+' → 3; '\\tbb+\\n','  BBB+' → -3; NBSP-wrapped 'A','A' → 0; BOM+'AAA','AA+' → 1",
+        "AC-10: '\\u200BA','A' / 'BBB +','A' / 'A','B B' → RangeError",
+        "AC-11: unknown strings (D, CC, C, SD, NR, WD, AAA+, A++, Baa1, BBB+ (neg), BBB+u, U+2212 and U+2010 variants) as previous or as current → RangeError (not TypeError)",
+        "AC-12: '', '   ', '\\t\\n', NBSP-only as either argument → RangeError",
+        "AC-13: undefined, null, 3, 0, NaN, true, {}, [], ['A'], new String('A'), new String('BBB+'), Symbol('A'), 10n, () => 'A', notchChange(), notchChange('A') → RangeError",
+        "AC-14: notchChange('X', null) and notchChange('','') → RangeError",
+        "AC-15: notchChange(Object.create(null),'A'), notchChange('A',Symbol('x')), notchChange({toString(){throw new Error('boom')}},'A') → RangeError (not TypeError/Error); message for ('D','A') contains 'previous', for ('A','D') contains 'current'",
+        "AC-16: calling notchChange (incl. a caught invalid call) → no stdout/stderr output, exit 0, typeof result === 'number'; module imports nothing and uses no console/process",
+        "AC-17: package.json has no dependencies/devDependencies; module at src/ratings/notch.mjs; tests at test/ratings/notch.test.mjs using node:test + node:assert/strict covering AC-1..AC-15; npm test exits 0 with non-zero test count",
+        "AC-18: RATING_SCALE and notchChange each have a JSDoc block; notchChange JSDoc states downgrade positive, upgrade negative, no change 0, invalid input throws RangeError; README.md unchanged"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-05T22:01:42Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/live/k050/models/repo/.work/JOB-20261005-2151-rating-notch-change/wt/T-01",
+      "branch": "job/JOB-20261005-2151-rating-notch-change--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "ed4925886db1f1de9cbaee176ec325b4330d4639",
+        "attempt": 1,
+        "log": "/tmp/claude-0/live/k050/models/repo/.work/JOB-20261005-2151-rating-notch-change/gates/T-01-a1-220346.log",
+        "at": "2026-10-05T22:03:46Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-05T22:03:47.183Z",
+          "author": "gate",
+          "text": "PASS — 24 checks ok, 0 failed (T-01-a1-220346.log)"
+        },
+        {
+          "at": "2026-10-05T22:04:55.176Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-18 pass; 23 integration tests (qa_verify exit 0); npm test 40 tests, 0 failed; README/package.json unchanged"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "bfec342dbcf3f499cca849027fceedfdbc213182",
+        "gate_head": "ed4925886db1f1de9cbaee176ec325b4330d4639",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/live/k050/models/repo/.work/JOB-20261005-2151-rating-notch-change/gates/T-01-qa-a1-220454.log",
+        "summary": "AC-1..AC-18 pass; 23 integration tests (qa_verify exit 0); npm test 40 tests, 0 failed; README/package.json unchanged",
+        "at": "2026-10-05T22:04:55Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "bfec342dbcf3f499cca849027fceedfdbc213182",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-18 pass; 23 integration tests (qa_verify exit 0); npm test 40 tests, 0 failed; README/package.json unchanged",
+          "at": "2026-10-05T22:04:55Z"
+        }
+      ]
+    }
+  ]
+}

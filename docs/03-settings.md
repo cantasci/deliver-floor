@@ -66,6 +66,8 @@ There is exactly one human approval in `human` / `semi`: the PR. `dl pr` syncs t
 | Key | Default | Effect |
 | --- | --- | --- |
 | `push_branches` | `"auto"` | Push each card branch to `origin` when it is assigned and after each step (`auto` = when there is an origin and `merge_mode` is not `local`; `true`/`false` to force). Agents may push only their own card branch (bash-guard); the job branch is pushed by `dl ship`; nobody pushes main |
+| `knowledge.repo` | `""` | The shared knowledge repo (git URL or path): its `standards/*.md` reach the role cards, shared lessons are proposed to it as a PR — [08](08-knowledge.md). Empty: each project keeps its own in `.deliver/knowledge/` |
+| `knowledge.branch` | `""` | Its branch (default: the clone's default) |
 | `commit.convention` | `"auto"` | The repo's commit message convention, followed by every commit of a job — the devs', QA's and `dl`'s own merges (`conventional` or `plain`). `auto`: detected from commitlint / commitizen / a commit-msg hook, else the history. The gate checks the card's commits (with the repo's commitlint when installed); the repo's hooks are never skipped |
 | `commit.merge_message` | `""` | The message of `dl`'s merge commits when the repo's hooks refuse the convention's default forms — `{card}`, `{title}`, `{key}` (tracker key). `dl integrate` exits 5 (not a conflict) with the hook's output until one is accepted |
 | `commit.ai_attribution` | `false` | `false`: the gate fails a card whose commits carry AI attribution (`Co-Authored-By: Claude …`, "Generated with …"); `install.sh` also sets Claude Code's `attribution` to empty |

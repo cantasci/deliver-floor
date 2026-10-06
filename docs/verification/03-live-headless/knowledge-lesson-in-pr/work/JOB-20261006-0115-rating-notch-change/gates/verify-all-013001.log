@@ -1,0 +1,236 @@
+
+> watchlist-poc@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: module exposes exactly RATING_SCALE and notchChange, no default export
+ok 1 - module exposes exactly RATING_SCALE and notchChange, no default export
+  ---
+  duration_ms: 2.23035
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE has the 19 ratings, best first, ASCII signs only
+ok 2 - AC-1: RATING_SCALE has the 19 ratings, best first, ASCII signs only
+  ---
+  duration_ms: 0.685727
+  type: 'test'
+  ...
+# Subtest: AC-2: RATING_SCALE is frozen and rejects every mutation with TypeError
+ok 3 - AC-2: RATING_SCALE is frozen and rejects every mutation with TypeError
+  ---
+  duration_ms: 0.731479
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange returns a synchronous integer number, +0 for unchanged
+ok 4 - AC-3: notchChange returns a synchronous integer number, +0 for unchanged
+  ---
+  duration_ms: 0.299032
+  type: 'test'
+  ...
+# Subtest: AC-4: BBB+ -> BB+ is a downgrade of 3
+ok 5 - AC-4: BBB+ -> BB+ is a downgrade of 3
+  ---
+  duration_ms: 0.155441
+  type: 'test'
+  ...
+# Subtest: AC-5: BB+ -> BBB+ is an upgrade of -3
+ok 6 - AC-5: BB+ -> BBB+ is an upgrade of -3
+  ---
+  duration_ms: 0.184876
+  type: 'test'
+  ...
+# Subtest: AC-6: A -> A is unchanged (0)
+ok 7 - AC-6: A -> A is unchanged (0)
+  ---
+  duration_ms: 0.223466
+  type: 'test'
+  ...
+# Subtest: AC-7: all 361 pairs return j - i and are antisymmetric
+ok 8 - AC-7: all 361 pairs return j - i and are antisymmetric
+  ---
+  duration_ms: 0.947964
+  type: 'test'
+  ...
+# Subtest: AC-8: the 18 adjacent pairs are +1 forward and -1 backward
+ok 9 - AC-8: the 18 adjacent pairs are +1 forward and -1 backward
+  ---
+  duration_ms: 0.565219
+  type: 'test'
+  ...
+# Subtest: AC-9: extremes are 18 and -18 and nothing is outside -18..18
+ok 10 - AC-9: extremes are 18 and -18 and nothing is outside -18..18
+  ---
+  duration_ms: 2.670778
+  type: 'test'
+  ...
+# Subtest: AC-10: padded inputs behave like the trimmed rating
+ok 11 - AC-10: padded inputs behave like the trimmed rating
+  ---
+  duration_ms: 0.264983
+  type: 'test'
+  ...
+# Subtest: AC-11: matching is case-insensitive
+ok 12 - AC-11: matching is case-insensitive
+  ---
+  duration_ms: 0.429948
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string primitives throw RangeError in both positions
+ok 13 - AC-12: non-string primitives throw RangeError in both positions
+  ---
+  duration_ms: 0.990699
+  type: 'test'
+  ...
+# Subtest: AC-13: non-string objects (incl. String objects) throw RangeError, no coercion
+ok 14 - AC-13: non-string objects (incl. String objects) throw RangeError, no coercion
+  ---
+  duration_ms: 0.469565
+  type: 'test'
+  ...
+# Subtest: AC-14: empty and whitespace-only strings throw RangeError
+ok 15 - AC-14: empty and whitespace-only strings throw RangeError
+  ---
+  duration_ms: 0.334276
+  type: 'test'
+  ...
+# Subtest: AC-15: unknown ratings throw RangeError (incl. look-alikes and prototype keys)
+ok 16 - AC-15: unknown ratings throw RangeError (incl. look-alikes and prototype keys)
+  ---
+  duration_ms: 0.68971
+  type: 'test'
+  ...
+# Subtest: AC-16: both arguments invalid still gives RangeError, never TypeError
+ok 17 - AC-16: both arguments invalid still gives RangeError, never TypeError
+  ---
+  duration_ms: 0.242227
+  type: 'test'
+  ...
+# Subtest: Edge: extra arguments are ignored
+ok 18 - Edge: extra arguments are ignored
+  ---
+  duration_ms: 0.086933
+  type: 'test'
+  ...
+# Subtest: AC-17: source has no import/require/console/process (comments included)
+ok 19 - AC-17: source has no import/require/console/process (comments included)
+  ---
+  duration_ms: 0.733824
+  type: 'test'
+  ...
+# Subtest: AC-17: valid and invalid calls write nothing to stdout or stderr
+ok 20 - AC-17: valid and invalid calls write nothing to stdout or stderr
+  ---
+  duration_ms: 27.716192
+  type: 'test'
+  ...
+# Subtest: AC-17: package.json declares no dependencies or devDependencies
+ok 21 - AC-17: package.json declares no dependencies or devDependencies
+  ---
+  duration_ms: 0.228411
+  type: 'test'
+  ...
+# Subtest: AC-1: RATING_SCALE is an array of 19 ratings
+ok 22 - AC-1: RATING_SCALE is an array of 19 ratings
+  ---
+  duration_ms: 2.909892
+  type: 'test'
+  ...
+# Subtest: AC-2: RATING_SCALE is frozen
+ok 23 - AC-2: RATING_SCALE is frozen
+  ---
+  duration_ms: 0.570514
+  type: 'test'
+  ...
+# Subtest: AC-3: notchChange returns a non-Promise integer
+ok 24 - AC-3: notchChange returns a non-Promise integer
+  ---
+  duration_ms: 0.192809
+  type: 'test'
+  ...
+# Subtest: AC-4: notchChange(BBB+, BB+) returns 3 (downgrade)
+ok 25 - AC-4: notchChange(BBB+, BB+) returns 3 (downgrade)
+  ---
+  duration_ms: 0.106246
+  type: 'test'
+  ...
+# Subtest: AC-5: notchChange(BB+, BBB+) returns -3 (upgrade)
+ok 26 - AC-5: notchChange(BB+, BBB+) returns -3 (upgrade)
+  ---
+  duration_ms: 0.138081
+  type: 'test'
+  ...
+# Subtest: AC-6: notchChange(A, A) returns 0 (unchanged)
+ok 27 - AC-6: notchChange(A, A) returns 0 (unchanged)
+  ---
+  duration_ms: 0.095905
+  type: 'test'
+  ...
+# Subtest: AC-7: All 361 pairs follow j - i pattern
+ok 28 - AC-7: All 361 pairs follow j - i pattern
+  ---
+  duration_ms: 0.493777
+  type: 'test'
+  ...
+# Subtest: AC-8: Adjacent pairs return ±1
+ok 29 - AC-8: Adjacent pairs return ±1
+  ---
+  duration_ms: 0.119193
+  type: 'test'
+  ...
+# Subtest: AC-9: Scale endpoints are 18 notches apart
+ok 30 - AC-9: Scale endpoints are 18 notches apart
+  ---
+  duration_ms: 0.538247
+  type: 'test'
+  ...
+# Subtest: AC-10: Padded inputs behave like trimmed ratings
+ok 31 - AC-10: Padded inputs behave like trimmed ratings
+  ---
+  duration_ms: 0.491858
+  type: 'test'
+  ...
+# Subtest: AC-11: Case-insensitive matching
+ok 32 - AC-11: Case-insensitive matching
+  ---
+  duration_ms: 1.257193
+  type: 'test'
+  ...
+# Subtest: AC-12: Non-string primitives throw RangeError
+ok 33 - AC-12: Non-string primitives throw RangeError
+  ---
+  duration_ms: 0.570414
+  type: 'test'
+  ...
+# Subtest: AC-13: Objects throw RangeError (no coercion)
+ok 34 - AC-13: Objects throw RangeError (no coercion)
+  ---
+  duration_ms: 0.285274
+  type: 'test'
+  ...
+# Subtest: AC-14: Empty or whitespace-only strings throw RangeError
+ok 35 - AC-14: Empty or whitespace-only strings throw RangeError
+  ---
+  duration_ms: 0.162464
+  type: 'test'
+  ...
+# Subtest: AC-15: Unknown ratings throw RangeError
+ok 36 - AC-15: Unknown ratings throw RangeError
+  ---
+  duration_ms: 0.378372
+  type: 'test'
+  ...
+# Subtest: AC-16: When both invalid, previous is checked first; never TypeError
+ok 37 - AC-16: When both invalid, previous is checked first; never TypeError
+  ---
+  duration_ms: 0.258734
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 127.774788

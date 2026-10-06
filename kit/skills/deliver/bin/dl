@@ -20,9 +20,11 @@
 #   dl reseal "<reason>"           (human, terminal only) accept an edit made to job.json/board.json outside dl
 #   dl roles                       check job.roles against roles.yaml and generate the project's role cards
 #                                  (.work/<job>/roles/*.md, ROLES.md) — runs on dl phase planning
-#   dl learn <role|all> "<lesson>" remember a lesson for this repo (memory: ~/.deliver/knowledge/lessons/<repo>.md);
-#                                  the next jobs' role cards include it
-#   dl knowledge [list|sync-md]    standards + lessons that feed the role cards; sync-md → Munder Difflin knowledge graph
+#   dl learn <role|all> "<lesson>" --topic <slug> (--card T-xx | --evidence "…") [--scope project|shared|kit]
+#                                  propose a lesson, with what happened; it reaches .deliver/knowledge/ with this job's PR
+#   dl followup "<finding>" [--card T-xx]   a defect seen outside the job's scope — listed in the PR
+#   dl knowledge [list|topics|promote <topic> "<rule>"|sync-md]   standards + lessons for the role cards; promote = a new
+#                                  standard (with the PR); sync-md → Munder Difflin knowledge graph
 #   dl validate                    board.json schema + dependency + scope-overlap check
 #   dl ready                       ids of cards that may be dispatched now (deps merged, attempts left)
 #   dl wt add <card> [--resume]    card worktree + state=running + attempts+1 (--resume: no bump, after a restart)
@@ -164,6 +166,7 @@ load_job() {
   [[ -f $JOBJ ]] || die "job not found: $JOB"
   JOB_BRANCH="$(jq -r .branch "$JOBJ")"
   IWT="$(jq -r .integration_worktree "$JOBJ")"
+  DELIVER_SHARED_KNOWLEDGE="$(jq -r '.settings.knowledge.dir // ""' "$JOBJ")"; export DELIVER_SHARED_KNOWLEDGE
   [[ ${DL_NO_SEAL_CHECK:-} == 1 ]] || check_seals
 }
 
@@ -292,6 +295,21 @@ cmd_new() {
   if [[ "$(jq -r '.commit.convention // "auto"' <<<"$settings")" == auto ]]; then
     local cc; cc="$(node "$BIN_DIR/detect.mjs" --commit "$ROOT")" || cc='{"convention":"plain","source":"not detected"}'
     settings="$(jq --argjson c "$cc" '.commit.convention = $c.convention | .commit.convention_source = $c.source' <<<"$settings")"
+  fi
+  # The shared knowledge repo (settings.knowledge.repo), when the team has one: cloned once, brought up to date at every
+  # job's start. Offline or refused, the job goes on with the copy it has and says so.
+  local krepo kdir; krepo="$(jq -r '.knowledge.repo // ""' <<<"$settings")"
+  if [[ -n $krepo ]]; then
+    kdir="$(dirname "$USER_CONFIG")/shared/$(basename "${krepo%.git}")"
+    if [[ -d $kdir/.git ]]; then
+      local kb; kb="$(jq -r '.knowledge.branch // ""' <<<"$settings")"; [[ -n $kb ]] || kb="$(git -C "$kdir" symbolic-ref --short -q HEAD || echo main)"
+      { git -C "$kdir" fetch -q origin "$kb" && git -C "$kdir" checkout -q "$kb" && git -C "$kdir" merge -q --ff-only "origin/$kb"; } >/dev/null 2>&1 \
+        || echo "dl: the shared knowledge repo could not be updated ($krepo) — using the copy from $(git -C "$kdir" log -1 --format=%cs 2>/dev/null)" >&2
+    else
+      mkdir -p "$(dirname "$kdir")"
+      git clone -q "$krepo" "$kdir" >/dev/null 2>&1 || { echo "dl: could not clone the shared knowledge repo $krepo — this job runs without it" >&2; kdir=""; }
+    fi
+    settings="$(jq --arg d "$kdir" '.knowledge.dir = $d' <<<"$settings")"
   fi
   local mm; mm="$(jq -r .merge_mode <<<"$settings")"
   [[ " $MERGE_MODES " == *" $mm "* ]] || die "merge_mode must be one of: $MERGE_MODES (got '$mm')"
@@ -439,7 +457,7 @@ cmd_next() {
       fi ;;
     integrating)
       local h; h="$(branch_head "$JOB_BRANCH")"
-      if [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" != PASS || "$(jq -r '.verify_all.head // ""' "$JOBJ")" != "$h" ]]; then
+      if [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" != PASS ]] || ! verified_head "$h"; then
         echo "VERIFY  dl verify-all"
       else
         echo "QA      job-level QA roles if selected (failure → fix card + dl phase executing), then: dl phase closing"
@@ -495,7 +513,7 @@ cmd_phase() {
           || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl card add …) or drop it (dl card <id> state archived \"<reason>\")" ;;
       closing)
         [[ $cur == integrating ]] || refuse 1 "only from integrating (now: $cur)"
-        [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS && "$(jq -r '.verify_all.head // ""' "$JOBJ")" == "$(branch_head "$JOB_BRANCH")" ]] \
+        [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS ]] && verified_head "$(branch_head "$JOB_BRANCH")" \
           || refuse 1 "verify-all has not passed on the current job branch — run: dl verify-all" ;;
       awaiting_pr_merge) refuse 1 "awaiting_pr_merge is set by: dl ship" ;;
       done) [[ "$(jq -r '.shipped // false' "$JOBJ")" == true ]] || refuse 1 "the job is not delivered yet — dl ship (and, for a PR, its merge: dl pr)" ;;
@@ -576,6 +594,12 @@ cmd_pm_decide() {
   pm_decision "$what" "$why" "$card"; reset_stop_guard; echo "recorded: $what"
 }
 # report.md is the PR body: the decisions Michael took himself (after the start, and every re-seat) are appended once, at ship time
+# verify-all ran on this head — or on an earlier one, and since then only the job's lessons/standards were committed
+verified_head() {
+  local v; v="$(jq -r '.verify_all.head // ""' "$JOBJ")"
+  [[ $v == "$1" ]] && return 0
+  [[ -n $v ]] && git -C "$ROOT" merge-base --is-ancestor "$v" "$1" 2>/dev/null && [[ -z "$(git -C "$ROOT" diff --name-only "$v" "$1" | grep -v '^\.deliver/knowledge/')" ]]
+}
 report_decisions() {
   local n; n="$(jq '(.pm_decisions // []) | length' "$JOBJ")"
   grep -q '<!-- deliver:pm-decisions -->' "$JOB_DIR/report.md" && return 0
@@ -613,17 +637,57 @@ cmd_clarify() {
   reset_stop_guard; log_event clarify "$id: $answer"
 }
 
+# dl learn <role|all> "<lesson>" --topic <slug> (--card T-xx | --evidence "<what happened>") [--scope project|shared|kit]
+# A lesson is a proposal of this job, backed by what happened: with --card, the card's failures from the event log (a gate
+# FAIL, a QA fail, a review "changes", a block, a refused merge). It reaches the project's .deliver/knowledge/lessons.md (or,
+# scope shared, the shared knowledge repo) only through this job's PR; scope kit is a defect of the flow itself, listed for
+# the deliver kit in the PR.
+# Lessons, standards and follow-ups ride with the job's PR: after dl ship there is no PR left to carry them.
+not_shipped() {
+  [[ "$(jq -r '.shipped // false' "$JOBJ")" != true && -z "$(jq -r '.knowledge_published.head // ""' "$JOBJ")" ]] \
+    || refuse 1 "the job is shipped — what it learned had to be recorded before dl ship (closing, step 3). Record it in the next job (dl learn there, with this job's evidence), or add it to .deliver/knowledge/lessons.md with a PR of its own"
+}
 cmd_learn() {
-  load_job
-  local role=${1:-} text=${2:-}; [[ -n $role && -n $text ]] || die 'usage: dl learn <role|all> "<lesson>"'
-  node "$BIN_DIR/knowledge.mjs" learn "$ROOT" "$JOB" "$role" "$text" && log_event learn "$role: $text"
+  load_job; not_shipped
+  local role=${1:-} text=${2:-} topic="" card="" scope=project ev=() a; shift 2 2>/dev/null || true
+  while [[ $# -gt 0 ]]; do
+    a=$1; case $a in
+      --topic) topic=${2:-}; shift 2 ;; --card) card=${2:-}; shift 2 ;; --evidence) ev+=("${2:-}"); shift 2 ;;
+      --scope) scope=${2:-}; shift 2 ;; *) die "unknown option: $a" ;;
+    esac
+  done
+  [[ -n $role && -n $text && -n $topic ]] || die 'usage: dl learn <role|all> "<lesson>" --topic <slug> (--card T-xx | --evidence "<what happened>") [--scope project|shared|kit]'
+  [[ $topic =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "topic: a short slug, e.g. qa-verify-files (lower-case, digits, -)"
+  [[ $scope == project || $scope == shared || $scope == kit ]] || die "scope: project | shared | kit"
+  [[ $scope != shared || -n "$(setting knowledge.dir)" ]] || refuse 1 "no shared knowledge repo for this project (settings.knowledge.repo) — a lesson for the shared repo needs one; record it for the project"
+  if [[ -n $card ]]; then
+    card_exists "$card"
+    local l; while IFS= read -r l; do ev+=("$l"); done < <(awk -F'\t' -v c="$card" '($3 ~ "^"c"[ :=]" || $3 ~ "^"c"$") && ($2=="gate" && $3 ~ /FAIL/ || $2=="qa" && $3 ~ / fail / || $2=="review" && $3 ~ / changes/ || $2=="state" && $3 ~ /blocked/ || $2=="note" || $2 ~ /integrate|merge-refused/ && $3 ~ /CONFLICT|REFUSED|refused/) {print $1" "$2": "substr($3,1,200)}' "$JOB_DIR/events.log" | tail -n 3)
+  fi
+  [[ ${#ev[@]} -gt 0 ]] || refuse 1 "a lesson needs what happened: --card <id> (its failures in the event log are attached) or --evidence \"<what happened>\" — no lessons on assumptions"
+  local j r; j="$(jq -cn --arg r "$role" --arg t "$text" --arg tp "$topic" --arg s "$scope" '{role:$r, text:$t, topic:$tp, scope:$s, evidence:$ARGS.positional}' --args ${ev[@]+"${ev[@]}"})"
+  r="$(node "$BIN_DIR/knowledge.mjs" learn "$ROOT" "$JOB_DIR" "$j")" || die "the lesson could not be recorded"
+  log_event learn "$role ($scope, $topic): $text"
+  echo "lesson proposed ($scope, topic $topic) — it reaches $([[ $scope == shared ]] && echo "the shared knowledge repo" || { [[ $scope == kit ]] && echo "the PR, for the deliver kit" || echo ".deliver/knowledge/lessons.md"; }) with this job's PR"
+  if [[ "$(jq -r .promote <<<"$r")" == true ]]; then
+    echo "PROMOTE: topic '$topic' was learned in $(jq -r .jobs <<<"$r") jobs and no standard covers it yet — make it a rule: dl knowledge promote $topic \"<the rule, one checkable line>\" [--applies-to <kinds/roles>] [--scope project|shared]"
+  fi
 }
 cmd_knowledge() {
   resolve_root
   case ${1:-list} in
     list) node "$BIN_DIR/knowledge.mjs" list "$ROOT" "${2:-}" "${3:-}" "${4:-}" ;;
+    topics) load_job; node "$BIN_DIR/knowledge.mjs" topics "$ROOT" "$JOB_DIR" | jq . ;;
+    promote) # dl knowledge promote <topic> "<rule>" [--applies-to a,b] [--scope project|shared] — a standard, with this job's PR
+      load_job; not_shipped
+      local topic=${2:-} rule=${3:-} ap="" sc=project; shift 3 2>/dev/null || true
+      while [[ $# -gt 0 ]]; do case $1 in --applies-to) ap=${2:-}; shift 2 ;; --scope) sc=${2:-}; shift 2 ;; *) die "unknown option: $1" ;; esac; done
+      [[ -n $topic && -n $rule ]] || die 'usage: dl knowledge promote <topic> "<rule>" [--applies-to dev,qa] [--scope project|shared]'
+      [[ "$(node "$BIN_DIR/knowledge.mjs" topics "$ROOT" "$JOB_DIR" | jq -r --arg t "$topic" '.[$t].jobs // 0')" -ge 1 ]] || refuse 1 "no lesson on topic '$topic' — a standard grows out of recorded lessons"
+      node "$BIN_DIR/knowledge.mjs" promote "$ROOT" "$JOB_DIR" "$(jq -cn --arg t "$topic" --arg r "$rule" --arg a "$ap" --arg s "$sc" '{topic:$t, rule:$r, scope:$s, applies_to:($a | split(",") | map(select(. != "")))}')" >/dev/null
+      log_event promote "$topic ($sc): $rule"; echo "standard proposed: $topic ($sc) — written with this job's PR" ;;
     sync-md) node "$BIN_DIR/knowledge.mjs" sync-md "$ROOT" ;;
-    *) die "usage: dl knowledge [list [kind] [role] [stack,…] | sync-md]" ;;
+    *) die "usage: dl knowledge [list [kind] [role] [stack,…] | topics | promote <topic> \"<rule>\" | sync-md]" ;;
   esac
 }
 
@@ -989,6 +1053,75 @@ dl_merge() {
   printf '%s\n' "$last" >&2
   return 5
 }
+# dl_commit <dir> <conventional subject> <plain subject> — commit what is staged in <dir> with a message that fits the repo's
+# convention, through its hooks (0 committed · 5 every form refused, hook output on stderr)
+dl_commit() {
+  local dir=$1 conv m out last="" msgs=(); conv="$(setting commit.convention)"
+  if [[ $conv == conventional ]]; then msgs+=("${2:0:100}" "$3"); else msgs+=("$3" "${2:0:100}"); fi
+  for m in ${msgs[@]+"${msgs[@]}"}; do
+    if out="$(git -C "$dir" commit -q -m "$m" 2>&1)"; then return 0; fi
+    last="$out"; log_event commit-refused "\"$m\" — $(tr '\n' ' ' <<<"$out" | cut -c1-160)"
+  done
+  printf '%s\n' "$last" >&2; return 5
+}
+
+# What the job learned, onto the job branch (the project's .deliver/knowledge) — so the PR carries it and the merge accepts
+# it — and, for the shared knowledge repo, onto a branch there with its own PR. Once per job.
+knowledge_publish() {
+  [[ "$(jq -r '.knowledge_published // ""' "$JOBJ")" == "" ]] || return 0
+  local files
+  files="$(node "$BIN_DIR/knowledge.mjs" publish "$ROOT" "$JOB_DIR" "$IWT" project)" || die "could not write the job's lessons"
+  if [[ -n $files ]]; then
+    git -C "$IWT" add -- .deliver/knowledge
+    dl_commit "$IWT" "docs(deliver): lessons learned in ${JOB%%-[a-z]*}" "Lessons learned in $JOB" \
+      || { echo "NOT A CONFLICT: the repo refused dl's commit of the job's lessons (its commit-msg hook, output above) — set commit.merge_message's style for it or allow 'docs' commits, then dl ship again" >&2; git -C "$IWT" reset -q; exit 5; }
+    log_event knowledge "lessons/standards committed to $JOB_BRANCH: $(tr '\n' ' ' <<<"$files" | sed "s#$IWT/##g")"
+  fi
+  local kdir url=""; kdir="$(setting knowledge.dir)"
+  if [[ -n $kdir && -d $kdir/.git && "$(jq '[.[] | select(.scope=="shared")] | length' "$JOB_DIR/lessons.json" 2>/dev/null || echo 0)$(jq '[.[] | select(.scope=="shared")] | length' "$JOB_DIR/promotions.json" 2>/dev/null || echo 0)" != 00 ]]; then
+    local br="deliver/$JOB" sw; sw="$(mktemp -d)"
+    if git -C "$kdir" worktree add -q -b "$br" "$sw" HEAD 2>/dev/null; then
+      node "$BIN_DIR/knowledge.mjs" publish "$ROOT" "$JOB_DIR" "$sw" shared >/dev/null && git -C "$sw" add -A
+      local kconv; kconv="$(node "$BIN_DIR/detect.mjs" --commit "$kdir" | jq -r .convention)"
+      local km="docs: lessons from $(basename "$ROOT") (${JOB%%-[a-z]*})"; [[ $kconv == conventional ]] || km="Lessons from $(basename "$ROOT") ($JOB)"
+      if git -C "$sw" commit -q -m "$km" 2>/dev/null && git -C "$sw" push -q -u origin "$br" 2>/dev/null; then
+        url="$( command -v "$GH" >/dev/null && (cd "$sw" && "$GH" pr create --fill --head "$br" 2>/dev/null | tail -1) || true)"
+        log_event knowledge "shared lessons proposed: ${url:-branch $br pushed to $(git -C "$kdir" remote get-url origin)}"
+      else log_event knowledge "shared lessons committed on branch $br in $kdir — not pushed (push it and open a PR)"; fi
+      git -C "$kdir" worktree remove --force "$sw" 2>/dev/null || true
+    else log_event knowledge "could not branch the shared knowledge repo $kdir for $br"; fi
+  fi
+  jq_inplace "$JOBJ" --arg h "$(branch_head "$JOB_BRANCH")" --arg u "$url" '.knowledge_published = {head:$h, shared_pr:$u}'
+}
+# dl followup "<finding>" [--card T-xx] [--evidence "<…>"] — a defect seen outside the job's scope: recorded, listed in the PR
+cmd_followup() {
+  load_job; not_shipped
+  local text=${1:-} card="" ev=""; shift || true
+  while [[ $# -gt 0 ]]; do case $1 in --card) card=${2:-}; shift 2 ;; --evidence) ev=${2:-}; shift 2 ;; *) die "unknown option: $1" ;; esac; done
+  [[ -n $text ]] || die 'usage: dl followup "<finding>" [--card T-xx] [--evidence "<what showed it>"]'
+  [[ -z $card ]] || card_exists "$card"
+  jq_inplace "$JOBJ" --arg t "$text" --arg c "$card" --arg e "$ev" --arg at "$(now)" '.followups = ((.followups // []) + [{text:$t, card:$c, evidence:$e, at:$at}])'
+  log_event followup "${card:+$card: }$text"; echo "follow-up recorded — listed in the PR"
+}
+report_followups() {
+  grep -q '<!-- deliver:followups -->' "$JOB_DIR/report.md" && return 0
+  [[ "$(jq '(.followups // []) | length' "$JOBJ")" -gt 0 ]] || return 0
+  { printf '\n<!-- deliver:followups -->\n## Follow-ups (found during the job, outside its scope)\n\n'
+    jq -r '.followups[] | "- " + (if .card != "" then "**\(.card)** — " else "" end) + .text + (if .evidence != "" then " _(\(.evidence))_" else "" end)' "$JOBJ"; } >> "$JOB_DIR/report.md"
+}
+report_lessons() {
+  grep -q '<!-- deliver:lessons -->' "$JOB_DIR/report.md" && return 0
+  local lf="$JOB_DIR/lessons.json"; [[ -f $lf ]] || return 0
+  { printf '\n<!-- deliver:lessons -->\n## Lessons learned\n\nProposed by this job with what happened; merging this PR accepts them into `.deliver/knowledge/` (shared ones: their own PR in the shared knowledge repo).\n\n'
+    jq -r '.[] | select(.scope != "kit") | "- **\(.topic)** (\(.role), \(.scope)): \(.text)\n" + ([.evidence[] | "  - evidence: \(.)"] | join("\n"))' "$lf"
+    if [[ "$(jq '[.[] | select(.scope == "kit")] | length' "$lf")" -gt 0 ]]; then
+      printf '\n## Feedback for the deliver kit\n\nDefects of the flow itself, for https://github.com/cantasci/deliver-floor/issues — not rules for this project.\n\n'
+      jq -r '.[] | select(.scope == "kit") | "- \(.text)\n" + ([.evidence[] | "  - evidence: \(.)"] | join("\n"))' "$lf"; fi
+    if [[ -f $JOB_DIR/promotions.json ]]; then printf '\n### New standards\n\n'; jq -r '.[] | "- **\(.topic)** (\(.scope)): MUST \(.rule)"' "$JOB_DIR/promotions.json"; fi
+    local u; u="$(jq -r '.knowledge_published.shared_pr // ""' "$JOBJ")"; if [[ -n $u ]]; then printf '\nShared knowledge PR: %s\n' "$u"; fi
+  } >> "$JOB_DIR/report.md"
+  return 0
+}
 merge_refused_msg() { # what Michael does when the repo refuses every merge message dl can write
   echo "NOT A CONFLICT: the repo refused dl's merge commit for $1 (its commit-msg hook / commitlint, output above) — the card is fine; do not re-dispatch the dev. Write a merge message this repo accepts and run it again: dl jobset '.settings.commit.merge_message=\"<message with {card} {title} {key}>\"' (record it for the next jobs: commit.merge_message in .deliver.json), then dl $2" >&2
 }
@@ -1057,10 +1190,11 @@ cmd_ship() {
   [[ " $MERGE_MODES " == *" $mode "* ]] || die "merge_mode must be one of: $MERGE_MODES (now: '$mode')"
   local cur; cur="$(phase_now)"
   [[ $cur == closing || $cur == awaiting_pr_merge ]] || refuse 1 "ship from phase closing (now: $cur)"
-  [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS && "$(jq -r '.verify_all.head // ""' "$JOBJ")" == "$head" ]] \
+  [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS ]] && verified_head "$head" \
     || refuse 1 "verify-all has not passed on the current job branch — dl verify-all"
   ! cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md" || refuse 1 "report.md is still the template — the PM closing check writes it first (it is also the PR body)"
-  report_decisions
+  knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
+  report_decisions; report_lessons; report_followups
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
     [[ $on == "$base" ]] || refuse 1 "merge_mode=local merges into '$base' in the main checkout, which is on '${on:-detached}'. Switch it to $base (or merge yourself: git merge --no-ff $JOB_BRANCH)"
@@ -1551,7 +1685,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn wt card gate qa review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -1692,6 +1826,7 @@ main() {
     unfreeze) cmd_unfreeze "$@" ;;
     reseal) cmd_reseal "$@" ;;
     learn) cmd_learn "$@" ;;
+    followup) cmd_followup "$@" ;;
     knowledge) cmd_knowledge "$@" ;;
     ready) cmd_ready ;;
     wt) cmd_wt "$@" ;;
@@ -1718,7 +1853,7 @@ main() {
     kanban) cmd_kanban "$@" ;;
     seats) cmd_seats ;;
     tracker) cmd_tracker "$@" ;;
-    help|-h|--help) sed -n '2,69p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    help|-h|--help) awk 'NR>1 && !/^#/ {exit} NR>1' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $c (dl help)" ;;
   esac
 }

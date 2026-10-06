@@ -1,0 +1,38 @@
+2026-10-06T00:56:06Z	new	Rating notch change
+2026-10-06T00:56:12Z	jobset	stack: .stack=["node","javascript"]
+2026-10-06T00:56:12Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notch calculator domain logic"},{"role":"backend","agent":"backend-dev","provider":"claude","model":"haiku","why":"Staffing: The backend developer works on the haiku model"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"Plain Node ESM (javascript) code"}]
+2026-10-06T00:56:12Z	jobset	assumptions: .assumptions += ["Single card slice; no UI/CLI (C4)"]
+2026-10-06T00:56:13Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T00:56:13Z	phase	readiness
+2026-10-06T00:58:55Z	agent	business-analyst ac4b52bb: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Deliver the base notch-change computation that Indicators 11, 12 and 13 and the REQ-06-02 notch
+2026-10-06T00:59:27Z	decide	DEL-docs: No separate documentation deliverable; short JSDoc on the two exports is part of the dev's code, no docs role — request lists no docs requirement; the Contract section already documents the API
+2026-10-06T00:59:27Z	decide	X-export-style: Named exports only: export const RATING_SCALE, export function notchChange — the Contract names exactly these two exports; no default needed
+2026-10-06T00:59:27Z	decide	X-scale-immutability: RATING_SCALE is Object.freeze'd and notchChange uses it — protects the scale all indicators rely on from mutation by importers; contents/order fixed by C1
+2026-10-06T00:59:27Z	decide	X-error-message: RangeError message names the argument (previous/current) and the received value; previous is validated first; tests assert type, QA asserts type only — C2 fixes only the type; naming the argument helps callers debug
+2026-10-06T00:59:27Z	decide	X-test-coverage: No numeric coverage target; every AC and edge case has a test — one-function slice; the request sets no target
+2026-10-06T00:59:36Z	readiness	32 items: 22 decided, 10 n/a, 0 open
+2026-10-06T00:59:38Z	freeze	readiness + architecture frozen (8923e015dfc5)
+2026-10-06T00:59:38Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T00:59:38Z	phase	planning
+2026-10-06T01:00:52Z	agent	business-analyst a7855ea3: ## Goal Provide one pure function that gives the signed notch change between a previous and a current credit rating. Indicators 11, 12 and 13 and the REQ-06-02 
+2026-10-06T01:02:05Z	agent	ecc:architect a8d07cbd: ```json [{"tmp_id":"B1","title":"ratings-lib: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests","role":"backend","component":"ratings-lib"
+2026-10-06T01:03:22Z	agent	business-analyst a43f6bde: === T-01 === # T-01: ratings-lib: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests ## User story As the developer of Indicators 11, 12 and
+2026-10-06T01:03:58Z	phase	executing
+2026-10-06T01:03:58Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-06T01:07:35Z	agent	backend-dev a5cde0e3: Perfect! All work is complete and verified. Here's the summary: ```text status: done commit: 3d56f04 verify: passed (21/21 tests, 0 failures) open issues: - ```
+2026-10-06T01:07:37Z	gate	T-01 PASS
+2026-10-06T01:08:56Z	agent	qa-tester a4a0fbd7: ```json {"verdict":"pass", "tests":["test/ratings/integration/notch.int.test.mjs"], "criteria":[ {"ac":"AC-1","status":"pass","evidence":"AC-1: RATING_SCALE is 
+2026-10-06T01:09:04Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-17 pass; 23 integration tests green; spec typo found in AC-8 (('BBB','BB') is 3 not 2), product correct
+2026-10-06T01:09:04Z	pm-decision	T-01: AC-8 expected value corrected from 2 to 3 in plan.md/spec (BBB=8, BB=11); product unchanged — QA found a BA typo that contradicts AC-6 and the C1 index table; no implementation could return 2
+2026-10-06T01:09:27Z	agent	ecc:typescript-reviewer a8b003e1: ```json {"verdict":"approve","blocking":[],"nits":["test/ratings/notch.test.mjs (AC-15): the dev test never asserts that the message shows the received value. T
+2026-10-06T01:09:32Z	review	T-01 reviewer approve — no blocking items; 8 nits (dev test gaps for AC-14 constructor check, AC-15 message values, AC-16 cwd-relative source read)
+2026-10-06T01:09:32Z	followup	T-01: Dev unit test test/ratings/notch.test.mjs: AC-16 reads the source relative to cwd (use import.meta.url); AC-14 lacks err.constructor===RangeError and AC-15 lacks message-contains-value checks; -0 guard in notchChange is dead code
+2026-10-06T01:09:32Z	integrate	T-01 merged
+2026-10-06T01:09:35Z	phase	integrating
+2026-10-06T01:09:35Z	verify-all	PASS
+2026-10-06T01:09:35Z	phase	closing
+2026-10-06T01:10:54Z	agent	business-analyst ac48c8f7: All 17 acceptance criteria are met; nothing failed or is only partly met. I re-ran everything myself at the merged head `c98c734`, which is the same commit as t
+2026-10-06T01:11:02Z	followup	T-01: board.json T-01 acceptance AC-8 text still says 2 (corrected to 3 in plan.md/spec); dev AC-8 test does not assert the value and dev AC-10 test lacks the U+00A0 case; no run on Node 18 (gates ran Node 22)
+2026-10-06T01:11:02Z	ship	local merge into main
+2026-10-06T01:11:06Z	learn	ba (project, spec-examples): Compute worked examples against the index table before writing an AC (('BBB','BB') is 3, not 2)
+2026-10-06T01:11:06Z	cleanup	

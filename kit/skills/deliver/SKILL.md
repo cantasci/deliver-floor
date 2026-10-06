@@ -69,7 +69,10 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    refuses it. Each role's round is **recorded before the card moves on**: QA's commits (new tests, or a fix to a test of
    theirs that contradicted the spec) are recorded with `dl qa` before anyone else is sent to the card — `dl wt add` refuses
    while QA's commits are unrecorded. A conflict with the job branch is the dev's to resolve, after re-dispatch.
-10. Every commit follows the repo's commit convention (`settings.commit.convention`, detected; your role cards give the
+10. **A defect found in work already merged — product code or a test — is fixed by a card** (`dl card add`, with what was
+   found), never by a standing instruction you repeat in later prompts. A defect outside the job's scope (an agent's
+   report, a reviewer's note) is recorded, not dropped: `"$DL" followup "<finding>" --card T-xx` — the PR lists it.
+11. Every commit follows the repo's commit convention (`settings.commit.convention`, detected; your role cards give the
    format). `dl`'s own merges follow it too and go through the repo's hooks — never around them.
 
 ## Phase 0 — Intake (`intake`)
@@ -269,6 +272,7 @@ ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/qa.md>
 CARD: <card JSON>
 SPEC (one test per acceptance criterion at least, with its test data and edge cases): <abs path to .work/<job>/specs/T-xx.md>
 WORKTREE: <abs path>   QA_SCOPE (write only here): <card.qa_scope>   QA_VERIFY: <card.qa_verify>
+DEV'S COMMIT (what the gate passed — test this): <card.gate.head from "$DL" board / board.json>
 PLAN ACs referenced by the card: <the AC-n lines from plan.md, verbatim>
 Commit your tests in this repo's commit format (your role card, "Commits"), leave the worktree clean, return the JSON your agent definition specifies.
 ```
@@ -333,8 +337,14 @@ OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
 ```
 
 2. Write `.work/<job>/report.md` from that + the board (it is the PR body). An AC "not met" → fix card, back to Phase 3.
-3. **Memory:** for every QA failure or blocking review item that repeated or that a standard would have prevented, record it:
-   `"$DL" learn <role|all> "<one-line lesson>"` — the next jobs' role cards include it.
+3. **Memory:** for every QA failure, blocking review item, refused merge or blocked card that a rule would have prevented,
+   record what to do differently, with what happened: `"$DL" learn <role|all> "<one-line lesson>" --topic <slug> --card T-xx`
+   (or `--evidence "<what happened>"`). `--scope project` (default) — goes into `.deliver/knowledge/lessons.md` with this
+   PR; `shared` — the shared knowledge repo, its own PR; `kit` — a defect of the flow itself, listed for the deliver kit.
+   Reuse a topic that `"$DL" knowledge topics` already lists. When `dl learn` says PROMOTE (a topic seen in three jobs, no
+   standard yet), write the rule: `"$DL" knowledge promote <topic> "<one checkable rule>" --applies-to <kinds/roles>`.
+   Lessons, promotions and follow-ups are recorded **before** `dl ship` — it writes them into the PR; afterwards `dl`
+   refuses them.
 4. `"$DL" ship` — per `settings.merge_mode`:
    - `human`: pushes `job/<id>`, opens the PR → phase `awaiting_pr_merge`. The human reviews and merges.
    - `semi`: same + auto-merge armed: GitHub merges once a human approves and checks pass.

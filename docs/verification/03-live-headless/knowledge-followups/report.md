@@ -1,0 +1,73 @@
+# Live E2E — scenario `models`
+
+Request: `examples/watchlist-poc/JOB-models.md`  ·  started 2026-10-06T00:55:41Z
+
+## 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+
+√ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+- ✅ ECC plugin installed (Version: 2.2.3)
+- ✅ kit installed (scripts/install.sh --user)
+- ✅ fresh repo: no .deliver.json; ~/.deliver/config.json says dispatch subagent
+- ✅ doctor: result: 26 ok, 6 warning(s), 0 problem(s)
+
+## 2 · run: the only input is examples/watchlist-poc/JOB-models.md
+
+- ✅ Michael opened the job JOB-20261006-0056-rating-notch-change
+wall time: 15 min
+
+## 5 · verify the whole flow on disk
+
+- ✅ the first /deliver wrote .deliver.json
+.deliver.json: {"dispatch":"subagent","verify_full":"npm test","worktree_setup":"","merge_mode":"local"}
+- ✅ …read from the repo: verify_full npm test (package.json scripts.test), no install step (no dependencies), local merge (no remote)
+- ✅ …the user's own dispatch carried into it, and into the job
+- ✅ …and Michael's session saw where each value came from ("verify_full: npm test — package.json scripts test")
+- ✅ job reached done
+- ✅ job shipped (local)
+roles: ba, backend-lead, backend, qa, reviewer
+- ✅ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+- ✅ role cards generated for every role
+PM decisions: 5 (implementation details, recorded with rationale)
+- ✅ readiness review complete (no open item) with an architecture
+readiness: 32 items — 22 decided, 10 n/a · architecture: modular-monolith: ratings-lib [node+javascript]
+- ✅ readiness frozen at planning and unchanged since
+- ✅ the Leads cut 1 card(s)
+- ✅ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T-01 ratings-lib: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests | ratings-lib | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+- ✅ every card (1): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged
+- ✅ QA's integration tests are on main (1 file(s) in the cards' qa_scope)
+- ✅ role really ran: business-analyst
+- ✅ role really ran: ecc:architect
+- ✅ role really ran: qa-tester
+- ✅ role really ran: a dev agent
+- ✅ role really ran: a stack reviewer
+- ✅ no tracker errors
+- ✅ kanban view rendered
+- ✅ report.md written by the closing check
+- ✅ no AI attribution in the delivered history (5 commits)
+- ✅ the whole test suite passes on main
+- ✅ hidden oracle passes (3 checks, models.oracle.test.mjs)
+
+## 6 · models per role: the request's Staffing — the backend developer works on haiku
+
+
+models seen (assistant messages per session, from the transcripts):
+- Michael: claude-sonnet-5-5 ×71
+- business-analyst: claude-opus-5-5 ×54
+- qa-tester: claude-sonnet-5-5 ×20
+- backend-dev: claude-haiku-4-5-20251001 ×84
+- ecc:typescript-reviewer: claude-sonnet-5-5 ×7
+- ecc:architect: claude-opus-5-5 ×7
+- ✅ Michael put it in the job: role backend → model haiku
+- ✅ every backend-dev message ran on haiku (claude-haiku-4-5-20251001)
+- ✅ Michael ran on a different model (claude-sonnet-5-5)
+- ✅ no other role ran on haiku — only the asked role changed
+
+## result
+
+cost: $3.59  ·  artifacts: /tmp/claude-0/live/k050b/models
+**34 passed, 0 failed**

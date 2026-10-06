@@ -1,0 +1,121 @@
+# gate: T-01  attempt: 1  2026-10-05T22:03:46Z
+ok    on job/JOB-20261005-2151-rating-notch-change--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/ratings/notch.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: AC-1: notchChange("BBB+", "BB+") returns 3
+ok 1 - AC-1: notchChange("BBB+", "BB+") returns 3
+  ---
+  duration_ms: 1.902712
+  type: 'test'
+  ...
+# Subtest: AC-2: notchChange("BB+", "BBB+") returns -3
+ok 2 - AC-2: notchChange("BB+", "BBB+") returns -3
+  ---
+  duration_ms: 0.220746
+  type: 'test'
+  ...
+# Subtest: AC-3: same rating returns +0, not -0
+ok 3 - AC-3: same rating returns +0, not -0
+  ---
+  duration_ms: 0.115584
+  type: 'test'
+  ...
+# Subtest: AC-4: RATING_SCALE structure
+ok 4 - AC-4: RATING_SCALE structure
+  ---
+  duration_ms: 0.533086
+  type: 'test'
+  ...
+# Subtest: AC-5: RATING_SCALE is immutable
+ok 5 - AC-5: RATING_SCALE is immutable
+  ---
+  duration_ms: 0.649871
+  type: 'test'
+  ...
+# Subtest: AC-6: exports check
+ok 6 - AC-6: exports check
+  ---
+  duration_ms: 0.300213
+  type: 'test'
+  ...
+# Subtest: AC-7: all 361 pairs produce correct results
+ok 7 - AC-7: all 361 pairs produce correct results
+  ---
+  duration_ms: 0.515042
+  type: 'test'
+  ...
+# Subtest: AC-7: concrete table entries
+ok 8 - AC-7: concrete table entries
+  ---
+  duration_ms: 0.122839
+  type: 'test'
+  ...
+# Subtest: AC-8: case insensitivity
+ok 9 - AC-8: case insensitivity
+  ---
+  duration_ms: 0.242589
+  type: 'test'
+  ...
+# Subtest: AC-9: trim whitespace (space, tab, newline, NBSP, BOM)
+ok 10 - AC-9: trim whitespace (space, tab, newline, NBSP, BOM)
+  ---
+  duration_ms: 0.401336
+  type: 'test'
+  ...
+# Subtest: AC-10: zero-width space inside rating throws
+ok 11 - AC-10: zero-width space inside rating throws
+  ---
+  duration_ms: 0.274243
+  type: 'test'
+  ...
+# Subtest: AC-11: unknown strings throw RangeError
+ok 12 - AC-11: unknown strings throw RangeError
+  ---
+  duration_ms: 0.428547
+  type: 'test'
+  ...
+# Subtest: AC-12: empty or whitespace-only strings throw
+ok 13 - AC-12: empty or whitespace-only strings throw
+  ---
+  duration_ms: 0.947989
+  type: 'test'
+  ...
+# Subtest: AC-13: non-strings throw RangeError
+ok 14 - AC-13: non-strings throw RangeError
+  ---
+  duration_ms: 0.377119
+  type: 'test'
+  ...
+# Subtest: AC-14: both arguments invalid
+ok 15 - AC-14: both arguments invalid
+  ---
+  duration_ms: 0.100957
+  type: 'test'
+  ...
+# Subtest: AC-15: safe error messages
+ok 16 - AC-15: safe error messages
+  ---
+  duration_ms: 0.302088
+  type: 'test'
+  ...
+# Subtest: AC-16: extra arguments are ignored
+ok 17 - AC-16: extra arguments are ignored
+  ---
+  duration_ms: 0.145626
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 61.782538
+ok    verify passed

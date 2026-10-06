@@ -30,6 +30,11 @@ if [[ "$(jq -r '.settings.dispatch // "subagent"' "$jf")" == munder || ${DELIVER
   actionable="$(jq '. as $b | [.cards[] | select(.state=="review" or (.state=="ready" and
       all((.depends_on // [])[]; . as $d | ([$b.cards[] | select(.id==$d) | .state] | first) == "merged")))] | length' "$bf")"
   [[ $actionable -eq 0 ]] && exit 0   # only running agents/workers left: they report back on their own
+  # Agents already at work (dispatched in this session, not yet back — the last 90 minutes of the event log) report back
+  # on their own: Michael may wait for them even with cards in review, since those cards' QA or review may be what runs.
+  since="$(date -u -d '-90 min' +%FT%TZ 2>/dev/null || date -u -v-90M +%FT%TZ 2>/dev/null || echo 0)"
+  running="$(awk -F'\t' -v s="$since" '$1 >= s && $2=="dispatch" {d++} $1 >= s && $2=="agent" {a++} END {print d-a+0}' "$root/.work/$job/events.log" 2>/dev/null || echo 0)"
+  [[ ${running:-0} -gt 0 ]] && exit 0
 fi
 
 counter="$root/.work/$job/.stop-blocks"
