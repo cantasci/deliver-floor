@@ -101,11 +101,13 @@ if [[ -n $pdir && -d $pdir ]]; then
   done
   [[ "$(jq -r '.env.GATEGUARD_EXEMPT_GLOBS // empty' "$HOME/.claude/settings.json" 2>/dev/null)" == .work/* ]] \
     && pass "plugin: settings carry the GateGuard exemption" || note "plugin: the GateGuard exemption is not in ~/.claude/settings.json yet — the plugin's first session writes it (restart once), or scripts/install.sh --user --plugin"
-  [[ $found -eq 1 ]] && fail "the kit is installed twice (plugin AND copied into .claude/) — skill and hooks load twice: scripts/install.sh --user --uninstall, then scripts/install.sh --user --plugin"
+  [[ $found -eq 1 ]] && fail "a copy of the kit beside the plugin (copied into .claude/) — its /deliver shadows the plugin's: one Claude Code session with the plugin deletes a copy in ~/.claude; a repo's own copy goes with scripts/install.sh --project <repo> --uninstall"
+  [[ -x $pdir/../../../../data/deliver-deliver-floor/bin/dl ]] && pass "plugin: the stable dl for Michael's brief ($(cd "$pdir/../../../../data/deliver-deliver-floor/bin" && pwd)/dl)" \
+    || note "plugin: the stable dl is written by the plugin's first session (start Claude Code once)"
   found=1
 fi
-[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@deliver-floor + scripts/install.sh --user --plugin, or scripts/install.sh --user (or --project <repo>)"
-have dl && pass "dl on PATH ($(command -v dl))" || note "dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl"
+[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@deliver-floor (or scripts/init.sh)"
+note "your commands are /deliver:<command> in Claude Code (/deliver:status, /deliver:answer …) — no dl needed in a terminal"
 
 echo "Munder Difflin (the default run mode)"
 if [[ -n ${HIVE_ROOT:-} ]]; then

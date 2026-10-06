@@ -31,7 +31,9 @@ run() {
   jq -r 'select(.type=="result") | "  result: \(.subtype)  turns=\(.num_turns)  cost=$\(.total_cost_usd // 0)"' "$log" 2>/dev/null | tail -1
 }
 
-if [[ -n $request && ! -f .work/ACTIVE ]]; then run "/deliver $request"; fi
+# The plugin's skill is /deliver:deliver; only a copy of the kit (this repo's .claude, or ~/.claude without the plugin) is /deliver.
+DCMD=/deliver:deliver; [[ -f .claude/skills/deliver/SKILL.md || -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/deliver/SKILL.md ]] && DCMD=/deliver
+if [[ -n $request && ! -f .work/ACTIVE ]]; then run "$DCMD $request"; fi
 
 last=""
 for ((i = 1; i <= rounds; i++)); do
@@ -56,6 +58,6 @@ for ((i = 1; i <= rounds; i++)); do
   if [[ $state == "$last" ]]; then echo "⚠ no progress in the last round ($phase) — stopping. Check: dl status; tail .work/$job/events.log"; exit 1; fi
   last=$state
   echo "round $i — $job ($phase)"
-  run "/deliver resume"
+  run "$DCMD resume"
 done
 echo "stopped after $rounds rounds — check: dl status"

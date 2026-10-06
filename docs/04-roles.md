@@ -90,7 +90,7 @@ The readiness review records the architecture — e.g. 4 Spring Boot services, 1
   card listing its components and the stack skills to load (`stack_skills`: `springboot-patterns`, `golang-patterns`, …).
 - Cards carry `component`; `dl validate` refuses a card whose scope leaves its component's path or whose role is not the owner.
 - Once Michael moves to planning, `readiness.json` is **frozen** (hash in `job.json`): the architecture and every decision stay
-  fixed for the job. Only a human can reopen them (`dl unfreeze "<reason>"`).
+  fixed for the job. Only a human can reopen them (`/deliver:unfreeze <reason>`).
 
 ## Seats — several devs of one role in parallel
 

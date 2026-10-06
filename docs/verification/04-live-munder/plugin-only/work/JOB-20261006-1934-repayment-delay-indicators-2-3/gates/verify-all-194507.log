@@ -1,0 +1,232 @@
+TAP version 13
+# Subtest: options array is the exact frozen list
+ok 1 - options array is the exact frozen list
+  ---
+  duration_ms: 1.155011
+  type: 'test'
+  ...
+# Subtest: every option maps to its WL
+ok 2 - every option maps to its WL
+  ---
+  duration_ms: 0.25587
+  type: 'test'
+  ...
+# Subtest: surrounding whitespace is trimmed
+ok 3 - surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.103791
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError
+ok 4 - invalid strings throw RangeError
+  ---
+  duration_ms: 1.368882
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError
+ok 5 - non-strings throw RangeError
+  ---
+  duration_ms: 0.385783
+  type: 'test'
+  ...
+# Subtest: all options map to [0,0,2,3,4] without throwing
+ok 6 - all options map to [0,0,2,3,4] without throwing
+  ---
+  duration_ms: 0.135871
+  type: 'test'
+  ...
+# Subtest: pure: same output, options unchanged
+ok 7 - pure: same output, options unchanged
+  ---
+  duration_ms: 0.159534
+  type: 'test'
+  ...
+# Subtest: options are exactly "0","1",">1" and frozen
+ok 8 - options are exactly "0","1",">1" and frozen
+  ---
+  duration_ms: 1.43436
+  type: 'test'
+  ...
+# Subtest: maps each option to its WL
+ok 9 - maps each option to its WL
+  ---
+  duration_ms: 0.217267
+  type: 'test'
+  ...
+# Subtest: trims surrounding whitespace first
+ok 10 - trims surrounding whitespace first
+  ---
+  duration_ms: 0.127496
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError
+ok 11 - invalid strings throw RangeError
+  ---
+  duration_ms: 0.951044
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError
+ok 12 - non-strings throw RangeError
+  ---
+  duration_ms: 0.290517
+  type: 'test'
+  ...
+# Subtest: every option maps without throwing to [0,1,2]
+ok 13 - every option maps without throwing to [0,1,2]
+  ---
+  duration_ms: 0.119288
+  type: 'test'
+  ...
+# Subtest: pure: same output, options untouched
+ok 14 - pure: same output, options untouched
+  ---
+  duration_ms: 0.212011
+  type: 'test'
+  ...
+# Subtest: AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 options and is frozen
+ok 15 - AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 options and is frozen
+  ---
+  duration_ms: 3.192773
+  type: 'test'
+  ...
+# Subtest: AC-2: "no delay" and "<=3 days" both map to WL 0
+ok 16 - AC-2: "no delay" and "<=3 days" both map to WL 0
+  ---
+  duration_ms: 0.34819
+  type: 'test'
+  ...
+# Subtest: AC-3: ">3 days" maps to WL 2
+ok 17 - AC-3: ">3 days" maps to WL 2
+  ---
+  duration_ms: 0.212994
+  type: 'test'
+  ...
+# Subtest: AC-4: ">60 days" maps to WL 3
+ok 18 - AC-4: ">60 days" maps to WL 3
+  ---
+  duration_ms: 0.131442
+  type: 'test'
+  ...
+# Subtest: AC-5: ">90 days" maps to WL 4
+ok 19 - AC-5: ">90 days" maps to WL 4
+  ---
+  duration_ms: 0.105302
+  type: 'test'
+  ...
+# Subtest: AC-6: surrounding whitespace is trimmed before matching
+ok 20 - AC-6: surrounding whitespace is trimmed before matching
+  ---
+  duration_ms: 0.102889
+  type: 'test'
+  ...
+# Subtest: AC-7: strings that are not exactly an option after trim throw RangeError
+ok 21 - AC-7: strings that are not exactly an option after trim throw RangeError
+  ---
+  duration_ms: 0.60488
+  type: 'test'
+  ...
+# Subtest: AC-7 (edge): zero-width space U+200B is not trimmed and throws RangeError
+ok 22 - AC-7 (edge): zero-width space U+200B is not trimmed and throws RangeError
+  ---
+  duration_ms: 0.145734
+  type: 'test'
+  ...
+# Subtest: AC-8: non-string input throws RangeError
+ok 23 - AC-8: non-string input throws RangeError
+  ---
+  duration_ms: 0.383474
+  type: 'test'
+  ...
+# Subtest: AC-9: mapping every option never throws and yields [0, 0, 2, 3, 4]
+ok 24 - AC-9: mapping every option never throws and yields [0, 0, 2, 3, 4]
+  ---
+  duration_ms: 0.464511
+  type: 'test'
+  ...
+# Subtest: AC-18: function is pure and does not mutate the options array
+ok 25 - AC-18: function is pure and does not mutate the options array
+  ---
+  duration_ms: 0.264244
+  type: 'test'
+  ...
+# Subtest: AC-18: module is plain ESM with no I/O and no dependencies
+ok 26 - AC-18: module is plain ESM with no I/O and no dependencies
+  ---
+  duration_ms: 0.564703
+  type: 'test'
+  ...
+# Subtest: AC-19: daysWithDelay.mjs imports no other module (not delayCount.mjs)
+ok 27 - AC-19: daysWithDelay.mjs imports no other module (not delayCount.mjs)
+  ---
+  duration_ms: 0.687834
+  type: 'test'
+  ...
+# Subtest: AC-10: DELAY_COUNT_OPTIONS deep-equals ["0","1",">1"] and is frozen
+ok 28 - AC-10: DELAY_COUNT_OPTIONS deep-equals ["0","1",">1"] and is frozen
+  ---
+  duration_ms: 2.641047
+  type: 'test'
+  ...
+# Subtest: AC-11: delayCountWl("0") returns 0
+ok 29 - AC-11: delayCountWl("0") returns 0
+  ---
+  duration_ms: 0.23877
+  type: 'test'
+  ...
+# Subtest: AC-12: delayCountWl("1") returns 1
+ok 30 - AC-12: delayCountWl("1") returns 1
+  ---
+  duration_ms: 0.292295
+  type: 'test'
+  ...
+# Subtest: AC-13: delayCountWl(">1") returns 2
+ok 31 - AC-13: delayCountWl(">1") returns 2
+  ---
+  duration_ms: 0.222286
+  type: 'test'
+  ...
+# Subtest: AC-14: surrounding whitespace is trimmed first
+ok 32 - AC-14: surrounding whitespace is trimmed first
+  ---
+  duration_ms: 0.309976
+  type: 'test'
+  ...
+# Subtest: AC-15: strings not exactly "0", "1" or ">1" after trim throw RangeError
+ok 33 - AC-15: strings not exactly "0", "1" or ">1" after trim throw RangeError
+  ---
+  duration_ms: 0.557357
+  type: 'test'
+  ...
+# Subtest: AC-16: non-strings throw RangeError (numbers, undefined, null, false, {}, ["1"], no argument)
+ok 34 - AC-16: non-strings throw RangeError (numbers, undefined, null, false, {}, ["1"], no argument)
+  ---
+  duration_ms: 0.240084
+  type: 'test'
+  ...
+# Subtest: AC-17: mapping every option through delayCountWl yields [0, 1, 2] without throwing
+ok 35 - AC-17: mapping every option through delayCountWl yields [0, 1, 2] without throwing
+  ---
+  duration_ms: 0.194942
+  type: 'test'
+  ...
+# Subtest: AC-18: pure function, options array not mutated, plain ESM with no I/O
+ok 36 - AC-18: pure function, options array not mutated, plain ESM with no I/O
+  ---
+  duration_ms: 0.808717
+  type: 'test'
+  ...
+# Subtest: AC-19: delayCount.mjs imports nothing (not daysWithDelay.mjs, no other module)
+ok 37 - AC-19: delayCount.mjs imports nothing (not daysWithDelay.mjs, no other module)
+  ---
+  duration_ms: 0.666622
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 239.81475

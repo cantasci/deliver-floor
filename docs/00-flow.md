@@ -7,7 +7,7 @@ bookkeeping and refuses anything out of order, hooks enforce isolation.
 
 ```text
  ┌──────────────────────────────────────────────────────────────────────────────────────────┐
- │  YOU:  /deliver docs/requirements/watchlist.md      (a sentence works too)                │
+ │  YOU:  /deliver:deliver docs/requirements/watchlist.md   (a sentence works too)           │
  └──────────────────────────────────────────┬───────────────────────────────────────────────┘
                                             ▼
  ┌─ MICHAEL — PM + orchestrator (main session, deliver skill). Assigns everything, writes no code ─┐
@@ -21,7 +21,7 @@ bookkeeping and refuses anything out of order, hooks enforce isolation.
  │       │        component, DB ownership, a11y, i18n, security, privacy, perf, CI, docs …)         │
  │       │        Michael verifies item by item → dl readiness (ERROR on gaps)                      │
  │       │        open pm items → dl decide (Michael, with rationale)                               │
- │       │        open business items → awaiting_clarification → YOU answer → dl clarify           │
+ │       │        open business items → awaiting_clarification → YOU answer → /deliver:answer           │
  │       │        dl phase planning ── FREEZES readiness.json (decisions + architecture)            │
  │  1 BA ───────► Agent(business-analyst) MODE PLAN ── Given/When/Then ACs traced to REQ ids ► plan.md
  │  2 LEADS ────► Agent(ecc:architect) ×N in parallel ── cards (component, scope, verify, qa_scope,  │

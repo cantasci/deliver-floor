@@ -1,0 +1,61 @@
+# gate: T-01  attempt: 1  2026-10-06T19:40:49Z
+ok    on job/JOB-20261006-1934-repayment-delay-indicators-2-3--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/daysWithDelay.mjs","test/indicators/daysWithDelay.test.mjs"] (+ QA tests ["test/indicators/integration/daysWithDelay/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/daysWithDelay.test.mjs
+TAP version 13
+# Subtest: options array is the exact frozen list
+ok 1 - options array is the exact frozen list
+  ---
+  duration_ms: 1.396119
+  type: 'test'
+  ...
+# Subtest: every option maps to its WL
+ok 2 - every option maps to its WL
+  ---
+  duration_ms: 0.21845
+  type: 'test'
+  ...
+# Subtest: surrounding whitespace is trimmed
+ok 3 - surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.104314
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError
+ok 4 - invalid strings throw RangeError
+  ---
+  duration_ms: 0.720929
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError
+ok 5 - non-strings throw RangeError
+  ---
+  duration_ms: 0.291215
+  type: 'test'
+  ...
+# Subtest: all options map to [0,0,2,3,4] without throwing
+ok 6 - all options map to [0,0,2,3,4] without throwing
+  ---
+  duration_ms: 0.123181
+  type: 'test'
+  ...
+# Subtest: pure: same output, options unchanged
+ok 7 - pure: same output, options unchanged
+  ---
+  duration_ms: 0.16723
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 89.421305
+ok    verify passed
