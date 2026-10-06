@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # init — one command from a bare machine to a working /deliver setup.
 #
-#   scripts/init.sh                                   ECC plugin + the kit (user level) + doctor
+#   scripts/init.sh                                   ECC plugin + the deliver plugin (user level) + doctor
 #   scripts/init.sh --repo <path>                     … and a .deliver.json for that repo (if it has none)
 #   scripts/init.sh --munder [--munder-dir <dir>] --hive <dir> [--repo <path>]
 #                                                     … and Munder Difflin from source: clone, install, native
@@ -10,7 +10,9 @@
 #   --subagent         the repo runs with Claude Code subagents instead of the Munder Difflin floor (the default)
 #   --munder-repo <url|path>  where Munder Difflin comes from (default: the fork the kit needs — MD_REPO below)
 #   --munder-ref <branch|tag> which branch or tag of it (default: that repo's default branch)
-#   --project <repo>   install the kit into <repo>/.claude instead of ~/.claude
+#   --kit-from <url|path>  the marketplace the deliver plugin comes from (default: KIT_MARKET below; a local checkout
+#                      for testing a change before it is released)
+#   --project <repo>   copy the kit into <repo>/.claude (committed, a version pinned in the repo) instead of the plugin
 #   --skip-onboarding  mark Munder Difflin's first-run wizard as done (headless / CI setups)
 #   --no-ecc           do not touch the ECC plugin
 #
@@ -24,6 +26,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MD_REPO="https://github.com/cantasci/munder-difflin"
 MD_REF=""
 ECC_MARKET="https://github.com/affaan-m/ECC"
+KIT_MARKET="https://github.com/cantasci/deliver-floor"
 
 repo="" hive="" munder=0 subagent=0 mddir="${XDG_DATA_HOME:-$HOME/.local/share}/munder-difflin" project="" skip_onb=0 ecc=1
 while [[ $# -gt 0 ]]; do
@@ -36,9 +39,10 @@ while [[ $# -gt 0 ]]; do
     --munder-repo) MD_REPO="$2"; shift 2 ;;
     --munder-ref) MD_REF="$2"; shift 2 ;;
     --project) project="$(cd "${2:?}" && pwd)"; shift 2 ;;
+    --kit-from) KIT_MARKET="$2"; shift 2 ;;
     --skip-onboarding) skip_onb=1; shift ;;
     --no-ecc) ecc=0; shift ;;
-    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -58,8 +62,29 @@ if [[ $ecc -eq 1 ]]; then
   fi
 fi
 
-step "deliver kit"
-if [[ -n $project ]]; then "$HERE/scripts/install.sh" --project "$project"; else "$HERE/scripts/install.sh" --user; fi | grep -E "installed|updated|unchanged|backup" || true
+# The kit is the plugin — one copy, updated by Claude Code. Never also copied into ~/.claude: that copy shadows the plugin's
+# /deliver and kept Michael on an old version however often the plugin updated (seen on a user's machine).
+step "deliver plugin"
+skill=""
+if [[ -n $project ]]; then
+  "$HERE/scripts/install.sh" --project "$project" | grep -E "installed|updated|unchanged|backup" || true
+  skill="$project/.claude/skills/deliver"
+else
+  claude plugin marketplace list 2>/dev/null | gq "deliver-floor" || claude plugin marketplace add "$KIT_MARKET"
+  if claude plugin list 2>/dev/null | gq "deliver@deliver-floor"; then claude plugin update deliver@deliver-floor || true
+  else claude plugin install deliver@deliver-floor; fi
+  root="$(jq -r '.plugins["deliver@deliver-floor"] | if type == "array" then .[0] else . end | .installPath // empty' \
+    "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/installed_plugins.json" 2>/dev/null || true)"
+  [[ -n $root && -d $root ]] || { echo "init: the deliver plugin did not install (claude plugin list)" >&2; exit 1; }
+  echo "deliver plugin: $root"
+  node "$root/hooks/deliver/copied-kit.mjs" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}" "$root"   # a copy from an older init goes
+  "$HERE/scripts/install.sh" --user --plugin | grep -E "updated|unchanged|backup" || true   # env and attribution only
+  skill="$root/skills/deliver"
+  # the stable dl Michael's brief names (the plugin's first session writes it too)
+  data="$(cd "$root/../../../.." && pwd)/data/deliver-deliver-floor"; mkdir -p "$data/bin"
+  printf '#!/usr/bin/env bash\n# Written by the deliver plugin at every session start: runs the plugin version that session loaded.\nexec bash "%s" "$@"\n' "$skill/bin/dl" > "$data/bin/dl"
+  chmod +x "$data/bin/dl"
+fi
 
 if [[ -n $repo && ! -f $repo/.deliver.json ]]; then
   step ".deliver.json for $repo"
@@ -144,7 +169,7 @@ if [[ $munder -eq 1 ]]; then
     echo "$repo/.deliver.json: dispatch=munder, munder.hive_root=$hive (this repo's floor)"
   fi
   step "teach Michael /deliver ($hive/CLAUDE.md)"
-  "$HERE/scripts/md-brief.sh" "$hive" ${repo:+"$repo"}
+  bash "$skill/bin/md-brief.sh" "$hive" ${repo:+"$repo"}
   echo "start it: cd $mddir && npm run preview      (Linux root/containers: ELECTRON_DISABLE_SANDBOX=1 npm run preview -- --noSandbox)"
 fi
 

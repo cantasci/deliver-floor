@@ -4,6 +4,30 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.7.0 — 2026-10-06
+
+**One copy of the kit: the plugin** (from a user's machine: Michael kept an old version however often the plugin updated)
+- A copy of the kit in `~/.claude` (from `scripts/install.sh --user` or an older `init.sh`) is deleted by the plugin's
+  first session: its `/deliver` shadowed the plugin's, and its hooks ran beside the plugin's. Its hook entries leave
+  `settings.json` (a backup is kept); your own agents and hooks stay. Who wants a fixed version installs that version of the
+  plugin. `scripts/init.sh` installs the plugin (`--kit-from` for a local checkout) instead of copying the kit.
+- Michael on the floor runs the plugin's `/deliver:deliver`, and other CLIs a `dl` whose path never changes
+  (`~/.claude/plugins/data/deliver-deliver-floor/bin/dl`, rewritten every session) — never a version's own folder, which an
+  update leaves behind.
+- `dl` is on Claude Code's PATH (the plugin's `bin/`): Michael and Claude call it by name.
+
+**Your commands are slash commands — no `dl` in a terminal**
+- `/deliver:status`, `/deliver:board`, `/deliver:seats`, `/deliver:timeline`, `/deliver:answer <id> <answer>`,
+  `/deliver:approve`, `/deliver:reject <what>`, `/deliver:retry <card>`, `/deliver:mode munder|subagent <why>`,
+  `/deliver:reseal`, `/deliver:unfreeze`, `/deliver:abort <why>`, `/deliver:new <request>`, `/deliver:doctor`.
+- Only you can run them (Claude cannot invoke them, and its own `dl abort` is refused); what you type reaches `dl` exactly as
+  typed — quotes, `$` and backticks included. A refusal is always shown, never an empty answer.
+- `/deliver:abort` stops the active job (seats sent home — or Michael told to, when he is on the floor — worktrees cleared,
+  branches kept), so `/deliver:new` can start the next one. Before: a new job was refused with a `dl` command to run.
+- `/deliver:status` right after `/deliver` handed a job to the floor says the request is waiting for Michael (and that the
+  floor must be open in the app), instead of "no active job". Every message that asked you to run `dl …` names the slash
+  command now.
+
 ## 0.6.1 — 2026-10-06
 
 **Faster: no time lost between a seat and Michael** (measured in a live floor run: 5–6 of 16.8 minutes)

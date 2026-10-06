@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# The plugin's dl on Claude Code's PATH (a plugin's bin/ is on the Bash tool's PATH while it is enabled): Michael and Claude
+# call `dl` by name, from the version the session loaded — never a path into the plugin cache.
+exec bash "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/skills/deliver/bin/dl" "$@"

@@ -35,7 +35,12 @@ FAILED=0
 
 step "1 · setup: scripts/init.sh --munder in a fresh HOME"
 SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" "$SB" watchlist-poc > /dev/null
-iso_env bash "$HERE/scripts/init.sh" --munder --munder-dir "$MD" --hive "$W/hive" --repo "$SB" --skip-onboarding > "$W/init.log" 2>&1 \
+# The kit from this checkout's marketplace — the plugin a user installs, with this branch's changes (a local marketplace
+# loads the plugin in place). E2E_COPIED_KIT=1 first puts an old-style copy into ~/.claude, as a user upgrading has it.
+if [[ ${E2E_COPIED_KIT:-0} == 1 ]]; then
+  iso_env bash "$HERE/scripts/install.sh" --user > "$W/copied-kit.log" 2>&1 && ok "an old-style copy of the kit in ~/.claude (as a user upgrading has it)" || bad "copied kit (copied-kit.log)"
+fi
+iso_env bash "$HERE/scripts/init.sh" --munder --munder-dir "$MD" --hive "$W/hive" --repo "$SB" --skip-onboarding --kit-from "$HERE" > "$W/init.log" 2>&1 \
   && ok "init: $(grep -E '^result:' "$W/init.log" | tail -1)" || { bad "init failed (init.log)"; tail -20 "$W/init.log"; exit 1; }
 jq -e '.dispatch == "munder"' "$SB/.deliver.json" >/dev/null && ok "repo set to dispatch=munder (devs are floor workers)" || bad "dispatch not munder"
 grep -q "deliver:begin" "$W/hive/CLAUDE.md" && ok "Michael briefed in the hive (CLAUDE.md, AGENTS.md, GEMINI.md)" || bad "no brief"
@@ -61,24 +66,16 @@ jq --arg c "$CL" --arg m "${E2E_MODEL:-claude-sonnet-5-5}" '.munder = ((.munder 
 cj="$ISO_HOME/.claude.json"; [[ -s $cj ]] || echo '{}' > "$cj"
 jq '.hasCompletedOnboarding = true' "$cj" > "$cj.tmp" && mv "$cj.tmp" "$cj"
 git -C "$SB" add .deliver.json && git -C "$SB" commit -qm "deliver: dispatch on the floor" || true
-# E2E_PLUGIN=1: the kit as a Claude Code plugin from this repo's marketplace instead of the copy init made — namespaced
-# agents (deliver:…), hooks from the plugin, env/attribution from install.sh --plugin, Michael's brief pointing at the plugin.
-SKD="$ISO_HOME/.claude/skills/deliver"
-if [[ ${E2E_PLUGIN:-0} == 1 ]]; then
-  { iso_env bash "$HERE/scripts/install.sh" --user --uninstall && iso_env claude plugin marketplace add "$HERE" \
-      && iso_env claude plugin install deliver@deliver-floor && iso_env bash "$HERE/scripts/install.sh" --user --plugin; } > "$W/plugin.log" 2>&1 \
-    || { bad "plugin install failed (plugin.log)"; tail -20 "$W/plugin.log"; exit 1; }
-  SKD="$(ls -d "$ISO_HOME"/.claude/plugins/cache/deliver-floor/deliver/*/skills/deliver 2>/dev/null | tail -1)"
-  [[ -n $SKD && ! -e $ISO_HOME/.claude/skills/deliver ]] && ok "the kit runs as the plugin deliver@deliver-floor (copied kit removed): $SKD" || bad "plugin layout: $SKD"
-  iso_env env DELIVER_SKILL_DIR="$SKD" bash "$HERE/scripts/md-brief.sh" "$W/hive" "$SB" > /dev/null && grep -q "$SKD" "$W/hive/CLAUDE.md" \
-    && ok "Michael's brief points at the plugin's playbook" || bad "brief does not name the plugin"
-  out="$(iso_env bash "$HERE/scripts/doctor.sh" "$SB" 2>&1)"; printf '%s\n' "$out" > "$W/doctor-plugin.log"
-  [[ $out == *"plugin: deliver"* && $out != *"installed twice"* ]] && ok "doctor sees the plugin install: $(grep -E '^result:' <<<"$out" | tail -1)" || bad "doctor (doctor-plugin.log)"
-fi
-
+# One copy of the kit: the plugin. Nothing of it in ~/.claude, Michael told to run the plugin's skill by the stable dl.
+SKD="$(jq -r '.plugins["deliver@deliver-floor"] | if type == "array" then .[0] else . end | .installPath // empty' "$ISO_HOME/.claude/plugins/installed_plugins.json" 2>/dev/null)/skills/deliver"
+[[ -x $SKD/bin/dl ]] && ok "the kit is the plugin deliver@deliver-floor: $SKD" || bad "plugin not installed: $SKD"
+left="$(ls -d "$ISO_HOME"/.claude/skills/deliver "$ISO_HOME"/.claude/hooks/deliver 2>/dev/null; jq -r '[.hooks // {} | .[][] | .hooks[]?.command | select(test("hooks/deliver[/\"]"))] | .[]' "$ISO_HOME/.claude/settings.json" 2>/dev/null)"
+[[ -z $left ]] && ok "no copy of the kit in ~/.claude (skill, hooks, hook entries)" || bad "a copy of the kit is left: $left"
+grep -q '`/deliver:deliver <the request>`' "$W/hive/CLAUDE.md" && ! grep -q "$SKD" "$W/hive/CLAUDE.md" && grep -q 'plugins/data/deliver-deliver-floor/bin/dl' "$W/hive/CLAUDE.md" \
+  && ok "Michael's brief: /deliver:deliver and the stable dl — no version path" || bad "Michael's brief ($W/hive/CLAUDE.md)"
 step "2 · the floor: open the app, brief Michael with one message, watch"
 iso_env NODE_PATH="${NODE_PATH:-/usr/local/lib/node_modules_global}" xvfb-run -a node "$HERE/tests/md-drive.cjs" "$MD" "$ISO_HOME" "$W/shots" "$SB" \
-  "/deliver $EX/$JOBF${E2E_SAY:+ — $E2E_SAY}" "${E2E_MINUTES:-75}" "$EX/HUMAN_ANSWERS.json" "$SKD/bin/dl" 2>&1 | grep --line-buffered -v -E 'bus\.cc|viz_main|dbus|Fontconfig' | tee "$W/drive.log" | sed 's/^/    /'
+  "/deliver:deliver $EX/$JOBF${E2E_SAY:+ — $E2E_SAY}" "${E2E_MINUTES:-75}" "$EX/HUMAN_ANSWERS.json" "$SKD/bin/dl" 2>&1 | grep --line-buffered -v -E 'bus\.cc|viz_main|dbus|Fontconfig' | tee "$W/drive.log" | sed 's/^/    /'
 [[ ${PIPESTATUS[0]} -eq 0 ]] && ok "the job finished on the floor" || bad "the job did not finish on the floor (drive.log)"
 ok "screenshots of the floor: $(ls "$W/shots" 2>/dev/null | wc -l) (shots/)"
 
@@ -121,9 +118,10 @@ if [[ -n $J ]]; then
     nodone="$(jq -r --argjson ws "$(jq -c '[.munder.seats[].worker]' "$J/job.json")" -s '[.[] | select(.kind=="message" and .to=="god" and .act=="done") | .from] as $d | [$ws[] | select(. as $w | $d | index($w) | not)] | join(", ")' "$W/hive/hive/log.jsonl" 2>/dev/null)"
     [[ -z $nodone ]] && ok "every seat answered the release (act done) — the app still shows them: $left (OPEN F15, app side)" || bad "seats that never answered the release: $nodone"
   fi
-  if [[ ${E2E_PLUGIN:-0} == 1 ]]; then
-    grep -q '`deliver:backend-dev`' "$J/ROLES.md" && ok "plugin: ROLES.md names the kit's agents deliver:<agent>" || bad "plugin: ROLES.md without the deliver: prefix"
-  fi
+  grep -q '`deliver:backend-dev`' "$J/ROLES.md" && ok "plugin: ROLES.md names the kit's agents deliver:<agent>" || bad "plugin: ROLES.md without the deliver: prefix"
+  mt="$(ls -S "$ISO_HOME"/.claude/projects/*hive*/*.jsonl 2>/dev/null | head -1)"
+  base="$(grep -o 'Base directory for this skill: [^"\\]*/skills/deliver' "$mt" 2>/dev/null | head -1 | sed 's/^Base directory for this skill: //')"
+  [[ -n $base && $base != "$ISO_HOME/.claude/skills/"* ]] && ok "Michael ran the plugin's /deliver:deliver: $base" || bad "Michael's /deliver was not the plugin's (${base:-no skill run in $mt})"
 fi
 
 if [[ -n ${E2E_SEAT_MODEL:-} && -n $J ]]; then

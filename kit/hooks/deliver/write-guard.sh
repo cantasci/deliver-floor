@@ -36,7 +36,7 @@ while IFS=$'\t' read -r job root; do
       "$jd"/events.log|"$jd"/gates/*) deny "the event log and gate logs are written by dl and the hooks only." ;;
       "$jd"/readiness.json)
         [[ -n "$(jq -r '.frozen.readiness_sha256 // empty' "$jd/job.json" 2>/dev/null)" ]] \
-          && deny "readiness.json is frozen (decisions + architecture). Only the human can reopen it: dl unfreeze \"<reason>\"."
+          && deny "readiness.json is frozen (decisions + architecture). Only the human can reopen it: /deliver:unfreeze <reason>."
         exit 0 ;;
       "$jd"/board.json)
         case $phase in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) exit 0 ;; esac

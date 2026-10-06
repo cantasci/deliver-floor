@@ -23,10 +23,15 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
   every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
 - **Run mode.** Munder Difflin is the default (`settings.dispatch: "munder"`): you run as Michael inside the app, and every
   role is a person at a seat (see **Munder Difflin** below). Claude Code subagents are used only when the human chose them
-  by hand (`"dispatch": "subagent"` in `.deliver.json`, or `dl dispatch subagent "<why>"`). **`/deliver` in a plain terminal
+  by hand (`"dispatch": "subagent"` in `.deliver.json`, or `/deliver:mode subagent <why>`). **`/deliver` in a plain terminal
   for a floor repo** (`dl` says "this job runs on the Munder Difflin floor", or `AGENT_ID` is not `god` and the repo's mode is
   `munder`): do not run the flow here. Run `"$DL" floor-open "<the request exactly as given>"` — it opens Munder Difflin on the
   repo's floor and hands the job to Michael there — tell the human what it printed, and stop. Never change the mode yourself.
+- **The human's commands** are slash commands they type, never `dl` in their terminal: `/deliver:status`, `/deliver:board`,
+  `/deliver:seats`, `/deliver:timeline`, `/deliver:answer <id> <answer>`, `/deliver:approve` / `/deliver:reject <what>`,
+  `/deliver:retry <card>`, `/deliver:mode`, `/deliver:reseal`, `/deliver:unfreeze`, `/deliver:abort <why>`,
+  `/deliver:new <request>`, `/deliver:doctor`. When the human has to decide something, name the command for it; you cannot
+  run these yourself.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.
 - **Agent names.** This playbook, job.json and board.json use plain names (`backend-dev`). When the kit is installed as a
   plugin, ROLES.md and the role cards list its agents with the plugin prefix (`deliver:backend-dev`): `subagent_type` is
@@ -36,7 +41,8 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
   - `resume` (or empty) → **Resume**.
   - a path to an existing file (e.g. `docs/req.md`) → read it; its content is the job request → **Phase 0**.
   - anything else → it is the job request → **Phase 0**.
-  - A job is already active and a new one is requested → ask the user whether to finish or abort the active one first.
+  - A job is already active and a new one is requested → ask the user whether to finish it, or stop it with
+    `/deliver:abort <why>` and then start the new one with `/deliver:new <request>`.
 
 ## Invariants (never break these)
 

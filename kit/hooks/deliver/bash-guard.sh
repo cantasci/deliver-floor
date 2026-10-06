@@ -68,6 +68,9 @@ grep -Eq 'git[[:space:]].*worktree[[:space:]]+(remove|prune)[^;&|]*(_integration
 grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*job/' <<<"$cmd" \
   && deny "job/ branches must not be deleted by agents. Delete them yourself after the job is closed."
 
+# DELIVER_HUMAN_CMD marks the human's own slash commands (/deliver:retry …, run by Claude Code before the model sees them).
+grep -q 'DELIVER_HUMAN_CMD' <<<"$cmd" && deny "DELIVER_HUMAN_CMD is set only by the human's /deliver:<command> — ask the human to run it."
+
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 # dl as a word, a path (…/bin/dl) or the variable the playbook uses ("$DL", ${DL})
 dl_re='(^|[;&|[:space:](/"'"'"'])(dl|\$\{?DL\}?)"?[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
@@ -75,12 +78,12 @@ if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
 if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then
-  [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write the question down (APPROVAL.md / QUESTIONS.md) and stop; the human answers in a terminal (dl approve | reject | clarify)."
+  [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write the question down (APPROVAL.md / QUESTIONS.md) and stop; the human answers with /deliver:approve | /deliver:reject | /deliver:answer."
 fi
-grep -Eq "${dl_re}(unfreeze|reseal|dispatch)([[:space:]]|$)" <<<"$cmd" \
-  && deny "frozen decisions, seals and the dispatch mode are a human's call, from their own terminal (dl unfreeze | dl reseal \"<reason>\" | dl dispatch munder|subagent \"<why>\")."
+grep -Eq "${dl_re}(unfreeze|reseal|dispatch|abort)([[:space:]]|$)" <<<"$cmd" \
+  && deny "frozen decisions, seals and the dispatch mode are a human's call, with their own slash command (/deliver:unfreeze | /deliver:reseal | /deliver:mode | /deliver:abort)."
 grep -Eq "${dl_re}phase[[:space:]][^;&|]*--force" <<<"$cmd" \
-  && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it, from their own terminal."
+  && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it."
 grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [[ ${DELIVER_HEADLESS:-} == 1 ]] \
   && deny "granting a blocked card new attempts is a human decision; in headless mode the human runs it."
 
