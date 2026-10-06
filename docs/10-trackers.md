@@ -1,4 +1,4 @@
-# 10 — Trackers: where the cards are shown (local kanban, Jira, your own)
+# 10 — Trackers: where the cards are shown (local kanban, Jira, Asana, Linear, GitHub Projects, your own)
 
 `board.json` is the flow's source of truth — `dl` guards read it. A **tracker** mirrors it into a tool people already watch:
 it creates the job and its cards, moves each card through the workflow columns as the roles finish their steps, posts each
@@ -113,22 +113,51 @@ The Jira provider is covered by `tests/run.sh` against a contract stub of the RE
 required fields, workflow transitions, comments, links, remote links) — including a workflow that lacks a status. A run
 against a real Jira site needs the credentials above; nothing else changes.
 
-## Adding a tracker (Linear, Azure Boards, GitHub Projects, …)
+## Asana, Linear, GitHub Projects
+
+Same contract as Jira, in your **existing** board: the job becomes one item, every card an item under it, `depends_on` the
+tool's own dependency, the columns move with the card, each role's result a comment, the branch in the description.
+`dl tracker check` (and `scripts/doctor.sh`) asks the tool first; a column your board lacks is **named and refused, never
+created** — add it there, or map the stage to a name your board has with `tracker.columns` (e.g. `{"todo": "Todo"}`).
+
+| | Asana | Linear | GitHub Projects |
+| --- | --- | --- | --- |
+| `.deliver.json` | `"tracker": {"kind": "asana", "asana": {"project": "<project gid>"}}` | `"tracker": {"kind": "linear", "linear": {"team": "ENG"}}` | `"tracker": {"kind": "github", "github": {"repo": "acme/app", "project": 7}}` (+ `project_owner`, `status_field`, `labels`) |
+| credentials (environment) | `ASANA_TOKEN` — a personal access token | `LINEAR_API_KEY` — a personal API key | `GITHUB_TOKEN` (or `GH_TOKEN`) with the repo's issues and the project |
+| the job | a task in the project | an issue in the team | an issue in the repo |
+| a card | a subtask of it, in the project | a sub-issue of it | a sub-issue of it, added to the project |
+| columns | the project's **sections** | the team's **workflow states** | the options of the project's single-select **Status** field |
+| `depends_on` | task dependencies | a *blocks* relation | *blocked by* |
+| comments | stories (comments) | comments | issue comments |
+| branch | in the notes + a comment | in the description, a link attachment, a comment; the issue identifier (ENG-12) is in the branch name | in the body + a comment |
+
+Built from each vendor's official API description, not from memory: Asana's OpenAPI (`github.com/Asana/openapi`), Linear's
+GraphQL schema and SDK (`github.com/linear/linear`), GitHub's REST description (`github.com/github/rest-api-description`)
+and GraphQL schema (`github.com/octokit/graphql-schema`). Every GraphQL document the trackers send was validated against
+those schemas and every REST call's path, method and body fields against those descriptions
+([verification](verification/10-trackers/report.md)); `tests/run.sh` runs the whole flow against a stub of each API
+(`tests/tracker-stubs.mjs`). Not yet run against a real Asana, Linear or GitHub Projects account — see
+[OPEN O2](OPEN.md). Asana documents a limit of 30 dependencies + dependents per task.
+
+**Trello** is not here yet: its official API reference (developer.atlassian.com) is not reachable from the environment this
+kit was built in, and it is not written from memory.
+
+## Adding a tracker (Azure Boards, Trello, …)
 
 One class, four methods, one registration — the flow, `dl` and the other trackers do not change:
 
 ```js
-// kit/skills/deliver/bin/trackers/linear.mjs
+// kit/skills/deliver/bin/trackers/azure.mjs — trackers/linear.mjs is a complete example
 import { Tracker, registerTracker, stageOf } from "../tracker.mjs";
-export class LinearTracker extends Tracker {
+export class AzureTracker extends Tracker {
   async open() { /* create the job container + one item per card; store ids in card.tracker */ }
   async sync(cardId, event) { /* move the item to this.columns[stageOf(card)] */ }
   async note(cardId, author, text) { /* comment as the role */ }
   async branch(cardId) { /* attach card.branch / card.branch_url */ }
   async check() { /* optional: [{ok, msg}] — what dl tracker check and doctor print, before any job */ }
 }
-registerTracker("linear", LinearTracker);
+registerTracker("azure", AzureTracker);
 ```
 
-Drop the file into `bin/trackers/` — the factory loads every `*.mjs` there — and set `"tracker": {"kind": "linear"}`.
+Drop the file into `bin/trackers/` — the factory loads every `*.mjs` there — and set `"tracker": {"kind": "azure"}`.
 `dl new` refuses a kind no loaded tracker registered. (`tests/run.sh` proves this with a throw-away tracker.)

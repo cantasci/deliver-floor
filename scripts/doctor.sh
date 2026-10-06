@@ -101,11 +101,13 @@ if [[ -n $pdir && -d $pdir ]]; then
   done
   [[ "$(jq -r '.env.GATEGUARD_EXEMPT_GLOBS // empty' "$HOME/.claude/settings.json" 2>/dev/null)" == .work/* ]] \
     && pass "plugin: settings carry the GateGuard exemption" || note "plugin: the GateGuard exemption is not in ~/.claude/settings.json yet — the plugin's first session writes it (restart once), or scripts/install.sh --user --plugin"
-  [[ $found -eq 1 ]] && fail "the kit is installed twice (plugin AND copied into .claude/) — skill and hooks load twice: scripts/install.sh --user --uninstall, then scripts/install.sh --user --plugin"
+  [[ $found -eq 1 ]] && fail "a copy of the kit beside the plugin (copied into .claude/) — its /deliver shadows the plugin's: one Claude Code session with the plugin deletes a copy in ~/.claude; a repo's own copy goes with scripts/install.sh --project <repo> --uninstall"
+  [[ -x $pdir/../../../../data/deliver-deliver-floor/bin/dl ]] && pass "plugin: the stable dl for Michael's brief ($(cd "$pdir/../../../../data/deliver-deliver-floor/bin" && pwd)/dl)" \
+    || note "plugin: the stable dl is written by the plugin's first session (start Claude Code once)"
   found=1
 fi
-[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@deliver-floor + scripts/install.sh --user --plugin, or scripts/install.sh --user (or --project <repo>)"
-have dl && pass "dl on PATH ($(command -v dl))" || note "dl not on PATH — only for you in a terminal: ln -sf ~/.claude/skills/deliver/bin/dl ~/.local/bin/dl"
+[[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@deliver-floor (or scripts/init.sh)"
+note "your commands are /deliver:<command> in Claude Code (/deliver:status, /deliver:answer …) — no dl needed in a terminal"
 
 echo "Munder Difflin (the default run mode)"
 if [[ -n ${HIVE_ROOT:-} ]]; then
@@ -203,12 +205,18 @@ if [[ -n $repo ]]; then
     elif have "$bin"; then pass "role $role runs on $prov ($(command -v "$bin")) — signed in with its own login or key (not checked)"
     else fail "role $role runs on $prov but '$bin' is not on PATH — install and sign in to it, or drop the provider"; fi
   done < <(jq -r '(.roles // {}) | to_entries[] | select((.value.provider // "claude") != "claude") | [.key, .value.provider] | @tsv' <<<"$eff")
-  if [[ "$(jq -r '.tracker.kind // "local"' <<<"$eff")" == jira ]]; then
-    if [[ -z ${JIRA_BASE_URL:-} ]] || [[ -z ${JIRA_PAT:-} && ( -z ${JIRA_EMAIL:-} || -z ${JIRA_API_TOKEN:-} ) ]]; then
-      fail "tracker jira: set JIRA_BASE_URL and JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center) — docs/10-trackers.md#jira"
+  tk="$(jq -r '.tracker.kind // "local"' <<<"$eff")"; need=""
+  case $tk in
+    jira)   [[ -z ${JIRA_BASE_URL:-} ]] || [[ -z ${JIRA_PAT:-} && ( -z ${JIRA_EMAIL:-} || -z ${JIRA_API_TOKEN:-} ) ]] && need="JIRA_BASE_URL and JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center)" ;;
+    asana)  [[ -n ${ASANA_TOKEN:-} ]] || need="ASANA_TOKEN (a personal access token)" ;;
+    linear) [[ -n ${LINEAR_API_KEY:-} ]] || need="LINEAR_API_KEY" ;;
+    github) [[ -n ${GITHUB_TOKEN:-}${GH_TOKEN:-} ]] || need="GITHUB_TOKEN (or GH_TOKEN) with access to the repo's issues and the project" ;;
+  esac
+  if [[ $tk != local ]]; then
+    if [[ -n $need ]]; then fail "tracker $tk: set $need — docs/10-trackers.md#$tk"
     else
       tf="$(mktemp)"; printf '%s' "$eff" > "$tf"
-      while IFS= read -r l; do case $l in "ok   "*) pass "jira: ${l#ok   }" ;; *) fail "jira: ${l#FAIL }" ;; esac; done < <(node "$KIT/bin/tracker-cli.mjs" check "$tf" 2>&1)
+      while IFS= read -r l; do case $l in "ok   "*) pass "$tk: ${l#ok   }" ;; *) fail "$tk: ${l#FAIL }" ;; esac; done < <(node "$KIT/bin/tracker-cli.mjs" check "$tf" 2>&1)
       rm -f "$tf"
     fi
   fi

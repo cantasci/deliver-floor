@@ -1,0 +1,71 @@
+# qa_verify: node --test test/indicators/integration/delayCount/*.test.mjs
+TAP version 13
+# Subtest: AC-10: DELAY_COUNT_OPTIONS deep-equals ["0","1",">1"] and is frozen
+ok 1 - AC-10: DELAY_COUNT_OPTIONS deep-equals ["0","1",">1"] and is frozen
+  ---
+  duration_ms: 2.792075
+  type: 'test'
+  ...
+# Subtest: AC-11: delayCountWl("0") returns 0
+ok 2 - AC-11: delayCountWl("0") returns 0
+  ---
+  duration_ms: 0.225603
+  type: 'test'
+  ...
+# Subtest: AC-12: delayCountWl("1") returns 1
+ok 3 - AC-12: delayCountWl("1") returns 1
+  ---
+  duration_ms: 0.085115
+  type: 'test'
+  ...
+# Subtest: AC-13: delayCountWl(">1") returns 2
+ok 4 - AC-13: delayCountWl(">1") returns 2
+  ---
+  duration_ms: 0.168335
+  type: 'test'
+  ...
+# Subtest: AC-14: surrounding whitespace is trimmed first
+ok 5 - AC-14: surrounding whitespace is trimmed first
+  ---
+  duration_ms: 0.248707
+  type: 'test'
+  ...
+# Subtest: AC-15: strings not exactly "0", "1" or ">1" after trim throw RangeError
+ok 6 - AC-15: strings not exactly "0", "1" or ">1" after trim throw RangeError
+  ---
+  duration_ms: 0.42494
+  type: 'test'
+  ...
+# Subtest: AC-16: non-strings throw RangeError (numbers, undefined, null, false, {}, ["1"], no argument)
+ok 7 - AC-16: non-strings throw RangeError (numbers, undefined, null, false, {}, ["1"], no argument)
+  ---
+  duration_ms: 0.559027
+  type: 'test'
+  ...
+# Subtest: AC-17: mapping every option through delayCountWl yields [0, 1, 2] without throwing
+ok 8 - AC-17: mapping every option through delayCountWl yields [0, 1, 2] without throwing
+  ---
+  duration_ms: 0.196855
+  type: 'test'
+  ...
+# Subtest: AC-18: pure function, options array not mutated, plain ESM with no I/O
+ok 9 - AC-18: pure function, options array not mutated, plain ESM with no I/O
+  ---
+  duration_ms: 0.806251
+  type: 'test'
+  ...
+# Subtest: AC-19: delayCount.mjs imports nothing (not daysWithDelay.mjs, no other module)
+ok 10 - AC-19: delayCount.mjs imports nothing (not daysWithDelay.mjs, no other module)
+  ---
+  duration_ms: 0.616454
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 125.306425

@@ -33,25 +33,25 @@ The floor is the default.
 
 | Mode | When | How |
 | --- | --- | --- |
-| **Munder Difflin floor** (default, `"dispatch": "munder"`) | every role is a person at a seat, you talk only to Michael | `scripts/init.sh --munder --hive <dir> --repo <repo>`, start the app, give `/deliver <request>` to **Michael in the app** |
+| **Munder Difflin floor** (default, `"dispatch": "munder"`) | every role is a person at a seat, you talk only to Michael | `scripts/init.sh --munder --hive <dir> --repo <repo>`, start the app, give `/deliver:deliver <request>` to **Michael in the app** |
 | **Claude Code subagents** (`"dispatch": "subagent"`) | no app: one `claude` session, roles run as subagents; also every unattended run (`scripts/run-headless.sh`) | new jobs: `"dispatch": "subagent"` in the repo's `.deliver.json` — `scripts/init.sh --subagent --repo <repo>` writes it, `scripts/sandbox.sh --subagent <dir>` makes a sandbox with it. A running job: `dl dispatch subagent "<why>"` from your own terminal |
 
-Back to the floor: remove the key (or set `"munder"`), or `dl dispatch munder "<why>"` for a running job. `dl dispatch` is the
+Back to the floor: remove the key (or set `"munder"`), or `/deliver:mode munder <why>` for a running job. `/deliver:mode` is the
 human's command: bash-guard refuses it to every agent, Michael included, and it is refused in unattended sessions.
 
-**`/deliver` in a terminal opens the floor.** Type `/deliver <request>` in a plain `claude` session in a floor repo, and the
+**`/deliver:deliver` outside the app opens the floor.** Type `/deliver:deliver <request>` in a plain Claude Code session in a floor repo, and the
 session does not run the job itself: `dl floor-open` aims Munder Difflin at the repo's floor (`munder.hive_root` in
 `.deliver.json`, else the app's current floor), starts the app when it is not running (`munder.app_command`, else the
 installed app, else the source checkout `scripts/init.sh --munder` made), teaches Michael `/deliver` there, and puts your
 request in his inbox — the app wakes him. When the app had to be started, it opens on its floor picker with the repo's floor
-selected: **click Open once** (the app has no setting to skip the picker); Michael starts and reads the job. You follow the job on the floor (or `dl status` / `dl kanban` from the terminal).
+selected: **click Open once** (the app has no setting to skip the picker); Michael starts and reads the job. You follow the job on the floor (or `/deliver:status` / `/deliver:board` from the terminal).
 An app already open on another floor is never switched: you are told to open the repo's floor in it.
 
 **The job itself never runs from a separate terminal.** The app's Michael reads the hive inbox; a second Michael
 in another terminal reads the same inbox, and the two race for every seat's report (seen on a user's machine). `dl` refuses
 every flow command of a floor job unless it comes from the app's Michael (`AGENT_ID=god`, which the app sets in his
 terminal): `this job runs on the Munder Difflin floor … give /deliver to Michael in the app`. From any terminal you can still
-read (`dl status`, `dl next`, `dl kanban`, `dl md-seats`), answer (`dl clarify`) and switch the mode (`dl dispatch`).
+read (`/deliver:status`, `/deliver:board`, `/deliver:seats`), answer (`/deliver:answer`), stop the job (`/deliver:abort`) and switch the mode (`/deliver:mode`).
 
 ## 1. Install and configure — one command
 
@@ -91,7 +91,7 @@ Start it: `cd ~/.local/share/munder-difflin && npm run preview` (Linux as root /
 | empty desk | a seat released or reaped shows as `not seated` in `dl md-seats`; `dl md-hire` seats a replacement with the same face |
 | seat health | `live` only after the person's `seated` message — the app's registry alone proves nothing (a worker that died at startup stays in it). See § 2a |
 | end of job | `dl md-release`: every seat gets the release order and goes home |
-| human questions | only at the start: the readiness questions on ASK ME cards (`hive/tasks.json → humanQA`) — or the composer; answers recorded with `dl clarify`. After that Michael decides (`dl pm-decide`), and the PR lists it |
+| human questions | only at the start: the readiness questions on ASK ME cards (`hive/tasks.json → humanQA`) — or the composer; answers recorded with `dl clarify` (by Michael) or `/deliver:answer` (you). After that Michael decides (`dl pm-decide`), and the PR lists it |
 | role → face | `roles.yaml → floor` (character + accent) for a role's first seat; further seats get a cast member nobody on the job has |
 
 A seat is a plain `claude` (or the role's provider) in the repo with `isolate: false`: its instructions come with every order,
@@ -165,6 +165,6 @@ Two things to know:
 ## 6. Watching
 
 - The floor: who is at which desk, Michael's terminal, the workers' terminals.
-- `dl kanban` / `.work/<job>/kanban.html`: the cards by column, seats busy/idle.
+- `/deliver:board` / `.work/<job>/kanban.html`: the cards by column, seats busy/idle.
 - Munder Difflin's own Tasks board shows hive tasks; for a delivery job `board.json` is the source of truth — don't move
   delivery cards on the hive board.

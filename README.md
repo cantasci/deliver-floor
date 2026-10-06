@@ -58,13 +58,13 @@ Needs git, jq and Node 18+ (on Windows also Git for Windows); the first session 
 Then, in your repository:
 
 ```text
-/deliver docs/requirements/feature.md
+/deliver:deliver docs/requirements/feature.md
 ```
 
 - **On the Munder Difflin floor (default).** Install the app with `scripts/init.sh --munder`: it builds
   the [cantasci/munder-difflin](https://github.com/cantasci/munder-difflin) fork — the released app (upstream) never starts
-  a `/deliver` seat. `/deliver` typed in a terminal opens the app on your repo's floor and hands the job
-  to Michael there; you watch the team work and talk only to him.
+  a `/deliver` seat. It installs the plugin above too (never a second copy of the kit). `/deliver:deliver` typed in Claude
+  Code opens the app on your repo's floor and hands the job to Michael there; you watch the team work and talk only to him.
 - **With Claude Code subagents.** Put `"dispatch": "subagent"` in `.deliver.json` and `/deliver` runs right there, in one
   session — also how unattended runs work (`scripts/run-headless.sh`).
 
@@ -78,6 +78,24 @@ scripts/sandbox.sh --subagent /tmp/wl watchlist-poc && cd /tmp/wl && claude
 
 No model at hand? `tests/replay-watchlist.sh` plays a whole job in your terminal with the real `dl` output.
 
+### Your commands
+
+Everything you do is a slash command in Claude Code — you never run `dl` yourself. Only you can run these; Claude cannot.
+
+| Command | What it does |
+| --- | --- |
+| `/deliver:deliver <request>` · `/deliver:new <request>` | start a job (text or a requirements `.md`); `new` first tells you when a job is still active |
+| `/deliver:status` · `/deliver:board` · `/deliver:seats` · `/deliver:timeline` | where the job is · the kanban · who sits where on the floor · where the time went |
+| `/deliver:answer <id> <answer>` | answer a readiness question |
+| `/deliver:approve [note]` · `/deliver:reject <what to change>` | the plan, when you switched the plan gate on |
+| `/deliver:retry <card>` | give a blocked card new attempts |
+| `/deliver:abort <why>` | stop the active job (seats home, worktrees cleared, branches kept) — then `/deliver:new` |
+| `/deliver:mode munder\|subagent <why>` | run the job on the floor or as Claude Code subagents |
+| `/deliver:reseal <why>` · `/deliver:unfreeze <why>` | accept a hand edit of the job's state · reopen the frozen readiness decisions |
+| `/deliver:doctor` | the plugin version, the settings that apply, what is missing |
+
+What you type after the command reaches the kit exactly as typed, quotes and `$` included.
+
 ## Manage it per repository: `.deliver.json`
 
 The first `/deliver` writes a complete `.deliver.json` at the repo root — read from the repo, not guessed: the test command
@@ -85,7 +103,7 @@ from your `Makefile` or `package.json` scripts (with the package manager your lo
 `Cargo.toml` and others; the install command for each card's worktree from the lockfile; `local` merging when there is no
 remote; the floor your repo is registered on. It prints where each value came from, and a repo without tests or code gets
 an empty `verify_full` rather than an invented one. The file has a JSON schema, so your editor completes and explains every
-key. Commit it; change it any time; `dl config` shows what applies. For a pnpm + TypeScript repo on a floor, for example:
+key. Commit it; change it any time; `/deliver:doctor` shows what applies. For a pnpm + TypeScript repo on a floor, for example:
 
 ```text
 created .deliver.json — this repo's /deliver settings, read from the repo:
@@ -116,6 +134,11 @@ itself until you turn that on:
 After an update, run `/reload-plugins` (or start a new session). The first session on a new version tells you which version
 you are on now and links to the [CHANGELOG](CHANGELOG.md). Your `.deliver.json` files and `~/.deliver/config.json` are
 never touched by an update.
+
+The plugin is the only copy of the kit: a copy that an older `scripts/install.sh --user` or `init.sh` put into `~/.claude`
+is deleted by the plugin's first session (your own agents and hooks stay; `settings.json` is backed up), because its
+`/deliver` shadowed the plugin's and kept Michael on the old version. Want a fixed version? Install that version of the
+plugin. Michael on the floor always runs the version Claude Code loaded last.
 
 ## Connect it
 
@@ -160,26 +183,30 @@ Put the variables in `~/.claude/settings.json` → `"env"` (every session, the f
   whoever calls it ([04 § Models and CLIs per role](docs/04-roles.md#models-and-clis-per-role)).
 - **Another vendor's model inside Claude Code** — through a gateway (above); the subagent mode works too.
 
-### Jira
+### Jira, Asana, Linear, GitHub Projects
 
-1. Credentials go in the environment, never in a file you commit. **Cloud:** `JIRA_BASE_URL=https://<site>.atlassian.net`,
-   `JIRA_EMAIL`, `JIRA_API_TOKEN` (id.atlassian.com → Security → API tokens). **Data Center:** `JIRA_BASE_URL`, `JIRA_PAT`,
-   and `"api_version": "2"`. Use a bot user that may browse, create, edit, transition, comment and link in the project.
-2. In `.deliver.json`: `"tracker": {"kind": "jira", "jira": {"project": "WL"}}`.
-3. Check the connection before any job: `dl tracker check` (or `scripts/doctor.sh <repo>`). It confirms the sign-in, the
-   project, the Epic and Task issue types, a workflow status for every column (To Do, In Progress, QA, Code Review, Done,
-   Blocked, Won't Do), and the "Blocks" link type. Anything missing is named; your columns can be mapped to your workflow's
-   own status names with `tracker.columns`.
+The cards can live in the tool your team already watches — in your existing board, never a new one: `"tracker": {"kind":
+"jira" | "asana" | "linear" | "github", …}` in `.deliver.json`, the credentials in the environment (never in a file you
+commit). Michael then opens the job and a card per card under it, moves them as the roles finish their steps, and posts each
+gate, QA and review result as a comment.
 
-Michael then opens an Epic per job and a Task per card, moves them as the roles finish their steps, and posts each gate,
-QA and review result as a comment. The card branch carries the issue key, so Jira's Development panel shows it. Details:
-[10-trackers](docs/10-trackers.md#jira).
+| Tool | `.deliver.json` | Credentials |
+| --- | --- | --- |
+| Jira | `"jira": {"project": "WL"}` | Cloud: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` · Data Center: `JIRA_BASE_URL`, `JIRA_PAT`, `"api_version": "2"` |
+| Asana | `"asana": {"project": "<project gid>"}` | `ASANA_TOKEN` |
+| Linear | `"linear": {"team": "ENG"}` | `LINEAR_API_KEY` |
+| GitHub Projects | `"github": {"repo": "acme/app", "project": 7}` | `GITHUB_TOKEN` (or `GH_TOKEN`) |
+
+Check it before any job with `scripts/doctor.sh <repo>` (or `/deliver:doctor`): the sign-in, the project or team, and a
+column for every stage (To Do, In Progress, QA, Code Review, Done, Blocked, Won't Do). A missing column is named, never
+added to your board — add it there, or map the stage to your own name with `tracker.columns`. Details:
+[10-trackers](docs/10-trackers.md).
 
 ## Extend it
 
 | To add | Do | Guide |
 | --- | --- | --- |
-| another tracker (Linear, Azure Boards, GitHub Projects…) | one class with `open`, `sync`, `note`, `branch` (and optionally `check`) in `kit/skills/deliver/bin/trackers/<name>.mjs`, then `"tracker": {"kind": "<name>"}` — nothing else changes | [10 § Adding a tracker](docs/10-trackers.md#adding-a-tracker-linear-azure-boards-github-projects-) |
+| another tracker (Trello, Azure Boards…) | one class with `open`, `sync`, `note`, `branch` (and optionally `check`) in `kit/skills/deliver/bin/trackers/<name>.mjs`, then `"tracker": {"kind": "<name>"}` — nothing else changes | [10 § Adding a tracker](docs/10-trackers.md#adding-a-tracker-linear-azure-boards-github-projects-) |
 | a role (data, devops…) | an entry in `roles.yaml` and an agent in `kit/agents/` (or an ECC agent) | [04 § Adding a role](docs/04-roles.md#adding-a-role-example-data) |
 | your company's standards | Markdown files with a `## Must` list; every matching role gets them in its role card | [08 § A standard](docs/08-knowledge.md#1-a-standard) |
 | a default per project | a key in `.deliver.json` (validated by its schema) | [03-settings](docs/03-settings.md) |
@@ -215,7 +242,7 @@ Every claim above was run, live, with real Claude Code sessions and real agents 
 | [07-munder-difflin](docs/07-munder-difflin.md) | the office floor: choosing the mode, seats, failed seats and re-seating, authentication |
 | [08-knowledge](docs/08-knowledge.md) | company standards, lessons, the floor's Knowledge Graph and MemPalace |
 | [09-testing](docs/09-testing.md) | the test layers and how to run them |
-| [10-trackers](docs/10-trackers.md) | local kanban, Jira, adding a tracker |
+| [10-trackers](docs/10-trackers.md) | local kanban, Jira, Asana, Linear, GitHub Projects, adding a tracker |
 | [11-multiple-projects](docs/11-multiple-projects.md) | several projects on one floor — what works, what is still open |
 | [OPEN](docs/OPEN.md) | everything not done or not verified yet — the one list |
 
@@ -223,8 +250,10 @@ Every claim above was run, live, with real Claude Code sessions and real agents 
 
 ```text
 .claude-plugin/            marketplace.json — this repo is a plugin marketplace offering kit/ as the plugin "deliver"
-kit/                       the plugin (or what scripts/install.sh copies into ~/.claude)
+kit/                       the plugin (scripts/install.sh --project copies it into one repo, pinned)
 ├── skills/deliver/        SKILL.md (Michael's playbook) · roles.yaml · readiness.yaml · config.json · deliver.schema.json · bin/dl + helpers
+├── skills/<command>/      your slash commands: status · board · seats · timeline · answer · approve · reject · retry · abort · mode · reseal · unfreeze · new · doctor
+├── bin/dl                 dl on Claude Code's PATH
 ├── agents/                business-analyst · qa-tester · backend-dev · frontend-dev · mobile-dev · database-dev
 ├── hooks/deliver/         guards (bash) · run.mjs (cross-platform launcher) · setup.mjs (first-session setup)
 └── hooks/hooks.json       the plugin's hook wiring

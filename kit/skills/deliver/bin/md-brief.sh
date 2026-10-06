@@ -7,6 +7,14 @@ set -euo pipefail
 hive="${1:?usage: md-brief.sh <hive dir> [repo …]}"; shift
 mkdir -p "$hive"
 skill="${DELIVER_SKILL_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"   # the skill this script ships in
+# Installed as a plugin (…/plugins/cache/<marketplace>/<plugin>/<version>/skills/deliver): Michael runs the plugin's skill,
+# /deliver:deliver, and other CLIs the stable dl in the plugin's data dir — never this version's path, which an update
+# leaves behind (a copied kit's /deliver kept Michael on an old version on a user's machine).
+cmd="/deliver" dl="$skill/bin/dl" playbook="\`$skill/SKILL.md\`"
+if [[ $skill =~ ^(.*)/cache/([^/]+)/([^/]+)/[^/]+/skills/deliver$ ]]; then
+  id="$(printf '%s@%s' "${BASH_REMATCH[3]}" "${BASH_REMATCH[2]}" | tr -c 'A-Za-z0-9_\n-' '-')"
+  cmd="/${BASH_REMATCH[3]}:deliver" dl="${BASH_REMATCH[1]}/data/$id/bin/dl" playbook="the file \`$dl playbook\` names"
+fi
 repos=""; for r in "$@"; do repos+="  - \`$(cd "$r" && pwd)\`"$'\n'; done
 block="$(cat <<EOF
 <!-- deliver:begin — managed by the deliver plugin (md-brief.sh); edit outside these markers -->
@@ -14,11 +22,11 @@ block="$(cat <<EOF
 
 You are Michael, the PM. For any request to build, change or fix something in a code repository:
 
-1. Run \`/deliver <the request>\` — or \`/deliver <path to a requirements .md>\` when the request is a document.
+1. Run \`$cmd <the request>\` — or \`$cmd <path to a requirements .md>\` when the request is a document.
    Put the target repository in the request as \`REPO: <absolute path>\` when it is not obvious.
-   **The request reached you as a message (Slack, webhook, inbox), or you are not Claude Code?** Then \`/deliver\` is not
+   **The request reached you as a message (Slack, webhook, inbox), or you are not Claude Code?** Then \`$cmd\` is not
    something you can invoke yourself: read the playbook
-   \`$skill/SKILL.md\` and follow it exactly, with \`$skill/bin/dl\` as \`dl\`.
+   $playbook and follow it exactly, with \`$dl\` as \`dl\`.
 2. Follow the deliver skill to the letter: you pick the roles, assign every card, and never write product code yourself.
    The Business Analyst analyses, devs build with unit tests (TDD), QA writes and runs the integration/e2e tests,
    a Lead reviews, \`dl\` merges. The human takes over at the PR.
@@ -31,7 +39,7 @@ You are Michael, the PM. For any request to build, change or fix something in a 
    error, no "seated" in time). Re-seat it yourself: \`dl md-reseat <seat> "<why>" [--model <model>]\`.
 4. You ask the human only when a project or task is given (the readiness questions, on an ASK ME card: \`tasks.json\` →
    \`humanQA\`). After that you decide yourself (\`dl pm-decide\`, or archive a card with its reason); the PR lists your decisions.
-5. Status questions: \`/deliver status\`.
+5. Status questions: \`$cmd status\`.
 
 Repositories on this floor:
 ${repos:-  - (none registered — add with scripts/md-brief.sh <hive> <repo>)}

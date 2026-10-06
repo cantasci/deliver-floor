@@ -6,11 +6,11 @@ The kit is files (skill + agents + hooks + `dl`). Where the orchestrating sessio
 | --- | --- | --- | --- | --- |
 | 1. Interactive Claude Code | your terminal/IDE session | subagents (background, pipelined) | the chat (AskUserQuestion) | **start here**: learning the flow, most jobs |
 | 2. Munder Difflin | the god agent on the floor (any CLI) | floor workers (any CLI/model) or subagents | ASK ME cards / the composer | watching the roles work, jobs from Slack/webhooks, mixed models |
-| 3. Headless script | `claude -p` rounds | subagents (foreground, batched) | `dl clarify` / `dl approve` in a terminal | overnight runs, a queue of jobs |
+| 3. Headless script | `claude -p` rounds | subagents (foreground, batched) | `/deliver:answer` / `/deliver:approve` | overnight runs, a queue of jobs |
 | 4. Agent SDK | your TypeScript/Python program | subagents | your code | CI, a service, budgets per job |
 
 The flow, `dl`, the hooks and the files in `.work/` are identical in every mode; a job started in one mode can be resumed in
-another (`/deliver resume`).
+another (`/deliver:deliver resume`).
 
 ## 1. Interactive (recommended start)
 
@@ -20,14 +20,14 @@ claude --model opus          # Michael benefits from the strongest model; roles 
 ```
 
 ```text
-/deliver docs/requirements/feature.md
-/deliver status
-/deliver resume              # after a restart, or after you answered elsewhere
+/deliver:deliver docs/requirements/feature.md
+/deliver:status
+/deliver:deliver resume      # after a restart, or after you answered elsewhere
 ```
 
 - Agents run in the background: Michael moves each card on the moment its agent reports and assigns the cards it unblocks.
-- Open business questions come as one AskUserQuestion with the BA's options; your words are recorded with `dl clarify`.
-- `dl status`, `dl kanban` and `tail -f .work/*/events.log` in a second terminal give you the live board.
+- Open business questions come as one AskUserQuestion with the BA's options; your words are recorded with `dl clarify` (or answer yourself: `/deliver:answer <id> <answer>`).
+- `/deliver:status`, `/deliver:board` and `/deliver:timeline` give you the live board.
 - Auto mode (`Shift+Tab`) removes most permission prompts. The hooks still apply.
 
 ## 2. Munder Difflin
@@ -43,12 +43,12 @@ scripts/run-headless.sh /path/to/repo "$(cat docs/requirements/feature.md)"   # 
 scripts/run-headless.sh /path/to/repo                                          # resume rounds
 ```
 
-- Each round runs `claude -p "/deliver resume"` with `DELIVER_HEADLESS=1` and background tasks disabled: agents must finish
+- Each round runs `claude -p "/deliver:deliver resume"` with `DELIVER_HEADLESS=1` and background tasks disabled: agents must finish
   inside the process (background agents die with `-p` — measured, see [09](09-testing.md)), so Michael puts every due
   action (assignments, QA, reviews) into one message and they run together.
 - Logs: `.work/runs/*.jsonl`; the script prints each round's result and cost.
 - The flow needs a person only at the start: it stops and writes `QUESTIONS.md` (open business items — answer with
-  `dl clarify <id> "<answer>"`), or `APPROVAL.md` when you switched the optional plan gate on (`dl approve plan`). Then run
+  `/deliver:answer <id> <answer>`), or `APPROVAL.md` when you switched the optional plan gate on (`/deliver:approve`). Then run
   the script again. The hooks refuse these commands from the model itself. After the start Michael asks nothing: a blocked
   card is split or dropped by him with its reason (`dl pm-decide`, `dl card … state archived "<why>"`), listed in the PR.
 - Permission mode is `auto` by default; otherwise `PERMISSION_MODE=acceptEdits` plus an allowlist ([02 § 4.5](02-setup.md#45-permissions)).

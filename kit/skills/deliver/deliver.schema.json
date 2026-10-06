@@ -57,9 +57,18 @@
     "tracker": {
       "type": "object",
       "properties": {
-        "kind": { "type": "string", "default": "local", "description": "local (kanban + kanban.html), jira, or a registered tracker plugin." },
-        "columns": { "type": "object" },
-        "jira": { "type": "object" }
+        "kind": { "type": "string", "default": "local", "description": "local (kanban + kanban.html), jira, asana, linear, github (GitHub Projects), or a registered tracker plugin." },
+        "columns": { "type": "object", "description": "Your board's own names for the stages: todo, in_progress, qa, review, done, blocked, wontdo (default To Do, In Progress, QA, Code Review, Done, Blocked, Won't Do)." },
+        "jira": { "type": "object", "description": "project (key), issue_type, epic_type, labels, api_version. Credentials: JIRA_BASE_URL + JIRA_EMAIL + JIRA_API_TOKEN, or JIRA_PAT." },
+        "asana": { "type": "object", "properties": { "project": { "type": "string", "description": "The project's gid (from its URL); its sections are the columns." } }, "description": "Credentials: ASANA_TOKEN (a personal access token)." },
+        "linear": { "type": "object", "properties": { "team": { "type": "string", "description": "The team's key (e.g. ENG); its workflow states are the columns." } }, "description": "Credentials: LINEAR_API_KEY." },
+        "github": { "type": "object", "properties": {
+          "repo": { "type": "string", "description": "owner/name — where the issues are opened." },
+          "project": { "type": "integer", "description": "The project (v2) number, from its URL." },
+          "project_owner": { "type": "string", "description": "The organization or user that owns the project (default: the repo's owner)." },
+          "status_field": { "type": "string", "default": "Status", "description": "The project's single-select field whose options are the columns." },
+          "labels": { "type": "array", "items": { "type": "string" }, "description": "Labels put on every issue (they must exist in the repo)." } },
+          "description": "Credentials: GITHUB_TOKEN (or GH_TOKEN) with access to the repo's issues and the project." }
       }
     },
     "knowledge": {

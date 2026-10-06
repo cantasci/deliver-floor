@@ -59,6 +59,10 @@ the plugin's SessionStart hook (`kit/hooks/deliver/setup.mjs`), once per plugin 
 - in a repo with `.deliver.json`, `.claude/settings.local.json` gets an empty commit/PR attribution — that repo only;
 - every session: git, jq, Node 18+, bash (Git Bash on Windows), ECC and — for a floor repo — Munder Difflin are checked;
   what is missing is named with the command that fixes it. Nothing is printed when all is well.
+- every session: a copy of the kit in `~/.claude` (`skills/deliver`, `hooks/deliver`, the kit's agents, their hook entries
+  in `settings.json`) is deleted — the plugin is the only copy; `settings.json` is backed up, your own agents and hooks stay.
+  And `~/.claude/plugins/data/deliver-deliver-floor/bin/dl` is rewritten to run the version this session loaded: the one
+  `dl` path that survives updates (Michael's brief names it for CLIs that cannot run `/deliver:deliver`).
 
 `scripts/install.sh --user --plugin` still exists for a machine set up from a terminal; it is no longer required.
 
@@ -67,10 +71,11 @@ What changes with the plugin:
 - The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin and writes those
   names into ROLES.md, the role cards and the seats' orders. `job.json` and `board.json` keep the plain names. Developing
   with `claude --plugin-dir kit`? Set `DELIVER_AGENT_NS=deliver`.
-- `/deliver` still works; `/deliver:deliver` is the fully qualified name.
-- `dl` lives in the plugin cache: `ls ~/.claude/plugins/cache/deliver-floor/deliver/*/skills/deliver/bin/dl`.
-- **One install path.** Don't also copy the kit with `scripts/install.sh --user` — the skill and the hooks would load twice.
-  The SessionStart check and `scripts/doctor.sh` report it.
+- The job starts with `/deliver:deliver <request>` (or `/deliver:new`); everything else you do is a slash command too —
+  [README § Your commands](../README.md#your-commands). You never run `dl` in a terminal.
+- `dl` is on Claude Code's PATH while the plugin is enabled (the plugin's `bin/`): Michael and Claude call it by name.
+- **One copy.** The plugin deletes a copied kit in `~/.claude` (above). `scripts/install.sh --project <repo>` still copies
+  the kit into one repo (committed, a pinned version) — then that repo runs its copy, and the session says so.
 
 `kit/hooks/hooks.json` is generated from `kit/settings.hooks.json` (the one source of truth); after changing the hooks:
 
@@ -208,7 +213,7 @@ The guards still block pushes to main, force pushes, and writes outside a card's
 
 ### 4.6 Tracker (optional)
 
-The local kanban is on by default (`dl kanban`, `.work/<job>/kanban.html`). For Jira, set the credentials in the environment
+The local kanban is on by default (`/deliver:board`, `.work/<job>/kanban.html`). For Jira, set the credentials in the environment
 and `"tracker": {"kind": "jira", "jira": {"project": "WL"}}` — [10-trackers](10-trackers.md).
 
 ## 5. First run
@@ -245,5 +250,5 @@ Watch:
 
 1. **Readiness** — the BA's answers (`.work/<job>/readiness.md`). If something business-related is open, Michael asks you,
    once, all questions together.
-2. **The board** — `dl status` / `dl kanban` in a second terminal, `tail -f .work/*/events.log` for the timeline.
+2. **The board** — `/deliver:status` / `/deliver:board`, `/deliver:timeline` for where the time went.
 3. **The PR** — `report.md` is its body: every acceptance criterion with its evidence.

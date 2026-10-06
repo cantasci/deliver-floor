@@ -1,0 +1,15 @@
+{"verdict":"pass",
+ "tests":["test/indicators/integration/daysWithDelay/daysWithDelay.int.test.mjs"],
+ "criteria":[
+  {"ac":"AC-1","status":"pass","evidence":"AC-1 options deep-equal and frozen → ok"},
+  {"ac":"AC-2","status":"pass","evidence":"AC-2 no delay / <=3 days → WL 0 → ok"},
+  {"ac":"AC-3","status":"pass","evidence":"AC-3 >3 days → 2 → ok"},
+  {"ac":"AC-4","status":"pass","evidence":"AC-4 >60 days → 3 → ok"},
+  {"ac":"AC-5","status":"pass","evidence":"AC-5 >90 days → 4 → ok"},
+  {"ac":"AC-6","status":"pass","evidence":"AC-6 whitespace trimmed → ok"},
+  {"ac":"AC-7","status":"pass","evidence":"AC-7 invalid strings throw RangeError (+ U+200B edge) → ok"},
+  {"ac":"AC-8","status":"pass","evidence":"AC-8 non-strings throw RangeError → ok"},
+  {"ac":"AC-9","status":"pass","evidence":"AC-9 mapping yields [0,0,2,3,4] → ok"},
+  {"ac":"AC-18","status":"pass","evidence":"AC-18 purity + plain ESM/no I/O → ok"},
+  {"ac":"AC-19","status":"pass","evidence":"AC-19 no imports → ok"}],
+ "failures":[]}

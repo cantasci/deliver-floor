@@ -1,0 +1,89 @@
+# qa_verify: node --test test/indicators/integration/daysWithDelay/*.test.mjs
+TAP version 13
+# Subtest: AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 options and is frozen
+ok 1 - AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 options and is frozen
+  ---
+  duration_ms: 3.424112
+  type: 'test'
+  ...
+# Subtest: AC-2: "no delay" and "<=3 days" both map to WL 0
+ok 2 - AC-2: "no delay" and "<=3 days" both map to WL 0
+  ---
+  duration_ms: 0.237885
+  type: 'test'
+  ...
+# Subtest: AC-3: ">3 days" maps to WL 2
+ok 3 - AC-3: ">3 days" maps to WL 2
+  ---
+  duration_ms: 0.096379
+  type: 'test'
+  ...
+# Subtest: AC-4: ">60 days" maps to WL 3
+ok 4 - AC-4: ">60 days" maps to WL 3
+  ---
+  duration_ms: 0.08122
+  type: 'test'
+  ...
+# Subtest: AC-5: ">90 days" maps to WL 4
+ok 5 - AC-5: ">90 days" maps to WL 4
+  ---
+  duration_ms: 0.088474
+  type: 'test'
+  ...
+# Subtest: AC-6: surrounding whitespace is trimmed before matching
+ok 6 - AC-6: surrounding whitespace is trimmed before matching
+  ---
+  duration_ms: 0.091083
+  type: 'test'
+  ...
+# Subtest: AC-7: strings that are not exactly an option after trim throw RangeError
+ok 7 - AC-7: strings that are not exactly an option after trim throw RangeError
+  ---
+  duration_ms: 0.569333
+  type: 'test'
+  ...
+# Subtest: AC-7 (edge): zero-width space U+200B is not trimmed and throws RangeError
+ok 8 - AC-7 (edge): zero-width space U+200B is not trimmed and throws RangeError
+  ---
+  duration_ms: 0.122487
+  type: 'test'
+  ...
+# Subtest: AC-8: non-string input throws RangeError
+ok 9 - AC-8: non-string input throws RangeError
+  ---
+  duration_ms: 0.443624
+  type: 'test'
+  ...
+# Subtest: AC-9: mapping every option never throws and yields [0, 0, 2, 3, 4]
+ok 10 - AC-9: mapping every option never throws and yields [0, 0, 2, 3, 4]
+  ---
+  duration_ms: 0.43744
+  type: 'test'
+  ...
+# Subtest: AC-18: function is pure and does not mutate the options array
+ok 11 - AC-18: function is pure and does not mutate the options array
+  ---
+  duration_ms: 1.25019
+  type: 'test'
+  ...
+# Subtest: AC-18: module is plain ESM with no I/O and no dependencies
+ok 12 - AC-18: module is plain ESM with no I/O and no dependencies
+  ---
+  duration_ms: 0.523878
+  type: 'test'
+  ...
+# Subtest: AC-19: daysWithDelay.mjs imports no other module (not delayCount.mjs)
+ok 13 - AC-19: daysWithDelay.mjs imports no other module (not delayCount.mjs)
+  ---
+  duration_ms: 0.290366
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 117.779474

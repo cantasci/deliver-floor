@@ -1,12 +1,13 @@
 # 06 — Troubleshooting
 
-Start with `scripts/doctor.sh <repo>`, then `dl status`, then `tail -50 .work/<job>/events.log`.
+Start with `/deliver:doctor` (or `scripts/doctor.sh <repo>`), then `/deliver:status`, then `tail -50 .work/<job>/events.log`.
 
 ## Setup
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `/deliver` not found | kit not installed, or Claude Code not restarted | `scripts/install.sh --user`, restart, check `/skills` |
+| `/deliver:deliver` not found | plugin not installed or not loaded (its dependency ECC missing), or Claude Code not restarted | `/plugin install deliver@deliver-floor` (ECC with it), restart, check `/plugin` → Errors |
+| Michael runs an old version after an update | a copy of the kit in `~/.claude` shadowed the plugin (before 0.7.0) | start one Claude Code session with the plugin: it deletes the copy; `scripts/init.sh` re-briefs the floor |
 | `ecc:architect` unknown agent | ECC marketplace added but plugin not installed | `claude plugin install ecc@ecc`, restart, check `/agents` |
 | Dev agent starts without ECC skills | a `skills:` preload did not resolve | the role card names the skills too; the agent loads them with the Skill tool. `/agents` → the dev agent shows what loaded |
 | `dl: jq is required` | jq missing | `brew install jq` / `apt install jq` |
@@ -18,10 +19,10 @@ Start with `scripts/doctor.sh <repo>`, then `dl status`, then `tail -50 .work/<j
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| Job stops in `awaiting_clarification` | open business items — the request does not say | answer each (`QUESTIONS.md`): `dl clarify <id> "<answer>"`, then `/deliver resume`. Write it into the requirements next time |
-| `dl clarify` denied in Michael's session | bash-guard: answers are the human's | run it yourself in a terminal (or answer Michael's question in the chat) |
-| `dl: REFUSED — readiness.json … changed after it was frozen at planning` | someone edited the decisions after planning | a real change: `dl unfreeze "<reason>"` (human), edit, `dl readiness`, `dl phase planning` again. Not intended: restore the file |
-| `dl: REFUSED — job.json / board.json was modified outside dl` | a hand edit broke the seal | `dl reseal "<reason>"` (human) if the edit is intended |
+| Job stops in `awaiting_clarification` | open business items — the request does not say | answer each (`QUESTIONS.md`): `/deliver:answer <id> <answer>`, then `/deliver:deliver resume`. Write it into the requirements next time |
+| `dl clarify` denied in Michael's session | bash-guard: answers are the human's (unattended run) | `/deliver:answer <id> <answer>` (or answer Michael's question in the chat) |
+| `dl: REFUSED — readiness.json … changed after it was frozen at planning` | someone edited the decisions after planning | a real change: `/deliver:unfreeze <reason>` (human), edit, `dl readiness`, `dl phase planning` again. Not intended: restore the file |
+| `dl: REFUSED — job.json / board.json was modified outside dl` | a hand edit broke the seal | `/deliver:reseal <reason>` (human) if the edit is intended |
 | `dl readiness` ERROR: component owner/reviewer not on the job | architecture names a role the job lacks | `dl jobset '.roles += [{…}]'`, `dl phase readiness` (regenerates role cards), `dl readiness` |
 | `dl validate` ERROR: outside component / not the owner | a card's scope leaves its component's path, or the wrong role | fix the card (`dl card T-xx set scope …` / `set role …`) |
 
@@ -35,12 +36,12 @@ Start with `scripts/doctor.sh <repo>`, then `dl status`, then `tail -50 .work/<j
 | `CONFLICT` on integrate (exit 3) | two cards edited the same area | the dev merges the job branch in its worktree (Michael does this); next time add `depends_on` or split scopes (validate warns) |
 | `dl: REFUSED — all N '<role>' seats are busy` | more ready cards than seats | expected: the next free seat takes it. More parallelism: `count` on the role |
 | `IDLE <seat> — waiting: …` | the seat's cards depend on unmerged cards | nothing to do; it starts when the dependency merges |
-| Michael stopped mid-board | context/turns ran out, or `stop_guard_max` reached | `/deliver resume` — everything is in files |
-| A card stuck in `running` after a restart | its agent died with the session | `/deliver resume` re-dispatches into the same worktree (`dl wt add --resume`) |
+| Michael stopped mid-board | context/turns ran out, or `stop_guard_max` reached | `/deliver:deliver resume` — everything is in files |
+| A card stuck in `running` after a restart | its agent died with the session | `/deliver:deliver resume` re-dispatches into the same worktree (`dl wt add --resume`) |
 | Headless: agents vanish, cards stay `running` | background agents in `claude -p` die with the process | use `scripts/run-headless.sh` (disables background tasks); agent-guard refuses background agents when `DELIVER_HEADLESS=1` |
 | Same card failing again and again | card too big or `verify` wrong | it blocks after `max_attempts`; split it (`dl card add`), fix `verify`, `dl card T-xx retry` |
 | `git push` denied | bash-guard: main/master, force, or not the agent's own card branch | push the card branch from its worktree; force push is never allowed |
-| `tracker-error` in `dl status` | Jira unreachable / workflow lacks a status | the flow continues; fix the cause, `dl tracker sync` ([10](10-trackers.md)) |
+| `tracker-error` in `/deliver:status` | Jira unreachable / workflow lacks a status | the flow continues; fix the cause, `dl tracker sync` ([10](10-trackers.md)) |
 
 ## Munder Difflin
 

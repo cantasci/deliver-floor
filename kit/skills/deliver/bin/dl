@@ -17,6 +17,7 @@
 #   dl clarify <id> "<answer>"     record the human's answer to an open business question (human only)
 #   dl decide <id> "<decision>" "<rationale>"   the PM closes an open implementation-detail item (owner pm)
 #   dl unfreeze "<reason>"         (human, terminal only) reopen the decisions frozen at planning
+#   dl abort "<why>"               (human: /deliver:abort) stop the active job — seats home, worktrees and ACTIVE cleared
 #   dl reseal "<reason>"           (human, terminal only) accept an edit made to job.json/board.json outside dl
 #   dl roles                       check job.roles against roles.yaml and generate the project's role cards
 #                                  (.work/<job>/roles/*.md, ROLES.md) — runs on dl phase planning
@@ -64,12 +65,14 @@
 #                                  while the answer file its work order named is missing, empty or invalid JSON
 #   dl md-release                  end of job: send every seat home
 #   dl md-inbox                    your inbox on the floor: each new message once (sender as seat), then archived; flags unrecorded reports
+#   dl playbook                    the path of the playbook (SKILL.md) of this dl's version — for a CLI that cannot run /deliver
 #   dl md-wait [seconds]           wait for the inbox (default 110 s, back within a second of a message), then md-inbox
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
 #   dl jobs                        jobs known on this machine (registry)
 #   dl seats                       role seats: busy / IDLE, and the card each idle seat should take
 #   dl kanban [--html <file>]      the board as kanban columns (To Do · In Progress · QA · Code Review · Done)
-#   dl tracker [open|sync]         mirror the cards into settings.tracker.kind (local | jira) — automatic on every step
+#   dl tracker [open|sync|check]   mirror the cards into settings.tracker.kind (local | jira | asana | linear | github) —
+#                                  automatic on every step; check: before any job, is the tracker reachable and set up?
 #
 # Env: DELIVER_JOB=<id> targets that job instead of .work/ACTIVE · DELIVER_HOME (default ~/.deliver) holds the
 #      job registry the hooks use · HIVE_ROOT is set by Munder Difflin (md-dispatch).
@@ -104,7 +107,7 @@ die() { echo "dl: $*" >&2; exit 1; }
 refuse() { local code=$1; shift; echo "dl: REFUSED — $*" >&2; exit "$code"; }
 # Human decisions are never taken inside an unattended session (run-headless.sh sets DELIVER_HEADLESS=1 for claude -p).
 # The bash-guard hook stops them too; this check holds whatever name the command is called by.
-human_only() { [[ ${DELIVER_HEADLESS:-} == 1 ]] && refuse 8 "$1 is the human's decision and this session is unattended (DELIVER_HEADLESS=1). Write it down (QUESTIONS.md / APPROVAL.md) and stop; the human runs it in a terminal."; return 0; }
+human_only() { [[ ${DELIVER_HEADLESS:-} == 1 ]] && refuse 8 "$1 is the human's decision and this session is unattended (DELIVER_HEADLESS=1). Write it down (QUESTIONS.md / APPROVAL.md) and stop; the human runs it with its /deliver:<command> in Claude Code (/deliver:approve, /deliver:answer, /deliver:retry …)."; return 0; }
 command -v jq >/dev/null || die "jq is required (brew install jq / apt install jq)"
 command -v git >/dev/null || die "git is required"
 
@@ -154,7 +157,7 @@ seal_settled() { seal_ok "$1" || with_lock "$(basename "$1")" seal_ok "$1"; }
 check_seals() {
   seal_settled "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
   case "$(jq -r .phase "$JOBJ")" in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
-  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and runs: dl reseal \"<reason>\""
+  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and accepts it with /deliver:reseal <reason>"
 }
 jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
 git_locked() { with_lock git git "$@"; }
@@ -163,7 +166,7 @@ load_job() {
   resolve_root
   JOB="${DELIVER_JOB:-}"
   if [[ -z $JOB ]]; then
-    [[ -f "$WORK/ACTIVE" ]] || die "no active job — start one with: dl new \"<title>\" \"<request>\""
+    [[ -f "$WORK/ACTIVE" ]] || die "no active job — start one with /deliver:new <request> (Michael: dl new \"<title>\" \"<request>\")"
     JOB="$(cat "$WORK/ACTIVE")"
   fi
   JOB_DIR="$WORK/$JOB"
@@ -278,7 +281,7 @@ cmd_new() {
   command -v node >/dev/null || die "node is required"
   if [[ -f "$WORK/ACTIVE" ]]; then
     local cur; cur="$(cat "$WORK/ACTIVE")"
-    [[ -f "$WORK/$cur/job.json" ]] && refuse 1 "job $cur is still active (phase $(jq -r .phase "$WORK/$cur/job.json")). Finish it, or: dl phase aborted && dl cleanup --all"
+    [[ -f "$WORK/$cur/job.json" ]] && refuse 1 "job $cur is still active (phase $(jq -r .phase "$WORK/$cur/job.json")). Finish it, or the human stops it with /deliver:abort <why>"
   fi
   local slug id base
   slug="$(node -e 'const s=process.argv[1].replace(/ı/g,"i").replace(/İ/g,"i").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,32).replace(/-$/,"");console.log(s||"job")' "$title")"
@@ -351,7 +354,7 @@ cmd_new() {
       | .branch=$branch | .integration_worktree=$iwt | .settings=$settings' \
      "$SKILL_DIR/templates/job.json" > "$WORK/$id/job.json"
   seal "$WORK/$id/job.json"
-  echo "$id" > "$WORK/ACTIVE"
+  echo "$id" > "$WORK/ACTIVE"; rm -f "$WORK/FLOOR-PENDING"   # the floor request it came from has started
   mkdir -p "$REG" && echo "$ROOT" > "$REG/$id"
   JOB=$id; JOB_DIR="$WORK/$id"; JOBJ="$JOB_DIR/job.json"
   run_setup "$iwt"
@@ -370,6 +373,11 @@ cmd_board() {
 }
 
 cmd_status() {
+  resolve_root
+  if [[ -z ${DELIVER_JOB:-} && ! -f $WORK/ACTIVE && -f $WORK/FLOOR-PENDING ]]; then   # /deliver handed it to the floor
+    jq -r '"no job yet — the request went to Michael on the floor \(.floor) at \(.at) (message \(.id)):\n  \(.request)\nIt starts when Michael reads it: the floor must be open in Munder Difflin (on its floor picker, click Open once)."' "$WORK/FLOOR-PENDING"
+    return 0
+  fi
   load_job
   jq -r '"job:      \(.id)\ntitle:    \(.title)\nrepo:     \(.repo // "-")\nphase:    \(.phase)\nbranch:   \(.branch)  (base: \(.base_branch))\nplan gate: \(if .settings.gates.plan then (.gates.plan.status // "pending") else "off" end)\nmerge:    \(.settings.merge_mode)\(if .pr.url then "  PR: \(.pr.url) (\(.pr.state // "?"))" else "" end)\ndispatch: \(.settings.dispatch // "subagent")"' "$JOBJ"
   echo
@@ -583,7 +591,7 @@ assert_frozen() {
   local want; want="$(jq -r '.frozen.readiness_sha256 // empty' "$JOBJ")"
   [[ -z $want ]] && return 0
   [[ -f $JOB_DIR/readiness.json && "$(sha256_of "$JOB_DIR/readiness.json")" == "$want" ]] \
-    || refuse 6 "readiness.json (requirements decisions + architecture) changed after it was frozen at planning. Frozen decisions do not change; only the human can reopen them from a terminal: dl unfreeze \"<reason>\""
+    || refuse 6 "readiness.json (requirements decisions + architecture) changed after it was frozen at planning. Frozen decisions do not change; only the human can reopen them: /deliver:unfreeze <reason>"
 }
 cmd_unfreeze() {
   human_only "dl unfreeze"; load_job
@@ -765,7 +773,7 @@ _wt_reserve_locked() { # runs in a subshell under the "assign" lock; exits non-z
   if jq -e '.roles[] | select(.role=="ba")' "$JOBJ" >/dev/null && [[ ! -f $JOB_DIR/specs/$card.md ]]; then
     refuse 1 "$card has no BA spec (.work/$JOB/specs/$card.md) — the Business Analyst writes it before the card is assigned"
   fi
-  (( attempts < max )) || refuse 4 "$card used $attempts/$max attempts. Mark it: dl card $card state blocked + note; only the human can grant more (dl card $card retry)"
+  (( attempts < max )) || refuse 4 "$card used $attempts/$max attempts. Mark it: dl card $card state blocked + note; only the human can grant more (/deliver:retry $card)"
   running="$(jq --arg id "$card" '[.cards[] | select(.state=="running" and .id!=$id)] | length' "$BOARD")"
   (( running < $(setting max_parallel) )) || refuse 5 "max_parallel=$(setting max_parallel) cards are already running"
   # Role capacity: a role with "count": N has N seats (e.g. mobile#1, mobile#2) working in parallel.
@@ -1410,6 +1418,7 @@ md_hive() {
   fi
   echo "$h"
 }
+deliver_cmd() { [[ $BIN_DIR =~ /cache/[^/]+/([^/]+)/[^/]+/skills/deliver/bin$ ]] && echo "/${BASH_REMATCH[1]}:deliver" || echo /deliver; }
 md_god() { jq -r '.godId // "god"' "$1/registry.json" 2>/dev/null || echo god; }
 seat_list() { jq -r '.roles[] | select(.agent != "artemis") | . as $r | range(1; (($r.count // 1) + 1)) | "\($r.role)#\(.)"' "$JOBJ"; }
 seat_get() { jq -r --arg s "$1" ".munder.seats[\$s]$2 // empty" "$JOBJ"; }
@@ -1827,9 +1836,11 @@ dispatch_of() { # the dispatch a command would run under: the active job's, or f
 }
 floor_guard() {
   [[ $FLOW_CMDS == *" $1 "* && ${AGENT_ID:-} != god ]] || return 0
+  # the human's /deliver:retry: one granted retry is not a second Michael (bash-guard keeps a model from setting this)
+  [[ ${DELIVER_HUMAN_CMD:-} == 1 && $1 == card && ${3:-} == retry ]] && return 0
   [[ "$(dispatch_of "$1")" == munder ]] || return 0
   [[ ${AGENT_ID:-} == worker-* ]] && refuse 9 "a seat does not run the flow — Michael records every step"
-  local how="\"dispatch\": \"subagent\" in .deliver.json"; [[ $1 == new ]] || how+=" for new jobs, or dl dispatch subagent \"<why>\" for this one"
+  local how="\"dispatch\": \"subagent\" in .deliver.json"; [[ $1 == new ]] || how+=" for new jobs, or /deliver:mode subagent <why> for this one"
   refuse 9 "this job runs on the Munder Difflin floor (dispatch: munder, the default): never from a separate terminal, where a second Michael would read the same inbox. Hand it to Michael in the app: dl floor-open \"<request>\" opens the floor and gives him the job. To work without the floor (Claude Code subagents), the human switches by hand: $how — see docs/07-munder-difflin.md#choosing-the-mode"
 }
 
@@ -1909,13 +1920,44 @@ cmd_floor_open() {
   fi
   # The request goes into Michael's inbox as the human's message; the router-side wake (or his start-up inbox drain) picks it up.
   local inbox="$home/hive/agents/god/inbox" id; mkdir -p "$inbox"; id="$(date -u +%Y%m%dT%H%M%S)-deliver-$RANDOM"
-  jq -n --arg id "$id" --arg body "/deliver $req
+  jq -n --arg id "$id" --arg body "$(deliver_cmd) $req
 REPO: $ROOT" --arg t "$(date -u +%FT%T.000Z)" \
     '{id:$id, conversation:("deliver-" + $id), from:"human", to:"god", act:"request", subject:"/deliver", body:$body, hops:0, requires_reply:false, needs_human:false, created_at:$t}' \
     > "$inbox/.$id.tmp" && mv "$inbox/.$id.tmp" "$inbox/$id.json"
   echo "Munder Difflin $([[ $started == 1 ]] && echo "is starting on" || echo "is open on") $home — the job went to Michael there (his inbox: $id)."
   [[ $started == 1 ]] && echo "The app opens on its floor picker with this floor selected: click Open once — Michael starts and reads the job."
-  echo "Follow it on the floor; from here: dl status · dl kanban · dl md-seats (read only — Michael in the app drives the job)."
+  mkdir -p "$WORK"; local excl="$common_dir/info/exclude"; mkdir -p "$(dirname "$excl")"; grep -qxF .work/ "$excl" 2>/dev/null || echo .work/ >> "$excl"
+  jq -n --arg id "$id" --arg f "$home" --arg r "$req" --arg t "$(now)" '{id:$id, floor:$f, request:$r, at:$t}' > "$WORK/FLOOR-PENDING.tmp" \
+    && mv "$WORK/FLOOR-PENDING.tmp" "$WORK/FLOOR-PENDING"
+  echo "Follow it on the floor, or here in Claude Code: /deliver:status · /deliver:board · /deliver:seats (Michael in the app drives the job)."
+}
+
+# dl abort "<why>" — the human stops the active job (/deliver:abort): phase aborted, the seats sent home, card worktrees and
+# ACTIVE cleared (branches kept), so a new job can start at once. With Michael live on the floor he is told instead and
+# releases the seats himself — from outside the app nobody else touches his inbox's job.
+cmd_abort() {
+  human_only "aborting the job (dl abort)"
+  local why=${1:-}; [[ -n $why ]] || die 'usage: dl abort "<why the job stops>"'
+  DL_NO_SEAL_CHECK=1 load_job
+  local cur; cur="$(phase_now)"
+  if [[ $cur != done && $cur != aborted ]]; then jq_inplace "$JOBJ" '.phase="aborted"'; log_event phase aborted; fi
+  log_event abort "${DELIVER_APPROVER:-${USER:-human}}: $why"
+  if [[ "$(setting dispatch)" == munder && -n "$(jq -r '.munder.seats // {} | keys[]' "$JOBJ" 2>/dev/null)" ]]; then
+    if ! ( cmd_md_release ) 2>/dev/null; then
+      local h; h="$(setting munder.hive_root)"; [[ -d $h/hive ]] && h="$h/hive"
+      if [[ -d $h/agents ]]; then
+        local inbox="$h/agents/$(md_god "$h")/inbox" id; mkdir -p "$inbox"; id="$(date -u +%Y%m%dT%H%M%S)-deliver-abort-$RANDOM"
+        jq -n --arg id "$id" --arg body "The human aborted job $JOB: $why
+Stop working on it and send its seats home: dl -C $ROOT md-release" --arg t "$(date -u +%FT%T.000Z)" \
+          '{id:$id, conversation:("deliver-" + $id), from:"human", to:"god", act:"inform", subject:"job aborted", body:$body, hops:0, requires_reply:false, needs_human:false, created_at:$t}' \
+          > "$inbox/.$id.tmp" && mv "$inbox/.$id.tmp" "$inbox/$id.json"
+        echo "Michael is on the floor: he was told to stop and send the seats home (his inbox: $id)"
+      fi
+    fi
+  fi
+  cmd_cleanup --all
+  rm -f "$WORK/FLOOR-PENDING"
+  echo "job $JOB aborted ($why) — its branches are kept; start a new one with /deliver:new <request>"
 }
 
 # dl dispatch munder|subagent "<why>" — the human switches how this job's roles run. Never Michael's call (bash-guard).
@@ -1933,7 +1975,7 @@ cmd_dispatch() {
 
 main() {
   local c=${1:-help}; shift || true
-  floor_guard "$c"
+  floor_guard "$c" "$@"
   case $c in
     dispatch) cmd_dispatch "$@" ;;
     floor-open) cmd_floor_open "$@" ;;
@@ -1979,6 +2021,9 @@ main() {
     md-release) cmd_md_release ;;
     md-inbox) cmd_md_inbox ;;
     md-wait) cmd_md_wait "$@" ;;
+    abort) cmd_abort "$@" ;;
+    playbook) echo "$(cd "$BIN_DIR/.." && pwd)/SKILL.md" ;;
+    version) jq -r '"deliver \(.version)"' "$BIN_DIR/../../../.claude-plugin/plugin.json" 2>/dev/null || echo "deliver (version unknown)"; echo "runs from: $(cd "$BIN_DIR/.." && pwd)" ;;
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
     kanban) cmd_kanban "$@" ;;

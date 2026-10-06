@@ -1,0 +1,59 @@
+{
+ "verdict": "pass",
+ "tests": [
+  "test/indicators/integration/delayCount/delayCount.int.test.mjs"
+ ],
+ "criteria": [
+  {
+   "ac": "AC-10",
+   "status": "pass",
+   "evidence": "AC-10: DELAY_COUNT_OPTIONS deep-equals [\"0\",\"1\",\">1\"] and is frozen \u2192 ok"
+  },
+  {
+   "ac": "AC-11",
+   "status": "pass",
+   "evidence": "AC-11: delayCountWl(\"0\") returns 0 \u2192 ok"
+  },
+  {
+   "ac": "AC-12",
+   "status": "pass",
+   "evidence": "AC-12: delayCountWl(\"1\") returns 1 \u2192 ok"
+  },
+  {
+   "ac": "AC-13",
+   "status": "pass",
+   "evidence": "AC-13: delayCountWl(\">1\") returns 2 \u2192 ok"
+  },
+  {
+   "ac": "AC-14",
+   "status": "pass",
+   "evidence": "AC-14: surrounding whitespace is trimmed first \u2192 ok"
+  },
+  {
+   "ac": "AC-15",
+   "status": "pass",
+   "evidence": "AC-15: strings not exactly \"0\", \"1\" or \">1\" after trim throw RangeError \u2192 ok"
+  },
+  {
+   "ac": "AC-16",
+   "status": "pass",
+   "evidence": "AC-16: non-strings throw RangeError \u2192 ok"
+  },
+  {
+   "ac": "AC-17",
+   "status": "pass",
+   "evidence": "AC-17: mapping every option yields [0, 1, 2] \u2192 ok"
+  },
+  {
+   "ac": "AC-18",
+   "status": "pass",
+   "evidence": "AC-18: pure function, options not mutated, plain ESM no I/O \u2192 ok"
+  },
+  {
+   "ac": "AC-19",
+   "status": "pass",
+   "evidence": "AC-19: delayCount.mjs imports nothing \u2192 ok"
+  }
+ ],
+ "failures": []
+}

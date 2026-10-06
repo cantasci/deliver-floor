@@ -15,7 +15,7 @@ reinstall and a plugin update replace the installed copy. `scripts/install.sh` m
 
 Changing `.deliver.json` mid-job has no effect on the running job. `dl jobset '.settings.max_parallel=2'` changes the
 running job (logged in `events.log`). Editing `job.json` / `board.json` by hand is detected (sha256 seals) and refused until a
-human accepts it with `dl reseal "<reason>"`.
+human accepts it with `/deliver:reseal <reason>`.
 
 ## Flow
 

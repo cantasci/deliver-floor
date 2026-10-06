@@ -1,0 +1,80 @@
+2026-10-06T19:34:29Z	new	Repayment delay indicators 2-3
+2026-10-06T19:34:41Z	jobset	stack: .stack=["node"]
+2026-10-06T19:34:41Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/REQ-03-03: indicator domain logic (src/indicators)"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack node: Plain Node ESM (stack_reviewers.node)"}]
+2026-10-06T19:34:41Z	roles-defaults	qa: 2 seats — one per developer seat
+2026-10-06T19:34:41Z	jobset	assumptions: .assumptions += ["Stack taken from the repo (package.json type=module) and the request: Plain Node ESM, no dependencies, node --test"]
+2026-10-06T19:34:42Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T19:34:42Z	phase	readiness
+2026-10-06T19:34:45Z	md-hire	ba#1 → worker-seat-20261006-1934-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-06T19:34:46Z	md-hire	backend-lead#1 → worker-seat-20261006-1934-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-06T19:34:46Z	md-hire	backend#1 → worker-seat-20261006-1934-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-06T19:34:46Z	md-hire	backend#2 → worker-seat-20261006-1934-backend-2-h1 (claude claude-sonnet-5-5, jim)
+2026-10-06T19:34:47Z	md-hire	qa#1 → worker-seat-20261006-1934-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-06T19:34:48Z	md-hire	qa#2 → worker-seat-20261006-1934-qa-2-h1 (claude claude-sonnet-5-5, kevin)
+2026-10-06T19:34:49Z	md-hire	reviewer#1 → worker-seat-20261006-1934-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-06T19:35:28Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261006-1934-ba-1-h1
+2026-10-06T19:36:28Z	md-done	readiness ba#1: readiness: 32 items, 2 open pm items, 1 component indicators-lib
+2026-10-06T19:36:50Z	readiness	31 items: 16 decided, 13 n/a, 2 open
+2026-10-06T19:36:59Z	decide	X-error-message: Message text is not part of the contract; tests assert only that a RangeError is thrown. Devs should still include the offending value in the message for debuggability. — C1/C5 specify only the error type (RangeError); fixing a message format would add contract nobody asked for and couple QA tests to wording.
+2026-10-06T19:36:59Z	decide	X-options-immutable: DAYS_WITH_DELAY_OPTIONS and DELAY_COUNT_OPTIONS are exported frozen (Object.freeze) arrays with exactly the C1 strings in order. — C4 makes the lists the single source the screens render; freezing prevents a consumer from mutating the shared list, and an array stays an array for rendering (no contract break).
+2026-10-06T19:36:59Z	readiness	31 items: 18 decided, 13 n/a, 0 open
+2026-10-06T19:37:00Z	freeze	readiness + architecture frozen (aec3d2ce5f9e)
+2026-10-06T19:37:00Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T19:37:00Z	phase	planning
+2026-10-06T19:37:07Z	jobset	assumptions: .assumptions += ["No security reviewer role: no auth, secrets, personal data or I/O; the only input is the option string, handled by the strict whitelist of C5, checked by the stack reviewer and QA"]
+2026-10-06T19:37:08Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261006-1934-ba-1-h1
+2026-10-06T19:37:54Z	md-done	plan ba#1: plan: 19 ACs, no open questions
+2026-10-06T19:38:06Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261006-1934-backend-lead-1-h1
+2026-10-06T19:38:45Z	md-done	cards-backend-lead backend-lead#1: 2 parallel cards B1 (REQ-03-02), B2 (REQ-03-03)
+2026-10-06T19:39:07Z	md-send	spec-cards ba#1 (business-analyst) → worker-seat-20261006-1934-ba-1-h1
+2026-10-06T19:39:51Z	md-done	spec-cards ba#1: specs T-01, T-02
+2026-10-06T19:39:58Z	phase	executing
+2026-10-06T19:40:04Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-06T19:40:05Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-06T19:40:18Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261006-1934-backend-1-h1
+2026-10-06T19:40:19Z	md-send	T-02 backend#2 (backend-dev) → worker-seat-20261006-1934-backend-2-h1
+2026-10-06T19:40:27Z	qa-start	T-01 → QA writes its tests in /tmp/claude-0/live/floor-plug/munder/repo/.work/JOB-20261006-1934-repayment-delay-indicators-2-3/wt/T-01-qa (branch job/JOB-20261006-1934-repayment-delay-indicators-2-3--T-01-qa) while the dev builds
+2026-10-06T19:40:27Z	md-send	T-01-tests qa#1 (qa-tester) → worker-seat-20261006-1934-qa-1-h1
+2026-10-06T19:40:28Z	qa-start	T-02 → QA writes its tests in /tmp/claude-0/live/floor-plug/munder/repo/.work/JOB-20261006-1934-repayment-delay-indicators-2-3/wt/T-02-qa (branch job/JOB-20261006-1934-repayment-delay-indicators-2-3--T-02-qa) while the dev builds
+2026-10-06T19:40:29Z	md-send	T-02-tests qa#2 (qa-tester) → worker-seat-20261006-1934-qa-2-h1
+2026-10-06T19:40:48Z	md-done	T-01 backend#1: T-01 built, 8d7707c, unit 7/7
+2026-10-06T19:40:49Z	gate	T-01 PASS
+2026-10-06T19:40:57Z	md-done	T-02 backend#2: T-02 built, e1f3c16, unit 7/7
+2026-10-06T19:40:58Z	gate	T-02 PASS
+2026-10-06T19:41:07Z	md-done	T-02-tests qa#2: T-02 QA tests written, 2621d4e, 10 tests
+2026-10-06T19:41:07Z	qa-join	T-02: QA's tests (1 commit(s)) joined the card branch
+2026-10-06T19:41:19Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-06T19:41:21Z	md-send	T-01 qa#2 (qa-tester) → worker-seat-20261006-1934-qa-2-h1
+2026-10-06T19:41:30Z	md-done	T-01-tests qa#1: T-01 QA tests written, 0bd2166
+2026-10-06T19:41:31Z	md-send	T-02 qa#1 (qa-tester) → worker-seat-20261006-1934-qa-1-h1
+2026-10-06T19:41:47Z	md-done-refused	T-01 qa#2: /tmp/claude-0/live/floor-plug/munder/repo/.work/JOB-20261006-1934-repayment-delay-indicators-2-3/out/T-01-qa.md (or .json) does not exist or is empty
+2026-10-06T19:41:48Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-9, AC-18, AC-19 pass (daysWithDelay.int.test.mjs, 13/13, no test changed)
+2026-10-06T19:44:02Z	md-done	T-01 qa#2: T-01 QA pass 13/13
+2026-10-06T19:44:11Z	md-done	T-02 qa#1: T-02 QA pass 10/10
+2026-10-06T19:44:12Z	qa	T-02 pass (qa_verify PASS) — AC-10..AC-19 pass (delayCount.int.test.mjs, 10/10, no test changed)
+2026-10-06T19:44:13Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261006-1934-reviewer-1-h1
+2026-10-06T19:44:38Z	md-done	T-01 reviewer#1: T-01 approve
+2026-10-06T19:44:38Z	review	T-01 reviewer approve — AC-1..9, 18, 19 met; no blocking; nit: write U+200B as an escape in unit test line 27
+2026-10-06T19:44:39Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261006-1934-reviewer-1-h1
+2026-10-06T19:44:40Z	integrate	T-01 merged
+2026-10-06T19:45:05Z	md-done	T-02 reviewer#1: T-02 approve
+2026-10-06T19:45:05Z	review	T-02 reviewer approve — AC-10..19 met; no blocking; nit: single source for the valid-option set
+2026-10-06T19:45:06Z	integrate	T-02 merged
+2026-10-06T19:45:07Z	phase	integrating
+2026-10-06T19:45:07Z	verify-all	PASS
+2026-10-06T19:45:13Z	phase	closing
+2026-10-06T19:45:14Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261006-1934-ba-1-h1
+2026-10-06T19:45:53Z	md-done	closing ba#1: closing: 19/19 ACs met
+2026-10-06T19:45:53Z	followup	T-01: Reviewer nit: write the literal U+200B in test/indicators/daysWithDelay.test.mjs line 27 as an escape (\u200B)
+2026-10-06T19:45:53Z	followup	T-02: Reviewer nit: delayCount.mjs could derive its valid-option lookup from DELAY_COUNT_OPTIONS (single source)
+2026-10-06T19:45:53Z	learn	backend-lead (project, node-test-paths): qa_verify/verify must name test files with a glob (node --test 'dir/*.test.mjs'), never a bare directory: on Node 22 'node --test dir/' tries to run the directory as a file and fails
+2026-10-06T19:46:08Z	knowledge	lessons/standards committed to job/JOB-20261006-1934-repayment-delay-indicators-2-3: .deliver/knowledge/lessons.md 
+2026-10-06T19:46:08Z	ship	local merge into main
+2026-10-06T19:46:18Z	md-release	ba#1 → worker-seat-20261006-1934-ba-1-h1
+2026-10-06T19:46:18Z	md-release	backend-lead#1 → worker-seat-20261006-1934-backend-lead-1-h1
+2026-10-06T19:46:18Z	md-release	backend#1 → worker-seat-20261006-1934-backend-1-h1
+2026-10-06T19:46:18Z	md-release	backend#2 → worker-seat-20261006-1934-backend-2-h1
+2026-10-06T19:46:19Z	md-release	qa#1 → worker-seat-20261006-1934-qa-1-h1
+2026-10-06T19:46:19Z	md-release	qa#2 → worker-seat-20261006-1934-qa-2-h1
+2026-10-06T19:46:19Z	md-release	reviewer#1 → worker-seat-20261006-1934-reviewer-1-h1
+2026-10-06T19:46:19Z	cleanup	

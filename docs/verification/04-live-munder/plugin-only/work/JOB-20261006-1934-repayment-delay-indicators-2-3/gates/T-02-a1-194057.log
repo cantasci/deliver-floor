@@ -1,0 +1,61 @@
+# gate: T-02  attempt: 1  2026-10-06T19:40:57Z
+ok    on job/JOB-20261006-1934-repayment-delay-indicators-2-3--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/delayCount.mjs","test/indicators/delayCount.test.mjs"] (+ QA tests ["test/indicators/integration/delayCount/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/delayCount.test.mjs
+TAP version 13
+# Subtest: options are exactly "0","1",">1" and frozen
+ok 1 - options are exactly "0","1",">1" and frozen
+  ---
+  duration_ms: 1.226803
+  type: 'test'
+  ...
+# Subtest: maps each option to its WL
+ok 2 - maps each option to its WL
+  ---
+  duration_ms: 0.191959
+  type: 'test'
+  ...
+# Subtest: trims surrounding whitespace first
+ok 3 - trims surrounding whitespace first
+  ---
+  duration_ms: 0.097545
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError
+ok 4 - invalid strings throw RangeError
+  ---
+  duration_ms: 0.876714
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError
+ok 5 - non-strings throw RangeError
+  ---
+  duration_ms: 0.289669
+  type: 'test'
+  ...
+# Subtest: every option maps without throwing to [0,1,2]
+ok 6 - every option maps without throwing to [0,1,2]
+  ---
+  duration_ms: 0.118098
+  type: 'test'
+  ...
+# Subtest: pure: same output, options untouched
+ok 7 - pure: same output, options untouched
+  ---
+  duration_ms: 0.20476
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 86.317547
+ok    verify passed

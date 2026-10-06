@@ -656,7 +656,7 @@ contains "a seat may not run flow commands" "$(AGENT_ID=worker-seat-x bg "\"\$DL
 contains "Michael (god) still writes the job's files" "$(AGENT_ID=god wg "$R/.work/$JOB/plan.md" "$R" "" "$TR")" "rc=0"
 # A floor job is driven only by the app's Michael: a second Michael in a plain terminal would read the same inbox
 contains "outside the app, a floor job's flow is refused" "$(env -u AGENT_ID "$DL" md-inbox 2>&1)" "Hand it to Michael in the app: dl floor-open"
-contains "…the refusal says how to switch to subagents by hand" "$(env -u AGENT_ID "$DL" phase executing 2>&1)" 'dl dispatch subagent'
+contains "…the refusal says how to switch to subagents by hand" "$(env -u AGENT_ID "$DL" phase executing 2>&1)" '/deliver:mode subagent <why>'
 expect_ok "…while the human can still read and answer from any terminal (status, md-seats)" env -u AGENT_ID "$DL" status
 expect_ok "…md-seats" env -u AGENT_ID "$DL" md-seats
 contains "a seat cannot run the flow through dl either" "$(AGENT_ID=worker-seat-x "$DL" md-hire 2>&1)" "a seat does not run the flow"
@@ -684,6 +684,11 @@ out="$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL
 [[ $out == *"is open on $FH"* && ! -f $TMP/app-started ]] && ok "an app already open on that floor is not started twice — the job just goes to Michael" || bad "floor-open with app running: $out"
 jq '.harnessHome = "/elsewhere"' "$FX/.config/munder-difflin/config.json" > "$TMP/c" && mv "$TMP/c" "$FX/.config/munder-difflin/config.json"
 contains "an app open on another floor is not hijacked" "$(cd "$FO" && HOME="$FX" XDG_CONFIG_HOME="$FX/.config" env -u AGENT_ID "$DL" floor-open "x" 2>&1)" "open on another floor (/elsewhere)"
+contains "floor-open names the human's slash commands, not dl (a plugin puts no dl on the user's PATH — seen on a user's machine)" "$out" "/deliver:status · /deliver:board · /deliver:seats"
+out="$(cd "$FO" && env -u AGENT_ID "$DL" status 2>&1)"
+contains "dl status before Michael started: the request waiting on the floor, not \"no active job\"" "$out" "no job yet — the request went to Michael on the floor $FH"
+contains "…and what starts it" "$out" "click Open once"
+[[ -f $FO/.work/FLOOR-PENDING && "$(git -C "$FO" status --porcelain)" != *.work* ]] && ok "…its record (.work/FLOOR-PENDING) stays out of git" || bad "floor-open left: $(git -C "$FO" status --porcelain)"
 # the first /deliver in a floor repo with no .deliver.json writes it, read from the repo, with the floor it opens
 FN="$TMP/floornew"; FX2="$TMP/fakehome2"; FH2="$TMP/floorhome2"; mkdir -p "$FN" "$FX2/.config/munder-difflin" "$FX2/.deliver"
 (cd "$FN" && git init -q -b main && echo '{"scripts":{"test":"node --test"}}' > package.json && git add -A && git commit -qm i)
@@ -926,6 +931,65 @@ contains "…nor a force push of its own branch" "$(pg "git push -f origin $own2
 contains "…and must name the branch" "$(pg "git push")" "rc=2"
 kill $JPID 2>/dev/null; unset JIRA_BASE_URL JIRA_EMAIL JIRA_API_TOKEN
 "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
+# Asana, Linear, GitHub Projects: the same contract as Jira, each against a stub of its vendor's API (tests/tracker-stubs.mjs)
+tracker_contract() { # tracker_contract <kind> <credential var> '<tracker.<kind> settings>' <key in the branch: 1|0>
+  local k=$1 cred=$2 cfg=$3 keyed=$4 pid; local TS="$TMP/$k-state.json" TC="$TMP/$k-cols" TP="$TMP/$k.port" TR="$TMP/$k-repo"
+  echo "tracker: $k (contract stub) — check, open, columns, dependencies, comments, branch"
+  local saved_gh=${GH_TOKEN:-}; unset GH_TOKEN   # a real token of this machine never reaches the stub, nor hides a missing one
+  : > "$TP"; rm -f "$TC"; STUB_COLUMNS_FILE="$TC" node "$HERE/tests/tracker-stubs.mjs" "$k" "$TS" > "$TP" & pid=$!
+  for _ in $(seq 50); do grep -q listening "$TP" && break; sleep 0.1; done
+  local port; port="$(awk '{print $2}' "$TP")"
+  export ASANA_BASE_URL="http://127.0.0.1:$port/api/1.0" LINEAR_API_URL="http://127.0.0.1:$port/graphql" GITHUB_API_URL="http://127.0.0.1:$port"
+  export "$cred=t0ken-$k"
+  mkdir -p "$TR" && cd "$TR" && git init -q -b main
+  jq -n --arg k "$k" --argjson c "$cfg" '{dispatch:"subagent",verify_full:"true",merge_mode:"local",tracker:{kind:$k, ($k):$c}}' > .deliver.json && git add -A && git commit -qm i
+  local out rc=0; out="$("$DL" tracker check 2>&1)" || rc=$?
+  [[ $rc == 0 && $out == *"ok   signed in to "* && $out == *"for every column"* ]] && ok "$k: dl tracker check — signed in, the board, a column for every stage" || bad "$k check: rc=$rc $out"
+  contains "$k: …a missing credential is named" "$(env -u "$cred" "$DL" tracker check 2>&1)" "credentials missing: $cred"
+  echo "To Do,In Progress,Code Review,Done,Blocked,Won't Do" > "$TC"; rc=0; out="$("$DL" tracker check 2>&1)" || rc=$?
+  [[ $rc == 1 && $out == *"qa → 'QA'"* ]] && ok "$k: …a board without a column fails, naming it — nothing is added to your board" || bad "$k missing column: rc=$rc $out"
+  rm -f "$TC"
+  contains "$k: doctor runs the same check" "$("$HERE/scripts/doctor.sh" "$TR" 2>&1)" "$k: signed in to "
+  contains "$k: …and names a missing credential" "$(env -u "$cred" "$HERE/scripts/doctor.sh" "$TR" 2>&1)" "tracker $k: set $cred"
+  "$DL" new "$k flow" "x" >/dev/null; local TJ2="$TR/.work/$(cat .work/ACTIVE)"
+  "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+  "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+  printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$TJ2/specs/T-01.md"; cp "$TJ2/specs/T-01.md" "$TJ2/specs/T-02.md"
+  jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+    verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"ctx",attempts:0,notes:[]},
+    {id:"T-02",title:"two",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:["T-01"],scope:["lib/**"],qa_scope:["it2/**"],
+    verify:"test -d lib",qa_verify:"test -d it2",acceptance:["AC-1: y"],context:"ctx2",attempts:0,notes:[]}]}' > "$TJ2/board.json"
+  "$DL" phase executing >/dev/null
+  local ts; ts() { jq -r "$1" "$TS"; }
+  local i1 i2; i1="$(ts '.items | to_entries[] | select(.value.title | startswith("T-01")) | .key')"; i2="$(ts '.items | to_entries[] | select(.value.title | startswith("T-02")) | .key')"
+  [[ "$(ts '.container.title')" == "$k flow" && -n $i1 && -n $i2 && "$(ts ".items[\"$i1\"].parent | tostring")" == "$(ts '.container.id | tostring')" ]] \
+    && ok "$k: executing opens the job and one item per card under it, in your existing board" || bad "$k open: $(cat "$TS" | head -c 600)"
+  [[ "$(ts ".items[\"$i2\"].blocked_by | map(tostring) | join(\",\")")" == "$(jq -r '.cards[0].tracker | (.number // .id) | tostring' "$TJ2/board.json")" ]] \
+    && ok "$k: T-02 depends_on T-01 becomes the tool's own dependency" || bad "$k dependency: $(ts ".items[\"$i2\"].blocked_by")"
+  [[ "$(ts ".items[\"$i1\"].column")" == "To Do" ]] && ok "$k: a ready card is in To Do" || bad "$k column at open: $(ts ".items[\"$i1\"].column")"
+  local W; W="$("$DL" wt add T-01)"
+  if [[ $keyed == 1 ]]; then [[ "$(jq -r '.cards[0].branch' "$TJ2/board.json")" == *"--T-01-$(jq -r '.cards[0].tracker.key' "$TJ2/board.json")" ]] && ok "$k: the card branch carries the issue key" || bad "$k branch: $(jq -r '.cards[0].branch' "$TJ2/board.json")"; fi
+  [[ "$(ts ".items[\"$i1\"].column")" == "In Progress" ]] && ok "$k: assignment → In Progress" || bad "$k after assign: $(ts ".items[\"$i1\"].column")"
+  ts ".items[\"$i1\"].body" | gq "Development: branch" && ok "$k: the branch is in the description" || bad "$k description"
+  mkdir -p "$W/src" && echo 1 > "$W/src/a" && git -C "$W" add -A && git -C "$W" commit -qm "T-01"
+  "$DL" gate T-01 >/dev/null; [[ "$(ts ".items[\"$i1\"].column")" == QA ]] && ok "$k: gate PASS → QA" || bad "$k after gate: $(ts ".items[\"$i1\"].column")"
+  mkdir -p "$W/it" && echo 1 > "$W/it/t" && git -C "$W" add -A && git -C "$W" commit -qm "T-01 QA"
+  "$DL" qa T-01 pass "AC-1 pass" >/dev/null; [[ "$(ts ".items[\"$i1\"].column")" == "Code Review" ]] && ok "$k: QA pass → Code Review" || bad "$k after qa: $(ts ".items[\"$i1\"].column")"
+  "$DL" review T-01 approve "ok" >/dev/null; "$DL" integrate T-01 >/dev/null
+  [[ "$(ts ".items[\"$i1\"].column")" == Done ]] && ok "$k: merge → Done" || bad "$k after integrate: $(ts ".items[\"$i1\"].column")"
+  ts ".items[\"$i1\"].comments | join(\" \")" | gq "qa-tester" && ts ".items[\"$i1\"].comments | join(\" \")" | gq "reviewer\]" \
+    && ok "$k: the roles' results are comments (gate, QA, review, assignment)" || bad "$k comments: $(ts ".items[\"$i1\"].comments")"
+  echo "To Do,In Progress,Code Review,Done,Blocked" > "$TC"
+  local W2; W2="$("$DL" wt add T-02)"; mkdir -p "$W2/lib" && echo 1 > "$W2/lib/a" && git -C "$W2" add -A && git -C "$W2" commit -qm "T-02"
+  out="$("$DL" gate T-02 2>&1)"; contains "$k: a column removed mid-job is reported, the gate result stands" "$out" "'QA'"
+  [[ "$(jq -r '.cards[1].gate.result' "$TJ2/board.json")" == PASS ]] && ok "$k: …board.json is unaffected" || bad "$k gate record"
+  kill $pid 2>/dev/null; unset "$cred" ASANA_BASE_URL LINEAR_API_URL GITHUB_API_URL; [[ -z $saved_gh ]] || export GH_TOKEN=$saved_gh
+  "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+}
+tracker_contract asana ASANA_TOKEN '{"project":"1200"}' 0
+tracker_contract linear LINEAR_API_KEY '{"team":"WL"}' 1
+tracker_contract github GITHUB_TOKEN '{"repo":"acme/demo","project":7}' 0
 
 echo "ECC specialists: decisions bring their reviewers; every reviewer must approve"
 EC="$TMP/ecc"; mkdir -p "$EC" && cd "$EC" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
@@ -1354,6 +1418,62 @@ HOME="$PH" expect_ok "install --plugin (settings only)" "$INST_P" --user --plugi
   && ok "…but sets what a plugin cannot: env and attribution" || bad "install --plugin settings: $(cat "$PH/.claude/settings.json")"
 HOME="$PH" expect_ok "uninstall --plugin" "$INST_P" --user --plugin --uninstall
 [[ "$(jq -c 'del(.x)' "$PH/.claude/settings.json")" == '{}' ]] && ok "…removes them again" || bad "uninstall --plugin left: $(cat "$PH/.claude/settings.json")"
+
+echo "one copy of the kit: the plugin — a copy in ~/.claude is deleted"
+CK="$TMP/ckhome"; mkdir -p "$CK"; HOME="$CK" "$INST_P" --user >/dev/null 2>&1
+mkdir -p "$CK/.claude/agents"; printf -- '---\nname: my-agent\ndescription: mine\n---\n' > "$CK/.claude/agents/my-agent.md"
+printf -- '---\nname: database-dev\ndescription: my own database agent, not the kit'"'"'s\n---\n' > "$CK/.claude/agents/database-dev.md"
+jq '.hooks.PreToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":"my-own-hook.sh"}]}]' "$CK/.claude/settings.json" > "$TMP/s" && mv "$TMP/s" "$CK/.claude/settings.json"
+mkdir -p "$CK/.claude/plugins"; echo '{"plugins":{"deliver@deliver-floor":[{"installPath":"x"}]}}' > "$CK/.claude/plugins/installed_plugins.json"
+out="$(echo '{}' | CLAUDE_CONFIG_DIR="$CK/.claude" CLAUDE_PLUGIN_ROOT="$HERE/kit" CLAUDE_PLUGIN_DATA="$CK/pdata" CLAUDE_PROJECT_DIR="$TMP" node "$HERE/kit/hooks/deliver/setup.mjs")"
+[[ ! -e $CK/.claude/skills/deliver && ! -e $CK/.claude/hooks/deliver && ! -e $CK/.claude/agents/qa-tester.md ]] \
+  && ok "the plugin's session deletes the copied kit: skill, hooks, the kit's agents" || bad "copy left: $(ls "$CK/.claude/skills" "$CK/.claude/hooks" "$CK/.claude/agents")"
+[[ -f $CK/.claude/agents/my-agent.md && -f $CK/.claude/agents/database-dev.md ]] && ok "…never the user's own agents, even one named like a kit agent" || bad "user agents deleted"
+[[ "$(jq -c '[.hooks // {} | .[][] | .hooks[].command]' "$CK/.claude/settings.json")" == '["my-own-hook.sh"]' ]] \
+  && ok "…removes the copy's hook entries from settings.json, keeps the user's" || bad "settings hooks: $(jq -c .hooks "$CK/.claude/settings.json")"
+ls "$CK"/.claude/settings.json.deliver-backup-* >/dev/null 2>&1 && ok "…with a backup of settings.json" || bad "no settings backup"
+contains "…and says so once" "$(jq -r .systemMessage <<<"$out")" "the plugin is the only copy of the kit now"
+contains "the stable dl in the plugin's data dir runs this version's dl" "$(cat "$CK/pdata/bin/dl")" "exec bash \"$HERE/kit/skills/deliver/bin/dl\" \"\$@\""
+[[ -x $CK/pdata/bin/dl ]] && contains "…and works" "$("$CK/pdata/bin/dl" playbook)" "$HERE/kit/skills/deliver/SKILL.md" || bad "launcher not executable"
+out="$(echo '{}' | CLAUDE_CONFIG_DIR="$CK/.claude" CLAUDE_PLUGIN_ROOT="$HERE/kit" CLAUDE_PLUGIN_DATA="$CK/pdata" CLAUDE_PROJECT_DIR="$TMP" node "$HERE/kit/hooks/deliver/setup.mjs")"
+[[ $out != *"only copy"* ]] && ok "…a second session finds nothing to remove" || bad "repeated: $out"
+NP="$TMP/noplug"; mkdir -p "$NP"; HOME="$NP" "$INST_P" --user >/dev/null 2>&1
+echo '{}' | CLAUDE_CONFIG_DIR="$NP/.claude" CLAUDE_PLUGIN_DATA="$NP/pdata" CLAUDE_PROJECT_DIR="$TMP" node "$NP/.claude/hooks/deliver/setup.mjs" >/dev/null
+[[ -e $NP/.claude/skills/deliver ]] && ok "a copied kit without the plugin is the user's choice: left alone" || bad "copied-only kit deleted"
+expect_ok "the plugin's bin/dl (on Claude Code's PATH) runs this version's dl" "$HERE/kit/bin/dl" help
+contains "dl version names the plugin version" "$("$HERE/kit/bin/dl" version)" "deliver $V"
+MB="$TMP/mbplug/plugins/cache/deliver-floor/deliver/9.9.9/skills"; mkdir -p "$MB" && cp -R "$HERE/kit/skills/deliver" "$MB/"
+bash "$MB/deliver/bin/md-brief.sh" "$TMP/mbhive" >/dev/null
+out="$(cat "$TMP/mbhive/CLAUDE.md")"
+[[ $out == *'`/deliver:deliver <the request>`'* && $out == *"$TMP/mbplug/plugins/data/deliver-deliver-floor/bin/dl"* && $out != *9.9.9* ]] \
+  && ok "Michael's brief with the plugin: /deliver:deliver and the stable dl — no version path an update leaves behind" || bad "plugin brief: $(grep -n 'deliver' "$TMP/mbhive/CLAUDE.md" | head -5)"
+bash "$HERE/kit/skills/deliver/bin/md-brief.sh" "$TMP/mbhive2" >/dev/null
+grep -q '`/deliver <the request>`' "$TMP/mbhive2/CLAUDE.md" && ok "…a copied kit's brief keeps /deliver and its own paths" || bad "copied brief"
+
+echo "the human's slash commands (/deliver:<name>): no dl in a terminal"
+for d in "$HERE"/kit/skills/*/; do
+  n="$(basename "$d")"; [[ $n == deliver ]] && continue; f="$d/SKILL.md"
+  grep -q '^disable-model-invocation: true$' "$f" && grep -qF 'allowed-tools: Bash(bash "${CLAUDE_SKILL_DIR}/run.sh":*)' "$f" && grep -qF "bash \"\${CLAUDE_SKILL_DIR}/run.sh\" $n <<'DELIVER_TYPED_7Q2'" "$f" && [[ -x $d/run.sh ]] \
+    || bad "/deliver:$n: needs disable-model-invocation, its run.sh and the permission rule that matches its command"
+done; ok "every /deliver:<name> is the human's only (disable-model-invocation), runs its own run.sh with the rule that lets it run"
+SR="$TMP/slashrepo"; mkdir -p "$SR" && (cd "$SR" && git init -q -b main && echo x > a && git add -A && git commit -qm i && echo '{"dispatch":"subagent"}' > .deliver.json)
+sl() { (cd "$SR" && printf '%s' "$2" | env -u AGENT_ID bash "$HERE/kit/skills/$1/run.sh" "$1"); }
+contains "/deliver:status with no job: dl's words and that nothing was done — never an empty answer (a failed command shows nothing)" "$(sl status '')" "no active job — start one with /deliver:new <request>"
+(cd "$SR" && sl status '' >/dev/null; echo $? > "$TMP/slrc"); [[ "$(cat "$TMP/slrc")" == 0 ]] && ok "…exit 0 even when dl refuses (Claude Code drops a failed command's output)" || bad "slash exit code"
+contains "/deliver:new with no job active" "$(sl new 'build it')" "NO ACTIVE JOB"
+(cd "$SR" && env -u AGENT_ID "$DL" new t "r" >/dev/null 2>&1)
+contains "/deliver:new with a job active says which" "$(sl new 'build it')" "ACTIVE JOB — a new job cannot start while this one is active"
+TXT='because "the floor" is $HOME `id` it'"'"'s fine'
+sl mode "munder $TXT" >/dev/null
+contains "what the human types reaches dl exactly — quotes, \$, backticks (never a shell's parsing)" "$(grep $'\tdispatch\t' "$SR/.work/$(cat "$SR/.work/ACTIVE")/events.log" | tail -1)" "munder — $TXT"
+contains "a command without what it needs says how to use it" "$(sl answer 'X-1')" "usage: /deliver:answer <question id> <your answer>"
+SJ="$(cat "$SR/.work/ACTIVE")"; out="$(sl abort 'trying it')"
+contains "/deliver:abort stops the job" "$out" "job $SJ aborted (trying it)"
+[[ "$(jq -r .phase "$SR/.work/$SJ/job.json")" == aborted && ! -f $SR/.work/ACTIVE ]] && ok "…aborted, nothing active: a new job can start" || bad "abort: $(jq -r .phase "$SR/.work/$SJ/job.json")"
+contains "…logged with who and why" "$(grep $'\tabort\t' "$SR/.work/$SJ/events.log")" "trying it"
+expect_ok "…and the next job starts" bash -c "cd '$SR' && env -u AGENT_ID '$DL' new t2 r2"
+contains "Claude may not abort for the human (bash-guard)" "$(bg '"$DL" abort "x"')" "rc=2"
+contains "…nor pose as the human's slash command" "$(bg 'DELIVER_HUMAN_CMD=1 "$DL" card T-01 retry')" "rc=2"
 
 echo "live tests: the prepared human picks the answer that fits best"
 PA="$HERE/tests/pick-answer.mjs"; HA="$HERE/examples/watchlist-poc/HUMAN_ANSWERS.json"
