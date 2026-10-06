@@ -16,19 +16,20 @@ if [[ ${AGENT_ID:-} == god ]]; then
     exit 2
   done < <(active_jobs)
 fi
-# Interactive: record each agent sent to work, so the stop-guard knows Michael is waiting for agents that report back
-# (their SubagentStop is logged as "agent" by subagent-log).
-if [[ ${DELIVER_HEADLESS:-} != 1 ]]; then
+# Each agent let through is recorded ("dispatch"), its SubagentStop is logged as "agent" by subagent-log: the stop-guard
+# knows who is still at work, and dl timeline measures how long each one worked.
+allow() {
   . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
   if owned="$(owned_job)"; then
     IFS=$'\t' read -r job root <<<"$owned"
     printf '%s\tdispatch\t%s\n' "$(date -u +%FT%TZ)" "$(jq -r '.tool_input.subagent_type // "agent"' <<<"$input")" >> "$root/.work/$job/events.log"
   fi
   exit 0
-fi
+}
+[[ ${DELIVER_HEADLESS:-} == 1 ]] || allow
 # With background tasks disabled (scripts/run-headless.sh sets this) the Agent tool has no background mode at all.
-[[ ${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS:-} == 1 ]] && exit 0
+[[ ${CLAUDE_CODE_DISABLE_BACKGROUND_TASKS:-} == 1 ]] && allow
 # Otherwise current Claude Code runs subagents in the background BY DEFAULT, so headless dispatch must say false explicitly.
-[[ "$(jq -r 'if (.tool_input.run_in_background | tostring) == "false" then "fg" else "bg" end' <<<"$input")" == fg ]] && exit 0
+[[ "$(jq -r 'if (.tool_input.run_in_background | tostring) == "false" then "fg" else "bg" end' <<<"$input")" == fg ]] && allow
 echo "deliver agent-guard: headless run — background agents die when this process exits, and subagents default to the background. Dispatch with run_in_background: false explicitly (several Agent calls in one message still run in parallel)." >&2
 exit 2

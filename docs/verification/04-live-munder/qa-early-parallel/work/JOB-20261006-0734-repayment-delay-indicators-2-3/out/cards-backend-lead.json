@@ -1,0 +1,54 @@
+[
+  {
+    "tmp_id": "B1",
+    "title": "Indicator 2 — daysWithDelay options and WL mapping (REQ-03-02)",
+    "role": "backend",
+    "component": "indicators-lib",
+    "context": "Why: REQ-03-02 — Indicator 2. Pure ES module (Node 18+, no dependencies, no I/O; see CLAUDE.md) mapping a dropdown option label to a Watchlist level (WL). Do TDD with node:test + node:assert/strict.\nFiles: src/indicators/daysWithDelay.mjs (create) and test/indicators/daysWithDelay.test.mjs (create). Touch nothing else; do not import the sibling indicator module (parallel card).\nExports (exactly these, named exports, no default): `export const DAYS_WITH_DELAY_OPTIONS` = Object.freeze([\"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\"]) (array of strings, this order; frozen, push throws TypeError); `export function daysWithDelayWl(option)` synchronous, pure, returns the WL number.\nMapping (C2): \"no delay\"→0, \"<=3 days\"→0, \">3 days\"→2, \">60 days\"→3, \">90 days\"→4 (results in option order: [0,0,2,3,4]). NOTE: the requirement text writes \"≤3 days\" but C1 fixes the ASCII string \"<=3 days\"; \"≤3 days\" is INVALID → RangeError.\nInput handling (C1, C5): if typeof option !== 'string' (incl. undefined, null, numbers, booleans, arrays, objects, String objects) throw RangeError. Otherwise option.trim() (String.prototype.trim: strips all JS whitespace incl. NBSP/tabs/newlines, never inner whitespace), then EXACT case-sensitive match against the allowed labels; anything else (empty, whitespace-only, wrong case, inner spaces, different glyphs, near-misses) throws RangeError. Never return a WL for invalid input and never throw another error type.\nError message (X-error-message): non-empty, names the offending value (e.g. via String()/JSON.stringify safe for symbols/objects) and may list allowed options; tests assert only instanceof RangeError (and optionally message non-empty/contains value).\nDo not mutate input/state or the options list; unit tests must verify DAYS_WITH_DELAY_OPTIONS unchanged after calls. Out of scope: Indicator 1, UI, counting delays, any other indicator, src/ratings, dependencies.",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/daysWithDelay.mjs",
+      "test/indicators/daysWithDelay.test.mjs"
+    ],
+    "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+    "qa_scope": [
+      "test/indicators/integration/daysWithDelay.test.mjs"
+    ],
+    "qa_verify": "node --test test/indicators/integration/daysWithDelay.test.mjs",
+    "acceptance": [
+      "AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals [\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"], is an array, Object.isFrozen is true, push throws TypeError",
+      "AC-2: daysWithDelayWl(\"no delay\") → 0 and (\"<=3 days\") → 0",
+      "AC-3: \">3 days\" → 2, \">60 days\" → 3, \">90 days\" → 4; options mapped in order give [0,0,2,3,4]",
+      "AC-4: whitespace is trimmed: \"  >60 days  \" → 3, \"\\t>3 days\\n\" → 2, NBSP-wrapped \">90 days\" → 4, \" no delay \" → 0",
+      "AC-5: RangeError (only) for \">3 Days\", \">3  days\", \"> 3 days\", \"\", \"   \", \"3 days\", \">3days\", \"≤3 days\", \"<=3 days.\", \">30 days\", \">91 days\" and non-strings undefined, null, 3, 0, true, [], [\"no delay\"], {}, new String(\"no delay\")",
+      "AC-6: thrown error is instanceof RangeError with non-empty message naming the offending value",
+      "AC-11: module exports exactly DAYS_WITH_DELAY_OPTIONS and daysWithDelayWl; function is sync and pure (same input → same output, options unchanged after calls); no imports/dependencies",
+      "AC-12: test/indicators/daysWithDelay.test.mjs passes under node --test; only files in src/indicators/ and test/indicators/ added; no Indicator 1 logic or UI"
+    ]
+  },
+  {
+    "tmp_id": "B2",
+    "title": "Indicator 3 — delayCount options and WL mapping (REQ-03-03)",
+    "role": "backend",
+    "component": "indicators-lib",
+    "context": "Why: REQ-03-03 — Indicator 3. Pure ES module (Node 18+, no dependencies, no I/O; see CLAUDE.md) mapping a dropdown option label to a Watchlist level (WL). Do TDD with node:test + node:assert/strict.\nFiles: src/indicators/delayCount.mjs (create) and test/indicators/delayCount.test.mjs (create). Touch nothing else; do not import the sibling indicator module (parallel card).\nExports (exactly these, named exports, no default): `export const DELAY_COUNT_OPTIONS` = Object.freeze([\"0\", \"1\", \">1\"]) (array of strings, this order; frozen, push throws TypeError); `export function delayCountWl(option)` synchronous, pure, returns the WL number.\nMapping (C2): \"0\"→0, \"1\"→1, \">1\"→2 (results in option order: [0,1,2]). Labels are strings; numeric inputs such as 0, 1, 2 are non-strings → RangeError.\nInput handling (C1, C5): if typeof option !== 'string' (incl. undefined, null, numbers, booleans, arrays, objects, String objects) throw RangeError. Otherwise option.trim() (String.prototype.trim: strips all JS whitespace incl. NBSP/tabs/newlines, never inner whitespace), then EXACT case-sensitive match against the allowed labels; anything else (empty, whitespace-only, wrong case, inner spaces, different glyphs, near-misses) throws RangeError. Never return a WL for invalid input and never throw another error type.\nError message (X-error-message): non-empty, names the offending value (e.g. via String()/JSON.stringify safe for symbols/objects) and may list allowed options; tests assert only instanceof RangeError (and optionally message non-empty/contains value).\nDo not mutate input/state or the options list; unit tests must verify DELAY_COUNT_OPTIONS unchanged after calls. Out of scope: Indicator 1, UI, counting delays, any other indicator, src/ratings, dependencies.",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/delayCount.mjs",
+      "test/indicators/delayCount.test.mjs"
+    ],
+    "verify": "node --test test/indicators/delayCount.test.mjs",
+    "qa_scope": [
+      "test/indicators/integration/delayCount.test.mjs"
+    ],
+    "qa_verify": "node --test test/indicators/integration/delayCount.test.mjs",
+    "acceptance": [
+      "AC-7: DELAY_COUNT_OPTIONS deep-equals [\"0\",\"1\",\">1\"], is an array, frozen",
+      "AC-8: delayCountWl(\"0\") → 0, (\"1\") → 1, (\">1\") → 2; options mapped in order give [0,1,2]",
+      "AC-9: whitespace is trimmed: \" 1 \" → 1, \"\\t>1\\n\" → 2, \" 0 \" → 0",
+      "AC-10: RangeError (only) with message naming the value for \"\", \"   \", \"2\", \"01\", \"1.0\", \"-1\", \"> 1\", \">1 1\", \">=1\", \"one\" and non-strings 0, 1, 2, undefined, null, NaN, true, [], [\"1\"], {}",
+      "AC-11: module exports exactly DELAY_COUNT_OPTIONS and delayCountWl; function is sync and pure (options unchanged after calls); no imports/dependencies",
+      "AC-12: test/indicators/delayCount.test.mjs passes under node --test; only files in src/indicators/ and test/indicators/ added; no Indicator 1 logic or UI"
+    ]
+  }
+]

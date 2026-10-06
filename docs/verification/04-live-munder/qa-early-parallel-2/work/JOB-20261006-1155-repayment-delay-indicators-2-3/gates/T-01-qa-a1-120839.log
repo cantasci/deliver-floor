@@ -1,0 +1,77 @@
+# qa_verify: node --test test/integration/indicators/daysWithDelay*.test.mjs
+TAP version 13
+# Subtest: AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five options in order and is frozen
+ok 1 - AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five options in order and is frozen
+  ---
+  duration_ms: 4.731051
+  type: 'test'
+  ...
+# Subtest: AC-1: the frozen option list cannot be mutated
+ok 2 - AC-1: the frozen option list cannot be mutated
+  ---
+  duration_ms: 0.561004
+  type: 'test'
+  ...
+# Subtest: AC-2: each exact option maps to its WL
+ok 3 - AC-2: each exact option maps to its WL
+  ---
+  duration_ms: 0.269052
+  type: 'test'
+  ...
+# Subtest: AC-2: every entry of DAYS_WITH_DELAY_OPTIONS is accepted
+ok 4 - AC-2: every entry of DAYS_WITH_DELAY_OPTIONS is accepted
+  ---
+  duration_ms: 0.219158
+  type: 'test'
+  ...
+# Subtest: AC-3: padded options give the same WL as the bare option
+ok 5 - AC-3: padded options give the same WL as the bare option
+  ---
+  duration_ms: 0.286284
+  type: 'test'
+  ...
+# Subtest: AC-4: strings that are not an exact option after trim throw RangeError containing JSON.stringify(input)
+ok 6 - AC-4: strings that are not an exact option after trim throw RangeError containing JSON.stringify(input)
+  ---
+  duration_ms: 0.690179
+  type: 'test'
+  ...
+# Subtest: AC-5: non-string inputs throw RangeError containing typeof input, never coerced
+ok 7 - AC-5: non-string inputs throw RangeError containing typeof input, never coerced
+  ---
+  duration_ms: 2.631757
+  type: 'test'
+  ...
+# Subtest: AC-5: calling with no argument throws RangeError mentioning undefined
+ok 8 - AC-5: calling with no argument throws RangeError mentioning undefined
+  ---
+  duration_ms: 0.211701
+  type: 'test'
+  ...
+# Subtest: Error message: names the indicator and lists the allowed options
+ok 9 - Error message: names the indicator and lists the allowed options
+  ---
+  duration_ms: 0.718533
+  type: 'test'
+  ...
+# Subtest: AC-11: module source has no imports, no I/O, no logging; no dependency added; no delayCount import
+ok 10 - AC-11: module source has no imports, no I/O, no logging; no dependency added; no delayCount import
+  ---
+  duration_ms: 1.03802
+  type: 'test'
+  ...
+# Subtest: AC-12: repeated calls return the same WL; a throwing call leaves the option list unchanged
+ok 11 - AC-12: repeated calls return the same WL; a throwing call leaves the option list unchanged
+  ---
+  duration_ms: 0.344519
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 145.984359

@@ -21,6 +21,7 @@
       "description": "human: a PR you merge · semi: auto-merge armed, you approve · auto: merged on green CI · local: merged into the base branch locally, no remote."
     },
     "max_parallel": { "type": "integer", "minimum": 1, "default": 3, "description": "Cards running at once (all roles together)." },
+    "qa_early": { "type": "boolean", "default": true, "description": "QA writes each card's tests from its spec while the developer builds it (own worktree; joined after the gate with dl qa-join), instead of after the gate." },
     "max_attempts": { "type": "integer", "minimum": 1, "default": 2, "description": "Tries per card before it is blocked and Michael decides (split, replace or drop — listed in the PR)." },
     "gates": {
       "type": "object",

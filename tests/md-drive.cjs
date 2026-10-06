@@ -65,8 +65,14 @@ async function answer(win) {
   // event, which React handles exactly like a click on the card. A double click would rename the person instead.
   const why = (e) => String(e?.message ?? e).split('\n').filter((l) => l.trim()).slice(0, 6).join(' | ').slice(0, 400);
   // nth: several people can share a name — a re-seated seat leaves the failed worker's card on the floor (the app keeps it)
+  // The card that names a person: older Munder Difflin builds title it "<name> — double-click to rename"; current ones
+  // (v0.4.x) show the name only as upper-cased text, no title (seen live: no card found, no screenshot).
+  const cards = async (name) => {
+    const byTitle = win.locator(`[title="${name} — double-click to rename"]`);
+    return (await byTitle.count()) ? byTitle : win.getByText(name.toUpperCase(), { exact: true });
+  };
   const select = async (name, nth = 0) => {
-    const el = win.locator(`[title="${name} — double-click to rename"]`).nth(nth);
+    const el = (await cards(name)).nth(nth);
     if (!(await el.count())) {
       if (name !== 'Michael') { log(`select ${name}: no card on the agent strip`); return false; }
       try { await win.getByText('BOSS', { exact: true }).first().click({ timeout: 3000 }); return true; } catch (e) { log(`select Michael failed: ${why(e)}`); return false; }
@@ -83,7 +89,7 @@ async function answer(win) {
     // Proof only when the Command Center really shows this person: its terminal header names the worker ("pty worker-…"),
     // polled on a timer, not on animation frames (which a background window may not get). Same-named cards: try each,
     // newest first (a re-seated seat's failed worker keeps its card).
-    const n = await win.locator(`[title="${name} — double-click to rename"]`).count();
+    const n = await (await cards(name)).count();
     let shown = false;
     for (let k = Math.max(n, 1) - 1; k >= 0 && !shown; k--) {
       if (!(await select(name, k))) continue;
@@ -128,11 +134,15 @@ async function answer(win) {
     if (shot <= 120 && (Date.now() - t0) / 60000 >= shot) await snap(`${shots}/${String(shot++).padStart(2, '0')}-floor.png`);
     if (j && ['done', 'awaiting_pr_merge', 'aborted'].includes(j.phase)) {
       log(`finished: ${j.phase}`); await snap(`${shots}/98-finished.png`);
-      // Seats on the floor: wait (≤ 4 min) for Michael's release and for every seat to leave, so the run ends as a user's would.
+      // Seats on the floor: wait for Michael's release and each seat's answer to it (act "done" in the hive log), then for the
+      // floor to take them off — but no longer than a minute once all have answered: the app may keep their cards (F15),
+      // and waiting on that cost 4 idle minutes per run.
       const seats = Object.values(j.munder?.seats ?? {}).map((x) => x.worker);
       const gone = () => { try { const r = JSON.parse(fs.readFileSync(path.join(hiveRoot(), 'registry.json'), 'utf8')); return seats.every((w) => !r.agents[w] || r.agents[w].archived || r.agents[w].status === 'gone'); } catch { return true; } };
-      for (let k = 0; seats.length && k < 48 && !gone(); k++) await win.waitForTimeout(5000);
-      log(seats.length ? (gone() ? `all ${seats.length} seats released` : 'seats still on the floor after 4 minutes') : 'no seats');
+      const answered = () => { try { const done = new Set(fs.readFileSync(path.join(hiveRoot(), 'log.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return {}; } }).filter((m) => m.kind === 'message' && m.to === 'god' && m.act === 'done').map((m) => m.from)); return seats.every((w) => done.has(w)); } catch { return false; } };
+      let since = 0;
+      for (let k = 0; seats.length && k < 48 && !gone(); k++) { if (answered() && ++since > 12) break; await win.waitForTimeout(5000); }
+      log(seats.length ? (gone() ? `all ${seats.length} seats released` : answered() ? `all ${seats.length} seats answered the release; the floor still shows them (F15)` : 'seats still on the floor after 4 minutes') : 'no seats');
       for (const e of events().slice(lastLen)) log(`event ${e.split('\t').slice(1).join(' ').slice(0, 150)}`);
       await snap(`${shots}/99-final.png`); await closeApp(app); process.exit(j.phase === 'aborted' ? 1 : 0);
     }

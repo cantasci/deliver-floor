@@ -218,5 +218,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     for (const e of errs) console.log(`ERROR ${e}`);
     process.exit(errs.length ? 1 : 0);
   } else if (cmd === "render") render(arg);
+  else if (cmd === "dev-seats") { // seats of every developer role (count each, default 1) — QA seats follow them
+    const job = JSON.parse(readFileSync(arg, "utf8")), cat = loadCatalog();
+    console.log((job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev").reduce((n, r) => n + (r.count ?? 1), 0));
+  }
   else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir>"); process.exit(2); }
 }

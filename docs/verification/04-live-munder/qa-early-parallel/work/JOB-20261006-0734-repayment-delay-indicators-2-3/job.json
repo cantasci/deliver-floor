@@ -1,0 +1,261 @@
+{
+  "id": "JOB-20261006-0734-repayment-delay-indicators-2-3",
+  "title": "Repayment delay indicators 2-3",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md\nRepayment delay indicators 2 and 3 (Watchlist POC slice, parallel)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool), EPIC-03.\nBuild only these two requirements. They are independent of each other.\n\nStaffing: two backend developers work in parallel, one per requirement.\n\n## Requirements (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-03-02 | Indicator 2 (Days with delay): Dropdown → no delay / ≤3 days / >3 days / >60 days / >90 days | >3 days → WL=2; >60 days → WL=3; >90 days → WL=4 |\n| REQ-03-03 | Indicator 3 (Delays in 12 months): Dropdown → 0 / 1 / >1 | 1 → WL=1; >1 → WL=2 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Dropdown values are exactly these strings: Indicator 2: \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\";\n  Indicator 3: \"0\", \"1\", \">1\". Input is trimmed; any other value throws a RangeError.\n- C2. \"no delay\" and \"<=3 days\" → WL 0; Indicator 3 \"0\" → WL 0.\n- C3. Indicator 1 (repayment delay yes/no) and its collapsing of indicators 2–3 are OUT of scope here.\n- C4. \"Dropdown\" is met by the exported option lists (`*_OPTIONS`) that the POC screens, built later by other parts, render.\n  No UI in this slice.\n- C5. Matching is exact and case-sensitive after trimming (\">3 days\" yes, \">3 Days\" no → RangeError); a non-string input is a RangeError too.\n  Trimming means `String.prototype.trim()`: leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode\n  spaces such as NBSP) is removed; whitespace inside the value is never changed or collapsed (\">3  days\" → RangeError).\n- C6. The caller counts the delays in the last 12 months and picks the option; this slice only maps the option to a WL.\n\n## Contract\n\n- `src/indicators/daysWithDelay.mjs` → `export const DAYS_WITH_DELAY_OPTIONS` (the 5 strings, in order) and `export function daysWithDelayWl(option)` → 0 | 2 | 3 | 4\n- `src/indicators/delayCount.mjs` → `export const DELAY_COUNT_OPTIONS` (the 3 strings, in order) and `export function delayCountWl(option)` → 0 | 1 | 2\n\nPlain Node ESM, no dependencies; tests with `node --test`.",
+  "created": "2026-10-06T07:34:58Z",
+  "repo": "/tmp/claude-0/live/floor-par/munder/repo",
+  "phase": "done",
+  "stack": [
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-03-02/REQ-03-03: indicator domain logic (src/indicators)"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "count": 2,
+      "why": "Staffing: \"two backend developers work in parallel, one per requirement\""
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always",
+      "count": 2
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack javascript (plain Node ESM) → stack_reviewers.javascript",
+      "count": 2
+    }
+  ],
+  "assumptions": [
+    "Stack taken from the repo: package.json type=module, CLAUDE.md \"Plain Node.js 18+ ES modules\"; request: \"Plain Node ESM, no dependencies; tests with node --test\""
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261006-0734-repayment-delay-indicators-2-3",
+  "integration_worktree": "/tmp/claude-0/live/floor-par/munder/repo/.work/JOB-20261006-0734-repayment-delay-indicators-2-3/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "2f20a1d585b1442b103e029947f7b9689c120acd",
+    "log": "/tmp/claude-0/live/floor-par/munder/repo/.work/JOB-20261006-0734-repayment-delay-indicators-2-3/gates/verify-all-074345.log",
+    "at": "2026-10-06T07:43:45Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "munder",
+    "max_parallel": 2,
+    "qa_early": true,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "/tmp/claude-0/live/floor-par/munder/hive",
+      "claude_command": "/tmp/claude-0/live/floor-par/munder/bin/claude",
+      "model": "claude-sonnet-5-5",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false,
+      "convention_source": "the history: 0 of the last 2 commits are Conventional Commits — no convention"
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "b24ab1781c9475edbce1997c6b261148d0ad6a8c",
+    "at": "2026-10-06T07:44:56Z"
+  },
+  "munder": {
+    "seats": {
+      "ba#1": {
+        "role": "ba",
+        "worker": "worker-seat-20261006-0734-ba-1-h1",
+        "hires": 1,
+        "character": "pam",
+        "hired_at": "2026-10-06T07:35:11Z",
+        "task": null,
+        "orders": 4,
+        "since": null,
+        "last_done": "2026-10-06T07:44:34Z"
+      },
+      "backend-lead#1": {
+        "role": "backend-lead",
+        "worker": "worker-seat-20261006-0734-backend-lead-1-h1",
+        "hires": 1,
+        "character": "oscar",
+        "hired_at": "2026-10-06T07:35:11Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T07:39:09Z"
+      },
+      "backend#1": {
+        "role": "backend",
+        "worker": "worker-seat-20261006-0734-backend-1-h1",
+        "hires": 1,
+        "character": "dwight",
+        "hired_at": "2026-10-06T07:35:11Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T07:41:28Z"
+      },
+      "backend#2": {
+        "role": "backend",
+        "worker": "worker-seat-20261006-0734-backend-2-h1",
+        "hires": 1,
+        "character": "jim",
+        "hired_at": "2026-10-06T07:35:11Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T07:41:13Z"
+      },
+      "qa#1": {
+        "role": "qa",
+        "worker": "worker-seat-20261006-0734-qa-1-h1",
+        "hires": 1,
+        "character": "angela",
+        "hired_at": "2026-10-06T07:35:11Z",
+        "task": null,
+        "orders": 3,
+        "since": null,
+        "last_done": "2026-10-06T07:42:50Z"
+      },
+      "reviewer#1": {
+        "role": "reviewer",
+        "worker": "worker-seat-20261006-0734-reviewer-1-h1",
+        "hires": 1,
+        "character": "toby",
+        "hired_at": "2026-10-06T07:35:12Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T07:43:23Z"
+      },
+      "qa#2": {
+        "role": "qa",
+        "worker": "worker-seat-20261006-0734-qa-2-h1",
+        "hires": 1,
+        "character": "kevin",
+        "hired_at": "2026-10-06T07:41:55Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T07:42:41Z"
+      },
+      "reviewer#2": {
+        "role": "reviewer",
+        "worker": "worker-seat-20261006-0734-reviewer-2-h1",
+        "hires": 1,
+        "character": "stanley",
+        "hired_at": "2026-10-06T07:42:53Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T07:43:42Z"
+      }
+    }
+  },
+  "frozen": {
+    "readiness_sha256": "b0e8a122c8e5a759004264fa275a79bd247b6801ad3a57039926413cb977fa5c",
+    "at": "2026-10-06T07:37:26Z"
+  },
+  "pm_decisions": [
+    {
+      "at": "2026-10-06T07:37:26Z",
+      "what": "No security role on this job",
+      "why": "Input is a fixed dropdown option label validated against an allow-list (RangeError otherwise); no auth, secrets, personal data or I/O — the reviewer covers input validation"
+    },
+    {
+      "at": "2026-10-06T07:41:59Z",
+      "what": "Second QA seat (qa count 2)",
+      "why": "One QA seat serialised QA-WRITE T-02 and QA-RUN T-01 for two parallel cards; a second seat keeps both cards moving"
+    },
+    {
+      "at": "2026-10-06T07:42:53Z",
+      "what": "Second reviewer seat (reviewer count 2)",
+      "why": "Both cards passed QA at once; one reviewer seat would serialise two independent reviews"
+    }
+  ],
+  "followups": [
+    {
+      "text": "Rename the internal describe helper (shadows the node:test name by convention) to describeValue in daysWithDelay.mjs and delayCount.mjs",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T07:44:44Z"
+    },
+    {
+      "text": "Derive WL_BY_OPTION from DAYS_WITH_DELAY_OPTIONS (or vice versa) to avoid label drift",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T07:44:45Z"
+    },
+    {
+      "text": "Write zero-width-space test inputs as \\u200B escapes, not invisible literals",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T07:44:45Z"
+    },
+    {
+      "text": "delayCount tests: assert the RangeError message names non-string offenders too (Symbol, null, 0) and add an Object.create(null) case",
+      "card": "T-02",
+      "evidence": "",
+      "at": "2026-10-06T07:44:45Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "848ba02d9b16ae54e9fe171666b7034ff78ee67b",
+    "shared_pr": ""
+  }
+}

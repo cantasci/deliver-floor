@@ -4,6 +4,32 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.6.0 — 2026-10-06
+
+**Faster: nobody waits on QA**
+- `dl timeline`: where a job's time went — phases, each seat's or agent's busy time and share, every card from assignment
+  to merge, and the time nobody worked. From the event log only (subagent runs are now measured too).
+- QA writes a card's tests from its spec **while the developer builds it** (`qa_early`, on by default): `dl next` says
+  QA-WRITE at assignment, `dl wt qa` gives QA its own worktree, `dl qa-join` brings the tests onto the card after the gate,
+  and QA then only runs them. Measured before: QA started only after the developer and took 1–3 minutes per card.
+- One QA seat per developer seat unless a QA count is given (measured: one QA for two developers was busy 56 % of a job
+  while the developers waited) — applied when roles are set, at every phase change and right before the seats are hired;
+  a count that cannot be taken is logged, never silent.
+- Fixed: `dl next` and `dl md-inbox` read tab-separated fields, and bash merged empty ones — values shifted into the wrong
+  place.
+- Fixed (live floor run): parallel `dl jobset` calls lost each other's changes — now one at a time; a seal read while
+  another `dl` was writing looked like tampering — now checked again once the writer is done; `dl md-release` sends each
+  seat home once.
+
+**Readiness asks the human what shapes the product**
+- The items that shape the product — scope, architecture style and components, a UI (and which), an API layer, a
+  database, new dependencies, integrations, deployment — are decided only from the request's own words or the human's
+  answer; a repo file, a convention or a PM decision is refused. Michael alone asks; the BA marks them open for him.
+- `install.sh` moves settings from the installed config to `~/.deliver/config.json` only when that copy was really edited.
+
+Measured on the floor, same request with two developer seats: 26.5 min → **10.1 min**; each card assigned → merged in about
+3 minutes.
+
 ## 0.5.0 — 2026-10-05
 
 **Lessons and standards live in git, shared through PRs**

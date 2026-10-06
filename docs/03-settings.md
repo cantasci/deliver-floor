@@ -24,6 +24,7 @@ human accepts it with `dl reseal "<reason>"`.
 | `base_branch` | `"auto"` | Branch the job starts from and the PR targets (`auto` = the main checkout's current branch) |
 | `dispatch` | `"munder"` | `munder` (default): every role is a person at a seat on the Munder Difflin floor, and only the app's Michael drives the job. `subagent`: roles run as Claude Code subagents of Michael in one `claude` session — chosen by hand, needed for unattended runs. Switching: [07 § Choosing the mode](07-munder-difflin.md#choosing-the-mode) |
 | `max_parallel` | `3` | Max cards running at once (all roles together). Seats per role are set on the role (`"count": N`) |
+| `qa_early` | `true` | QA writes each card's tests from the spec **while the developer builds it** (`dl wt qa`, its own worktree), they join the card after the gate (`dl qa-join`), and QA then only runs them. `false`: QA writes and runs after the gate |
 | `max_attempts` | `2` | Tries per card (gate fail, QA fail, review "changes", conflict) before it is `blocked` and the human decides |
 | `gates.plan` | `false` | `true` = the human approves plan + board before any code. Off by default: the human is asked at readiness (only open business questions) and at the PR |
 | `verify_full` | `""` | The full suite on the job branch after all cards merged (`dl verify-all`). Read from the repo when `.deliver.json` is written — see [what is read from the repo](#what-is-read-from-the-repo); never a guess, so a repo without tests or without code gets `""` until the stack is decided |

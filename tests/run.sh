@@ -603,6 +603,8 @@ contains "a report archived without md-done is flagged as unrecorded" "$("$DL" m
 nlive="$("$DL" md-seats | grep -cE '^[^ ]+ +(live|starting) ')"
 n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-release >/dev/null
 [[ $nlive == "$nseat" && $(( $(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l) - n0 )) == "$nlive" ]] && ok "md-release sends every live seat home" || bad "release orders"
+n1="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; out="$("$DL" md-release)"
+[[ $out == "released 0 seat(s)" && "$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)" == "$n1" ]] && ok "…once: a second md-release sends nobody home twice (seen live with parallel calls)" || bad "second release: $out"
 # Guards: Michael on the floor has no Agent tool; seats are agents (their own lanes, no flow commands)
 ag() { hook agent-guard.sh '{"tool_input":{"subagent_type":"backend-dev","run_in_background":true}}'; }
 contains "Michael on the floor may not start subagents" "$(AGENT_ID=god ag)" "rc=2"
@@ -687,7 +689,15 @@ contains "dl config shows what applies (kit defaults ⊕ .deliver.json)" "$(cd "
 (cd "$PC" && AGENT_ID=god "$DL" phase aborted >/dev/null 2>&1; AGENT_ID=god "$DL" cleanup --all >/dev/null 2>&1; jq '.roles = {"backend":{"model":"haiku","count":2},"qa":{"model":"sonnet"}}' .deliver.json > x && mv x .deliver.json && AGENT_ID=god "$DL" new t2 r2 >/dev/null 2>&1)
 (cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x"},{"role":"qa","agent":"qa-tester","why":"y","model":"opus"}]' >/dev/null)
 PJ="$PC/.work/$(cat "$PC/.work/ACTIVE")/job.json"
-contains "per-role defaults from .deliver.json reach the job's roles" "$(jq -c '[.roles[] | {role,model,count}]' "$PJ")" '[{"role":"backend","model":"haiku","count":2},{"role":"qa","model":"opus","count":null}]'
+contains "per-role defaults from .deliver.json reach the job's roles — and QA gets one seat per developer seat" "$(jq -c '[.roles[] | {role,model,count}]' "$PJ")" '[{"role":"backend","model":"haiku","count":2},{"role":"qa","model":"opus","count":2}]'
+contains "…logged" "$(grep $'\troles-defaults\t' "$(dirname "$PJ")/events.log")" "qa: 2 seats — one per developer seat"
+(cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":3},{"role":"qa","agent":"qa-tester","why":"y","count":1}]' >/dev/null)
+contains "…a QA count somebody gave is kept" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[1]'
+(cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":1},{"role":"qa","agent":"qa-tester","why":"y"}]' >/dev/null)
+contains "…one developer seat: one QA seat" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[null]'
+# parallel jobsets (Michael's parallel tool calls) must not lose each other's changes — seen live
+(cd "$PC" && for k in a b c d e f; do AGENT_ID=god "$DL" jobset ".assumptions += [\"$k\"]" >/dev/null & done; wait)
+contains "six jobsets at once: none is lost (they run one at a time)" "$(jq -c '.assumptions | map(select(length == 1)) | sort' "$PJ")" '["a","b","c","d","e","f"]'
 contains "…a role that names its own model keeps it (qa: opus from the request, not the default sonnet), logged" "$(grep $'\troles-defaults\t' "$PC/.work/$(cat "$PC/.work/ACTIVE")/events.log")" "backend: model haiku, count 2"
 contains "the human switches the job to subagents by hand (dl dispatch)" "$(env -u AGENT_ID "$DL" dispatch subagent "leave the floor for the rest of the tests" 2>&1)" "now runs with dispatch subagent"
 contains "…logged with who and why" "$(grep $'\tdispatch\t' "$R/.work/$JOB/events.log" | tail -1)" "subagent — leave the floor"
@@ -1215,6 +1225,46 @@ else contains "a floor repo (the default) without the app: told how to install i
 OLD="$TMP/oldhome"; mkdir -p "$OLD/.claude"; echo '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"/x/.claude/hooks/deliver/stop-guard.sh"}]}]}}' > "$OLD/.claude/settings.json"
 HOME="$OLD" "$HERE/scripts/install.sh" --user >/dev/null 2>&1
 contains "upgrading a copied install replaces the old .sh hook entries (no double guards)" "$(jq -c '[.hooks.Stop[].hooks[].command]' "$OLD/.claude/settings.json")" "[\"node \\\"$OLD/.claude/hooks/deliver\\\"/run.mjs stop-guard\"]"
+
+echo "QA in parallel with the dev: QA writes the tests from the spec while the dev builds; they join after the gate"
+QE="$TMP/qaearly"; mkdir -p "$QE" && cd "$QE" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "qa early" "x" >/dev/null 2>&1; QJ="$QE/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$QJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -f src/a",qa_verify:"test -f it/t && test -f src/a",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$QJ/board.json"
+"$DL" phase executing >/dev/null; WQ="$("$DL" wt add T-01)"
+contains "dl next asks for QA to start the moment the card is assigned (QA-WRITE)" "$("$DL" next)" "QA-WRITE T-01"
+QW="$("$DL" wt qa T-01)"; [[ -d $QW && "$(git -C "$QW" symbolic-ref --short HEAD)" == *"--T-01-qa" ]] && ok "dl wt qa: QA's own worktree and branch, from the job branch" || bad "qa worktree: $QW"
+[[ "$("$DL" next)" != *"QA-WRITE T-01"* ]] && ok "…asked once" || bad "QA-WRITE repeated"
+mkdir -p "$QW/it" "$QW/src" && echo t > "$QW/it/t" && git -C "$QW" add it && git -C "$QW" commit -qm "T-01 QA: tests from the spec"
+mkdir -p "$WQ/src" && echo a > "$WQ/src/a" && git -C "$WQ" add src && git -C "$WQ" commit -qm "T-01: a"
+contains "QA's tests join only after the gate" "$("$DL" qa-join T-01 2>&1)" "T-01 is running"
+"$DL" gate T-01 >/dev/null
+contains "after the gate dl next says QA-JOIN" "$("$DL" next)" "QA-JOIN dl qa-join T-01"
+echo x > "$QW/src/b" && git -C "$QW" add src && git -C "$QW" commit -qm "T-01 QA: oops"
+contains "QA's branch may change only qa_scope" "$("$DL" qa-join T-01 2>&1)" "changed files outside qa_scope: src/b"
+git -C "$QW" reset -q --hard HEAD~1
+out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into the card branch" "$out" "QA tests joined T-01"
+[[ -f $WQ/it/t && ! -d $QW ]] && ok "…the tests are in the card worktree, QA's worktree is gone" || bad "after join: $(ls "$WQ")"
+contains "…QA's commits must be recorded before the card goes back to the dev" "$("$DL" wt add T-01 2>&1)" "has QA commits that are not recorded yet"
+expect_ok "the gate after the join counts QA's tests as QA's, not the dev's" "$DL" gate T-01
+"$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve ok >/dev/null
+expect_ok "…and the card merges as before" "$DL" integrate T-01
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+
+echo "dl timeline: where a job's time went, from the event log only"
+TLJ="$TMP/tl"; mkdir -p "$TLJ"; printf '%s\n' \
+  $'2026-10-06T10:00:00Z\tphase\treadiness' $'2026-10-06T10:00:00Z\tmd-send\treadiness ba#1 (business-analyst) → w1' \
+  $'2026-10-06T10:02:00Z\tmd-done\treadiness ba#1: ok' $'2026-10-06T10:03:00Z\tphase\texecuting' \
+  $'2026-10-06T10:03:00Z\tassign\tT-01 → backend-dev attempt=1' $'2026-10-06T10:03:00Z\tdispatch\tbackend-dev' \
+  $'2026-10-06T10:05:00Z\tagent\tbackend-dev a1: done' $'2026-10-06T10:05:00Z\tgate\tT-01 PASS' $'2026-10-06T10:06:00Z\tqa\tT-01 pass' \
+  $'2026-10-06T10:07:00Z\treview\tT-01 reviewer approve' $'2026-10-06T10:07:00Z\tintegrate\tT-01 merged' $'2026-10-06T10:10:00Z\tphase\tclosing' > "$TLJ/events.log"
+TJ="$(node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$TLJ" --json)"
+contains "timeline: each seat's and agent's busy time and share of the job (floor and subagents alike)" "$(jq -c '[.seats[] | [.who, .busy_min, .share]]' <<<"$TJ")" '[["ba#1",2,20],["backend-dev",2,20]]'
+contains "…the stretches nobody worked" "$(jq -c '{t:.total_min, n:.nobody_working_min}' <<<"$TJ")" '{"t":10,"n":6}'
+contains "…and each card, assigned → merged" "$(jq -c '.cards[0]' <<<"$TJ")" '{"id":"T-01","dev":"2.0","gate_to_qa":"1.0","qa_to_review":"1.0","review_to_merge":"0.0","total":"4.0"}'
 
 echo "releases: a change to the plugin raises its version and says what changed"
 V="$(jq -r .version "$HERE/kit/.claude-plugin/plugin.json")"

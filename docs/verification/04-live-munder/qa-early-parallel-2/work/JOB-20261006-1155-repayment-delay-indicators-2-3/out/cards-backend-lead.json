@@ -1,0 +1,54 @@
+[
+  {
+    "tmp_id": "B1",
+    "title": "Indicator 2 (days with delay): options list and daysWithDelayWl (REQ-03-02)",
+    "role": "backend",
+    "component": "indicator-days-with-delay",
+    "context": "WHY: POC Indicator 2 (days with delay, REQ-03-02) maps a dropdown option to a Watchlist level (WL, 0-4, higher is worse). This slice exports the option list that later POC screens render as a dropdown, plus a pure mapping function. The caller picks the option; this module never counts days or derives an option from a number. FILES: create src/indicators/daysWithDelay.mjs and test/indicators/daysWithDelay.test.mjs (TDD: write the unit tests first). Touch nothing else. Do not import anything (no node: modules, no packages, no other indicator module, no shared helper); add no npm dependency. Plain Node 18+ ESM, pure functions, no I/O or logging (CLAUDE.md). Tests use node:test + node:assert/strict. CONTRACT (named exports exactly): `export const DAYS_WITH_DELAY_OPTIONS` = Object.freeze([\"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\"]) (5 strings, this order; plain ASCII '<=', not the Unicode '≤'); `export function daysWithDelayWl(option)` returns 0 | 2 | 3 | 4. MAPPING: \"no delay\"->0, \"<=3 days\"->0, \">3 days\"->2, \">60 days\"->3, \">90 days\"->4. INPUT HANDLING: if typeof option is not 'string' -> throw RangeError (never coerce; new String(\">3 days\"), [\"no delay\"], 0, null, undefined, {} etc. all throw). Otherwise option.trim() (any leading/trailing whitespace incl. tab, newline, CR, NBSP is ignored), then exact case-sensitive match against the list; inner whitespace is never collapsed (\">3  days\" throws). Anything else, including \"\" and whitespace-only, throws RangeError. Use a lookup that cannot be fooled by inherited keys (e.g. a Map or an explicit switch, not a plain object lookup like obj['constructor']/'toString'). ERROR MESSAGE (binding decision X-error-message): names the indicator, the rejected value and the allowed options, e.g. 'Indicator 2 (days with delay): invalid option \">3 Days\"; expected one of: \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\"'. The rejected value is JSON.stringify(input) for strings and typeof input for non-strings (\"undefined\",\"object\",\"number\",\"boolean\"). Unit tests assert the error TYPE (assert.throws(fn, RangeError)) and that the message CONTAINS that rejected-value text; never assert the full message text. STATELESS: same input gives same WL every call, no state kept; a throwing call must leave the frozen option list unchanged. Use JSDoc comments sparingly, matching the repo's style. Commit message format: 'B1: <what changed>' with no AI attribution lines. Run the card's verify command and then `node --test` (whole suite must stay green).",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/daysWithDelay.mjs",
+      "test/indicators/daysWithDelay.test.mjs"
+    ],
+    "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+    "qa_scope": [
+      "test/integration/indicators/daysWithDelay*.test.mjs"
+    ],
+    "qa_verify": "node --test test/integration/indicators/daysWithDelay*.test.mjs",
+    "acceptance": [
+      "AC-1: importing DAYS_WITH_DELAY_OPTIONS from src/indicators/daysWithDelay.mjs deep-equals [\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"] (5 strings, this order) and Object.isFrozen(DAYS_WITH_DELAY_OPTIONS) is true",
+      "AC-2: daysWithDelayWl returns 0 for \"no delay\", 0 for \"<=3 days\", 2 for \">3 days\", 3 for \">60 days\", 4 for \">90 days\"; every option in DAYS_WITH_DELAY_OPTIONS is accepted and each result is one of 0, 2, 3, 4",
+      "AC-3: leading/trailing whitespace of any kind is ignored: \"  >3 days  \"->2, \"\\t>60 days\\n\"->3, NBSP-padded \">90 days\"->4, \"\\n no delay \\r\\n\"->0, \" <=3 days\"->0",
+      "AC-4: strings that are not an exact option after trim() throw RangeError whose message contains JSON.stringify(input): \">3 Days\", \"NO DELAY\", \">3  days\", \"no  delay\", \"≤3 days\", \"3 days\", \">91 days\", \">60days\", \"\", \"   \", \" \"",
+      "AC-5: non-string inputs throw RangeError without coercion (undefined, null, 0, 3, true, {}, [], [\"no delay\"], new String(\">3 days\")) and the message contains typeof input",
+      "AC-11: src/indicators/daysWithDelay.mjs is plain ESM with the named exports exactly as in the contract, imports nothing (in particular not delayCount.mjs), adds no dependency to package.json, contains no Indicator 1 code or UI; node --test exits 0 with the AC-1..AC-5 unit tests included",
+      "AC-12: repeated calls with the same input return the same WL (no state kept between calls) and a call that throws leaves the frozen DAYS_WITH_DELAY_OPTIONS unchanged"
+    ]
+  },
+  {
+    "tmp_id": "B2",
+    "title": "Indicator 3 (delays in 12 months): options list and delayCountWl (REQ-03-03)",
+    "role": "backend",
+    "component": "indicator-delay-count",
+    "context": "WHY: POC Indicator 3 (delays in 12 months, REQ-03-03) maps a dropdown option to a Watchlist level (WL, 0-4, higher is worse). This slice exports the option list that later POC screens render as a dropdown, plus a pure mapping function. The caller counts the delays and picks the option; this module never counts anything or converts numbers. FILES: create src/indicators/delayCount.mjs and test/indicators/delayCount.test.mjs (TDD: write the unit tests first). Touch nothing else. Do not import anything (no node: modules, no packages, no other indicator module, no shared helper); add no npm dependency. Plain Node 18+ ESM, pure functions, no I/O or logging (CLAUDE.md). Tests use node:test + node:assert/strict. CONTRACT (named exports exactly): `export const DELAY_COUNT_OPTIONS` = Object.freeze([\"0\", \"1\", \">1\"]) (3 strings, this order); `export function delayCountWl(option)` returns 0 | 1 | 2. MAPPING: \"0\"->0, \"1\"->1, \">1\"->2. INPUT HANDLING: if typeof option is not 'string' -> throw RangeError (never coerce; this matters most here because the options look like numbers: 0, 1, 2, false, null, undefined, [], [\"1\"], new String(\"1\") all throw). Otherwise option.trim() (any leading/trailing whitespace incl. tab, newline, CR, NBSP is ignored), then exact case-sensitive match against the list; inner whitespace is never collapsed (\"> 1\" and \">  1\" throw). Anything else, including \"2\" (caller must pick \">1\"), \"-1\", \"00\", \"01\", \"1.0\", \">=1\", \"one\", \"\" and whitespace-only, throws RangeError. Use a lookup that cannot be fooled by inherited keys (e.g. a Map or an explicit switch, not a plain object lookup). ERROR MESSAGE (binding decision X-error-message): names the indicator, the rejected value and the allowed options, e.g. 'Indicator 3 (delays in 12 months): invalid option \"2\"; expected one of: \"0\", \"1\", \">1\"'. The rejected value is JSON.stringify(input) for strings and typeof input for non-strings (\"undefined\",\"object\",\"number\",\"boolean\"). Unit tests assert the error TYPE (assert.throws(fn, RangeError)) and that the message CONTAINS that rejected-value text; never assert the full message text. STATELESS: same input gives same WL every call, no state kept; a throwing call must leave the frozen option list unchanged. Use JSDoc comments sparingly, matching the repo's style. Commit message format: 'B2: <what changed>' with no AI attribution lines. Run the card's verify command and then `node --test` (whole suite must stay green).",
+    "depends_on": [],
+    "scope": [
+      "src/indicators/delayCount.mjs",
+      "test/indicators/delayCount.test.mjs"
+    ],
+    "verify": "node --test test/indicators/delayCount.test.mjs",
+    "qa_scope": [
+      "test/integration/indicators/delayCount*.test.mjs"
+    ],
+    "qa_verify": "node --test test/integration/indicators/delayCount*.test.mjs",
+    "acceptance": [
+      "AC-6: importing DELAY_COUNT_OPTIONS from src/indicators/delayCount.mjs deep-equals [\"0\",\"1\",\">1\"] (3 strings, this order) and Object.isFrozen(DELAY_COUNT_OPTIONS) is true",
+      "AC-7: delayCountWl returns 0 for \"0\", 1 for \"1\", 2 for \">1\"; every option in DELAY_COUNT_OPTIONS is accepted and each result is one of 0, 1, 2",
+      "AC-8: leading/trailing whitespace of any kind is ignored: \" 0 \"->0, \"\\t1\\n\"->1, NBSP-padded \">1\"->2",
+      "AC-9: strings that are not an exact option after trim() throw RangeError whose message contains JSON.stringify(input): \"2\", \"-1\", \"00\", \"01\", \"1.0\", \"> 1\", \">  1\", \">=1\", \"one\", \"\", \"   \"",
+      "AC-10: non-string inputs throw RangeError without coercion (0, 1, 2, undefined, null, false, [], [\"1\"], new String(\"1\")) and the message contains typeof input",
+      "AC-11: src/indicators/delayCount.mjs is plain ESM with the named exports exactly as in the contract, imports nothing (in particular not daysWithDelay.mjs), adds no dependency to package.json, contains no Indicator 1 code or UI; node --test exits 0 with the AC-6..AC-10 unit tests included",
+      "AC-12: repeated calls with the same input return the same WL (no state kept between calls) and a call that throws leaves the frozen DELAY_COUNT_OPTIONS unchanged"
+    ]
+  }
+]

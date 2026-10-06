@@ -23,6 +23,7 @@
 #   dl learn <role|all> "<lesson>" --topic <slug> (--card T-xx | --evidence "…") [--scope project|shared|kit]
 #                                  propose a lesson, with what happened; it reaches .deliver/knowledge/ with this job's PR
 #   dl followup "<finding>" [--card T-xx]   a defect seen outside the job's scope — listed in the PR
+#   dl timeline [--json]           where the job's time went: phases, each seat's busy share, per card, nobody working
 #   dl knowledge [list|topics|promote <topic> "<rule>"|sync-md]   standards + lessons for the role cards; promote = a new
 #                                  standard (with the PR); sync-md → Munder Difflin knowledge graph
 #   dl validate                    board.json schema + dependency + scope-overlap check
@@ -145,10 +146,13 @@ _jq_inplace() {
 # every dl command checks the seals, so an edit made outside dl — by any tool — stops the flow until a human reseals.
 seal() { [[ $1 == */job.json || $1 == */board.json ]] && node -e 'process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(process.argv[1])).digest("hex"))' "$1" > "$(dirname "$1")/.seal-$(basename "$1")"; return 0; }
 seal_ok() { local f=$1 sf; sf="$(dirname "$f")/.seal-$(basename "$f")"; [[ ! -f $sf ]] || [[ "$(cat "$sf")" == "$(node -e 'process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(process.argv[1])).digest("hex"))' "$f")" ]]; }
+# A writer replaces the file and then its seal under the file's lock: a mismatch read in between is a write in progress,
+# not tampering — look again once the writer is done (seen with parallel dl calls).
+seal_settled() { seal_ok "$1" || with_lock "$(basename "$1")" seal_ok "$1"; }
 check_seals() {
-  seal_ok "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
+  seal_settled "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
   case "$(jq -r .phase "$JOBJ")" in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
-  seal_ok "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and runs: dl reseal \"<reason>\""
+  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and runs: dl reseal \"<reason>\""
 }
 jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
 git_locked() { with_lock git git "$@"; }
@@ -415,8 +419,8 @@ cmd_next() {
       max_par="$(setting max_parallel)"
       running="$(jq '[.cards[] | select(.state=="running")] | length' "$BOARD")"
       local maxa; maxa="$(setting max_attempts)"
-      jq -r '.cards[] | select(.state=="review") | [.id, (.branch//""), (.gate.result//""), (.gate.head//""), (.qa.verdict//""), (.qa.head//""), (.review.verdict//""), (.review.head//""), (.attempts|tostring)] | @tsv' "$BOARD" |
-        while IFS=$'\t' read -r id br gres ghead qv qhead rv rhead att; do
+      jq -r '.cards[] | select(.state=="review") | [.id, (.branch//""), (.gate.result//""), (.gate.head//""), (.qa.verdict//""), (.qa.head//""), (.review.verdict//""), (.review.head//""), (.attempts|tostring)] | join("\u001f")' "$BOARD" |
+        while IFS=$'\x1f' read -r id br gres ghead qv qhead rv rhead att; do   # \x1f: a tab separator would merge empty fields
           local head; head="$(branch_head "$br")"
           local failed=""
           if [[ $gres == FAIL && $ghead == "$head" ]]; then failed="gate failed — feedback: $(card_get "$id" .gate.log)"
@@ -427,7 +431,11 @@ cmd_next() {
             if (( att >= maxa )); then echo "BLOCK   $id (failed on its last attempt $att/$maxa: dl card $id state blocked + note)"
             else echo "REDISPATCH $id  ($failed)"; fi
           elif ! gate_holds "$id" "$head"; then echo "GATE    dl gate $id"
-          elif [[ $qv != pass || $qhead != "$head" ]]; then echo "QA      $id  (QA/Test role writes + runs the integration/e2e tests for the ACs → dl qa $id pass|fail)"
+          elif [[ $qv != pass || $qhead != "$head" ]]; then
+            if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$br-qa" && [[ -z "$(card_get "$id" '.qa_join.head // ""')" && -z $qv ]]; then
+              if [[ $(git -C "$ROOT" rev-list --count "$JOB_BRANCH..$br-qa") -gt 0 && -z "$(git -C "$JOB_DIR/wt/$id-qa" status --porcelain 2>/dev/null)" ]]; then echo "QA-JOIN dl qa-join $id  (QA's tests join the card; then QA runs them on the dev's commit → dl qa $id pass|fail)"
+              else echo "WAIT    $id  (the QA role is still writing its tests in $JOB_DIR/wt/$id-qa)"; fi
+            else echo "QA      $id  (QA/Test role writes + runs the integration/e2e tests for the ACs → dl qa $id pass|fail)"; fi
           elif [[ $rv != approve || $rhead != "$head" ]]; then
             local pend; pend="$(card_get "$id" '(if .review.head == "'"$head"'" then .review.pending else (.reviewers // ["reviewer"]) end) // [] | join(", ")')"
             echo "REVIEW  $id  (reviewers: ${pend:-reviewer} → dl review $id approve|changes \"<summary>\" --by <role>)"
@@ -442,6 +450,13 @@ cmd_next() {
         if (.ready|length)>0 then .ready[0] as $c | "IDLE    \(.seat) — free; take \($c)" + (if ($disp|contains(" " + $c + " ")) then " (in DISPATCH above)" else " (dl seats)" end)
         elif (.waiting|length)>0 then "IDLE    \(.seat) — waiting: \(.waiting|join(", ")) depend on unmerged cards"
         else "IDLE    \(.seat) — no more work for \(.role)" end' 
+      # QA writes the tests of every assigned card from its spec while the dev builds (settings.qa_early)
+      if [[ "$(setting qa_early)" != false ]]; then
+        local qid; for qid in $(jq -r '.cards[] | select(.state=="running" and ((.qa_scope // []) | length) > 0 and .qa == null and .qa_join == null) | .id' "$BOARD"); do
+          git -C "$ROOT" show-ref --verify --quiet "refs/heads/$(card_get "$qid" .branch)-qa" \
+            || echo "QA-WRITE $qid  (QWT=\$(dl wt qa $qid) → the QA role writes the tests from the spec now, while the dev builds; commits; does not run them yet)"
+        done
+      fi
       jq -r '.cards[] | select(.state=="running") | "WAIT    \(.id) (agent running)"' "$BOARD"
       jq -r --argjson max "$(setting max_attempts)" '.cards[] | select(.state=="ready" and .attempts >= $max) | "BLOCK   \(.id) (no attempts left: dl card \(.id) state blocked)"' "$BOARD"
       local open; open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$BOARD")"
@@ -528,6 +543,7 @@ cmd_phase() {
     jq_inplace "$JOBJ" --arg h "$(sha256_of "$JOB_DIR/readiness.json")" --arg t "$(now)" '.frozen = {"readiness_sha256":$h,"at":$t}'
     log_event freeze "readiness + architecture frozen ($(sha256_of "$JOB_DIR/readiness.json" | cut -c1-12))"
   fi
+  [[ $p == readiness || $p == planning ]] && apply_role_defaults
   [[ $p == readiness || $p == planning ]] && { node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
   reset_stop_guard; log_event phase "$p$([[ $force -eq 1 ]] && echo ' (forced)')"; echo "phase: $p"
 }
@@ -535,8 +551,13 @@ cmd_phase() {
 # jobset may change only what Michael decides (stack, roles, assumptions, areas, settings) — never phase, gates,
 # frozen hashes, PR state or ids: those move only through their own guarded commands. Every change is logged.
 JOBSET_KEYS='["stack","roles","assumptions","areas","settings"]'
-cmd_jobset() {
-  load_job; [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"
+# Several jobsets at once (Michael's parallel tool calls) read job.json before the others wrote it: the last one won and the
+# others' changes were lost (seen live: QA's seat count). They run one at a time, under the job lock, in a subshell so a
+# refusal still releases it.
+cmd_jobset() { load_job; with_lock job _jobset_sub "$@"; }
+_jobset_sub() { ( _jobset_locked "$@" ); }
+_jobset_locked() {
+  [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"
   local new; new="$(jq "$1" "$JOBJ")" || die "invalid jq expression"
   local bad; bad="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" \
     '[($a|keys) + ($b|keys) | unique[] | select(. as $k | ($ok | index($k)) | not) | select($a[.] != $b[.])] | join(", ")')"
@@ -694,12 +715,33 @@ cmd_knowledge() {
 # .deliver.json "roles": {"backend": {"model": "sonnet", "count": 2}, …} — the project's defaults per role. A role entry that
 # names its own model/provider/count (from the request, or the human at the start) keeps it.
 apply_role_defaults() {
-  local d; d="$(jq -c '.settings.roles // {}' "$JOBJ")"; [[ $d != "{}" ]] || return 0
-  local before; before="$(jq -c '.roles // []' "$JOBJ")"
-  jq_inplace "$JOBJ" '. as $j | if (.roles | type) == "array" then .roles |= map(. as $x
-    | ((($j.settings.roles // {})[$x.role] // {}) | {model, provider, count} | with_entries(select(.value != null))) + $x) else . end'
-  local after; after="$(jq -c '.roles // []' "$JOBJ")"
-  [[ $before == "$after" ]] || log_event roles-defaults "from .deliver.json: $(jq -r --argjson d "$d" '[.roles[] | select($d[.role]) | "\(.role): " + ([($d[.role] | to_entries[] | select(.key == "model" or .key == "provider" or .key == "count")) | "\(.key) \(.value)"] | join(", "))] | join(" · ")' "$JOBJ")"
+  local d; d="$(jq -c '.settings.roles // {}' "$JOBJ")"
+  if [[ $d != "{}" ]]; then
+    local before; before="$(jq -c '.roles // []' "$JOBJ")"
+    jq_inplace "$JOBJ" '. as $j | if (.roles | type) == "array" then .roles |= map(. as $x
+      | ((($j.settings.roles // {})[$x.role] // {}) | {model, provider, count} | with_entries(select(.value != null))) + $x) else . end'
+    local after; after="$(jq -c '.roles // []' "$JOBJ")"
+    [[ $before == "$after" ]] || log_event roles-defaults "from .deliver.json: $(jq -r --argjson d "$d" '[.roles[] | select($d[.role]) | "\(.role): " + ([($d[.role] | to_entries[] | select(.key == "model" or .key == "provider" or .key == "count")) | "\(.key) \(.value)"] | join(", "))] | join(" · ")' "$JOBJ")"
+  fi
+  # QA seats follow the developer seats (one QA per dev seat) unless a count was given for QA — measured: one QA seat for
+  # two devs was busy 56 % of a job while the devs waited on it. count_auto marks a count set here, so it follows changes.
+  [[ "$(jq -r '(.roles // []) | type' "$JOBJ")" == array ]] || return 0
+  local qa devs; qa="$(jq -c '[.roles[] | select(.role == "qa")] | first // empty' "$JOBJ")"
+  [[ -n $qa ]] && [[ "$(jq -r '(.count == null) or (.count_auto == true)' <<<"$qa")" == true ]] || return 0
+  local out; out="$(node "$BIN_DIR/roles.mjs" dev-seats "$JOBJ" 2>&1)" || true
+  devs="$(printf '%s\n' "$out" | awk '/^[0-9]+$/ {n=$0} END {print n}')"
+  if [[ -z $devs ]]; then   # never silently: a live run kept one QA seat for two developers and said nothing
+    log_event roles-defaults "could not count the developer seats — QA keeps its count: $(tr '\n' ' ' <<<"$out" | cut -c1-200)"
+    echo "dl: could not count the developer seats ($(tr '\n' ' ' <<<"$out" | cut -c1-120)) — QA's seat count was not adjusted" >&2
+    return 0
+  fi
+  if [[ $devs -gt 1 && "$(jq -r '.count // 1' <<<"$qa")" != "$devs" ]]; then
+    jq_inplace "$JOBJ" --argjson n "$devs" '.roles |= map(if .role == "qa" then .count = $n | .count_auto = true else . end)'
+    log_event roles-defaults "qa: $devs seats — one per developer seat"
+  elif [[ $devs -le 1 && "$(jq -r '.count_auto // false' <<<"$qa")" == true ]]; then
+    jq_inplace "$JOBJ" '.roles |= map(if .role == "qa" then del(.count, .count_auto) else . end)'
+  fi
+  return 0
 }
 cmd_roles() { load_job; node "$BIN_DIR/roles.mjs" render "$JOB_DIR" && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
 
@@ -741,7 +783,7 @@ _wt_reserve_locked() { # runs in a subshell under the "assign" lock; exits non-z
 
 cmd_wt() {
   load_job
-  local sub=${1:-} card=${2:-} flag=${3:-}; [[ -n $card ]] || die "usage: dl wt add|rm <card> [--resume]"
+  local sub=${1:-} card=${2:-} flag=${3:-}; [[ -n $card ]] || die "usage: dl wt add|qa|rm <card> [--resume]"
   card_exists "$card"
   local path="$JOB_DIR/wt/$card" branch
   # The card branch carries the tracker key when there is one (Jira links branches by key), and never changes once made.
@@ -779,11 +821,24 @@ cmd_wt() {
       [[ "$(card_get "$card" '.assignments | length')" == 1 || $flag == --resume ]] && tracker branch "$card"
       echo "$path"
       ;;
+    qa) # the QA role's own worktree: it writes the card's tests from the spec while the dev builds (settings.qa_early)
+      assert_frozen
+      [[ "$(jq -c '.qa_scope // []' <<<"$(card_get "$card" .)")" != "[]" ]] || refuse 1 "$card has no qa_scope — nothing for QA to write"
+      [[ -z "$(card_get "$card" '.qa_join.head // ""')" && -z "$(card_get "$card" '.qa.head // ""')" ]] || refuse 1 "$card's QA tests are already on the card branch — QA works in the card worktree now"
+      [[ " running review " == *" $(card_get "$card" .state) "* ]] || refuse 1 "$card is $(card_get "$card" .state) — QA starts once the card is assigned (dl wt add $card)"
+      local qpath="$JOB_DIR/wt/$card-qa" qbr="$branch-qa"
+      if [[ ! -d $qpath ]]; then
+        if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$qbr"; then git_locked -C "$ROOT" worktree add -q "$qpath" "$qbr"
+        else git_locked -C "$ROOT" worktree add -q -b "$qbr" "$qpath" "$JOB_BRANCH"; fi || die "could not create the QA worktree for $card"
+        run_setup "$qpath"
+        log_event qa-start "$card → QA writes its tests in $qpath (branch $qbr) while the dev builds"
+      fi
+      echo "$qpath" ;;
     rm)
       [[ -d $path ]] && git_locked -C "$ROOT" worktree remove --force "$path"
       log_event "wt-rm" "$card"; echo "removed: $path (branch kept: $branch)"
       ;;
-    *) die "usage: dl wt add|rm <card> [--resume]" ;;
+    *) die "usage: dl wt add|qa|rm <card> [--resume]" ;;
   esac
 }
 
@@ -862,7 +917,7 @@ cmd_gate() {
   local wt verify attempt branch scope log head fail=0 tmo
   wt="$(card_get "$card" .worktree)"; verify="$(card_get "$card" .verify)"; attempt="$(card_get "$card" .attempts)"
   branch="$(card_get "$card" .branch)"; scope="$(card_get "$card" '.scope')"
-  local qscope qverify qhead; qscope="$(card_get "$card" '.qa_scope // []')"; qverify="$(card_get "$card" '.qa_verify // ""')"; qhead="$(card_get "$card" '.qa.head // ""')"
+  local qscope qverify qhead; qscope="$(card_get "$card" '.qa_scope // []')"; qverify="$(card_get "$card" '.qa_verify // ""')"; qhead="$(card_get "$card" '.qa.head // .qa_join.head // ""')"
   local k v hint
   for k in verify qa_verify; do   # a command that cannot pass on this Node is fixed before it costs the card an attempt
     v="$(card_get "$card" ".$k // \"\"")"
@@ -998,6 +1053,31 @@ cmd_qa() {
   echo "qa: $card $verdict  (qa_verify: $qres)"
 }
 
+# dl qa-join <card> — after the gate, the tests QA wrote meanwhile (dl wt qa) join the card branch: only qa_scope files, merged
+# by dl in the repo's commit format; then QA runs them on the dev's commit in the card worktree and records dl qa.
+cmd_qa_join() {
+  load_job
+  local card=${1:-}; [[ -n $card ]] || die "usage: dl qa-join <card>"
+  card_exists "$card"
+  local br qbr wt qpath head qhead; br="$(card_get "$card" .branch)"; qbr="$br-qa"; wt="$(card_get "$card" .worktree)"; qpath="$JOB_DIR/wt/$card-qa"
+  [[ "$(card_get "$card" .state)" == review ]] || refuse 1 "$card is $(card_get "$card" .state) — QA's tests join after the dev is done and the gate passed"
+  head="$(branch_head "$br")"; gate_holds "$card" "$head" || refuse 1 "$card has no passed gate for its current commit — run: dl gate $card"
+  git -C "$ROOT" show-ref --verify --quiet "refs/heads/$qbr" || refuse 1 "$card has no QA branch — QA writes its tests with dl wt qa $card (or after the gate, in the card worktree)"
+  [[ -z "$(card_get "$card" '.qa_join.head // ""')" ]] || refuse 1 "$card's QA tests already joined"
+  [[ -z "$(git -C "$qpath" status --porcelain 2>/dev/null)" ]] || refuse 1 "the QA role has not committed its tests yet ($qpath)"
+  qhead="$(git -C "$ROOT" rev-parse "$qbr")"
+  [[ $(git -C "$ROOT" rev-list --count "$JOB_BRANCH..$qhead") -gt 0 ]] || refuse 1 "the QA branch has no commits — the QA role is still writing (or wrote nothing)"
+  local stray; stray="$(outside "$JOB_BRANCH" "$qhead" "$(card_get "$card" '.qa_scope // []')")"
+  [[ -z $stray ]] || refuse 1 "the QA branch changed files outside qa_scope: $(tr '\n' ' ' <<<"$stray")— QA writes only its tests"
+  local rc=0; dl_merge "$wt" "$qbr" "$card" "QA tests" || rc=$?
+  [[ $rc == 3 ]] && refuse 3 "QA's tests conflict with the card branch — QA rewrites them in the card worktree (dl qa round as before)"
+  [[ $rc == 0 ]] || { merge_refused_msg "$card" "qa-join $card"; exit 5; }
+  card_set "$card" '(.cards[] | select(.id==$id)).qa_join = {"head":$h,"qa_branch":$q,"at":$t}' --arg h "$(branch_head "$br")" --arg q "$qhead" --arg t "$(now)"
+  [[ -d $qpath ]] && git_locked -C "$ROOT" worktree remove --force "$qpath"
+  log_event qa-join "$card: QA's tests ($(git -C "$ROOT" rev-list --count "$JOB_BRANCH..$qhead") commit(s)) joined the card branch"
+  echo "QA tests joined $card — QA now runs them on the dev's commit in $wt and records: dl qa $card pass|fail"
+}
+
 cmd_review() {
   load_job
   local card=${1:-} verdict=${2:-} summary=${3:-} by=""
@@ -1094,6 +1174,7 @@ knowledge_publish() {
   jq_inplace "$JOBJ" --arg h "$(branch_head "$JOB_BRANCH")" --arg u "$url" '.knowledge_published = {head:$h, shared_pr:$u}'
 }
 # dl followup "<finding>" [--card T-xx] [--evidence "<…>"] — a defect seen outside the job's scope: recorded, listed in the PR
+cmd_timeline() { load_job; node "$BIN_DIR/timeline.mjs" "$JOB_DIR" "$@"; }
 cmd_followup() {
   load_job; not_shipped
   local text=${1:-} card="" ev=""; shift || true
@@ -1406,6 +1487,7 @@ CH
 cmd_md_hire() { # [seat] — only that seat (md-reseat)
   [[ ${1:-} == --reseat ]] && { cmd_md_reseat "${2:-}" "${3:-re-seated on request}" "${@:4}"; return; }   # the other branch's spelling
   load_job
+  with_lock job apply_role_defaults   # seats are counted here — whatever happened at jobset (a live run hired one QA for two devs)
   local only=${1:-}
   local hive; hive="$(md_hive)"
   [[ "$(setting dispatch)" == munder ]] || refuse 1 "seats are for dispatch munder (dl jobset '.settings.dispatch=\"munder\"')"
@@ -1586,13 +1668,17 @@ cmd_md_done() {
   echo "$seat is free ($task done)"
 }
 
-cmd_md_release() {
-  load_job
+# Once per seat: a second md-release (parallel calls, seen live) sends nobody home twice.
+cmd_md_release() { load_job; with_lock job _md_release_sub "$@"; }
+_md_release_sub() { ( _md_release_locked "$@" ); }
+_md_release_locked() {
   local hive s w n=0; hive="$(md_hive)"
   while read -r s; do
+    [[ -z "$(seat_get "$s" .released)" ]] || continue
     case "$(seat_state "$s" "$hive")" in live|starting) ;; *) continue ;; esac
     w="$(seat_get "$s" .worker)"
     md_order "$w" "$hive" "release — job $JOB is finished" "The job is finished and your seat is released. Thank you. Send act \"done\" to god now." "deliver-$JOB-release"
+    jq_inplace "$JOBJ" --arg s "$s" --arg t "$(now)" '.munder.seats[$s].released = $t'
     log_event md-release "$s → $w"; n=$((n + 1))
   done < <(seat_list)
   echo "released $n seat(s)"
@@ -1613,14 +1699,14 @@ cmd_md_inbox() {
     mv "$f" "$dir/.done/"; n=$((n + 1))
   done
   local seat task since w r miss=0
-  while IFS=$'\t' read -r seat task since w; do
+  while IFS=$'\x1f' read -r seat task since w; do   # \x1f: an empty "since" must not shift the worker into its place
     [[ -n $seat ]] || continue
     r="$(find "$dir/.done" -maxdepth 1 -name '*.json' -exec jq -r --arg w "$w" --arg sub "done $task $seat" --arg s "$since" \
           'select(.from == $w and (.subject // "" | startswith($sub)) and ((.created_at // "") >= $s)) | "\(.created_at) \(.body // "" | split("\n")[0])"' {} + 2>/dev/null | sort | tail -1)"
     [[ -n $r ]] || continue
     echo "UNRECORDED  $seat reported \"done $task\" at ${r%% *} — ${r#* }"
     echo "            record it: dl md-done $seat \"<summary>\""; miss=$((miss + 1))
-  done < <(jq -r '.munder.seats // {} | to_entries[] | select(.value.task != null) | [.key, .value.task, (.value.since // ""), .value.worker] | @tsv' "$JOBJ")
+  done < <(jq -r '.munder.seats // {} | to_entries[] | select(.value.task != null) | [.key, .value.task, (.value.since // ""), .value.worker] | join("\u001f")' "$JOBJ")
   [[ $n -gt 0 || $miss -gt 0 ]] || echo "(no new messages)"
 }
 
@@ -1685,7 +1771,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -1827,12 +1913,14 @@ main() {
     reseal) cmd_reseal "$@" ;;
     learn) cmd_learn "$@" ;;
     followup) cmd_followup "$@" ;;
+    timeline) cmd_timeline "$@" ;;
     knowledge) cmd_knowledge "$@" ;;
     ready) cmd_ready ;;
     wt) cmd_wt "$@" ;;
     card) cmd_card "$@" ;;
     gate) cmd_gate "$@" ;;
     qa) cmd_qa "$@" ;;
+    qa-join) cmd_qa_join "$@" ;;
     review) cmd_review "$@" ;;
     integrate) cmd_integrate "$@" ;;
     verify-all) cmd_verify_all ;;

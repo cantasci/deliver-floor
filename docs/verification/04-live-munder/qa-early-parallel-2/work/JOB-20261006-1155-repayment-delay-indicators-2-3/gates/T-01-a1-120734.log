@@ -1,0 +1,61 @@
+# gate: T-01  attempt: 1  2026-10-06T12:07:34Z
+ok    on job/JOB-20261006-1155-repayment-delay-indicators-2-3--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/daysWithDelay.mjs","test/indicators/daysWithDelay.test.mjs"] (+ QA tests ["test/integration/indicators/daysWithDelay*.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/daysWithDelay.test.mjs
+TAP version 13
+# Subtest: options list is the frozen, ordered list
+ok 1 - options list is the frozen, ordered list
+  ---
+  duration_ms: 2.003074
+  type: 'test'
+  ...
+# Subtest: maps each exact option to its WL
+ok 2 - maps each exact option to its WL
+  ---
+  duration_ms: 0.323007
+  type: 'test'
+  ...
+# Subtest: ignores surrounding whitespace
+ok 3 - ignores surrounding whitespace
+  ---
+  duration_ms: 0.165773
+  type: 'test'
+  ...
+# Subtest: rejects non-exact strings with the rejected value in the message
+ok 4 - rejects non-exact strings with the rejected value in the message
+  ---
+  duration_ms: 1.189107
+  type: 'test'
+  ...
+# Subtest: rejects non-strings without coercion, naming typeof
+ok 5 - rejects non-strings without coercion, naming typeof
+  ---
+  duration_ms: 0.414107
+  type: 'test'
+  ...
+# Subtest: error message names the indicator and the allowed options
+ok 6 - error message names the indicator and the allowed options
+  ---
+  duration_ms: 0.320428
+  type: 'test'
+  ...
+# Subtest: is stateless; a throwing call leaves the option list unchanged
+ok 7 - is stateless; a throwing call leaves the option list unchanged
+  ---
+  duration_ms: 0.320092
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 177.325804
+ok    verify passed
