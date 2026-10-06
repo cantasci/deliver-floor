@@ -22,6 +22,9 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
 - QA gets the commit the gate passed (DEV'S COMMIT) and never searches the history for it; QA tests may not depend on the
   state of the git working tree.
 - A defect found in merged work is fixed by a card, never by a standing instruction repeated in later prompts.
+- The hooks decide who is a role by Claude Code's agent id (or a floor seat), never by the directory: Michael with his
+  shell cd'ed into a card worktree was taken for an agent and his own `dl review` refused, which stalled a live job. A
+  subagent's `git -C <its worktree> push` is judged by that worktree's branch.
 
 ## 0.4.1 — 2026-10-05
 
