@@ -4,6 +4,18 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.6.1 — 2026-10-06
+
+**Faster: no time lost between a seat and Michael** (measured in a live floor run: 5–6 of 16.8 minutes)
+- A seat's report counts only with its answer: every work order but code names the one answer file
+  (`out/<task>-<role>.md|json`), and `dl md-done` refuses a "done" while that file is missing, empty or not valid JSON —
+  the seat is told and reports again. Seen live: a seat reported "done" for a write a hook had refused.
+- `dl md-done` prints the answer file; searching the whole disk (`find /`) is refused for everyone — it ran into the
+  2-minute command timeout.
+- `dl md-wait`: Michael waits for his inbox with it (back within a second of a message), never a loop of his own.
+- ECC's GateGuard no longer stops the seats' answer files (`.work/<job>/out/`): it refused each one once, asking who
+  imports a report. Code files keep the check.
+
 ## 0.6.0 — 2026-10-06
 
 **Faster: nobody waits on QA**
