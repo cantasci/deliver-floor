@@ -156,6 +156,16 @@ else ok "no AI attribution in the delivered history ($(git -C "$SB" rev-list --c
 (cd "$SB" && node --test >/dev/null 2>&1) && ok "the whole test suite passes on main" || bad "tests fail on main"
 if "$HERE/scripts/check-oracle.sh" "$SB" main "$EXN" "$ORACLE" > "$W/oracle.log" 2>&1; then ok "hidden oracle passes ($(grep -c '✔' "$W/oracle.log") checks, $ORACLE)"
 else bad "hidden oracle FAILED (oracle.log)"; grep -E '✖|AssertionError|expected|actual' "$W/oracle.log" | head -12 | tee -a "$REP"; fi
+# Time: a job must not get slower unnoticed — its own time from the event log (setup and the harness excluded), against
+# E2E_MAX_MIN (default 15, the floor's two-seat request took 10–17 min on 0.6.0); dl timeline says where the time went.
+TL="$(node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$J" --json 2>/dev/null)"
+if [[ -n $TL ]]; then
+  node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$J" > "$W/timeline.txt" 2>/dev/null
+  jm="$(jq -r .total_min <<<"$TL")"; max="${E2E_MAX_MIN:-15}"
+  awk -v a="$jm" -v b="$max" 'BEGIN { exit !(a <= b) }' && ok "the job took $jm min (≤ $max; timeline.txt)" \
+    || { bad "the job took $jm min (> $max) — where it went: $(jq -r '[.phases[] | "\(.phase) \(.min)"] | join(", ")' <<<"$TL"); busiest: $(jq -r '.seats[0] | "\(.who) \(.busy_min) min"' <<<"$TL") (timeline.txt)"; }
+fi
+
 if [[ $SC == parallel ]]; then
   step "6 · parallel seats"
   chk "the backend role has 2+ seats" jq -e '[.roles[] | select(.role=="backend") | .count // 1] | max >= 2' "$JJ"

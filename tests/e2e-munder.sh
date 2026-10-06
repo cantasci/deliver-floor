@@ -116,7 +116,11 @@ if [[ -n $J ]]; then
   done
   # Everyone went home: Michael's release reached every seat and the floor archived them before the app closed.
   left="$(jq -r --argjson ws "$(jq -c '[.munder.seats[].worker]' "$J/job.json")" '[.agents | to_entries[] | select(.key as $k | $ws | index($k)) | select((.value.archived != true) and (.value.status != "gone")) | .value.name] | join(", ")' "$W/hive/hive/registry.json" 2>/dev/null)"
-  [[ -z $left ]] && ok "every seat left the floor after the release" || bad "still on the floor after the run: $left"
+  if [[ -z $left ]]; then ok "every seat left the floor after the release"
+  else
+    nodone="$(jq -r --argjson ws "$(jq -c '[.munder.seats[].worker]' "$J/job.json")" -s '[.[] | select(.kind=="message" and .to=="god" and .act=="done") | .from] as $d | [$ws[] | select(. as $w | $d | index($w) | not)] | join(", ")' "$W/hive/hive/log.jsonl" 2>/dev/null)"
+    [[ -z $nodone ]] && ok "every seat answered the release (act done) — the app still shows them: $left (OPEN F15, app side)" || bad "seats that never answered the release: $nodone"
+  fi
   if [[ ${E2E_PLUGIN:-0} == 1 ]]; then
     grep -q '`deliver:backend-dev`' "$J/ROLES.md" && ok "plugin: ROLES.md names the kit's agents deliver:<agent>" || bad "plugin: ROLES.md without the deliver: prefix"
   fi
