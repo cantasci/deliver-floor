@@ -255,8 +255,22 @@ PREVIOUS FEEDBACK: <none | the failing gate lines | the QA failures (failing tes
 Work test-first (unit tests). When done: run the verify command in the worktree, commit, fill the handoff, and return your summary.
 ```
 
+   **QA starts at the same time** (`settings.qa_early`, on by default; `dl next` lists QA-WRITE): `QWT=$("$DL" wt qa T-xx)`
+   gives the QA role its own worktree, and in the same message as the dev you dispatch QA (subagent_type `qa-tester`):
+
+```text
+MODE: QA-WRITE — write card T-xx's integration/e2e tests from the spec, NOW, while the developer builds it. No product code.
+ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/qa.md>
+CARD: <card JSON>
+SPEC (one test per acceptance criterion at least, with its test data and edge cases): <abs path to .work/<job>/specs/T-xx.md>
+WORKTREE: <QWT>   QA_SCOPE (write only here): <card.qa_scope>   QA_VERIFY: <card.qa_verify>
+The product code is not there yet: test the contract the spec and the card's context name (exports, endpoints, messages),
+make the tests load and fail for the right reason, commit them in this repo's commit format, leave the worktree clean.
+Return: the tests written per AC.
+```
+
 2. As each dev returns → **Phase 4** for that card (`dl gate` moves it to `review`), and in the same breath assign whatever
-   `dl next` now lists as DISPATCH.
+   `dl next` now lists as DISPATCH (and QA-WRITE).
 3. **WAIT** → only when nothing else is actionable (interactive: end your turn; the next agent notification wakes you). **BLOCK / ASK** → see **Blocked**. **PHASE dl phase integrating** → Phase 5.
 
 ## Phase 4 — Gate → QA → Lead review → integrate (per card)
@@ -264,7 +278,10 @@ Work test-first (unit tests). When done: run the verify command in the worktree,
 1. **Mechanical gate:** `"$DL" gate T-xx` (right branch, clean tree, commits, scope, verify).
    FAIL → **re-dispatch** the same agent: `"$DL" wt add T-xx` (bumps the attempt; REFUSED with exit 4 when attempts are used up →
    **Blocked**) with the FAIL lines as PREVIOUS FEEDBACK.
-2. **QA** (after the gate passes) — call **Agent(subagent_type: "qa-tester")**:
+2. **QA** (after the gate passes). When QA wrote its tests early (`dl next`: QA-JOIN): `"$DL" qa-join T-xx` — dl merges
+   them into the card branch (only `qa_scope` files, the repo's commit format); then QA's order says **MODE: QA-RUN — run
+   your tests on the dev's commit; change a test only where it contradicts the spec; record the verdict per AC** (the rest of
+   the prompt below, in the card worktree). Otherwise — call **Agent(subagent_type: "qa-tester")**:
 
 ```text
 Role: QA/Test for card T-xx. Write and run its integration/e2e tests for the spec's acceptance criteria. No product code.
@@ -374,7 +391,7 @@ Michael `/deliver resume` with `REPO: <repo>`.
    again once the new person is seated.
 2. **Every "call Agent(subagent_type: X)" in this playbook is a work order to X's seat on the floor.** Write the same prompt to
    `.work/<job>/prompts/<task>-<role>.md`, then `"$DL" md-send <role|seat> <task> <prompt file> --agent X`.
-   `<task>` is the card id for card work (dev, QA, review) or the plan step (`readiness`, `plan`, `cards-<lead role>`,
+   `<task>` is the card id for card work (dev, QA, review; QA-WRITE while the dev builds: `T-xx-tests`) or the plan step (`readiness`, `plan`, `cards-<lead role>`,
    `spec-T-xx`, `closing`). The order carries the role card, X's instructions (an ECC or kit agent definition, the skills to
    load) and your prompt; you choose X and what to load for each task. Tell analysis roles where to write their answer:
    `.work/<job>/out/<task>-<role>.md|json` (the BA's readiness JSON, the plan, the Lead's cards, the specs, QA and review

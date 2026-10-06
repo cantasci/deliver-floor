@@ -1201,6 +1201,46 @@ OLD="$TMP/oldhome"; mkdir -p "$OLD/.claude"; echo '{"hooks":{"Stop":[{"hooks":[{
 HOME="$OLD" "$HERE/scripts/install.sh" --user >/dev/null 2>&1
 contains "upgrading a copied install replaces the old .sh hook entries (no double guards)" "$(jq -c '[.hooks.Stop[].hooks[].command]' "$OLD/.claude/settings.json")" "[\"node \\\"$OLD/.claude/hooks/deliver\\\"/run.mjs stop-guard\"]"
 
+echo "QA in parallel with the dev: QA writes the tests from the spec while the dev builds; they join after the gate"
+QE="$TMP/qaearly"; mkdir -p "$QE" && cd "$QE" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "qa early" "x" >/dev/null 2>&1; QJ="$QE/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$QJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -f src/a",qa_verify:"test -f it/t && test -f src/a",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$QJ/board.json"
+"$DL" phase executing >/dev/null; WQ="$("$DL" wt add T-01)"
+contains "dl next asks for QA to start the moment the card is assigned (QA-WRITE)" "$("$DL" next)" "QA-WRITE T-01"
+QW="$("$DL" wt qa T-01)"; [[ -d $QW && "$(git -C "$QW" symbolic-ref --short HEAD)" == *"--T-01-qa" ]] && ok "dl wt qa: QA's own worktree and branch, from the job branch" || bad "qa worktree: $QW"
+[[ "$("$DL" next)" != *"QA-WRITE T-01"* ]] && ok "…asked once" || bad "QA-WRITE repeated"
+mkdir -p "$QW/it" "$QW/src" && echo t > "$QW/it/t" && git -C "$QW" add it && git -C "$QW" commit -qm "T-01 QA: tests from the spec"
+mkdir -p "$WQ/src" && echo a > "$WQ/src/a" && git -C "$WQ" add src && git -C "$WQ" commit -qm "T-01: a"
+contains "QA's tests join only after the gate" "$("$DL" qa-join T-01 2>&1)" "T-01 is running"
+"$DL" gate T-01 >/dev/null
+contains "after the gate dl next says QA-JOIN" "$("$DL" next)" "QA-JOIN dl qa-join T-01"
+echo x > "$QW/src/b" && git -C "$QW" add src && git -C "$QW" commit -qm "T-01 QA: oops"
+contains "QA's branch may change only qa_scope" "$("$DL" qa-join T-01 2>&1)" "changed files outside qa_scope: src/b"
+git -C "$QW" reset -q --hard HEAD~1
+out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into the card branch" "$out" "QA tests joined T-01"
+[[ -f $WQ/it/t && ! -d $QW ]] && ok "…the tests are in the card worktree, QA's worktree is gone" || bad "after join: $(ls "$WQ")"
+contains "…QA's commits must be recorded before the card goes back to the dev" "$("$DL" wt add T-01 2>&1)" "has QA commits that are not recorded yet"
+expect_ok "the gate after the join counts QA's tests as QA's, not the dev's" "$DL" gate T-01
+"$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve ok >/dev/null
+expect_ok "…and the card merges as before" "$DL" integrate T-01
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+
+echo "dl timeline: where a job's time went, from the event log only"
+TLJ="$TMP/tl"; mkdir -p "$TLJ"; printf '%s\n' \
+  $'2026-10-06T10:00:00Z\tphase\treadiness' $'2026-10-06T10:00:00Z\tmd-send\treadiness ba#1 (business-analyst) → w1' \
+  $'2026-10-06T10:02:00Z\tmd-done\treadiness ba#1: ok' $'2026-10-06T10:03:00Z\tphase\texecuting' \
+  $'2026-10-06T10:03:00Z\tassign\tT-01 → backend-dev attempt=1' $'2026-10-06T10:03:00Z\tdispatch\tbackend-dev' \
+  $'2026-10-06T10:05:00Z\tagent\tbackend-dev a1: done' $'2026-10-06T10:05:00Z\tgate\tT-01 PASS' $'2026-10-06T10:06:00Z\tqa\tT-01 pass' \
+  $'2026-10-06T10:07:00Z\treview\tT-01 reviewer approve' $'2026-10-06T10:07:00Z\tintegrate\tT-01 merged' $'2026-10-06T10:10:00Z\tphase\tclosing' > "$TLJ/events.log"
+TJ="$(node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$TLJ" --json)"
+contains "timeline: each seat's and agent's busy time and share of the job (floor and subagents alike)" "$(jq -c '[.seats[] | [.who, .busy_min, .share]]' <<<"$TJ")" '[["ba#1",2,20],["backend-dev",2,20]]'
+contains "…the stretches nobody worked" "$(jq -c '{t:.total_min, n:.nobody_working_min}' <<<"$TJ")" '{"t":10,"n":6}'
+contains "…and each card, assigned → merged" "$(jq -c '.cards[0]' <<<"$TJ")" '{"id":"T-01","dev":"2.0","gate_to_qa":"1.0","qa_to_review":"1.0","review_to_merge":"0.0","total":"4.0"}'
+
 echo "releases: a change to the plugin raises its version and says what changed"
 V="$(jq -r .version "$HERE/kit/.claude-plugin/plugin.json")"
 grep -q "^## $V\b" "$HERE/CHANGELOG.md" && ok "CHANGELOG.md has an entry for the plugin's version ($V)" || bad "CHANGELOG.md has no '## $V' entry"

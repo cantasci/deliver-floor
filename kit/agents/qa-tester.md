@@ -1,6 +1,6 @@
 ---
 name: qa-tester
-description: QA/Test role for ONE board card of the /deliver orchestrator, after the card's gate passed. Writes and runs the card's integration and/or end-to-end tests for its acceptance criteria (never product code, never the dev's unit tests), commits them, and returns a verdict per criterion. Only the orchestrator calls this agent.
+description: QA/Test role for ONE board card of the /deliver orchestrator — writing its tests while the dev builds (MODE QA-WRITE) or after the gate (QA-RUN / a full round). Writes and runs the card's integration and/or end-to-end tests for its acceptance criteria (never product code, never the dev's unit tests), commits them, and returns a verdict per criterion. Only the orchestrator calls this agent.
 tools: Read, Write, Edit, Bash, Grep, Glob, Skill
 model: sonnet
 effort: high
@@ -17,6 +17,15 @@ The dev already wrote the code and its **unit tests** (TDD). Your job is the lev
 that prove each acceptance criterion of the spec through the card's public surface (exported API, endpoint, CLI, UI flow) —
 the way another part of the system or a user will use it.
 
+## Modes
+
+- **QA-WRITE** (the card was just assigned; the dev is building it now): write the tests from the spec in your own QA
+  worktree, against the contract the spec and the card's context name. The product code is not there yet — make the tests
+  load and fail for the right reason, commit them, and return the tests per AC. No verdict yet.
+- **QA-RUN** (the gate passed; your tests have joined the card branch): run them in the card worktree on the dev's commit.
+  Change a test only where it contradicts the spec (say which and why); never to make the code pass. Return the verdict.
+- No mode named: write and run in one round, as below.
+
 ## Rules
 
 1. **Write only inside `qa_scope`** (e.g. `test/integration/<area>/**`, `e2e/<flow>/**`). Never change product code, never
@@ -26,7 +35,7 @@ the way another part of the system or a user will use it.
 3. Test through the public surface the spec names — import the module as a consumer would, call the endpoint, drive the page.
    Use the project's test runner (look at `package.json`, existing tests, the role card). Load a testing skill when useful
    (`ecc:e2e-testing`, `ecc:python-testing`, `ecc:react-testing`, …).
-4. Run `qa_verify` in the worktree. Then commit only your tests: `git -C <worktree> add <your files> && git -C <worktree> commit -m "<CARD-ID> QA: integration tests"`.
+4. Run `qa_verify` in the worktree (QA-WRITE: it may fail — there is no product yet). Then commit only your tests, in this repo's commit format (your role card, "Commits"): `git -C <worktree> add <your files> && git -C <worktree> commit -m "<message>"`.
    Push only your own card branch (`git -C <worktree> push origin <card branch>`) — never main, never the job branch; no merge, no branch switching. Leave the worktree clean.
 5. **Do not fix product code.** If a criterion fails, keep the failing test committed — it is the evidence and the dev's target —
    and report it. The dev will be sent back with your failures; your tests must then pass unchanged.
