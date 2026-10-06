@@ -1,0 +1,217 @@
+{
+  "id": "JOB-20261006-1155-repayment-delay-indicators-2-3",
+  "title": "Repayment delay indicators 2-3",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md\nRepayment delay indicators 2 and 3 (Watchlist POC slice, parallel)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool), EPIC-03.\nBuild only these two requirements. They are independent of each other.\n\nStaffing: two backend developers work in parallel, one per requirement.\n\n## Requirements (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-03-02 | Indicator 2 (Days with delay): Dropdown → no delay / ≤3 days / >3 days / >60 days / >90 days | >3 days → WL=2; >60 days → WL=3; >90 days → WL=4 |\n| REQ-03-03 | Indicator 3 (Delays in 12 months): Dropdown → 0 / 1 / >1 | 1 → WL=1; >1 → WL=2 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Dropdown values are exactly these strings: Indicator 2: \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\";\n  Indicator 3: \"0\", \"1\", \">1\". Input is trimmed; any other value throws a RangeError.\n- C2. \"no delay\" and \"<=3 days\" → WL 0; Indicator 3 \"0\" → WL 0.\n- C3. Indicator 1 (repayment delay yes/no) and its collapsing of indicators 2–3 are OUT of scope here.\n- C4. \"Dropdown\" is met by the exported option lists (`*_OPTIONS`) that the POC screens, built later by other parts, render.\n  No UI in this slice.\n- C5. Matching is exact and case-sensitive after trimming (\">3 days\" yes, \">3 Days\" no → RangeError); a non-string input is a RangeError too.\n  Trimming means `String.prototype.trim()`: leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode\n  spaces such as NBSP) is removed; whitespace inside the value is never changed or collapsed (\">3  days\" → RangeError).\n- C6. The caller counts the delays in the last 12 months and picks the option; this slice only maps the option to a WL.\n\n## Contract\n\n- `src/indicators/daysWithDelay.mjs` → `export const DAYS_WITH_DELAY_OPTIONS` (the 5 strings, in order) and `export function daysWithDelayWl(option)` → 0 | 2 | 3 | 4\n- `src/indicators/delayCount.mjs` → `export const DELAY_COUNT_OPTIONS` (the 3 strings, in order) and `export function delayCountWl(option)` → 0 | 1 | 2\n\nPlain Node ESM, no dependencies; tests with `node --test`.",
+  "created": "2026-10-06T11:55:25Z",
+  "repo": "/tmp/claude-0/live/floor-par2/munder/repo",
+  "phase": "done",
+  "stack": [
+    "javascript",
+    "node"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "focus": "backend",
+      "why": "domain logic: REQ-03-02/REQ-03-03 indicator → WL mapping"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "count": 2,
+      "why": "Staffing: two backend developers work in parallel, one per requirement"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack reviewer for javascript/node (Plain Node ESM)"
+    }
+  ],
+  "assumptions": [
+    "Stack is plain Node.js ESM with node --test, as the request states (\"Plain Node ESM, no dependencies; tests with node --test\") and the repo package.json confirms.",
+    "No security review role: NFR-security is only exact-match validation of dropdown strings in pure, I/O-free functions (C1, C5); no auth, personal data, secrets or external entry point — the stack reviewer covers input validation."
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261006-1155-repayment-delay-indicators-2-3",
+  "integration_worktree": "/tmp/claude-0/live/floor-par2/munder/repo/.work/JOB-20261006-1155-repayment-delay-indicators-2-3/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "5659d1ed06c064480f2406640735990449c06187",
+    "log": "/tmp/claude-0/live/floor-par2/munder/repo/.work/JOB-20261006-1155-repayment-delay-indicators-2-3/gates/verify-all-121005.log",
+    "at": "2026-10-06T12:10:05Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "munder",
+    "max_parallel": 2,
+    "qa_early": true,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "/tmp/claude-0/live/floor-par2/munder/hive",
+      "claude_command": "/tmp/claude-0/live/floor-par2/munder/bin/claude",
+      "model": "claude-sonnet-5-5",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false,
+      "convention_source": "the history: 0 of the last 2 commits are Conventional Commits — no convention"
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "ac9f6e4c670d92c58676afc499500f5428851f46",
+    "at": "2026-10-06T12:11:56Z"
+  },
+  "munder": {
+    "seats": {
+      "ba#1": {
+        "role": "ba",
+        "worker": "worker-seat-20261006-1155-ba-1-h1",
+        "hires": 1,
+        "character": "pam",
+        "hired_at": "2026-10-06T11:55:36Z",
+        "task": null,
+        "orders": 4,
+        "since": null,
+        "last_done": "2026-10-06T12:11:41Z",
+        "released": "2026-10-06T12:12:08Z"
+      },
+      "backend-lead#1": {
+        "role": "backend-lead",
+        "worker": "worker-seat-20261006-1155-backend-lead-1-h1",
+        "hires": 1,
+        "character": "oscar",
+        "hired_at": "2026-10-06T11:55:36Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T12:04:29Z",
+        "released": "2026-10-06T12:12:08Z"
+      },
+      "backend#1": {
+        "role": "backend",
+        "worker": "worker-seat-20261006-1155-backend-1-h1",
+        "hires": 1,
+        "character": "dwight",
+        "hired_at": "2026-10-06T11:55:36Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T12:07:33Z",
+        "released": "2026-10-06T12:12:08Z"
+      },
+      "backend#2": {
+        "role": "backend",
+        "worker": "worker-seat-20261006-1155-backend-2-h1",
+        "hires": 1,
+        "character": "jim",
+        "hired_at": "2026-10-06T11:55:36Z",
+        "task": null,
+        "orders": 1,
+        "since": null,
+        "last_done": "2026-10-06T12:07:33Z",
+        "released": "2026-10-06T12:12:09Z"
+      },
+      "qa#1": {
+        "role": "qa",
+        "worker": "worker-seat-20261006-1155-qa-1-h1",
+        "hires": 1,
+        "character": "angela",
+        "hired_at": "2026-10-06T11:55:36Z",
+        "task": null,
+        "orders": 3,
+        "since": null,
+        "last_done": "2026-10-06T12:09:29Z",
+        "released": "2026-10-06T12:12:09Z"
+      },
+      "reviewer#1": {
+        "role": "reviewer",
+        "worker": "worker-seat-20261006-1155-reviewer-1-h1",
+        "hires": 1,
+        "character": "toby",
+        "hired_at": "2026-10-06T11:55:37Z",
+        "task": null,
+        "orders": 2,
+        "since": null,
+        "last_done": "2026-10-06T12:10:01Z",
+        "released": "2026-10-06T12:12:09Z"
+      }
+    }
+  },
+  "frozen": {
+    "readiness_sha256": "4a826e8d65235e42698abc86902cb4efd36a55ff6ecdfb81244b034ab6c3d26b",
+    "at": "2026-10-06T12:01:32Z"
+  },
+  "followups": [
+    {
+      "text": "Unit test test/indicators/daysWithDelay.test.mjs line 48 contains a raw NBSP character; use the \\u00a0 escape for readability.",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T12:11:55Z"
+    },
+    {
+      "text": "delayCountWl builds its RangeError message eagerly (allowed-options string); could be built only on the error path.",
+      "card": "T-02",
+      "evidence": "",
+      "at": "2026-10-06T12:11:55Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "5659d1ed06c064480f2406640735990449c06187",
+    "shared_pr": ""
+  }
+}

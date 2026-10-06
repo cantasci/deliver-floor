@@ -1,0 +1,70 @@
+2026-10-06T11:55:25Z	new	Repayment delay indicators 2-3
+2026-10-06T11:55:31Z	jobset	stack: .stack=["javascript","node"]
+2026-10-06T11:55:31Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","focus":"backend","why":"domain logic: REQ-03-02/REQ-03-03 indicator → WL mapping"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack reviewer for javascript/node (Plain Node ESM)"}]
+2026-10-06T11:55:31Z	jobset	assumptions: .assumptions += ["Stack is plain Node.js ESM with node --test, as the request states (\"Plain Node ESM, no dependencies; tests with node --test\") and the repo package.json confirms."]
+2026-10-06T11:55:32Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T11:55:32Z	phase	readiness
+2026-10-06T11:55:36Z	md-hire	ba#1 → worker-seat-20261006-1155-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-06T11:55:36Z	md-hire	backend-lead#1 → worker-seat-20261006-1155-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-06T11:55:36Z	md-hire	backend#1 → worker-seat-20261006-1155-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-06T11:55:36Z	md-hire	backend#2 → worker-seat-20261006-1155-backend-2-h1 (claude claude-sonnet-5-5, jim)
+2026-10-06T11:55:36Z	md-hire	qa#1 → worker-seat-20261006-1155-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-06T11:55:37Z	md-hire	reviewer#1 → worker-seat-20261006-1155-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-06T11:56:49Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261006-1155-ba-1-h1
+2026-10-06T11:58:10Z	md-done	readiness ba#1: readiness JSON written; no business-open items; 2 pm items
+2026-10-06T12:00:33Z	readiness	31 items: 16 decided, 13 n/a, 2 open
+2026-10-06T12:01:26Z	decide	X-error-message: RangeError message names the indicator, the rejected value (JSON.stringify of strings; typeof for non-strings) and the allowed options, e.g. 'Indicator 2 (days with delay): invalid option ">3 Days"; expected one of: "no delay", "<=3 days", ">3 days", ">60 days", ">90 days"'. Tests assert the error type (RangeError) and that the message contains the rejected value — never the full text. — C1/C5 fix only the error type; a message that names value and allowed options helps the POC screens and debugging without coupling tests to exact wording.
+2026-10-06T12:01:26Z	decide	X-options-immutability: DAYS_WITH_DELAY_OPTIONS and DELAY_COUNT_OPTIONS are exported frozen (Object.freeze) arrays. — They are the single source for the dropdowns rendered by other parts (C4); freezing prevents a consumer from mutating the shared list and breaking the mapping, at no cost to reading or rendering.
+2026-10-06T12:01:31Z	jobset	assumptions: .assumptions += ["No security review role: NFR-security is only exact-match validation of dropdown strings in pure, I/O-free functions (C1, C5); no auth, personal data, secrets or external entry point — the stack reviewer covers input validation."]
+2026-10-06T12:01:31Z	readiness	31 items: 18 decided, 13 n/a, 0 open
+2026-10-06T12:01:32Z	freeze	readiness + architecture frozen (4a826e8d6523)
+2026-10-06T12:01:32Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T12:01:32Z	phase	planning
+2026-10-06T12:01:40Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261006-1155-ba-1-h1
+2026-10-06T12:03:07Z	md-done	plan ba#1: plan written: 12 ACs, no open questions
+2026-10-06T12:03:32Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261006-1155-backend-lead-1-h1
+2026-10-06T12:04:29Z	md-done	cards-backend-lead backend-lead#1: 2 cards: B1 daysWithDelay, B2 delayCount, parallel
+2026-10-06T12:04:30Z	md-send	specs ba#1 (business-analyst) → worker-seat-20261006-1155-ba-1-h1
+2026-10-06T12:06:16Z	md-done	specs ba#1: specs T-01 (daysWithDelay) and T-02 (delayCount) written
+2026-10-06T12:06:26Z	phase	executing
+2026-10-06T12:06:32Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-06T12:06:34Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-06T12:06:51Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261006-1155-backend-1-h1
+2026-10-06T12:06:52Z	md-send	T-02 backend#2 (backend-dev) → worker-seat-20261006-1155-backend-2-h1
+2026-10-06T12:07:01Z	qa-start	T-01 → QA writes its tests in /tmp/claude-0/live/floor-par2/munder/repo/.work/JOB-20261006-1155-repayment-delay-indicators-2-3/wt/T-01-qa (branch job/JOB-20261006-1155-repayment-delay-indicators-2-3--T-01-qa) while the dev builds
+2026-10-06T12:07:02Z	md-send	T-01-tests qa#1 (qa-tester) → worker-seat-20261006-1155-qa-1-h1
+2026-10-06T12:07:33Z	md-done	T-01 backend#1: T-01 done, commit b62ff8e, 7 unit tests
+2026-10-06T12:07:34Z	md-done	T-02 backend#2: T-02 done, commit 1cb3eb5, 8 unit tests
+2026-10-06T12:07:36Z	gate	T-01 PASS
+2026-10-06T12:07:37Z	gate	T-02 PASS
+2026-10-06T12:07:49Z	md-done	T-01-tests qa#1: T-01 tests written, commit 8ae93f3
+2026-10-06T12:07:50Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-06T12:08:03Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261006-1155-qa-1-h1
+2026-10-06T12:08:38Z	md-done	T-01 qa#1: QA-RUN T-01 PASS 11/11
+2026-10-06T12:08:39Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass; AC-11 pass; AC-12 pass; error-message pass — qa_verify 11/11 on b62ff8e
+2026-10-06T12:08:41Z	md-send	T-02 qa#1 (qa-tester) → worker-seat-20261006-1155-qa-1-h1
+2026-10-06T12:08:41Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261006-1155-reviewer-1-h1
+2026-10-06T12:09:22Z	md-done	T-01 reviewer#1: T-01 approve, 3 nits
+2026-10-06T12:09:22Z	review	T-01 reviewer approve — 0 blocking; 3 nits (raw NBSP in unit test line 48 → use \u00a0 escape)
+2026-10-06T12:09:23Z	integrate	T-01 merged
+2026-10-06T12:09:29Z	md-done	T-02 qa#1: T-02 QA PASS 11/11, tests 663df01
+2026-10-06T12:09:30Z	qa	T-02 pass (qa_verify PASS) — AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-10 pass; AC-11 pass; AC-12 pass; error-message pass — qa_verify 11/11
+2026-10-06T12:09:35Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261006-1155-reviewer-1-h1
+2026-10-06T12:10:01Z	md-done	T-02 reviewer#1: T-02 approve, 3 nits
+2026-10-06T12:10:02Z	review	T-02 reviewer approve — 0 blocking; 3 nits (message string built eagerly; no NBSP case in unit tests — covered by QA)
+2026-10-06T12:10:03Z	integrate	T-02 merged
+2026-10-06T12:10:05Z	phase	integrating
+2026-10-06T12:10:05Z	verify-all	PASS
+2026-10-06T12:10:13Z	phase	closing
+2026-10-06T12:10:14Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261006-1155-ba-1-h1
+2026-10-06T12:11:41Z	md-done	closing ba#1: closing: all 12 ACs met
+2026-10-06T12:11:55Z	followup	T-01: Unit test test/indicators/daysWithDelay.test.mjs line 48 contains a raw NBSP character; use the \u00a0 escape for readability.
+2026-10-06T12:11:55Z	followup	T-02: delayCountWl builds its RangeError message eagerly (allowed-options string); could be built only on the error path.
+2026-10-06T12:11:56Z	ship	local merge into main
+2026-10-06T12:12:08Z	md-release	ba#1 → worker-seat-20261006-1155-ba-1-h1
+2026-10-06T12:12:08Z	md-release	backend-lead#1 → worker-seat-20261006-1155-backend-lead-1-h1
+2026-10-06T12:12:08Z	md-release	backend#1 → worker-seat-20261006-1155-backend-1-h1
+2026-10-06T12:12:09Z	md-release	backend#2 → worker-seat-20261006-1155-backend-2-h1
+2026-10-06T12:12:09Z	md-release	qa#1 → worker-seat-20261006-1155-qa-1-h1
+2026-10-06T12:12:09Z	md-release	reviewer#1 → worker-seat-20261006-1155-reviewer-1-h1
+2026-10-06T12:12:10Z	cleanup	

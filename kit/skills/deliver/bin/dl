@@ -543,6 +543,7 @@ cmd_phase() {
     jq_inplace "$JOBJ" --arg h "$(sha256_of "$JOB_DIR/readiness.json")" --arg t "$(now)" '.frozen = {"readiness_sha256":$h,"at":$t}'
     log_event freeze "readiness + architecture frozen ($(sha256_of "$JOB_DIR/readiness.json" | cut -c1-12))"
   fi
+  [[ $p == readiness || $p == planning ]] && apply_role_defaults
   [[ $p == readiness || $p == planning ]] && { node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
   reset_stop_guard; log_event phase "$p$([[ $force -eq 1 ]] && echo ' (forced)')"; echo "phase: $p"
 }
@@ -727,8 +728,13 @@ apply_role_defaults() {
   [[ "$(jq -r '(.roles // []) | type' "$JOBJ")" == array ]] || return 0
   local qa devs; qa="$(jq -c '[.roles[] | select(.role == "qa")] | first // empty' "$JOBJ")"
   [[ -n $qa ]] && [[ "$(jq -r '(.count == null) or (.count_auto == true)' <<<"$qa")" == true ]] || return 0
-  devs="$(node "$BIN_DIR/roles.mjs" dev-seats "$JOBJ" 2>/dev/null || echo 1)"
-  [[ $devs =~ ^[0-9]+$ ]] || devs=1
+  local out; out="$(node "$BIN_DIR/roles.mjs" dev-seats "$JOBJ" 2>&1)" || true
+  devs="$(printf '%s\n' "$out" | awk '/^[0-9]+$/ {n=$0} END {print n}')"
+  if [[ -z $devs ]]; then   # never silently: a live run kept one QA seat for two developers and said nothing
+    log_event roles-defaults "could not count the developer seats — QA keeps its count: $(tr '\n' ' ' <<<"$out" | cut -c1-200)"
+    echo "dl: could not count the developer seats ($(tr '\n' ' ' <<<"$out" | cut -c1-120)) — QA's seat count was not adjusted" >&2
+    return 0
+  fi
   if [[ $devs -gt 1 && "$(jq -r '.count // 1' <<<"$qa")" != "$devs" ]]; then
     jq_inplace "$JOBJ" --argjson n "$devs" '.roles |= map(if .role == "qa" then .count = $n | .count_auto = true else . end)'
     log_event roles-defaults "qa: $devs seats — one per developer seat"
@@ -1481,6 +1487,7 @@ CH
 cmd_md_hire() { # [seat] — only that seat (md-reseat)
   [[ ${1:-} == --reseat ]] && { cmd_md_reseat "${2:-}" "${3:-re-seated on request}" "${@:4}"; return; }   # the other branch's spelling
   load_job
+  with_lock job apply_role_defaults   # seats are counted here — whatever happened at jobset (a live run hired one QA for two devs)
   local only=${1:-}
   local hive; hive="$(md_hive)"
   [[ "$(setting dispatch)" == munder ]] || refuse 1 "seats are for dispatch munder (dl jobset '.settings.dispatch=\"munder\"')"

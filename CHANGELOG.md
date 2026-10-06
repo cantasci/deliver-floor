@@ -13,7 +13,8 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
   QA-WRITE at assignment, `dl wt qa` gives QA its own worktree, `dl qa-join` brings the tests onto the card after the gate,
   and QA then only runs them. Measured before: QA started only after the developer and took 1–3 minutes per card.
 - One QA seat per developer seat unless a QA count is given (measured: one QA for two developers was busy 56 % of a job
-  while the developers waited).
+  while the developers waited) — applied when roles are set, at every phase change and right before the seats are hired;
+  a count that cannot be taken is logged, never silent.
 - Fixed: `dl next` and `dl md-inbox` read tab-separated fields, and bash merged empty ones — values shifted into the wrong
   place.
 - Fixed (live floor run): parallel `dl jobset` calls lost each other's changes — now one at a time; a seal read while

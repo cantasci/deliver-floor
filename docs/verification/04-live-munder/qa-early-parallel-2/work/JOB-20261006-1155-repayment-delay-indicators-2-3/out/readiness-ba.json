@@ -1,0 +1,252 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Deliver the WL mapping for POC Indicator 2 (days with delay) and Indicator 3 (delays in 12 months). Success = each dropdown option maps to the WL stated by the requirements, and any other input is rejected with a RangeError.",
+      "source": "JOB-parallel.md, Requirements table + Clarifications C1/C2",
+      "quote": ">3 days → WL=2; >60 days → WL=3; >90 days → WL=4"
+    },
+    {
+      "id": "PRD-users",
+      "status": "n_a",
+      "answer": "No end user or role touches this slice: it is two pure mapping functions plus option lists. The POC screens that render the dropdowns are built later by other parts (C4), so there are no per-role permissions here.",
+      "source": "JOB-parallel.md, C4",
+      "quote": "No UI in this slice."
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: REQ-03-02 and REQ-03-03 (option lists and option-to-WL functions). Out of scope: Indicator 1, its collapsing of indicators 2-3, any UI, and counting delays (the caller does that).",
+      "source": "JOB-parallel.md, header + C3, C4, C6",
+      "quote": "Build only these two requirements."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Every requirement has concrete input -> WL examples. Indicator 2: no delay -> 0, <=3 days -> 0, >3 days -> 2, >60 days -> 3, >90 days -> 4. Indicator 3: 0 -> 0, 1 -> 1, >1 -> 2. Invalid input throws RangeError.",
+      "source": "JOB-parallel.md, Requirements table + C2",
+      "quote": "\"no delay\" and \"<=3 days\" → WL 0; Indicator 3 \"0\" → WL 0."
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "One apparent mismatch: the POC table writes the Indicator 2 option as \"≤3 days\", while C1 gives the exact string \"<=3 days\". C1 is the business-confirmed clarification, so the ASCII string \"<=3 days\" is the only valid one and \"≤3 days\" throws RangeError. No other contradictions: C1 and C5 agree on trimming and exact matching, and C2 fills the WL values the table leaves out.",
+      "source": "JOB-parallel.md, Clarifications C1",
+      "quote": "Indicator 2: \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\""
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Both requirements have the same priority (Must) and are independent, so they can be built and shipped in parallel by two backend developers. No MoSCoW split is needed.",
+      "source": "JOB-parallel.md, header + Staffing",
+      "quote": "They are independent of each other."
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "daysWithDelayWl(option: string) -> 0|2|3|4 and DAYS_WITH_DELAY_OPTIONS (5 strings, in order) in src/indicators/daysWithDelay.mjs. delayCountWl(option: string) -> 0|1|2 and DELAY_COUNT_OPTIONS (3 strings, in order) in src/indicators/delayCount.mjs. Input is trimmed with String.prototype.trim() and matched exactly and case-sensitively. A non-string (null, undefined, number) throws RangeError. There is no empty-value default: an empty or whitespace-only string is not in the list, so it throws RangeError.",
+      "source": "JOB-parallel.md, Contract + C1 + C5",
+      "quote": "`export function daysWithDelayWl(option)` → 0 | 2 | 3 | 4"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Any value that is not an exact option after trim() throws a RangeError, and so does any non-string. Examples: \">3 Days\" (case), \">3  days\" (inner whitespace), \"≤3 days\", \"\", null, 3. The error message text is not specified (see X-error-message).",
+      "source": "JOB-parallel.md, C1 + C5",
+      "quote": "a non-string input is a RangeError too."
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "The repo has no code yet (src/ and test/ hold only .gitkeep), so there is no existing behaviour, API or data to keep compatible and no versioning.",
+      "source": "repo: package.json (version 0.1.0, private) and git ls-files",
+      "quote": "\"private\": true"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "A single-package Node ESM repo. The change is two pure-function modules under src/indicators/ and their tests under test/indicators/. The POC screens that call them are built later by other parts.",
+      "source": "CLAUDE.md + JOB-parallel.md Contract",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "Two components in one repo: indicator-days-with-delay (REQ-03-02) and indicator-delay-count (REQ-03-03). They are separate files owned by two parallel backend devs and do not depend on each other. See the architecture block.",
+      "source": "JOB-parallel.md, Staffing + Contract",
+      "quote": "two backend developers work in parallel, one per requirement."
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "The logic is in the core/domain layer: pure functions in src/indicators with no I/O. There is no BFF or API gateway, and the caller counts the delays (C6).",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ES modules (.mjs), tests with node:test and node:assert/strict, no npm dependencies and none to be added.",
+      "source": "CLAUDE.md",
+      "quote": "Plain Node.js 18+ ES modules (`.mjs`). No npm dependencies; do not add any."
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No data is stored: the functions are pure and stateless, and there is no database or migration.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems are called. The slice has no I/O and no UI.",
+      "source": "CLAUDE.md + JOB-parallel.md C4",
+      "quote": "No UI in this slice."
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "The functions are synchronous and pure. There are no queues, events or jobs, and ordering and idempotency are trivially satisfied.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "The request states no latency, throughput or volume targets. A constant-size lookup has no load concern.",
+      "source": "JOB-parallel.md (no performance requirement in the Requirements table or C1-C6)",
+      "quote": "Plain Node ESM, no dependencies; tests with `node --test`."
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "There is no service or dependency, only in-process pure functions.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "The only applicable concern is input validation: strict exact-match against the option list after trim(), with a RangeError for anything else. There is no authentication or authorisation, and there are no secrets.",
+      "source": "JOB-parallel.md, C1 + C5",
+      "quote": "Matching is exact and case-sensitive after trimming"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "The slice handles only dropdown option strings. No personal data is involved and nothing is logged or stored.",
+      "source": "JOB-parallel.md, C6",
+      "quote": "this slice only maps the option to a WL."
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "The request does not ask for auditing, and the slice performs no actions or changes to audit.",
+      "source": "JOB-parallel.md, C6",
+      "quote": "this slice only maps the option to a WL."
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "No logging, metrics or tracing is requested for pure functions with no I/O.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "n_a",
+      "answer": "The request names no regulation or policy constraining this slice. It only maps options to the WL levels of the POC.",
+      "source": "JOB-parallel.md, header",
+      "quote": "Build only these two requirements."
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests by the dev, TDD, with node:test and node:assert/strict, in test/indicators/daysWithDelay.test.mjs and test/indicators/delayCount.test.mjs. QA covers the acceptance criteria end to end (every option -> WL, every invalid-input class -> RangeError). `node --test` runs everything. No coverage target is stated.",
+      "source": "CLAUDE.md",
+      "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`."
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "The only check is `node --test`, which must pass. No linter, typechecker or scan is configured in the repo.",
+      "source": "package.json",
+      "quote": "\"test\": \"node --test\""
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "n_a",
+      "answer": "There is nothing to deploy: it is a library slice consumed later by the POC screens, with no feature flag, migration or rollback. It merges locally into the job branch.",
+      "source": "JOB-parallel.md, C4",
+      "quote": "built later by other parts"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "The request asks for no documentation, changelog or runbook. The contract names the exported options and functions, which is enough.",
+      "source": "JOB-parallel.md, Contract",
+      "quote": "Plain Node ESM, no dependencies; tests with `node --test`."
+    },
+    {
+      "id": "X-option-semantics",
+      "status": "decided",
+      "answer": "The options overlap as thresholds (>3, >60 and >90 days are nested), but the slice does not derive the option from a day count. The caller picks the option and the function maps it only to a WL, so the overlap needs no handling here.",
+      "source": "JOB-parallel.md, C6",
+      "quote": "The caller counts the delays in the last 12 months and picks the option; this slice only maps the option to a WL."
+    },
+    {
+      "id": "X-options-export",
+      "status": "decided",
+      "answer": "The dropdown is met by the exported option lists, which hold exactly the strings in C1, in the order of the Contract: DAYS_WITH_DELAY_OPTIONS = [\"no delay\",\"<=3 days\",\">3 days\",\">60 days\",\">90 days\"], DELAY_COUNT_OPTIONS = [\"0\",\"1\",\">1\"].",
+      "source": "JOB-parallel.md, C4 + Contract",
+      "quote": "`export const DAYS_WITH_DELAY_OPTIONS` (the 5 strings, in order)"
+    },
+    {
+      "id": "X-error-message",
+      "status": "open",
+      "question": "What should the RangeError message say? C1 and C5 fix the error type only, not the message.",
+      "options": [
+        "Free-form but informative, naming the indicator and the rejected value, e.g. Indicator 2: unsupported option \">3 Days\"",
+        "A fixed string agreed with the business"
+      ],
+      "impact": "Neither option changes the mapping or the thrown type. Tests must assert only instanceof RangeError (not the message), so devs and QA stay consistent. If a consumer later parses the message, that would become a contract.",
+      "owner": "pm"
+    },
+    {
+      "id": "X-options-immutability",
+      "status": "open",
+      "question": "Should the exported *_OPTIONS arrays be frozen (Object.freeze) or plain arrays?",
+      "options": [
+        "Frozen: a consumer cannot corrupt the shared option list",
+        "Plain arrays: simpler, the contract only says \"export const\""
+      ],
+      "impact": "An internal-safety detail only. Reading the arrays, their order and their contents are the same either way. Tests may assert order and content, not frozenness.",
+      "owner": "pm"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "indicator-days-with-delay",
+        "kind": "library",
+        "stack": ["javascript", "node", "esm"],
+        "path": ["src/indicators/daysWithDelay.mjs", "test/indicators/daysWithDelay.test.mjs"],
+        "owner": "backend",
+        "reviewer": "reviewer-typescript",
+        "notes": "REQ-03-02. Exports DAYS_WITH_DELAY_OPTIONS and daysWithDelayWl(option) -> 0|2|3|4. Pure, no dependencies."
+      },
+      {
+        "id": "indicator-delay-count",
+        "kind": "library",
+        "stack": ["javascript", "node", "esm"],
+        "path": ["src/indicators/delayCount.mjs", "test/indicators/delayCount.test.mjs"],
+        "owner": "backend",
+        "reviewer": "reviewer-typescript",
+        "notes": "REQ-03-03. Exports DELAY_COUNT_OPTIONS and delayCountWl(option) -> 0|1|2. Pure, no dependencies. Independent of indicator-days-with-delay, so it can be built in parallel."
+      }
+    ]
+  }
+}
