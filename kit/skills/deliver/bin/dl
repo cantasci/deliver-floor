@@ -71,7 +71,8 @@
 #   dl jobs                        jobs known on this machine (registry)
 #   dl seats                       role seats: busy / IDLE, and the card each idle seat should take
 #   dl kanban [--html <file>]      the board as kanban columns (To Do · In Progress · QA · Code Review · Done)
-#   dl tracker [open|sync]         mirror the cards into settings.tracker.kind (local | jira) — automatic on every step
+#   dl tracker [open|sync|check]   mirror the cards into settings.tracker.kind (local | jira | asana | linear | github) —
+#                                  automatic on every step; check: before any job, is the tracker reachable and set up?
 #
 # Env: DELIVER_JOB=<id> targets that job instead of .work/ACTIVE · DELIVER_HOME (default ~/.deliver) holds the
 #      job registry the hooks use · HIVE_ROOT is set by Munder Difflin (md-dispatch).

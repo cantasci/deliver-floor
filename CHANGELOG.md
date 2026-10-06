@@ -16,6 +16,15 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
   update leaves behind.
 - `dl` is on Claude Code's PATH (the plugin's `bin/`): Michael and Claude call it by name.
 
+**Asana, Linear and GitHub Projects as trackers** (beside Jira and the local kanban)
+- `"tracker": {"kind": "asana" | "linear" | "github"}`: in your existing project, team or project board, the job becomes one
+  item and every card an item under it, `depends_on` the tool's own dependency, the columns move with the card, every role's
+  result is a comment, the branch is in the description (Linear: the issue identifier is in the branch name).
+- `dl tracker check`, `/deliver:doctor` and `scripts/doctor.sh` ask the tool first — the sign-in, the board, a column for every
+  stage; a missing column is named and never added to your board (map it with `tracker.columns`).
+- Built from each vendor's official API description and checked call by call against it (`tests/tracker-apis/run.sh`); not
+  yet run against a real account. Trello is not included yet: its API reference is not reachable from where this was built.
+
 **Your commands are slash commands — no `dl` in a terminal**
 - `/deliver:status`, `/deliver:board`, `/deliver:seats`, `/deliver:timeline`, `/deliver:answer <id> <answer>`,
   `/deliver:approve`, `/deliver:reject <what>`, `/deliver:retry <card>`, `/deliver:mode munder|subagent <why>`,

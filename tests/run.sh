@@ -932,6 +932,65 @@ contains "…and must name the branch" "$(pg "git push")" "rc=2"
 kill $JPID 2>/dev/null; unset JIRA_BASE_URL JIRA_EMAIL JIRA_API_TOKEN
 "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
+# Asana, Linear, GitHub Projects: the same contract as Jira, each against a stub of its vendor's API (tests/tracker-stubs.mjs)
+tracker_contract() { # tracker_contract <kind> <credential var> '<tracker.<kind> settings>' <key in the branch: 1|0>
+  local k=$1 cred=$2 cfg=$3 keyed=$4 pid; local TS="$TMP/$k-state.json" TC="$TMP/$k-cols" TP="$TMP/$k.port" TR="$TMP/$k-repo"
+  echo "tracker: $k (contract stub) — check, open, columns, dependencies, comments, branch"
+  local saved_gh=${GH_TOKEN:-}; unset GH_TOKEN   # a real token of this machine never reaches the stub, nor hides a missing one
+  : > "$TP"; rm -f "$TC"; STUB_COLUMNS_FILE="$TC" node "$HERE/tests/tracker-stubs.mjs" "$k" "$TS" > "$TP" & pid=$!
+  for _ in $(seq 50); do grep -q listening "$TP" && break; sleep 0.1; done
+  local port; port="$(awk '{print $2}' "$TP")"
+  export ASANA_BASE_URL="http://127.0.0.1:$port/api/1.0" LINEAR_API_URL="http://127.0.0.1:$port/graphql" GITHUB_API_URL="http://127.0.0.1:$port"
+  export "$cred=t0ken-$k"
+  mkdir -p "$TR" && cd "$TR" && git init -q -b main
+  jq -n --arg k "$k" --argjson c "$cfg" '{dispatch:"subagent",verify_full:"true",merge_mode:"local",tracker:{kind:$k, ($k):$c}}' > .deliver.json && git add -A && git commit -qm i
+  local out rc=0; out="$("$DL" tracker check 2>&1)" || rc=$?
+  [[ $rc == 0 && $out == *"ok   signed in to "* && $out == *"for every column"* ]] && ok "$k: dl tracker check — signed in, the board, a column for every stage" || bad "$k check: rc=$rc $out"
+  contains "$k: …a missing credential is named" "$(env -u "$cred" "$DL" tracker check 2>&1)" "credentials missing: $cred"
+  echo "To Do,In Progress,Code Review,Done,Blocked,Won't Do" > "$TC"; rc=0; out="$("$DL" tracker check 2>&1)" || rc=$?
+  [[ $rc == 1 && $out == *"qa → 'QA'"* ]] && ok "$k: …a board without a column fails, naming it — nothing is added to your board" || bad "$k missing column: rc=$rc $out"
+  rm -f "$TC"
+  contains "$k: doctor runs the same check" "$("$HERE/scripts/doctor.sh" "$TR" 2>&1)" "$k: signed in to "
+  contains "$k: …and names a missing credential" "$(env -u "$cred" "$HERE/scripts/doctor.sh" "$TR" 2>&1)" "tracker $k: set $cred"
+  "$DL" new "$k flow" "x" >/dev/null; local TJ2="$TR/.work/$(cat .work/ACTIVE)"
+  "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+  "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+  printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$TJ2/specs/T-01.md"; cp "$TJ2/specs/T-01.md" "$TJ2/specs/T-02.md"
+  jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+    verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"ctx",attempts:0,notes:[]},
+    {id:"T-02",title:"two",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:["T-01"],scope:["lib/**"],qa_scope:["it2/**"],
+    verify:"test -d lib",qa_verify:"test -d it2",acceptance:["AC-1: y"],context:"ctx2",attempts:0,notes:[]}]}' > "$TJ2/board.json"
+  "$DL" phase executing >/dev/null
+  local ts; ts() { jq -r "$1" "$TS"; }
+  local i1 i2; i1="$(ts '.items | to_entries[] | select(.value.title | startswith("T-01")) | .key')"; i2="$(ts '.items | to_entries[] | select(.value.title | startswith("T-02")) | .key')"
+  [[ "$(ts '.container.title')" == "$k flow" && -n $i1 && -n $i2 && "$(ts ".items[\"$i1\"].parent | tostring")" == "$(ts '.container.id | tostring')" ]] \
+    && ok "$k: executing opens the job and one item per card under it, in your existing board" || bad "$k open: $(cat "$TS" | head -c 600)"
+  [[ "$(ts ".items[\"$i2\"].blocked_by | map(tostring) | join(\",\")")" == "$(jq -r '.cards[0].tracker | (.number // .id) | tostring' "$TJ2/board.json")" ]] \
+    && ok "$k: T-02 depends_on T-01 becomes the tool's own dependency" || bad "$k dependency: $(ts ".items[\"$i2\"].blocked_by")"
+  [[ "$(ts ".items[\"$i1\"].column")" == "To Do" ]] && ok "$k: a ready card is in To Do" || bad "$k column at open: $(ts ".items[\"$i1\"].column")"
+  local W; W="$("$DL" wt add T-01)"
+  if [[ $keyed == 1 ]]; then [[ "$(jq -r '.cards[0].branch' "$TJ2/board.json")" == *"--T-01-$(jq -r '.cards[0].tracker.key' "$TJ2/board.json")" ]] && ok "$k: the card branch carries the issue key" || bad "$k branch: $(jq -r '.cards[0].branch' "$TJ2/board.json")"; fi
+  [[ "$(ts ".items[\"$i1\"].column")" == "In Progress" ]] && ok "$k: assignment → In Progress" || bad "$k after assign: $(ts ".items[\"$i1\"].column")"
+  ts ".items[\"$i1\"].body" | gq "Development: branch" && ok "$k: the branch is in the description" || bad "$k description"
+  mkdir -p "$W/src" && echo 1 > "$W/src/a" && git -C "$W" add -A && git -C "$W" commit -qm "T-01"
+  "$DL" gate T-01 >/dev/null; [[ "$(ts ".items[\"$i1\"].column")" == QA ]] && ok "$k: gate PASS → QA" || bad "$k after gate: $(ts ".items[\"$i1\"].column")"
+  mkdir -p "$W/it" && echo 1 > "$W/it/t" && git -C "$W" add -A && git -C "$W" commit -qm "T-01 QA"
+  "$DL" qa T-01 pass "AC-1 pass" >/dev/null; [[ "$(ts ".items[\"$i1\"].column")" == "Code Review" ]] && ok "$k: QA pass → Code Review" || bad "$k after qa: $(ts ".items[\"$i1\"].column")"
+  "$DL" review T-01 approve "ok" >/dev/null; "$DL" integrate T-01 >/dev/null
+  [[ "$(ts ".items[\"$i1\"].column")" == Done ]] && ok "$k: merge → Done" || bad "$k after integrate: $(ts ".items[\"$i1\"].column")"
+  ts ".items[\"$i1\"].comments | join(\" \")" | gq "qa-tester" && ts ".items[\"$i1\"].comments | join(\" \")" | gq "reviewer\]" \
+    && ok "$k: the roles' results are comments (gate, QA, review, assignment)" || bad "$k comments: $(ts ".items[\"$i1\"].comments")"
+  echo "To Do,In Progress,Code Review,Done,Blocked" > "$TC"
+  local W2; W2="$("$DL" wt add T-02)"; mkdir -p "$W2/lib" && echo 1 > "$W2/lib/a" && git -C "$W2" add -A && git -C "$W2" commit -qm "T-02"
+  out="$("$DL" gate T-02 2>&1)"; contains "$k: a column removed mid-job is reported, the gate result stands" "$out" "'QA'"
+  [[ "$(jq -r '.cards[1].gate.result' "$TJ2/board.json")" == PASS ]] && ok "$k: …board.json is unaffected" || bad "$k gate record"
+  kill $pid 2>/dev/null; unset "$cred" ASANA_BASE_URL LINEAR_API_URL GITHUB_API_URL; [[ -z $saved_gh ]] || export GH_TOKEN=$saved_gh
+  "$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+}
+tracker_contract asana ASANA_TOKEN '{"project":"1200"}' 0
+tracker_contract linear LINEAR_API_KEY '{"team":"WL"}' 1
+tracker_contract github GITHUB_TOKEN '{"repo":"acme/demo","project":7}' 0
+
 echo "ECC specialists: decisions bring their reviewers; every reviewer must approve"
 EC="$TMP/ecc"; mkdir -p "$EC" && cd "$EC" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "spec" "x" >/dev/null; EJ="$EC/.work/$(cat .work/ACTIVE)"

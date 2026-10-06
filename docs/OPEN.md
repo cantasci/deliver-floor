@@ -68,7 +68,8 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | # | What | Why not here |
 | --- | --- | --- |
 | O1 | Seats and roles on non-Claude CLIs (Codex, Gemini, Grok, …) | no credentials for those vendors in this environment; covered by contract tests (`dl md-dispatch` / spawn requests) |
-| O2 | Jira against a live site | no Jira credentials; covered by the contract stub (`tests/jira-stub.mjs`), including `dl tracker check` (sign-in, project, issue types, a status per column, "Blocks") and doctor's credential check |
+| O2 | Jira, Asana, Linear and GitHub Projects against a live account | no accounts here (and this environment's network allows none of those APIs); each is covered by a contract stub (`tests/jira-stub.mjs`, `tests/tracker-stubs.mjs`) through the real `dl` flow, including `dl tracker check` and doctor's credential check. Asana, Linear and GitHub Projects were also checked call by call against the vendors' official API descriptions ([10-trackers](verification/10-trackers/report.md); `tests/tracker-apis/run.sh` repeats it) |
+| O4 | **Trello** | requested; not built — its official API reference (developer.atlassian.com) is blocked by this environment's network policy, and it is not written from memory. Allow `developer.atlassian.com` (and `api.trello.com` for a live test) in the environment's network settings to build it the same way |
 | O3 | Claude through Bedrock, Vertex or an LLM gateway (`ANTHROPIC_BASE_URL`, e.g. another vendor's models behind LiteLLM) | no such accounts here; Claude Code's own settings, passed through unchanged — doctor names the one in use (`tests/run.sh`) |
 
 ## Delivery

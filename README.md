@@ -183,26 +183,30 @@ Put the variables in `~/.claude/settings.json` → `"env"` (every session, the f
   whoever calls it ([04 § Models and CLIs per role](docs/04-roles.md#models-and-clis-per-role)).
 - **Another vendor's model inside Claude Code** — through a gateway (above); the subagent mode works too.
 
-### Jira
+### Jira, Asana, Linear, GitHub Projects
 
-1. Credentials go in the environment, never in a file you commit. **Cloud:** `JIRA_BASE_URL=https://<site>.atlassian.net`,
-   `JIRA_EMAIL`, `JIRA_API_TOKEN` (id.atlassian.com → Security → API tokens). **Data Center:** `JIRA_BASE_URL`, `JIRA_PAT`,
-   and `"api_version": "2"`. Use a bot user that may browse, create, edit, transition, comment and link in the project.
-2. In `.deliver.json`: `"tracker": {"kind": "jira", "jira": {"project": "WL"}}`.
-3. Check the connection before any job: `scripts/doctor.sh <repo>` (it runs `dl tracker check`). It confirms the sign-in, the
-   project, the Epic and Task issue types, a workflow status for every column (To Do, In Progress, QA, Code Review, Done,
-   Blocked, Won't Do), and the "Blocks" link type. Anything missing is named; your columns can be mapped to your workflow's
-   own status names with `tracker.columns`.
+The cards can live in the tool your team already watches — in your existing board, never a new one: `"tracker": {"kind":
+"jira" | "asana" | "linear" | "github", …}` in `.deliver.json`, the credentials in the environment (never in a file you
+commit). Michael then opens the job and a card per card under it, moves them as the roles finish their steps, and posts each
+gate, QA and review result as a comment.
 
-Michael then opens an Epic per job and a Task per card, moves them as the roles finish their steps, and posts each gate,
-QA and review result as a comment. The card branch carries the issue key, so Jira's Development panel shows it. Details:
-[10-trackers](docs/10-trackers.md#jira).
+| Tool | `.deliver.json` | Credentials |
+| --- | --- | --- |
+| Jira | `"jira": {"project": "WL"}` | Cloud: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` · Data Center: `JIRA_BASE_URL`, `JIRA_PAT`, `"api_version": "2"` |
+| Asana | `"asana": {"project": "<project gid>"}` | `ASANA_TOKEN` |
+| Linear | `"linear": {"team": "ENG"}` | `LINEAR_API_KEY` |
+| GitHub Projects | `"github": {"repo": "acme/app", "project": 7}` | `GITHUB_TOKEN` (or `GH_TOKEN`) |
+
+Check it before any job with `scripts/doctor.sh <repo>` (or `/deliver:doctor`): the sign-in, the project or team, and a
+column for every stage (To Do, In Progress, QA, Code Review, Done, Blocked, Won't Do). A missing column is named, never
+added to your board — add it there, or map the stage to your own name with `tracker.columns`. Details:
+[10-trackers](docs/10-trackers.md).
 
 ## Extend it
 
 | To add | Do | Guide |
 | --- | --- | --- |
-| another tracker (Linear, Azure Boards, GitHub Projects…) | one class with `open`, `sync`, `note`, `branch` (and optionally `check`) in `kit/skills/deliver/bin/trackers/<name>.mjs`, then `"tracker": {"kind": "<name>"}` — nothing else changes | [10 § Adding a tracker](docs/10-trackers.md#adding-a-tracker-linear-azure-boards-github-projects-) |
+| another tracker (Trello, Azure Boards…) | one class with `open`, `sync`, `note`, `branch` (and optionally `check`) in `kit/skills/deliver/bin/trackers/<name>.mjs`, then `"tracker": {"kind": "<name>"}` — nothing else changes | [10 § Adding a tracker](docs/10-trackers.md#adding-a-tracker-linear-azure-boards-github-projects-) |
 | a role (data, devops…) | an entry in `roles.yaml` and an agent in `kit/agents/` (or an ECC agent) | [04 § Adding a role](docs/04-roles.md#adding-a-role-example-data) |
 | your company's standards | Markdown files with a `## Must` list; every matching role gets them in its role card | [08 § A standard](docs/08-knowledge.md#1-a-standard) |
 | a default per project | a key in `.deliver.json` (validated by its schema) | [03-settings](docs/03-settings.md) |
@@ -238,7 +242,7 @@ Every claim above was run, live, with real Claude Code sessions and real agents 
 | [07-munder-difflin](docs/07-munder-difflin.md) | the office floor: choosing the mode, seats, failed seats and re-seating, authentication |
 | [08-knowledge](docs/08-knowledge.md) | company standards, lessons, the floor's Knowledge Graph and MemPalace |
 | [09-testing](docs/09-testing.md) | the test layers and how to run them |
-| [10-trackers](docs/10-trackers.md) | local kanban, Jira, adding a tracker |
+| [10-trackers](docs/10-trackers.md) | local kanban, Jira, Asana, Linear, GitHub Projects, adding a tracker |
 | [11-multiple-projects](docs/11-multiple-projects.md) | several projects on one floor — what works, what is still open |
 | [OPEN](docs/OPEN.md) | everything not done or not verified yet — the one list |
 

@@ -205,12 +205,18 @@ if [[ -n $repo ]]; then
     elif have "$bin"; then pass "role $role runs on $prov ($(command -v "$bin")) — signed in with its own login or key (not checked)"
     else fail "role $role runs on $prov but '$bin' is not on PATH — install and sign in to it, or drop the provider"; fi
   done < <(jq -r '(.roles // {}) | to_entries[] | select((.value.provider // "claude") != "claude") | [.key, .value.provider] | @tsv' <<<"$eff")
-  if [[ "$(jq -r '.tracker.kind // "local"' <<<"$eff")" == jira ]]; then
-    if [[ -z ${JIRA_BASE_URL:-} ]] || [[ -z ${JIRA_PAT:-} && ( -z ${JIRA_EMAIL:-} || -z ${JIRA_API_TOKEN:-} ) ]]; then
-      fail "tracker jira: set JIRA_BASE_URL and JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center) — docs/10-trackers.md#jira"
+  tk="$(jq -r '.tracker.kind // "local"' <<<"$eff")"; need=""
+  case $tk in
+    jira)   [[ -z ${JIRA_BASE_URL:-} ]] || [[ -z ${JIRA_PAT:-} && ( -z ${JIRA_EMAIL:-} || -z ${JIRA_API_TOKEN:-} ) ]] && need="JIRA_BASE_URL and JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center)" ;;
+    asana)  [[ -n ${ASANA_TOKEN:-} ]] || need="ASANA_TOKEN (a personal access token)" ;;
+    linear) [[ -n ${LINEAR_API_KEY:-} ]] || need="LINEAR_API_KEY" ;;
+    github) [[ -n ${GITHUB_TOKEN:-}${GH_TOKEN:-} ]] || need="GITHUB_TOKEN (or GH_TOKEN) with access to the repo's issues and the project" ;;
+  esac
+  if [[ $tk != local ]]; then
+    if [[ -n $need ]]; then fail "tracker $tk: set $need — docs/10-trackers.md#$tk"
     else
       tf="$(mktemp)"; printf '%s' "$eff" > "$tf"
-      while IFS= read -r l; do case $l in "ok   "*) pass "jira: ${l#ok   }" ;; *) fail "jira: ${l#FAIL }" ;; esac; done < <(node "$KIT/bin/tracker-cli.mjs" check "$tf" 2>&1)
+      while IFS= read -r l; do case $l in "ok   "*) pass "$tk: ${l#ok   }" ;; *) fail "$tk: ${l#FAIL }" ;; esac; done < <(node "$KIT/bin/tracker-cli.mjs" check "$tf" 2>&1)
       rm -f "$tf"
     fi
   fi
