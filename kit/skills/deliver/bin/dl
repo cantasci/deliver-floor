@@ -706,12 +706,28 @@ cmd_knowledge() {
 # .deliver.json "roles": {"backend": {"model": "sonnet", "count": 2}, …} — the project's defaults per role. A role entry that
 # names its own model/provider/count (from the request, or the human at the start) keeps it.
 apply_role_defaults() {
-  local d; d="$(jq -c '.settings.roles // {}' "$JOBJ")"; [[ $d != "{}" ]] || return 0
-  local before; before="$(jq -c '.roles // []' "$JOBJ")"
-  jq_inplace "$JOBJ" '. as $j | if (.roles | type) == "array" then .roles |= map(. as $x
-    | ((($j.settings.roles // {})[$x.role] // {}) | {model, provider, count} | with_entries(select(.value != null))) + $x) else . end'
-  local after; after="$(jq -c '.roles // []' "$JOBJ")"
-  [[ $before == "$after" ]] || log_event roles-defaults "from .deliver.json: $(jq -r --argjson d "$d" '[.roles[] | select($d[.role]) | "\(.role): " + ([($d[.role] | to_entries[] | select(.key == "model" or .key == "provider" or .key == "count")) | "\(.key) \(.value)"] | join(", "))] | join(" · ")' "$JOBJ")"
+  local d; d="$(jq -c '.settings.roles // {}' "$JOBJ")"
+  if [[ $d != "{}" ]]; then
+    local before; before="$(jq -c '.roles // []' "$JOBJ")"
+    jq_inplace "$JOBJ" '. as $j | if (.roles | type) == "array" then .roles |= map(. as $x
+      | ((($j.settings.roles // {})[$x.role] // {}) | {model, provider, count} | with_entries(select(.value != null))) + $x) else . end'
+    local after; after="$(jq -c '.roles // []' "$JOBJ")"
+    [[ $before == "$after" ]] || log_event roles-defaults "from .deliver.json: $(jq -r --argjson d "$d" '[.roles[] | select($d[.role]) | "\(.role): " + ([($d[.role] | to_entries[] | select(.key == "model" or .key == "provider" or .key == "count")) | "\(.key) \(.value)"] | join(", "))] | join(" · ")' "$JOBJ")"
+  fi
+  # QA seats follow the developer seats (one QA per dev seat) unless a count was given for QA — measured: one QA seat for
+  # two devs was busy 56 % of a job while the devs waited on it. count_auto marks a count set here, so it follows changes.
+  [[ "$(jq -r '(.roles // []) | type' "$JOBJ")" == array ]] || return 0
+  local qa devs; qa="$(jq -c '[.roles[] | select(.role == "qa")] | first // empty' "$JOBJ")"
+  [[ -n $qa ]] && [[ "$(jq -r '(.count == null) or (.count_auto == true)' <<<"$qa")" == true ]] || return 0
+  devs="$(node "$BIN_DIR/roles.mjs" dev-seats "$JOBJ" 2>/dev/null || echo 1)"
+  [[ $devs =~ ^[0-9]+$ ]] || devs=1
+  if [[ $devs -gt 1 && "$(jq -r '.count // 1' <<<"$qa")" != "$devs" ]]; then
+    jq_inplace "$JOBJ" --argjson n "$devs" '.roles |= map(if .role == "qa" then .count = $n | .count_auto = true else . end)'
+    log_event roles-defaults "qa: $devs seats — one per developer seat"
+  elif [[ $devs -le 1 && "$(jq -r '.count_auto // false' <<<"$qa")" == true ]]; then
+    jq_inplace "$JOBJ" '.roles |= map(if .role == "qa" then del(.count, .count_auto) else . end)'
+  fi
+  return 0
 }
 cmd_roles() { load_job; node "$BIN_DIR/roles.mjs" render "$JOB_DIR" && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
 

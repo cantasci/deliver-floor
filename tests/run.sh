@@ -672,7 +672,12 @@ contains "dl config shows what applies (kit defaults ⊕ .deliver.json)" "$(cd "
 (cd "$PC" && AGENT_ID=god "$DL" phase aborted >/dev/null 2>&1; AGENT_ID=god "$DL" cleanup --all >/dev/null 2>&1; jq '.roles = {"backend":{"model":"haiku","count":2},"qa":{"model":"sonnet"}}' .deliver.json > x && mv x .deliver.json && AGENT_ID=god "$DL" new t2 r2 >/dev/null 2>&1)
 (cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x"},{"role":"qa","agent":"qa-tester","why":"y","model":"opus"}]' >/dev/null)
 PJ="$PC/.work/$(cat "$PC/.work/ACTIVE")/job.json"
-contains "per-role defaults from .deliver.json reach the job's roles" "$(jq -c '[.roles[] | {role,model,count}]' "$PJ")" '[{"role":"backend","model":"haiku","count":2},{"role":"qa","model":"opus","count":null}]'
+contains "per-role defaults from .deliver.json reach the job's roles — and QA gets one seat per developer seat" "$(jq -c '[.roles[] | {role,model,count}]' "$PJ")" '[{"role":"backend","model":"haiku","count":2},{"role":"qa","model":"opus","count":2}]'
+contains "…logged" "$(grep $'\troles-defaults\t' "$(dirname "$PJ")/events.log")" "qa: 2 seats — one per developer seat"
+(cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":3},{"role":"qa","agent":"qa-tester","why":"y","count":1}]' >/dev/null)
+contains "…a QA count somebody gave is kept" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[1]'
+(cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":1},{"role":"qa","agent":"qa-tester","why":"y"}]' >/dev/null)
+contains "…one developer seat: one QA seat" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[null]'
 contains "…a role that names its own model keeps it (qa: opus from the request, not the default sonnet), logged" "$(grep $'\troles-defaults\t' "$PC/.work/$(cat "$PC/.work/ACTIVE")/events.log")" "backend: model haiku, count 2"
 contains "the human switches the job to subagents by hand (dl dispatch)" "$(env -u AGENT_ID "$DL" dispatch subagent "leave the floor for the rest of the tests" 2>&1)" "now runs with dispatch subagent"
 contains "…logged with who and why" "$(grep $'\tdispatch\t' "$R/.work/$JOB/events.log" | tail -1)" "subagent — leave the floor"

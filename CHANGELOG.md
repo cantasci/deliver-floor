@@ -4,6 +4,19 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.6.0 — 2026-10-06
+
+**Faster: nobody waits on QA**
+- `dl timeline`: where a job's time went — phases, each seat's or agent's busy time and share, every card from assignment
+  to merge, and the time nobody worked. From the event log only (subagent runs are now measured too).
+- QA writes a card's tests from its spec **while the developer builds it** (`qa_early`, on by default): `dl next` says
+  QA-WRITE at assignment, `dl wt qa` gives QA its own worktree, `dl qa-join` brings the tests onto the card after the gate,
+  and QA then only runs them. Measured before: QA started only after the developer and took 1–3 minutes per card.
+- One QA seat per developer seat unless a QA count is given (measured: one QA for two developers was busy 56 % of a job
+  while the developers waited).
+- Fixed: `dl next` and `dl md-inbox` read tab-separated fields, and bash merged empty ones — values shifted into the wrong
+  place.
+
 ## 0.5.0 — 2026-10-05
 
 **Lessons and standards live in git, shared through PRs**
