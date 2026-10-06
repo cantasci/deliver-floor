@@ -113,6 +113,21 @@ EJ='{"phase":"intake","stack":[],"roles":[{"role":"ba","agent":"business-analyst
 contains "a repo without code may start with no stack reviewer (the language is decided at readiness)…" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; console.log(JSON.stringify(checkJobRoles($EJ, loadCatalog())))")" '[]'
 contains "…but not into planning" "$(node --input-type=module -e "import {checkJobRoles, loadCatalog} from '$HERE/kit/skills/deliver/bin/roles.mjs'; const j=$EJ; j.phase='planning'; console.log(JSON.stringify(checkJobRoles(j, loadCatalog())))")" "no stack reviewer selected"
 contains "the stack check is in the playbook: no default language, the best fit for the requirements" "$(cat "$HERE/kit/skills/deliver/SKILL.md")" "never pick one by default"
+# Items that shape the product (ask: human) — settled by the request's own words or the human, never a repo convention or the PM
+echo 'Pure functions, no I/O.' > "$R/CONV.md"
+jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])}
+    | (.items[] | select(.id=="ARC-data")) |= {id, status:"n_a", answer:"no store", source:"CONV.md", quote:"Pure functions, no I/O."}
+    | (.items[] | select(.id=="ARC-style")) |= (.source = "CONV.md" | .quote = "Pure functions")
+    | (.items[] | select(.id=="ARC-ui")) |= {id, status:"open", owner:"pm", question:"Is there a UI?"}
+    | (.items[] | select(.id=="ARC-deps")) |= {id, status:"decided", answer:"no new dependencies", source:"CONV.md", quote:"Pure functions"}
+    | (.items[] | select(.id=="ARC-stack")) |= (.source = "human: ana 2026-10-05" | del(.quote))' "$TMP/appl.json" > "$RJ/readiness.json"
+out="$("$DL" readiness 2>&1)"
+contains "a product-shaping item may not be n/a because of a repo convention (seen live: no database, from CLAUDE.md)" "$out" "ARC-data: n_a from words that are not in the request"
+contains "…nor be decided from a repo file" "$out" "ARC-style: decided from words that are not in the request"
+contains "…nor be left to the PM" "$out" "ARC-ui: open for the PM"
+[[ $out != *"ARC-stack:"* && $out != *"ARC-components:"* ]] && ok "…while the human's answer or the request's own words settle it" || bad "product-shaping item refused: $out"
+contains "new dependencies are the human's call too: not ruled out by a repo convention" "$out" "ARC-deps: decided from words that are not in the request"
+contains "dl decide refuses a product-shaping item even when it is marked pm" "$("$DL" decide ARC-ui "no UI" "x" 2>&1)" "belongs to the business"
 printf 'Orders are kept for 90 days.\n' > "$R/RETENTION.md"
 jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])} | .items[0].source = "RETENTION.md" | .items[0].quote = "kept for 90   days"' "$TMP/appl.json" > "$RJ/readiness.json"
 out="$("$DL" readiness 2>&1)"; [[ $out != *"quote not found"* ]] && ok "a quote from the repo file named in the source counts (whitespace-insensitive)" || bad "repo-file quote: $out"
@@ -1345,6 +1360,14 @@ contains "a reinstall keeps the user's changes to the installed config" "$out" "
 cmp -s "$IC" "$SDIR/config.json" && ok "…and the installed config is the shipped defaults again" || bad "installed config not reset: $(diff "$IC" "$SDIR/config.json" | head -5)"
 out="$("$INST" --user 2>&1)"; [[ $out == *"unchanged: $HOME/.claude/skills/deliver"* && $out != *"kept your settings"* ]] \
   && ok "an untouched reinstall moves nothing" || bad "untouched reinstall: $out"
+sleep 1; jq '.munder.model = "haiku"' "$IC" > "$IC.t" && mv "$IC.t" "$IC"   # edited again later, in the installed copy
+"$INST" --user >/dev/null 2>&1
+[[ "$(jq -c . "$DELIVER_HOME/config.json")" == '{"dispatch":"subagent","munder":{"model":"haiku"}}' ]] \
+  && ok "…the newer edit wins: a later change in the installed copy updates the user file, the rest stays" || bad "newer edit lost: $(cat "$DELIVER_HOME/config.json")"
+cmp -s "$IC" "$SDIR/config.json" && ok "…and several reinstalls within one second each still reset the installed config" || bad "installed config not reset (2)"
+sleep 1; jq '.munder.model = "opus"' "$DELIVER_HOME/config.json" > "$DELIVER_HOME/c.t" && mv "$DELIVER_HOME/c.t" "$DELIVER_HOME/config.json"
+"$INST" --user >/dev/null 2>&1
+[[ "$(jq -r .munder.model "$DELIVER_HOME/config.json")" == opus ]] && ok "…and an edit of the user file itself is never undone by a reinstall" || bad "user file edit undone: $(cat "$DELIVER_HOME/config.json")"
 # dl reads the user's settings over the shipped defaults, and a repo's .deliver.json over both
 for u in u1 u2; do mkdir -p "$TMP/$u" && git -C "$TMP/$u" init -q -b main && git -C "$TMP/$u" commit -q --allow-empty -m i; done
 echo '{"dispatch":"munder"}' > "$TMP/u2/.deliver.json"

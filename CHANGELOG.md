@@ -20,6 +20,12 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
   another `dl` was writing looked like tampering — now checked again once the writer is done; `dl md-release` sends each
   seat home once.
 
+**Readiness asks the human what shapes the product**
+- The items that shape the product — scope, architecture style and components, a UI (and which), an API layer, a
+  database, new dependencies, integrations, deployment — are decided only from the request's own words or the human's
+  answer; a repo file, a convention or a PM decision is refused. Michael alone asks; the BA marks them open for him.
+- `install.sh` moves settings from the installed config to `~/.deliver/config.json` only when that copy was really edited.
+
 Measured on the floor, same request with two developer seats: 26.5 min → **10.1 min**; each card assigned → merged in about
 3 minutes.
 

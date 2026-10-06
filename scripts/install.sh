@@ -95,22 +95,26 @@ fi
 # keeps it. "Changed" = differs from the defaults installed last time (recorded below), not from today's defaults.
 user_cfg="${DELIVER_HOME:-$HOME/.deliver}/config.json"; defaults_rec="${DELIVER_HOME:-$HOME/.deliver}/config.installed-defaults.json"
 keep_user_settings() {
-  local old="$target/skills/deliver/config.json" base="$KIT/skills/deliver/config.json" diff
+  local old="$target/skills/deliver/config.json" base="$KIT/skills/deliver/config.json" cur='{}' new
   [[ -f $old ]] || return 0
   [[ -f $defaults_rec ]] && base="$defaults_rec"
-  diff="$(jq -n --slurpfile o "$old" --slurpfile n "$base" '
+  # Untouched since it was installed (same content as the defaults installed then): nothing of the user's is in it.
+  [[ "$(jq -n --slurpfile o "$old" --slurpfile n "$base" '$o[0] == $n[0]' 2>/dev/null)" == true ]] && return 0
+  [[ -f $user_cfg ]] && cur="$(cat "$user_cfg")"
+  # Edited: what differs from those defaults is the user's. Where both say something, the newer edit wins — the installed
+  # copy's change when it was made after the user file, else the user file. (A value set back to its default in the
+  # installed copy cannot be told from "untouched": the place to change a setting is the user file.)
+  new="$(jq -n --slurpfile o "$old" --slurpfile n "$base" --argjson u "$cur" --argjson newer "$([[ -f $user_cfg && $old -nt $user_cfg ]] && echo true || echo false)" '
     def d(o; n): reduce (o | keys[]) as $k ({};
       if (n | has($k) | not) then .[$k] = o[$k]
       elif o[$k] == n[$k] then .
       elif (o[$k] | type) == "object" and (n[$k] | type) == "object" then (d(o[$k]; n[$k])) as $v | if $v == {} then . else .[$k] = $v end
       else .[$k] = o[$k] end);
-    d($o[0]; $n[0])')" || return 0
-  [[ $diff != "{}" ]] || return 0
-  if [[ $dry -eq 1 ]]; then echo "DRY: would keep your settings in $user_cfg: $(jq -c . <<<"$diff")"; return 0; fi
+    d($o[0]; $n[0]) as $diff | if $newer then $u * $diff else $diff * $u end')" || return 0
+  [[ "$(jq -c -S . <<<"$new")" != "$(jq -c -S . <<<"$cur")" ]] || return 0
+  if [[ $dry -eq 1 ]]; then echo "DRY: would keep your settings in $user_cfg: $(jq -c . <<<"$new")"; return 0; fi
   mkdir -p "$(dirname "$user_cfg")"
-  if [[ -f $user_cfg ]]; then jq -s '.[0] * .[1]' <(printf '%s' "$diff") "$user_cfg" > "$user_cfg.tmp"   # the user file wins
-  else jq . <<<"$diff" > "$user_cfg.tmp"; fi
-  mv "$user_cfg.tmp" "$user_cfg"; echo "kept your settings: $user_cfg $(jq -c . <<<"$diff")"
+  jq . <<<"$new" > "$user_cfg.tmp" && mv "$user_cfg.tmp" "$user_cfg"; echo "kept your settings: $user_cfg $(jq -c . <<<"$new")"
 }
 
 if [[ $plugin -eq 0 ]]; then
