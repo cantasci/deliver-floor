@@ -65,8 +65,14 @@ async function answer(win) {
   // event, which React handles exactly like a click on the card. A double click would rename the person instead.
   const why = (e) => String(e?.message ?? e).split('\n').filter((l) => l.trim()).slice(0, 6).join(' | ').slice(0, 400);
   // nth: several people can share a name — a re-seated seat leaves the failed worker's card on the floor (the app keeps it)
+  // The card that names a person: older Munder Difflin builds title it "<name> — double-click to rename"; current ones
+  // (v0.4.x) show the name only as upper-cased text, no title (seen live: no card found, no screenshot).
+  const cards = async (name) => {
+    const byTitle = win.locator(`[title="${name} — double-click to rename"]`);
+    return (await byTitle.count()) ? byTitle : win.getByText(name.toUpperCase(), { exact: true });
+  };
   const select = async (name, nth = 0) => {
-    const el = win.locator(`[title="${name} — double-click to rename"]`).nth(nth);
+    const el = (await cards(name)).nth(nth);
     if (!(await el.count())) {
       if (name !== 'Michael') { log(`select ${name}: no card on the agent strip`); return false; }
       try { await win.getByText('BOSS', { exact: true }).first().click({ timeout: 3000 }); return true; } catch (e) { log(`select Michael failed: ${why(e)}`); return false; }
@@ -83,7 +89,7 @@ async function answer(win) {
     // Proof only when the Command Center really shows this person: its terminal header names the worker ("pty worker-…"),
     // polled on a timer, not on animation frames (which a background window may not get). Same-named cards: try each,
     // newest first (a re-seated seat's failed worker keeps its card).
-    const n = await win.locator(`[title="${name} — double-click to rename"]`).count();
+    const n = await (await cards(name)).count();
     let shown = false;
     for (let k = Math.max(n, 1) - 1; k >= 0 && !shown; k--) {
       if (!(await select(name, k))) continue;

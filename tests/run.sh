@@ -588,6 +588,8 @@ contains "a report archived without md-done is flagged as unrecorded" "$("$DL" m
 nlive="$("$DL" md-seats | grep -cE '^[^ ]+ +(live|starting) ')"
 n0="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; "$DL" md-release >/dev/null
 [[ $nlive == "$nseat" && $(( $(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l) - n0 )) == "$nlive" ]] && ok "md-release sends every live seat home" || bad "release orders"
+n1="$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)"; out="$("$DL" md-release)"
+[[ $out == "released 0 seat(s)" && "$(ls "$HIVE_ROOT"/agents/god/outbox/*.json | wc -l)" == "$n1" ]] && ok "…once: a second md-release sends nobody home twice (seen live with parallel calls)" || bad "second release: $out"
 # Guards: Michael on the floor has no Agent tool; seats are agents (their own lanes, no flow commands)
 ag() { hook agent-guard.sh '{"tool_input":{"subagent_type":"backend-dev","run_in_background":true}}'; }
 contains "Michael on the floor may not start subagents" "$(AGENT_ID=god ag)" "rc=2"
@@ -678,6 +680,9 @@ contains "…logged" "$(grep $'\troles-defaults\t' "$(dirname "$PJ")/events.log"
 contains "…a QA count somebody gave is kept" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[1]'
 (cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":1},{"role":"qa","agent":"qa-tester","why":"y"}]' >/dev/null)
 contains "…one developer seat: one QA seat" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[null]'
+# parallel jobsets (Michael's parallel tool calls) must not lose each other's changes — seen live
+(cd "$PC" && for k in a b c d e f; do AGENT_ID=god "$DL" jobset ".assumptions += [\"$k\"]" >/dev/null & done; wait)
+contains "six jobsets at once: none is lost (they run one at a time)" "$(jq -c '.assumptions | map(select(length == 1)) | sort' "$PJ")" '["a","b","c","d","e","f"]'
 contains "…a role that names its own model keeps it (qa: opus from the request, not the default sonnet), logged" "$(grep $'\troles-defaults\t' "$PC/.work/$(cat "$PC/.work/ACTIVE")/events.log")" "backend: model haiku, count 2"
 contains "the human switches the job to subagents by hand (dl dispatch)" "$(env -u AGENT_ID "$DL" dispatch subagent "leave the floor for the rest of the tests" 2>&1)" "now runs with dispatch subagent"
 contains "…logged with who and why" "$(grep $'\tdispatch\t' "$R/.work/$JOB/events.log" | tail -1)" "subagent — leave the floor"

@@ -1,0 +1,12 @@
+{"verdict":"pass",
+ "tests":["test/indicators/integration/daysWithDelay.test.mjs"],
+ "criteria":[
+ {"ac":"AC-1","status":"pass","evidence":"AC-1: DAYS_WITH_DELAY_OPTIONS is a frozen array in the specified order → ok"},
+ {"ac":"AC-2","status":"pass","evidence":"AC-2: \"no delay\" and \"<=3 days\" map to WL 0 → ok"},
+ {"ac":"AC-3","status":"pass","evidence":"AC-3: >3→2, >60→3, >90→4, map gives [0,0,2,3,4] → ok"},
+ {"ac":"AC-4","status":"pass","evidence":"AC-4: surrounding whitespace is trimmed → ok"},
+ {"ac":"AC-5","status":"pass","evidence":"AC-5 invalid strings / non-string values / no argument throw RangeError → 3 ok"},
+ {"ac":"AC-6","status":"pass","evidence":"AC-6 message non-empty and contains value; Symbol/object give RangeError, not TypeError → 2 ok"},
+ {"ac":"AC-11","status":"pass","evidence":"AC-11 exports exactly two names; sync and pure, options unchanged; no imports or I/O → 3 ok"},
+ {"ac":"AC-12","status":"pass","evidence":"AC-12 no delayCount import/Indicator 1 logic → ok; dev unit run 8/8 pass; diff main..dev commit adds only the 2 scoped files"}],
+ "failures":[]}

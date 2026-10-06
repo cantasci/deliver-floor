@@ -146,10 +146,13 @@ _jq_inplace() {
 # every dl command checks the seals, so an edit made outside dl — by any tool — stops the flow until a human reseals.
 seal() { [[ $1 == */job.json || $1 == */board.json ]] && node -e 'process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(process.argv[1])).digest("hex"))' "$1" > "$(dirname "$1")/.seal-$(basename "$1")"; return 0; }
 seal_ok() { local f=$1 sf; sf="$(dirname "$f")/.seal-$(basename "$f")"; [[ ! -f $sf ]] || [[ "$(cat "$sf")" == "$(node -e 'process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(process.argv[1])).digest("hex"))' "$f")" ]]; }
+# A writer replaces the file and then its seal under the file's lock: a mismatch read in between is a write in progress,
+# not tampering — look again once the writer is done (seen with parallel dl calls).
+seal_settled() { seal_ok "$1" || with_lock "$(basename "$1")" seal_ok "$1"; }
 check_seals() {
-  seal_ok "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
+  seal_settled "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
   case "$(jq -r .phase "$JOBJ")" in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
-  seal_ok "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and runs: dl reseal \"<reason>\""
+  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and runs: dl reseal \"<reason>\""
 }
 jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
 git_locked() { with_lock git git "$@"; }
@@ -547,8 +550,13 @@ cmd_phase() {
 # jobset may change only what Michael decides (stack, roles, assumptions, areas, settings) — never phase, gates,
 # frozen hashes, PR state or ids: those move only through their own guarded commands. Every change is logged.
 JOBSET_KEYS='["stack","roles","assumptions","areas","settings"]'
-cmd_jobset() {
-  load_job; [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"
+# Several jobsets at once (Michael's parallel tool calls) read job.json before the others wrote it: the last one won and the
+# others' changes were lost (seen live: QA's seat count). They run one at a time, under the job lock, in a subshell so a
+# refusal still releases it.
+cmd_jobset() { load_job; with_lock job _jobset_sub "$@"; }
+_jobset_sub() { ( _jobset_locked "$@" ); }
+_jobset_locked() {
+  [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"
   local new; new="$(jq "$1" "$JOBJ")" || die "invalid jq expression"
   local bad; bad="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" \
     '[($a|keys) + ($b|keys) | unique[] | select(. as $k | ($ok | index($k)) | not) | select($a[.] != $b[.])] | join(", ")')"
@@ -1653,13 +1661,17 @@ cmd_md_done() {
   echo "$seat is free ($task done)"
 }
 
-cmd_md_release() {
-  load_job
+# Once per seat: a second md-release (parallel calls, seen live) sends nobody home twice.
+cmd_md_release() { load_job; with_lock job _md_release_sub "$@"; }
+_md_release_sub() { ( _md_release_locked "$@" ); }
+_md_release_locked() {
   local hive s w n=0; hive="$(md_hive)"
   while read -r s; do
+    [[ -z "$(seat_get "$s" .released)" ]] || continue
     case "$(seat_state "$s" "$hive")" in live|starting) ;; *) continue ;; esac
     w="$(seat_get "$s" .worker)"
     md_order "$w" "$hive" "release — job $JOB is finished" "The job is finished and your seat is released. Thank you. Send act \"done\" to god now." "deliver-$JOB-release"
+    jq_inplace "$JOBJ" --arg s "$s" --arg t "$(now)" '.munder.seats[$s].released = $t'
     log_event md-release "$s → $w"; n=$((n + 1))
   done < <(seat_list)
   echo "released $n seat(s)"

@@ -1,0 +1,262 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Deliver the WL mapping for Indicator 2 (days with delay) and Indicator 3 (delays in 12 months) as pure functions plus option lists, slice of the Watchlist POC. Success = the acceptance criteria of REQ-03-02/03 hold under node --test.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "Build only these two requirements."
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "No end users in this slice; consumers are later POC screens/code that call the functions and render the option lists. No roles/permissions.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "No UI in this slice."
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In: src/indicators/daysWithDelay.mjs and delayCount.mjs with option lists and WL mapping, plus tests. Out: Indicator 1 and its collapsing of indicators 2–3; any UI; counting delays.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "Indicator 1 (repayment delay yes/no) and its collapsing of indicators 2–3 are OUT of scope here."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "REQ-03-02/03 summaries plus C1/C2/C5 give concrete value→WL tables and invalid-input rules; BA will turn them into Given/When/Then ACs in PLAN.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": ">3 days → WL=2; >60 days → WL=3; >90 days → WL=4"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "One textual mismatch: REQ-03-02 writes \"≤3 days\" while C1 fixes the exact string \"<=3 days\". Resolved by C1 (the confirmed clarification, exact strings win). No other contradictions found: C2 covers the unspecified WL for \"no delay\", \"<=3 days\" and \"0\".",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "Dropdown values are exactly these strings"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Both requirements are equal and independent, ship together; no MoSCoW ordering needed.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "They are independent of each other."
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "Fully specified: file paths, exported names, option strings and order, return values 0|2|3|4 and 0|1|2, string input trimmed with String.prototype.trim(), exact case-sensitive matching.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "`export function daysWithDelayWl(option)` → 0 | 2 | 3 | 4"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Any value other than the listed options (after trim), including non-strings, throws RangeError; inner whitespace is not collapsed. Error message text is not specified (see X-error-message).",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "any other value throws a RangeError"
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "No existing code in src/ (only .gitkeep); new modules, nothing to stay compatible with, no versioning.",
+      "source": "repo: src/.gitkeep"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Plain Node library modules in a single-component repo; the logic lives in src/indicators as pure functions.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "Single component \"indicators-lib\": library, stack javascript (Node ESM), paths src/indicators/ and test/indicators/ (CLAUDE.md test/<area>/<name>.test.mjs), owner backend (two parallel devs, one per file), reviewer reviewer-typescript (ecc:typescript-reviewer per the order). See architecture.",
+      "source": "CLAUDE.md",
+      "quote": "files `test/<area>/<name>.test.mjs`"
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Shared library / domain layer: src/indicators pure functions; no BFF/API/client.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "`src/indicators/daysWithDelay.mjs`"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ES modules (.mjs), node:test, no npm dependencies; new dependencies not allowed.",
+      "source": "CLAUDE.md",
+      "quote": "No npm dependencies; do not add any."
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No data stored; stateless pure functions.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md (Contract)"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems called.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md (Contract)"
+    },
+    {
+      "id": "ARC-async",
+      "status": "decided",
+      "answer": "Synchronous pure functions, no state, so no ordering/idempotency concern beyond being deterministic.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "this slice only maps the option to a WL"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No targets; constant-time lookup of 3–5 options.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md"
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "Library with no dependencies; nothing to degrade.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Input validation only: strict allow-list match, non-strings rejected with RangeError. No auth or secrets.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md",
+      "quote": "a non-string input is a RangeError too"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "No personal data handled; inputs are fixed option labels.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "No actions or changes to audit in this slice.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "Pure functions, no logging/metrics (no I/O allowed in src/indicators).",
+      "source": "CLAUDE.md"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "n_a",
+      "answer": "No specific regulation named for this slice; the business rules are the confirmed WL mappings.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests by dev (TDD) with node:test + node:assert/strict in test/indicators/<name>.test.mjs; QA integration/edge tests; run via `npm test` / `node --test`.",
+      "source": "CLAUDE.md",
+      "quote": "Tests: `node:test` + `node:assert/strict`"
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "Only `node --test` (npm test) must pass; no lint/typecheck/scan tooling in the repo (no dependencies).",
+      "source": "CLAUDE.md",
+      "quote": "`npm test` runs everything."
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "n_a",
+      "answer": "Library modules consumed by later POC code; no deployment, flags or migrations.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No docs/changelog requirement in the request; README optional, not required.",
+      "source": "/home/user/skills-shop/examples/watchlist-poc/JOB-parallel.md"
+    },
+    {
+      "id": "X-error-message",
+      "status": "decided",
+      "question": "Must the RangeError message have a specific text (e.g. include the offending value and allowed options)?",
+      "options": [
+        "Any descriptive message, tests assert only RangeError type (assumed)",
+        "Fixed message format agreed with the business"
+      ],
+      "impact": "Only affects test assertions on message; no behavioural change.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Must the RangeError message have a specific text (e.g. include the offending value and allowed options)?",
+          "at": "2026-10-06T07:37:12.385Z"
+        }
+      ],
+      "answer": "Any descriptive message that names the offending value; tests assert the RangeError type only",
+      "source": "pm: michael 2026-10-06 — Request C1/C5 fix only the error type (RangeError); message text has no behavioural impact"
+    },
+    {
+      "id": "X-options-immutability",
+      "status": "decided",
+      "question": "Should the exported *_OPTIONS arrays be frozen (Object.freeze) so screens cannot mutate them?",
+      "options": [
+        "Frozen (recommended, safe for shared constants)",
+        "Plain arrays"
+      ],
+      "impact": "Internal robustness only; contract (strings, order) is unchanged.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Should the exported *_OPTIONS arrays be frozen (Object.freeze) so screens cannot mutate them?",
+          "at": "2026-10-06T07:37:12.713Z"
+        }
+      ],
+      "answer": "Export *_OPTIONS as Object.freeze'd arrays (strings and order exactly as C1)",
+      "source": "pm: michael 2026-10-06 — Shared constants rendered by later screens must not be mutable by a caller; contract (values, order) unchanged"
+    },
+    {
+      "id": "X-test-layout",
+      "status": "decided",
+      "question": "Test file location: test/indicators/daysWithDelay.test.mjs and delayCount.test.mjs (follows CLAUDE.md pattern) — confirm.",
+      "options": [
+        "test/indicators/<name>.test.mjs (assumed)",
+        "other"
+      ],
+      "impact": "File layout only; also lets the two parallel devs avoid file conflicts.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Test file location: test/indicators/daysWithDelay.test.mjs and delayCount.test.mjs (follows CLAUDE.md pattern) — confirm.",
+          "at": "2026-10-06T07:37:12.987Z"
+        }
+      ],
+      "answer": "Dev unit tests: test/indicators/<name>.test.mjs; QA integration tests: test/indicators/integration/<name>.test.mjs",
+      "source": "pm: michael 2026-10-06 — Follows CLAUDE.md test/<area>/<name>.test.mjs; one file per module keeps the two parallel devs and QA on disjoint files, all inside the indicators-lib component path"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "indicators-lib",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "nodejs-esm"
+        ],
+        "path": [
+          "src/indicators/",
+          "test/indicators/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Two independent modules (daysWithDelay, delayCount), one per parallel backend dev; no shared files, no dependencies."
+      }
+    ]
+  }
+}

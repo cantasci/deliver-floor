@@ -1,0 +1,89 @@
+# qa_verify: node --test test/indicators/integration/daysWithDelay.test.mjs
+TAP version 13
+# Subtest: AC-1: DAYS_WITH_DELAY_OPTIONS is a frozen array in the specified order
+ok 1 - AC-1: DAYS_WITH_DELAY_OPTIONS is a frozen array in the specified order
+  ---
+  duration_ms: 4.97401
+  type: 'test'
+  ...
+# Subtest: AC-2: "no delay" and "<=3 days" map to WL 0
+ok 2 - AC-2: "no delay" and "<=3 days" map to WL 0
+  ---
+  duration_ms: 0.417569
+  type: 'test'
+  ...
+# Subtest: AC-3: ">3 days" → 2, ">60 days" → 3, ">90 days" → 4, and map over the options gives [0,0,2,3,4]
+ok 3 - AC-3: ">3 days" → 2, ">60 days" → 3, ">90 days" → 4, and map over the options gives [0,0,2,3,4]
+  ---
+  duration_ms: 0.294026
+  type: 'test'
+  ...
+# Subtest: AC-4: surrounding whitespace is trimmed
+ok 4 - AC-4: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.255099
+  type: 'test'
+  ...
+# Subtest: AC-5: invalid strings throw RangeError
+ok 5 - AC-5: invalid strings throw RangeError
+  ---
+  duration_ms: 0.501358
+  type: 'test'
+  ...
+# Subtest: AC-5: non-string values throw RangeError
+ok 6 - AC-5: non-string values throw RangeError
+  ---
+  duration_ms: 0.322824
+  type: 'test'
+  ...
+# Subtest: AC-5: calling with no argument throws RangeError
+ok 7 - AC-5: calling with no argument throws RangeError
+  ---
+  duration_ms: 0.165748
+  type: 'test'
+  ...
+# Subtest: AC-6: RangeError message is non-empty and contains the offending value
+ok 8 - AC-6: RangeError message is non-empty and contains the offending value
+  ---
+  duration_ms: 0.167355
+  type: 'test'
+  ...
+# Subtest: AC-6: Symbol and object input yield RangeError, never a TypeError from message building
+ok 9 - AC-6: Symbol and object input yield RangeError, never a TypeError from message building
+  ---
+  duration_ms: 0.576635
+  type: 'test'
+  ...
+# Subtest: AC-11: exports exactly DAYS_WITH_DELAY_OPTIONS and daysWithDelayWl
+ok 10 - AC-11: exports exactly DAYS_WITH_DELAY_OPTIONS and daysWithDelayWl
+  ---
+  duration_ms: 0.473751
+  type: 'test'
+  ...
+# Subtest: AC-11: synchronous and pure; options list unchanged after all calls
+ok 11 - AC-11: synchronous and pure; options list unchanged after all calls
+  ---
+  duration_ms: 0.631952
+  type: 'test'
+  ...
+# Subtest: AC-11: source file has no import statements and no I/O
+ok 12 - AC-11: source file has no import statements and no I/O
+  ---
+  duration_ms: 0.847371
+  type: 'test'
+  ...
+# Subtest: AC-12: no Indicator 1 logic or delayCount import in the module
+ok 13 - AC-12: no Indicator 1 logic or delayCount import in the module
+  ---
+  duration_ms: 0.255329
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 251.427133

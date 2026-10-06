@@ -1,0 +1,77 @@
+# qa_verify: node --test test/indicators/integration/delayCount.test.mjs
+TAP version 13
+# Subtest: AC-7: DELAY_COUNT_OPTIONS is a frozen array in the specified order
+ok 1 - AC-7: DELAY_COUNT_OPTIONS is a frozen array in the specified order
+  ---
+  duration_ms: 2.994389
+  type: 'test'
+  ...
+# Subtest: AC-8: "0" → 0, "1" → 1, ">1" → 2, and map over the options gives [0,1,2]
+ok 2 - AC-8: "0" → 0, "1" → 1, ">1" → 2, and map over the options gives [0,1,2]
+  ---
+  duration_ms: 0.294265
+  type: 'test'
+  ...
+# Subtest: AC-9: surrounding whitespace is trimmed
+ok 3 - AC-9: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.208774
+  type: 'test'
+  ...
+# Subtest: AC-10: invalid strings throw RangeError with a message naming the value
+ok 4 - AC-10: invalid strings throw RangeError with a message naming the value
+  ---
+  duration_ms: 0.418573
+  type: 'test'
+  ...
+# Subtest: AC-10: non-string values (numbers, NaN, null, undefined, objects, String objects, Symbol) throw RangeError, never TypeError
+ok 5 - AC-10: non-string values (numbers, NaN, null, undefined, objects, String objects, Symbol) throw RangeError, never TypeError
+  ---
+  duration_ms: 0.341034
+  type: 'test'
+  ...
+# Subtest: AC-10: numeric 0/1/2 are rejected although "0" and "1" are valid labels
+ok 6 - AC-10: numeric 0/1/2 are rejected although "0" and "1" are valid labels
+  ---
+  duration_ms: 0.131658
+  type: 'test'
+  ...
+# Subtest: AC-10: calling with no argument throws RangeError
+ok 7 - AC-10: calling with no argument throws RangeError
+  ---
+  duration_ms: 0.137677
+  type: 'test'
+  ...
+# Subtest: AC-11: exports exactly DELAY_COUNT_OPTIONS and delayCountWl
+ok 8 - AC-11: exports exactly DELAY_COUNT_OPTIONS and delayCountWl
+  ---
+  duration_ms: 0.141186
+  type: 'test'
+  ...
+# Subtest: AC-11: synchronous and pure; options list unchanged after all calls
+ok 9 - AC-11: synchronous and pure; options list unchanged after all calls
+  ---
+  duration_ms: 0.471828
+  type: 'test'
+  ...
+# Subtest: AC-11: source file has no import statements and no I/O
+ok 10 - AC-11: source file has no import statements and no I/O
+  ---
+  duration_ms: 0.872652
+  type: 'test'
+  ...
+# Subtest: AC-12: no import of daysWithDelay (no Indicator 2 logic)
+ok 11 - AC-12: no import of daysWithDelay (no Indicator 2 logic)
+  ---
+  duration_ms: 0.223223
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 89.789124
