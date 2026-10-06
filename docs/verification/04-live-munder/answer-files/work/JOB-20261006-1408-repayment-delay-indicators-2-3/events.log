@@ -1,0 +1,89 @@
+2026-10-06T14:08:50Z	new	Repayment delay indicators 2-3
+2026-10-06T14:09:02Z	jobset	stack: .stack=["node"]
+2026-10-06T14:09:02Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/REQ-03-03: indicator domain logic (WL mapping functions in src/indicators)"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack reviewer for node (Plain Node ESM)"}]
+2026-10-06T14:09:02Z	roles-defaults	could not count the developer seats — QA keeps its count: [33m2[39m 
+2026-10-06T14:09:02Z	jobset	assumptions: .assumptions += ["Stack is the repo's and the request's own: \"Plain Node ESM, no dependencies; tests with node --test\" (package.json type=module, repo CLAUDE.md)."]
+2026-10-06T14:09:03Z	roles-defaults	could not count the developer seats — QA keeps its count: [33m2[39m 
+2026-10-06T14:09:03Z	roles-defaults	could not count the developer seats — QA keeps its count: [33m2[39m 
+2026-10-06T14:09:03Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T14:09:03Z	phase	readiness
+2026-10-06T14:09:21Z	jobset	roles: .roles |= map(if .role=="qa" then .count=2 | .why="always; one QA seat per developer seat (2 parallel devs)" else . end)
+2026-10-06T14:09:21Z	followup	deliver kit: apply_role_defaults cannot parse 'roles.mjs dev-seats' output when FORCE_COLOR makes node print an ANSI-colored number; QA seat count had to be set by hand
+2026-10-06T14:09:22Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T14:09:22Z	phase	readiness
+2026-10-06T14:09:27Z	md-hire	ba#1 → worker-seat-20261006-1408-ba-1-h1 (claude claude-sonnet-5-5, pam)
+2026-10-06T14:09:27Z	md-hire	backend-lead#1 → worker-seat-20261006-1408-backend-lead-1-h1 (claude claude-sonnet-5-5, oscar)
+2026-10-06T14:09:27Z	md-hire	backend#1 → worker-seat-20261006-1408-backend-1-h1 (claude claude-sonnet-5-5, dwight)
+2026-10-06T14:09:27Z	md-hire	backend#2 → worker-seat-20261006-1408-backend-2-h1 (claude claude-sonnet-5-5, jim)
+2026-10-06T14:09:28Z	md-hire	qa#1 → worker-seat-20261006-1408-qa-1-h1 (claude claude-sonnet-5-5, angela)
+2026-10-06T14:09:28Z	md-hire	qa#2 → worker-seat-20261006-1408-qa-2-h1 (claude claude-sonnet-5-5, kevin)
+2026-10-06T14:09:29Z	md-hire	reviewer#1 → worker-seat-20261006-1408-reviewer-1-h1 (claude claude-sonnet-5-5, toby)
+2026-10-06T14:10:42Z	md-send	readiness ba#1 (business-analyst) → worker-seat-20261006-1408-ba-1-h1
+2026-10-06T14:11:47Z	md-done	readiness ba#1: readiness answered: 32 items, 0 business-open, 5 pm-open
+2026-10-06T14:12:15Z	readiness	32 items: 16 decided, 11 n/a, 5 open
+2026-10-06T14:12:26Z	decide	PRD-priority: Both Must; delivered together on parallel cards — The request says the two requirements are independent and staffs one developer per requirement in parallel; no ordering is needed.
+2026-10-06T14:12:26Z	decide	X-errors-msg: Message text is not contract: tests assert the RangeError type only; message should name the indicator and the valid options and may include String(value) — The request fixes only the error type (C1/C5 'throws a RangeError'); pinning text would over-constrain tests. A descriptive message helps callers; the value is a dropdown label, not sensitive data.
+2026-10-06T14:12:27Z	decide	DEL-docs: No README/changelog changes — Nothing in the request asks for docs; the exported contract is self-describing and the PR documents the slice.
+2026-10-06T14:12:27Z	decide	X-immutable-options: Export the *_OPTIONS arrays frozen (Object.freeze), exact strings in the request's order — C4: later screens render these shared lists; freezing prevents a consumer mutating the list every other module sees, and still satisfies 'the N strings, in order'.
+2026-10-06T14:12:28Z	decide	X-ind2-semantics: Label-only lookup: each option maps by its exact (trimmed) label; no numeric range logic — C6: the caller picks the option; this slice only maps the option to a WL. C2/AC table give each label's WL.
+2026-10-06T14:12:37Z	readiness	32 items: 20 decided, 12 n/a, 0 open
+2026-10-06T14:12:38Z	freeze	readiness + architecture frozen (4b5e7ac89e3c)
+2026-10-06T14:12:38Z	roles	ba backend-lead backend qa reviewer
+2026-10-06T14:12:38Z	phase	planning
+2026-10-06T14:12:45Z	md-send	plan ba#1 (business-analyst) → worker-seat-20261006-1408-ba-1-h1
+2026-10-06T14:13:23Z	md-done	plan ba#1: plan: 12 ACs, no open questions
+2026-10-06T14:13:34Z	pm-decision	Plan AC-9: removed '">1 "' from the invalid examples — After C5 trimming '">1 "' is '">1"' (valid, WL 2); listing it as invalid contradicted C5.
+2026-10-06T14:13:46Z	md-send	cards-backend-lead backend-lead#1 (ecc:architect) → worker-seat-20261006-1408-backend-lead-1-h1
+2026-10-06T14:14:43Z	md-done	cards-backend-lead backend-lead#1: 2 parallel cards B1 (03-02), B2 (03-03)
+2026-10-06T14:14:54Z	md-send	spec-cards ba#1 (business-analyst) → worker-seat-20261006-1408-ba-1-h1
+2026-10-06T14:15:32Z	md-done	spec-cards ba#1: specs T-01, T-02
+2026-10-06T14:15:49Z	phase	executing
+2026-10-06T14:15:55Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-06T14:15:56Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-06T14:16:12Z	qa-start	T-01 → QA writes its tests in /tmp/claude-0/live/floor-par3/munder/repo/.work/JOB-20261006-1408-repayment-delay-indicators-2-3/wt/T-01-qa (branch job/JOB-20261006-1408-repayment-delay-indicators-2-3--T-01-qa) while the dev builds
+2026-10-06T14:16:13Z	qa-start	T-02 → QA writes its tests in /tmp/claude-0/live/floor-par3/munder/repo/.work/JOB-20261006-1408-repayment-delay-indicators-2-3/wt/T-02-qa (branch job/JOB-20261006-1408-repayment-delay-indicators-2-3--T-02-qa) while the dev builds
+2026-10-06T14:16:18Z	md-send	T-01 backend#1 (backend-dev) → worker-seat-20261006-1408-backend-1-h1
+2026-10-06T14:16:19Z	md-send	T-02 backend#2 (backend-dev) → worker-seat-20261006-1408-backend-2-h1
+2026-10-06T14:16:20Z	md-send	T-01-tests qa#1 (qa-tester) → worker-seat-20261006-1408-qa-1-h1
+2026-10-06T14:16:20Z	md-send	T-02-tests qa#2 (qa-tester) → worker-seat-20261006-1408-qa-2-h1
+2026-10-06T14:16:59Z	md-done	T-02 backend#2: T-02 done fa90fa2, unit tests pass
+2026-10-06T14:17:02Z	gate	T-02 PASS
+2026-10-06T14:17:17Z	md-done	T-01 backend#1: T-01 done, unit tests pass
+2026-10-06T14:17:17Z	md-done	T-01-tests qa#1: T-01 QA tests written 9862314
+2026-10-06T14:17:18Z	md-done	T-02-tests qa#2: T-02 QA tests written c924bdf
+2026-10-06T14:17:19Z	gate	T-01 PASS
+2026-10-06T14:17:20Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-06T14:17:21Z	qa-join	T-02: QA's tests (1 commit(s)) joined the card branch
+2026-10-06T14:17:32Z	md-send	T-01 qa#1 (qa-tester) → worker-seat-20261006-1408-qa-1-h1
+2026-10-06T14:17:32Z	md-send	T-02 qa#2 (qa-tester) → worker-seat-20261006-1408-qa-2-h1
+2026-10-06T14:18:01Z	md-done-refused	T-01 qa#1: /tmp/claude-0/live/floor-par3/munder/repo/.work/JOB-20261006-1408-repayment-delay-indicators-2-3/out/T-01-qa.md (or .json) does not exist or is empty
+2026-10-06T14:18:02Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass; AC-2 pass; AC-3 pass; AC-4 pass; AC-5 pass; AC-11 pass; AC-12 pass (9/9 integration tests)
+2026-10-06T14:18:04Z	md-send	T-01 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261006-1408-reviewer-1-h1
+2026-10-06T14:18:15Z	md-done	T-02 qa#2: T-02 QA pass 11/11
+2026-10-06T14:18:15Z	qa	T-02 pass (qa_verify PASS) — AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-10 pass; AC-11 pass; AC-12 pass (11/11 integration tests)
+2026-10-06T14:18:30Z	md-done	T-01 qa#1: T-01 QA pass 9/9
+2026-10-06T14:18:46Z	md-done	T-01 reviewer#1: T-01 approve
+2026-10-06T14:18:46Z	review	T-01 reviewer approve — All ACs met, no blocking; nits: duplicate assertion test line 21, no NBSP unit case
+2026-10-06T14:18:48Z	integrate	T-01 merged
+2026-10-06T14:18:56Z	md-send	T-02 reviewer#1 (ecc:typescript-reviewer) → worker-seat-20261006-1408-reviewer-1-h1
+2026-10-06T14:19:20Z	md-done	T-02 reviewer#1: T-02 approve
+2026-10-06T14:19:21Z	review	T-02 reviewer approve — All ACs met, pure and independent, no blocking; nit: duplicate ' 1 ' assertion
+2026-10-06T14:19:22Z	integrate	T-02 merged
+2026-10-06T14:19:23Z	phase	integrating
+2026-10-06T14:19:24Z	verify-all	PASS
+2026-10-06T14:19:32Z	phase	closing
+2026-10-06T14:19:32Z	md-send	closing ba#1 (business-analyst) → worker-seat-20261006-1408-ba-1-h1
+2026-10-06T14:20:17Z	md-done	closing ba#1: closing: 12/12 ACs met
+2026-10-06T14:20:26Z	followup	T-01: Unit test test/indicators/daysWithDelay.test.mjs:21 duplicates the ' >3 days ' assertion of line 20; no NBSP-padded unit case (integration test covers it)
+2026-10-06T14:20:26Z	followup	T-02: Unit test test/indicators/delayCount.test.mjs asserts ' 1 ' twice; add an explicit NBSP-padded delayCount case (e.g. ' >1 ' -> 2) if the integration test lacks one
+2026-10-06T14:20:31Z	learn	qa (project, answer-file-before-done): Write the answer file the work order names before reporting done; a done without it is refused and costs a round trip
+2026-10-06T14:20:49Z	knowledge	lessons/standards committed to job/JOB-20261006-1408-repayment-delay-indicators-2-3: .deliver/knowledge/lessons.md 
+2026-10-06T14:20:50Z	ship	local merge into main
+2026-10-06T14:21:03Z	md-release	ba#1 → worker-seat-20261006-1408-ba-1-h1
+2026-10-06T14:21:04Z	md-release	backend-lead#1 → worker-seat-20261006-1408-backend-lead-1-h1
+2026-10-06T14:21:04Z	md-release	backend#1 → worker-seat-20261006-1408-backend-1-h1
+2026-10-06T14:21:04Z	md-release	backend#2 → worker-seat-20261006-1408-backend-2-h1
+2026-10-06T14:21:05Z	md-release	qa#1 → worker-seat-20261006-1408-qa-1-h1
+2026-10-06T14:21:05Z	md-release	qa#2 → worker-seat-20261006-1408-qa-2-h1
+2026-10-06T14:21:05Z	md-release	reviewer#1 → worker-seat-20261006-1408-reviewer-1-h1
+2026-10-06T14:21:06Z	cleanup	

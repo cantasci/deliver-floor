@@ -1,0 +1,65 @@
+# qa_verify: node --test test/integration/indicators/daysWithDelay.integration.test.mjs
+TAP version 13
+# Subtest: AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five labels in order (ASCII <=) and is frozen
+ok 1 - AC-1: DAYS_WITH_DELAY_OPTIONS deep-equals the five labels in order (ASCII <=) and is frozen
+  ---
+  duration_ms: 6.913961
+  type: 'test'
+  ...
+# Subtest: AC-2: each valid option maps to its WL as a plain number
+ok 2 - AC-2: each valid option maps to its WL as a plain number
+  ---
+  duration_ms: 0.719815
+  type: 'test'
+  ...
+# Subtest: AC-2: every exported option is accepted and label-only (>60 days is not also >3 days)
+ok 3 - AC-2: every exported option is accepted and label-only (>60 days is not also >3 days)
+  ---
+  duration_ms: 0.282292
+  type: 'test'
+  ...
+# Subtest: AC-3: surrounding whitespace is trimmed before matching
+ok 4 - AC-3: surrounding whitespace is trimmed before matching
+  ---
+  duration_ms: 1.425065
+  type: 'test'
+  ...
+# Subtest: AC-4: invalid strings throw RangeError
+ok 5 - AC-4: invalid strings throw RangeError
+  ---
+  duration_ms: 0.823281
+  type: 'test'
+  ...
+# Subtest: AC-5: non-strings throw RangeError (not TypeError, no coercion)
+ok 6 - AC-5: non-strings throw RangeError (not TypeError, no coercion)
+  ---
+  duration_ms: 0.393353
+  type: 'test'
+  ...
+# Subtest: AC-11: every invalid input throws an instanceof RangeError (type only)
+ok 7 - AC-11: every invalid input throws an instanceof RangeError (type only)
+  ---
+  duration_ms: 0.344991
+  type: 'test'
+  ...
+# Subtest: AC-12: module is pure and stateless — repeated calls agree, options list is not mutable
+ok 8 - AC-12: module is pure and stateless — repeated calls agree, options list is not mutable
+  ---
+  duration_ms: 0.23109
+  type: 'test'
+  ...
+# Subtest: AC-12: module source is plain ESM that imports nothing (no delayCount, no shared helper)
+ok 9 - AC-12: module source is plain ESM that imports nothing (no delayCount, no shared helper)
+  ---
+  duration_ms: 24.613796
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 356.626402

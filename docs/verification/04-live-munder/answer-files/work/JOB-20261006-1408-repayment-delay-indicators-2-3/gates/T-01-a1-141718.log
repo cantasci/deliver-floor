@@ -1,0 +1,55 @@
+# gate: T-01  attempt: 1  2026-10-06T14:17:18Z
+ok    on job/JOB-20261006-1408-repayment-delay-indicators-2-3--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/daysWithDelay.mjs","test/indicators/daysWithDelay.test.mjs"] (+ QA tests ["test/integration/indicators/daysWithDelay.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/daysWithDelay.test.mjs
+TAP version 13
+# Subtest: options list is exact, ordered and frozen (AC-1)
+ok 1 - options list is exact, ordered and frozen (AC-1)
+  ---
+  duration_ms: 1.926501
+  type: 'test'
+  ...
+# Subtest: each valid option maps to its WL (AC-2)
+ok 2 - each valid option maps to its WL (AC-2)
+  ---
+  duration_ms: 0.380752
+  type: 'test'
+  ...
+# Subtest: input is trimmed first (AC-3)
+ok 3 - input is trimmed first (AC-3)
+  ---
+  duration_ms: 0.207158
+  type: 'test'
+  ...
+# Subtest: invalid strings throw RangeError (AC-4, AC-11)
+ok 4 - invalid strings throw RangeError (AC-4, AC-11)
+  ---
+  duration_ms: 6.507525
+  type: 'test'
+  ...
+# Subtest: non-strings throw RangeError, no coercion (AC-5, AC-11)
+ok 5 - non-strings throw RangeError, no coercion (AC-5, AC-11)
+  ---
+  duration_ms: 0.500566
+  type: 'test'
+  ...
+# Subtest: objects without toString still throw RangeError (AC-5)
+ok 6 - objects without toString still throw RangeError (AC-5)
+  ---
+  duration_ms: 0.425569
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 177.681701
+ok    verify passed

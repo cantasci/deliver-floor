@@ -726,6 +726,8 @@ contains "…logged" "$(grep $'\troles-defaults\t' "$(dirname "$PJ")/events.log"
 contains "…a QA count somebody gave is kept" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[1]'
 (cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":1},{"role":"qa","agent":"qa-tester","why":"y"}]' >/dev/null)
 contains "…one developer seat: one QA seat" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[null]'
+(cd "$PC" && FORCE_COLOR=1 AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x","count":2},{"role":"qa","agent":"qa-tester","why":"y"}]' >/dev/null 2>&1)
+contains "…also where the terminal forces colour (the floor's, run 54: node coloured the count and dl could not read it)" "$(jq -c '[.roles[] | select(.role=="qa") | .count]' "$PJ")" '[2]'
 # parallel jobsets (Michael's parallel tool calls) must not lose each other's changes — seen live
 (cd "$PC" && for k in a b c d e f; do AGENT_ID=god "$DL" jobset ".assumptions += [\"$k\"]" >/dev/null & done; wait)
 contains "six jobsets at once: none is lost (they run one at a time)" "$(jq -c '.assumptions | map(select(length == 1)) | sort' "$PJ")" '["a","b","c","d","e","f"]'

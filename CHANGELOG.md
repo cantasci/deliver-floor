@@ -15,6 +15,10 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
 - `dl md-wait`: Michael waits for his inbox with it (back within a second of a message), never a loop of his own.
 - ECC's GateGuard no longer stops the seats' answer files (`.work/<job>/out/`): it refused each one once, asking who
   imports a report. Code files keep the check.
+- Fixed: QA's automatic seat count never applied on the floor — its terminals force colour, node printed the developer
+  count with colour codes, and dl could not read it (the logged warning led Michael to set it by hand and name the cause).
+
+Measured live, same request: 16.8 → **12.3 min**; readiness 6.0 → 3.6 min, planning 4.9 → 3.2.
 
 ## 0.6.0 — 2026-10-06
 
