@@ -213,8 +213,10 @@ The guards still block pushes to main, force pushes, and writes outside a card's
 
 ### 4.6 Tracker (optional)
 
-The local kanban is on by default (`/deliver:board`, `.work/<job>/kanban.html`). For Jira, set the credentials in the environment
-and `"tracker": {"kind": "jira", "jira": {"project": "WL"}}` — [10-trackers](10-trackers.md).
+The local kanban is on by default (`/deliver:board`, `.work/<job>/kanban.html`). For Jira, Asana, Linear or GitHub Projects, set
+the credentials in the environment and the tool in `.deliver.json`, e.g. `"tracker": {"kind": "jira", "jira": {"project": "WL"}}`
+or `{"kind": "linear", "linear": {"team": "ENG"}}`; `/deliver:doctor` checks it before any job, and `/deliver:tracker` moves
+a running job to another one — [10-trackers](10-trackers.md).
 
 ## 5. First run
 

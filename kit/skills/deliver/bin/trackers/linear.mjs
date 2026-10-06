@@ -51,7 +51,7 @@ export class LinearTracker extends Tracker {
     for (const c of this.board.cards) if (!c.tracker?.id) {
       const i = await this.create({ teamId: team.id, title: `${c.id}: ${c.title}`.slice(0, 250), description: this.description(c),
         parentId: this.job.tracker.epic, stateId: (await this.state(this.columns[stageOf(c)])).id });
-      c.tracker = { id: i.id, key: i.identifier, url: i.url, column: this.columns[stageOf(c)] }; this.saveBoard();
+      c.tracker = { kind: "linear", id: i.id, key: i.identifier, url: i.url, column: this.columns[stageOf(c)] }; this.saveBoard();
       for (const d of c.depends_on ?? []) {
         const dep = this.board.cards.find((x) => x.id === d)?.tracker?.id;
         if (dep) await this.gql(`mutation($input: IssueRelationCreateInput!) { issueRelationCreate(input: $input) { success } }`,

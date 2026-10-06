@@ -991,6 +991,49 @@ tracker_contract asana ASANA_TOKEN '{"project":"1200"}' 0
 tracker_contract linear LINEAR_API_KEY '{"team":"WL"}' 1
 tracker_contract github GITHUB_TOKEN '{"repo":"acme/demo","project":7}' 0
 
+echo "tracker switch mid-job (the human's /deliver:tracker): Jira → Linear"
+SWS="$TMP/sw"; mkdir -p "$SWS"; saved_gh=${GH_TOKEN:-}; unset GH_TOKEN
+node "$HERE/tests/jira-stub.mjs" "$SWS/jira.json" > "$SWS/j.port" & SJP=$!; node "$HERE/tests/tracker-stubs.mjs" linear "$SWS/linear.json" > "$SWS/l.port" & SLP=$!
+for _ in $(seq 50); do grep -q listening "$SWS/j.port" && grep -q listening "$SWS/l.port" && break; sleep 0.1; done
+export JIRA_BASE_URL="http://127.0.0.1:$(awk '{print $2}' "$SWS/j.port")" JIRA_EMAIL=bot@example.com JIRA_API_TOKEN=t LINEAR_API_URL="http://127.0.0.1:$(awk '{print $2}' "$SWS/l.port")/graphql" LINEAR_API_KEY=k
+SWR="$SWS/repo"; mkdir -p "$SWR" && cd "$SWR" && git init -q -b main
+echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","tracker":{"kind":"jira","jira":{"project":"WL"}}}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "switch" "x" >/dev/null; SWJ="$SWR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$SWJ/specs/T-01.md"; cp "$SWJ/specs/T-01.md" "$SWJ/specs/T-02.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -d src",qa_verify:"test -d it",acceptance:["AC-1: x"],context:"ctx",attempts:0,notes:[]},
+  {id:"T-02",title:"two",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:["T-01"],scope:["lib/**"],qa_scope:["it2/**"],
+  verify:"test -d lib",qa_verify:"test -d it2",acceptance:["AC-1: y"],context:"ctx2",attempts:0,notes:[]}]}' > "$SWJ/board.json"
+"$DL" phase executing >/dev/null; SWW="$("$DL" wt add T-01)"
+[[ "$(jq -r '.cards[0].tracker | "\(.kind) \(.key)"' "$SWJ/board.json")" == "jira WL-2" ]] && ok "a card's tracker record says which tool made it" || bad "record: $(jq -c '.cards[0].tracker' "$SWJ/board.json")"
+contains "Claude may not switch the tracker (bash-guard)" "$(bg '"$DL" tracker switch linear "x"')" "rc=2"
+swl() { printf '%s' "$1" | env -u AGENT_ID bash "$HERE/kit/skills/tracker/run.sh" tracker; }
+out="$(swl 'linear the team moved to Linear')"
+contains "a tracker not set up in .deliver.json is refused — nothing changes" "$out" "the linear tracker is not ready — nothing was changed"
+contains "…naming what is missing" "$out" "settings.tracker.linear.team is not set"
+[[ "$(jq -r .settings.tracker.kind "$SWJ/job.json")" == jira ]] && ok "…the job keeps Jira" || bad "kind changed on a refused switch"
+jq '.tracker.linear = {"team":"WL"}' .deliver.json > x && mv x .deliver.json
+out="$(swl 'linear the team moved to Linear')"
+contains "/deliver:tracker switches once the new tracker passes its check" "$out" "the job now uses the linear tracker (was jira)"
+[[ "$(jq -r .settings.tracker.kind "$SWJ/job.json")" == linear ]] && ok "…the job's tracker is Linear now" || bad "kind: $(jq -r .settings.tracker.kind "$SWJ/job.json")"
+contains "…logged with who and why" "$(grep $'\ttracker-switch\t' "$SWJ/events.log")" "jira → linear by "
+SLI="$(jq -r '.items | to_entries[] | select(.value.title | startswith("T-01")) | .key' "$SWS/linear.json")"
+[[ "$(jq -r '.container.title' "$SWS/linear.json")" == switch && -n $SLI && "$(jq -r --arg i "$SLI" '.items[$i].parent' "$SWS/linear.json")" == "$(jq -r '.container.id' "$SWS/linear.json")" ]] \
+  && ok "Linear gets its own job issue and the cards under it — never Jira's epic key as a parent" || bad "linear after switch: $(head -c 400 "$SWS/linear.json")"
+[[ "$(jq -r --arg i "$SLI" '.items[$i].column' "$SWS/linear.json")" == "In Progress" ]] && ok "…each card in its current column (T-01 In Progress)" || bad "column after switch: $(jq -r --arg i "$SLI" '.items[$i].column' "$SWS/linear.json")"
+[[ "$(jq -r '.cards[0].tracker_history[0] | "\(.kind) \(.key)"' "$SWJ/board.json")" == "jira WL-2" && "$(jq -r '.tracker_history[0].epic' "$SWJ/job.json")" == WL-1 ]] \
+  && ok "…the Jira links stay in the card's and the job's history" || bad "history: $(jq -c '.cards[0].tracker_history' "$SWJ/board.json")"
+mkdir -p "$SWW/src" && echo 1 > "$SWW/src/a" && git -C "$SWW" add -A && git -C "$SWW" commit -qm "T-01"
+"$DL" gate T-01 >/dev/null
+[[ "$(jq -r --arg i "$SLI" '.items[$i].column' "$SWS/linear.json")" == QA && "$(jq -r '.issues["WL-2"].status' "$SWS/jira.json")" == "In Progress" ]] \
+  && ok "the flow goes on in Linear (gate → QA); Jira keeps what it had" || bad "after gate: linear $(jq -r --arg i "$SLI" '.items[$i].column' "$SWS/linear.json") jira $(jq -r '.issues["WL-2"].status' "$SWS/jira.json")"
+[[ -z "$(grep $'\ttracker-error\t' "$SWJ/events.log")" ]] && ok "…without a tracker error" || bad "tracker errors: $(grep $'\ttracker-error\t' "$SWJ/events.log" | tail -1)"
+contains "switching to the tracker it already has is refused" "$(swl 'linear again')" "already uses the linear tracker"
+kill $SJP $SLP 2>/dev/null; unset JIRA_BASE_URL JIRA_EMAIL JIRA_API_TOKEN LINEAR_API_URL LINEAR_API_KEY; [[ -z $saved_gh ]] || export GH_TOKEN=$saved_gh
+"$DL" phase aborted --force >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
+
 echo "ECC specialists: decisions bring their reviewers; every reviewer must approve"
 EC="$TMP/ecc"; mkdir -p "$EC" && cd "$EC" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "spec" "x" >/dev/null; EJ="$EC/.work/$(cat .work/ACTIVE)"

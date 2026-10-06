@@ -73,6 +73,8 @@
 #   dl kanban [--html <file>]      the board as kanban columns (To Do · In Progress · QA · Code Review · Done)
 #   dl tracker [open|sync|check]   mirror the cards into settings.tracker.kind (local | jira | asana | linear | github) —
 #                                  automatic on every step; check: before any job, is the tracker reachable and set up?
+#   dl tracker switch <kind> "<why>"  (human: /deliver:tracker) move the active job to another tracker: checked first,
+#                                  then the new tool opens the job and every card in its current column
 #
 # Env: DELIVER_JOB=<id> targets that job instead of .work/ACTIVE · DELIVER_HOME (default ~/.deliver) holds the
 #      job registry the hooks use · HIVE_ROOT is set by Munder Difflin (md-dispatch).
@@ -1800,7 +1802,40 @@ cmd_tracker() {
     resolve_root; local f rc=0; f="$(mktemp)"; merged_settings > "$f"
     node "$BIN_DIR/tracker-cli.mjs" check "$f" || rc=$?; rm -f "$f"; return $rc
   fi
-  load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync|check]" ;; esac
+  [[ ${1:-} == switch ]] && { shift; cmd_tracker_switch "$@"; return; }
+  load_job; case ${1:-sync} in open|sync) with_lock board.json node "$BIN_DIR/tracker-cli.mjs" "${1:-sync}" "$JOB_DIR"; seal "$BOARD"; seal "$JOBJ" ;; *) die "usage: dl tracker [open|sync|check|switch <kind> \"<why>\"]" ;; esac
+}
+# dl tracker switch <kind> "<why>" — the human moves the active job to another tracker (/deliver:tracker). Its settings come
+# from .deliver.json (and ~/.deliver/config.json): set tracker.<kind> there first. The new tracker is checked before anything
+# changes; then the job's settings change, and — once the job is in the tool (executing or later) — the new tool opens the
+# job and every card in its current column. What the old tool holds is left as it is; its links stay in the card's history.
+cmd_tracker_switch() {
+  human_only "switching the job's tracker (dl tracker switch)"
+  local kind=${1:-} why=${2:-}; [[ -n $kind && -n $why ]] || die 'usage: dl tracker switch <local|jira|asana|linear|github|…> "<why>"'
+  load_job
+  local cur kinds; cur="$(setting tracker.kind)"; cur=${cur:-local}
+  [[ $kind != "$cur" ]] || refuse 1 "the job already uses the $kind tracker"
+  kinds=$(node --input-type=module -e "import {trackerKinds, loadTrackers} from '$BIN_DIR/tracker.mjs'; await loadTrackers(); console.log(trackerKinds().join(', '))")
+  [[ ", $kinds, " == *", $kind, "* ]] || refuse 1 "'$kind' is not a known tracker ($kinds)"
+  local repo new f out rc=0
+  repo="$(merged_settings | jq -c '.tracker // {}')"
+  new="$(jq -c --arg k "$kind" --argjson r "$repo" '.settings.tracker * ($r | with_entries(select(.key == $k or .key == "columns"))) + {kind: $k}' "$JOBJ")"
+  f="$(mktemp)"; jq --argjson t "$new" '.settings + {tracker: $t}' "$JOBJ" > "$f"
+  out="$(node "$BIN_DIR/tracker-cli.mjs" check "$f" 2>&1)" || rc=$?; rm -f "$f"
+  [[ $rc -eq 0 ]] || refuse 1 "the $kind tracker is not ready — nothing was changed:
+$out
+(its settings are read from .deliver.json → tracker.$kind; the credentials from the environment)"
+  jq_inplace "$JOBJ" --argjson t "$new" '.settings.tracker = $t'
+  log_event tracker-switch "$cur → $kind by ${DELIVER_APPROVER:-${USER:-human}}: $why"
+  echo "$out"
+  if [[ " executing integrating closing awaiting_pr_merge done " == *" $(phase_now) "* ]]; then
+    local o2 r2=0; o2="$(with_lock board.json node "$BIN_DIR/tracker-cli.mjs" open "$JOB_DIR" 2>&1)" || r2=$?; seal "$BOARD"; seal "$JOBJ"
+    if [[ $r2 -ne 0 ]]; then
+      printf '%s\t%s\t%s\n' "$(now)" tracker-error "$o2" >> "$JOB_DIR/events.log"
+      echo "warning: switched, but opening the job in $kind failed — the next step retries it: $o2"
+    else echo "$o2"; fi
+  fi
+  echo "the job now uses the $kind tracker (was $cur); the $cur tool keeps what it had — the links stay in each card's history"
 }
 cmd_reseal() { # human only (bash-guard): accept the current job.json/board.json after inspecting an outside change
   human_only "dl reseal"; DL_NO_SEAL_CHECK=1 load_job

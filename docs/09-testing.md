@@ -5,7 +5,7 @@ is summarised away.
 
 | Layer | Command | Model? | Time | Proves |
 | --- | --- | --- | --- | --- |
-| 1. Deterministic | `tests/run.sh` | no | ~2 min | every `dl` guard, the validator, roles, readiness, knowledge, hooks, trackers (Jira contract stub), merge modes (fake `gh`, bare origin), installer |
+| 1. Deterministic | `tests/run.sh` | no | ~2 min | every `dl` guard, the validator, roles, readiness, knowledge, hooks, trackers (contract stubs of Jira, Asana, Linear, GitHub Projects; switching a running job's tracker), merge modes (fake `gh`, bare origin), installer |
 | 2. Replay | `tests/replay-watchlist.sh` | no | ~1 min | the whole flow on the POC slice, narrated step by step with real `dl` output; a scope violation rejected and retried; the hidden oracle passes |
 | 3. Live, headless | `tests/e2e-live.sh complete \| incomplete \| parallel` | yes | 10–25 min each | real Claude Code + real ECC from GitHub + real agents on a fresh HOME; the only input is a requirements file |
 | 4. Live, Munder Difflin | `tests/e2e-munder.sh` | yes | 30–60 min | `scripts/init.sh --munder` from nothing, the real Electron app driven like a user (Playwright + xvfb), Michael briefed with one message, a person seated for every role seat does that role's work (no subagents), screenshots of the floor and of people at work |
@@ -33,7 +33,7 @@ execution guards (gate, QA scope, review on the same commit, attempts, blocked) 
 (bash-guard, write-guard, agent-guard, stop-guard, subagent-log) · Munder Difflin dispatch (spawn request, providers, worker
 command) · seats (one person per seat, `live` only after `seated`, failures with their reason — startup crash, API/credit
 error, rejected request, timeout — `md-reseat`, explicit models) · the floor default (a floor job refused outside the app's
-Michael, `dl dispatch` by hand) · mixed stacks, frozen decisions, parallel assignment · traceability (card changes, seals) · Jira contract stub
+Michael, `dl dispatch` by hand) · mixed stacks, frozen decisions, parallel assignment · traceability (card changes, seals) · Jira, Asana, Linear, GitHub Projects contract stubs · switching the tracker mid-job
 (statuses, comments, branch links, a workflow missing a status) · ECC specialists · `dl next` robustness · commit hygiene ·
 tracker factory · knowledge (standards, lessons, MemPalace, knowledge graph) · merge modes · install/uninstall.
 

@@ -78,9 +78,12 @@ There is exactly one human approval in `human` / `semi`: the PR. `dl pr` syncs t
 
 | Key | Default | Effect |
 | --- | --- | --- |
-| `tracker.kind` | `"local"` | `local` (kanban in the terminal + `kanban.html`), `jira`, or any registered plugin |
+| `tracker.kind` | `"local"` | `local` (kanban in the terminal + `kanban.html`), `jira`, `asana`, `linear`, `github` (GitHub Projects), or any registered plugin. A running job keeps the tracker it started with; `/deliver:tracker <kind> <why>` moves it |
 | `tracker.columns` | `{}` | Rename the workflow columns (`todo`, `in_progress`, `qa`, `review`, `done`, `blocked`, `wontdo`) |
 | `tracker.jira.*` | `project`, `issue_type: Task`, `epic_type: Epic`, `labels: [deliver]`, `api_version: "3"` | Jira target. Credentials only in env |
+| `tracker.asana.project` | — | the Asana project gid; its sections are the columns |
+| `tracker.linear.team` | — | the Linear team key (e.g. `ENG`); its workflow states are the columns |
+| `tracker.github.*` | `repo` (owner/name), `project` (number), `project_owner` (default: the repo owner), `status_field: "Status"`, `labels: []` | GitHub Projects (v2) target |
 
 Details: [10-trackers](10-trackers.md).
 
@@ -135,6 +138,7 @@ Components (with their path, stack, dev owner and reviewer) are not set on roles
 | `DELIVER_APPROVER` | Name recorded on human answers/approvals (default `$USER`) |
 | `DELIVER_GH` | The GitHub CLI to use (default `gh`; tests point it at a stub) |
 | `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN`, or `JIRA_PAT` | Jira credentials — [10](10-trackers.md#2-credentials--environment-only-never-in-deliverjson) |
+| `ASANA_TOKEN` · `LINEAR_API_KEY` · `GITHUB_TOKEN` (or `GH_TOKEN`) | Asana, Linear, GitHub Projects credentials — [10](10-trackers.md#asana-linear-github-projects) |
 | `HIVE_ROOT`, `KG_CLI`, `KG_ROOT` | Set by Munder Difflin in its terminals: hive folder, knowledge graph CLI and store |
 | `PERMISSION_MODE` | `scripts/run-headless.sh` permission mode (`auto` default) |
 | `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` | Set by `run-headless.sh`: no background agents in `-p` runs |

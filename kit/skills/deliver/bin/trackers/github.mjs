@@ -67,7 +67,7 @@ export class GitHubTracker extends Tracker {
     const p = await this.project();
     for (const c of this.board.cards) if (!c.tracker?.number) {
       const i = await this.rest("POST", `${repo}/issues`, { title: `${c.id}: ${c.title}`.slice(0, 250), body: this.description(c), labels: this.labels });
-      c.tracker = { number: i.number, id: i.id, url: i.html_url, column: null }; this.saveBoard();
+      c.tracker = { kind: "github", number: i.number, id: i.id, url: i.html_url, column: null }; this.saveBoard();
       await this.rest("POST", `${repo}/issues/${this.job.tracker.epic}/sub_issues`, { sub_issue_id: i.id }).catch(() => {});
       const d = await this.gql(`mutation($p: ID!, $c: ID!) { addProjectV2ItemById(input: {projectId: $p, contentId: $c}) { item { id } } }`, { p: p.id, c: i.node_id });
       c.tracker.item = d.addProjectV2ItemById.item.id; this.saveBoard();
