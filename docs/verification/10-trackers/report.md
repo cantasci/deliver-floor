@@ -65,3 +65,13 @@ The body-field check reads the first object literal of each call; fields built f
 `tests/run.sh` → `tracker_contract` for asana (16 checks), linear (17), github (16): check (sign-in, board, a column per stage; a missing credential named; a missing column refused), open (job + a card under it per card, in the existing board), the dependency, To Do → In Progress → QA → Code Review → Done through the real `dl wt add / gate / qa / review / integrate`, the roles' comments, the branch in the description (Linear: the identifier in the branch name), and a column removed mid-job reported without touching board.json.
 
 Not done: a run against a real Asana, Linear or GitHub Projects account — none is available here ([OPEN O2](../../OPEN.md)).
+
+## Switching a running job's tracker (0.7.1)
+
+`tests/run.sh` → "tracker switch mid-job": a job opened in Jira (stub) is moved to Linear (stub) with the human's
+`/deliver:tracker linear <why>`: refused while `tracker.linear` is not set (the job keeps Jira); after it is set, Linear gets
+its own job issue and the card under it in its current column (In Progress), the Jira links move to `tracker_history`, the
+next gate moves the card to QA in Linear while Jira keeps what it had, no tracker error. 14 checks.
+
+Proof that the test catches the defect it was written for: the same suite with `adopt()` disabled (the old behaviour) fails
+at "Linear gets its own job issue … never Jira's epic key as a parent" — the stub refuses the unknown parent, as Linear does.

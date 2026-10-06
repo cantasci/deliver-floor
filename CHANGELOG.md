@@ -4,6 +4,17 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.7.1 — 2026-10-06
+
+**Switch the tracker of a running job** — `/deliver:tracker <local|jira|asana|linear|github> <why>`
+- The new tracker is checked first (sign-in, board, a column per stage) with its settings from `.deliver.json`; if it is not
+  ready nothing changes. Then the new tool opens the job and every card, each in its current column, and the flow goes on
+  there. The old tool keeps what it had; its links stay in each card's and the job's history. Logged with who and why; only
+  you can run it.
+- Fixed: a tracker record now says which tool made it. Before, a job switched from Jira to Linear sent Jira's epic key to
+  Linear as the parent issue (and a real Linear refuses it), so nothing more reached the new tool.
+- The test stubs refuse an unknown parent, as the real APIs do — the case above now fails a test when it regresses.
+
 ## 0.7.0 — 2026-10-06
 
 **One copy of the kit: the plugin** (from a user's machine: Michael kept an old version however often the plugin updated)

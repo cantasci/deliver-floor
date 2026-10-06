@@ -142,6 +142,19 @@ those schemas and every REST call's path, method and body fields against those d
 **Trello** is not here yet: its official API reference (developer.atlassian.com) is not reachable from the environment this
 kit was built in, and it is not written from memory.
 
+## Switching the tracker of a running job
+
+`.deliver.json` is read when a job starts; a running job keeps its own copy. To move it, set the new tool up in
+`.deliver.json` (`tracker.<kind>`, the credentials in the environment) and type `/deliver:tracker <kind> <why>`:
+
+1. the new tracker is checked exactly as `dl tracker check` would — if it is not ready, the refusal says why and nothing changes;
+2. the job's tracker changes (logged as `tracker-switch` with who and why);
+3. once the job is in a tool (executing or later), the new one opens the job and every card, each in its current column;
+4. the old tool is left as it is; its links move to `tracker_history` on the job and on each card.
+
+Card branches already made keep the old issue key in their name (a branch is never renamed); cards assigned later get the
+new tool's key where it has one (Linear). Only the human can switch (Claude's `dl tracker switch` is refused).
+
 ## Adding a tracker (Azure Boards, Trello, …)
 
 One class, four methods, one registration — the flow, `dl` and the other trackers do not change:

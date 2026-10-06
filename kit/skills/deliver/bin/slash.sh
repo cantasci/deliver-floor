@@ -26,6 +26,7 @@ case $cmd in
   reseal)   need "$args" "<what was changed outside dl and why it is accepted>"; run reseal "$args" ;;
   unfreeze) need "$args" "<why the frozen decisions must change>"; run unfreeze "$args" ;;
   abort)    need "$args" "<why the job stops>"; run abort "$args" ;;
+  tracker)  need "$rest" "<local|jira|asana|linear|github> <why>"; run tracker switch "$first" "$rest" ;;
   new)      # what /deliver:new tells Claude: is a job in the way of a new one?
             if out="$(bash "$DL" status 2>/dev/null)" && [[ $out == job:* ]]; then
               echo "ACTIVE JOB — a new job cannot start while this one is active:"; printf '%s\n' "$out" | sed -n '1,4p'

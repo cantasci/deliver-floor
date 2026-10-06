@@ -30,6 +30,7 @@ function asana(req, path, body, res) {
   if (req.method === "POST" && path === "/tasks") {
     if (!d.name) return send(res, 400, { errors: [{ message: "name: Missing input" }] });
     if (!(d.projects?.length || d.workspace || d.parent)) return send(res, 400, { errors: [{ message: "workspace: Missing input" }] });
+    if (d.parent && d.parent !== st.container?.id) return send(res, 404, { errors: [{ message: "parent: Not a recognized ID" }] });
     const gid = String(9000 + ++n);
     if (d.parent) item(gid, d.name, d.parent); else st.container = { id: gid, title: d.name };
     if (st.items[gid]) st.items[gid].body = d.notes ?? "";
@@ -64,6 +65,7 @@ function linear(req, path, body, res) {
   if (/\bissueCreate\(/.test(q)) {
     const i = v.input ?? {};
     if (!i.teamId) return E("Argument Validation Error: teamId must be a UUID");
+    if (i.parentId && i.parentId !== st.container?.id) return E("Argument Validation Error: parentId must be a UUID of an existing issue");
     const id = `iss${++n}`, identifier = `WL-${n}`;
     if (i.parentId) { item(id, i.title, i.parentId); st.items[id].body = i.description ?? ""; if (i.stateId) st.items[id].column = states.find((s) => s.id === i.stateId)?.name ?? null; }
     else st.container = { id, title: i.title };

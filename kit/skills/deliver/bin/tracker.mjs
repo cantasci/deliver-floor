@@ -48,6 +48,24 @@ export class Tracker {
     this.job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
     this.board = JSON.parse(readFileSync(join(jobDir, "board.json"), "utf8"));
     this.columns = columnsOf(this.job);
+    this.kind = this.job.settings?.tracker?.kind ?? "local";
+    this.adopt();
+  }
+  /** The tracker was switched mid-job (dl tracker switch): what the previous tool recorded — the job's container and each
+   *  card's item — moves to *_history (the links stay on the card), so this tool opens its own instead of taking another
+   *  tool's ids for its own (seen: Linear given Jira's epic key as a parent). A record carries the kind that made it. */
+  adopt() {
+    const old = this.job.tracker, oldKind = old?.kind;
+    if (old && oldKind && oldKind !== this.kind) {
+      (this.job.tracker_history ??= []).push({ ...old, until: new Date().toISOString() });
+      delete this.job.tracker; this.saveJob();
+    }
+    let moved = false;
+    for (const c of this.board.cards ?? []) {
+      const k = c.tracker?.kind ?? oldKind ?? this.kind;
+      if (c.tracker && k !== this.kind) { (c.tracker_history ??= []).push({ kind: k, ...c.tracker }); delete c.tracker; moved = true; }
+    }
+    if (moved) this.saveBoard();
   }
   /** create the job container and every card that has no external id yet */
   async open() {}
@@ -126,7 +144,7 @@ export class JiraTracker extends Tracker {
         description: this.description(c) };
       fields.parent = { key: this.job.tracker.epic };
       const i = await this.req("POST", "/issue", { fields });
-      c.tracker = { key: i.key, url: `${this.base}/browse/${i.key}`, column: null };
+      c.tracker = { kind: "jira", key: i.key, url: `${this.base}/browse/${i.key}`, column: null };
       c.tracker.column = (await this.req("GET", `/issue/${i.key}?fields=status`)).fields?.status?.name ?? null;
       this.saveBoard();
       if ((c.depends_on ?? []).length) for (const d of c.depends_on) {

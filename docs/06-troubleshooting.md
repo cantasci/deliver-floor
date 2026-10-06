@@ -41,7 +41,9 @@ Start with `/deliver:doctor` (or `scripts/doctor.sh <repo>`), then `/deliver:sta
 | Headless: agents vanish, cards stay `running` | background agents in `claude -p` die with the process | use `scripts/run-headless.sh` (disables background tasks); agent-guard refuses background agents when `DELIVER_HEADLESS=1` |
 | Same card failing again and again | card too big or `verify` wrong | it blocks after `max_attempts`; split it (`dl card add`), fix `verify`, `dl card T-xx retry` |
 | `git push` denied | bash-guard: main/master, force, or not the agent's own card branch | push the card branch from its worktree; force push is never allowed |
-| `tracker-error` in `/deliver:status` | Jira unreachable / workflow lacks a status | the flow continues; fix the cause, `dl tracker sync` ([10](10-trackers.md)) |
+| `tracker-error` in `/deliver:status` | the tool unreachable / a column (status, section, state, Status option) missing | the flow continues; fix the cause, `dl tracker sync` ([10](10-trackers.md)) |
+| Changed `tracker` in `.deliver.json`, the running job still uses the old one | a job keeps the settings it started with | `/deliver:tracker <kind> <why>` — checked first, then the new tool gets the job and every card in its current column |
+| `/deliver:tracker` refused: "not ready — nothing was changed" | the new tool's settings or credentials are missing, or a column is | set `tracker.<kind>` in `.deliver.json` and the credentials in the environment; `/deliver:doctor` shows what is missing |
 
 ## Munder Difflin
 

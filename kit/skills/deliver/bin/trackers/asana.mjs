@@ -45,7 +45,7 @@ export class AsanaTracker extends Tracker {
     for (const c of this.board.cards) if (!c.tracker?.id) {
       const t = await this.req("POST", "/tasks", { name: `${c.id}: ${c.title}`.slice(0, 250), notes: this.description(c),
         projects: [this.project], parent: this.job.tracker.epic });
-      c.tracker = { id: t.gid, url: t.permalink_url, column: null }; this.saveBoard();
+      c.tracker = { kind: "asana", id: t.gid, url: t.permalink_url, column: null }; this.saveBoard();
       const deps = (c.depends_on ?? []).map((d) => this.board.cards.find((x) => x.id === d)?.tracker?.id).filter(Boolean);
       if (deps.length) await this.req("POST", `/tasks/${t.gid}/addDependencies`, { dependencies: deps }).catch(() => {});
     }

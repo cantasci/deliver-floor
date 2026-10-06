@@ -29,7 +29,7 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
   repo's floor and hands the job to Michael there — tell the human what it printed, and stop. Never change the mode yourself.
 - **The human's commands** are slash commands they type, never `dl` in their terminal: `/deliver:status`, `/deliver:board`,
   `/deliver:seats`, `/deliver:timeline`, `/deliver:answer <id> <answer>`, `/deliver:approve` / `/deliver:reject <what>`,
-  `/deliver:retry <card>`, `/deliver:mode`, `/deliver:reseal`, `/deliver:unfreeze`, `/deliver:abort <why>`,
+  `/deliver:retry <card>`, `/deliver:mode`, `/deliver:tracker`, `/deliver:reseal`, `/deliver:unfreeze`, `/deliver:abort <why>`,
   `/deliver:new <request>`, `/deliver:doctor`. When the human has to decide something, name the command for it; you cannot
   run these yourself.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.

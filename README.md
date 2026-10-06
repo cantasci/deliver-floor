@@ -91,6 +91,7 @@ Everything you do is a slash command in Claude Code — you never run `dl` yours
 | `/deliver:retry <card>` | give a blocked card new attempts |
 | `/deliver:abort <why>` | stop the active job (seats home, worktrees cleared, branches kept) — then `/deliver:new` |
 | `/deliver:mode munder\|subagent <why>` | run the job on the floor or as Claude Code subagents |
+| `/deliver:tracker <kind> <why>` | move the running job to another tracker (local, jira, asana, linear, github) |
 | `/deliver:reseal <why>` · `/deliver:unfreeze <why>` | accept a hand edit of the job's state · reopen the frozen readiness decisions |
 | `/deliver:doctor` | the plugin version, the settings that apply, what is missing |
 

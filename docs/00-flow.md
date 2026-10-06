@@ -55,7 +55,8 @@ bookkeeping and refuses anything out of order, hooks enforce isolation.
  main, no force push, agents push only their own card branch, agents can't change flow state, approve or answer for the human · PreToolUse(Edit|Write) →
  agents write only in their worktree, Michael writes no product code · PreToolUse(Agent) → headless runs can't lose
  background agents · SubagentStop → every agent run is logged
- Tracker (settings.tracker): every transition above is mirrored to the local kanban or Jira — docs/10-trackers.md
+ Tracker (settings.tracker): every transition above is mirrored to the local kanban, Jira, Asana, Linear or GitHub Projects —
+you can move a running job to another one with /deliver:tracker — docs/10-trackers.md
 ```
 
 ## Who does what
@@ -142,7 +143,7 @@ job/JOB-…  ●──────────●(T-01)────────�
 - Each card branches from the **job branch**, so it sees every card merged before it.
 - Cards merge back with `--no-ff`, so the job branch history reads card by card.
 - Your main checkout is never modified during the job (except `merge_mode: local` at the very end).
-- Card branches carry the tracker key when there is one (`job/<JOB>--T-02-WL-14`), so Jira links them. `dl` pushes card
+- Card branches carry the tracker key when there is one (`job/<JOB>--T-02-WL-14` for Jira, `…-ENG-12` for Linear), so the tool links them. `dl` pushes card
   branches (`push_branches`); agents may push only their own card branch (bash-guard). Nobody pushes `main`; the job branch is pushed by
   `dl ship` for the PR.
 - Commits carry no AI attribution (`commit.ai_attribution: false` — the gate fails a card whose commits do); a `Role: <seat>`

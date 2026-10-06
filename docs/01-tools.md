@@ -20,6 +20,7 @@
 | Munder Difflin | Michael on the office floor: roles at desks, floor workers on any CLI, ASK ME, knowledge graph | `scripts/init.sh --munder --hive <dir>` ([07](07-munder-difflin.md)) |
 | Other agent CLIs | A role should run on another model: `codex`, `gemini`, `grok`, `kimi`, `qwen`, `opencode`, `crush`, `pi`, `copilot`, `cursor-agent`, `agy` | each vendor's installer; Munder Difflin offers to install them ([04](04-roles.md#models-and-clis-per-role)) |
 | Jira Cloud / Data Center | The cards should live in Jira instead of the local kanban | credentials in env ([10](10-trackers.md#jira)) |
+| Asana, Linear or GitHub Projects | The cards should live in one of them | `ASANA_TOKEN`, `LINEAR_API_KEY` or `GITHUB_TOKEN` in env ([10](10-trackers.md#asana-linear-github-projects)) |
 | graphify | A code knowledge graph (`graphify-out/GRAPH_REPORT.md`) in every role card | see [08](08-knowledge.md#3-the-code-graph-graphify) |
 | adb + ARTEMIS MCP | Mobile jobs: `qa-mobile` drives a device | Android platform-tools; ARTEMIS MCP server |
 | Playwright | `qa-web` (`ecc:e2e-runner`) runs browser tests; the Munder Difflin live test drives the app | `npx playwright install` in the repo |
@@ -40,5 +41,5 @@ Claude Code ── the runtime: sessions, Agent tool, Skill tool, hooks, permiss
 git ─────── isolation (worktrees) and history (one merge commit per card)
 jq / node ─ used by dl and the hooks
 Munder Difflin (optional) ── where Michael and the roles sit; floor workers on any CLI/model; knowledge graph
-Tracker (optional) ───────── local kanban (default) or Jira — a mirror of board.json
+Tracker (optional) ───────── local kanban (default), Jira, Asana, Linear or GitHub Projects — a mirror of board.json
 ```
