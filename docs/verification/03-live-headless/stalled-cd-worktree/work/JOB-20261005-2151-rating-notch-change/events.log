@@ -1,0 +1,24 @@
+2026-10-05T21:51:09Z	new	Rating notch change
+2026-10-05T21:51:21Z	jobset	stack: .stack=["node"]
+2026-10-05T21:51:21Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-06-02: notch calculator domain logic in src/ratings/notch.mjs"},{"role":"backend","agent":"backend-dev","model":"haiku","why":"REQ-06-02: implement notchChange; request staffs \"The backend developer works on the haiku model\""},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack node: Plain Node ESM (.mjs) JavaScript"}]
+2026-10-05T21:51:21Z	jobset	assumptions: .assumptions += ["Stack is Node.js ESM (.mjs), no dependencies: the request says \"Plain Node ESM, no dependencies\" and the repo has a package.json with type=module"]
+2026-10-05T21:51:21Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T21:51:21Z	phase	readiness
+2026-10-05T21:53:52Z	agent	business-analyst a1afbe88: I did not write `/tmp/claude-0/live/k050/models/repo/.work/JOB-20261005-2151-rating-notch-change/out/readiness-ba.json`. My role card says "writes files: no", s
+2026-10-05T21:54:23Z	decide	DEL-docs: JSDoc on RATING_SCALE and notchChange only; no README or changelog — Request asks for no documentation ("No UI, CLI or printed output"); the contract is two exports; JSDoc documents sign convention and RangeError at no extra surface
+2026-10-05T21:54:23Z	decide	X-module-shape: Named exports only; RATING_SCALE = Object.freeze([...19 strings]) — Contract names only RATING_SCALE and notchChange; freezing stops consumers corrupting the shared scale that Indicators 11-13 import
+2026-10-05T21:54:23Z	decide	X-error-message: RangeError message names the argument and the received value, formatted safely (String() only for primitives); tests assert only RangeError type — C2 fixes only the error type; a descriptive message aids debugging and must never itself throw
+2026-10-05T21:54:41Z	readiness	30 items: 20 decided, 10 n/a, 0 open
+2026-10-05T21:54:42Z	freeze	readiness + architecture frozen (3dca4292b72f)
+2026-10-05T21:54:42Z	roles	ba backend-lead backend qa reviewer
+2026-10-05T21:54:42Z	phase	planning
+2026-10-05T21:56:14Z	agent	business-analyst afe4aa87: # Plan ## Goal Add one pure, synchronous function that gives the signed number of notches between a previous and a current credit rating on the 19-step scale in
+2026-10-05T21:57:43Z	agent	ecc:architect a808dece: [{"tmp_id":"B1","title":"Add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests","role":"backend","component":"ratings-lib","context":"WHY: Indi
+2026-10-05T22:00:57Z	agent	business-analyst a35d090e: === T-01 === # T-01: Add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests ## User story As a developer of Indicators 11–13 and of the REQ-06
+2026-10-05T22:01:42Z	phase	executing
+2026-10-05T22:01:43Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-05T22:03:44Z	agent	backend-dev ab8c70ab: Excellent! All checks pass. Let me create a final summary: ## Summary **Status:** done **Commit:** ed49258 **Verify:** passed (17/17 tests) I have successfully 
+2026-10-05T22:03:47Z	gate	T-01 PASS
+2026-10-05T22:04:51Z	agent	qa-tester a09e82dd: All 18 criteria pass against ed49258, but the push of the QA commit was blocked, so it exists only locally. The push was rejected twice by the bash-guard hook (
+2026-10-05T22:04:55Z	qa	T-01 pass (qa_verify PASS) — AC-1..AC-18 pass; 23 integration tests (qa_verify exit 0); npm test 40 tests, 0 failed; README/package.json unchanged
+2026-10-05T22:05:23Z	agent	ecc:typescript-reviewer a9e60556: {"verdict":"changes","blocking":[{"file":"test/ratings/notch.test.mjs","line":97,"issue":"The spec says test sources must write invisible characters as escapes 

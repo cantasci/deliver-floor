@@ -1,0 +1,149 @@
+# qa_verify: node --test test/ratings/notch.integration.test.mjs
+TAP version 13
+# Subtest: AC-1: BBB+ -> BB+ is a 3-notch downgrade (3)
+ok 1 - AC-1: BBB+ -> BB+ is a 3-notch downgrade (3)
+  ---
+  duration_ms: 1.015339
+  type: 'test'
+  ...
+# Subtest: AC-2: BB+ -> BBB+ is a 3-notch upgrade (-3)
+ok 2 - AC-2: BB+ -> BBB+ is a 3-notch upgrade (-3)
+  ---
+  duration_ms: 0.194469
+  type: 'test'
+  ...
+# Subtest: AC-3: same rating twice returns +0, never -0
+ok 3 - AC-3: same rating twice returns +0, never -0
+  ---
+  duration_ms: 0.200825
+  type: 'test'
+  ...
+# Subtest: AC-4: RATING_SCALE is the frozen 19-entry literal list
+ok 4 - AC-4: RATING_SCALE is the frozen 19-entry literal list
+  ---
+  duration_ms: 0.620235
+  type: 'test'
+  ...
+# Subtest: AC-5: mutating RATING_SCALE throws TypeError and leaves module intact
+ok 5 - AC-5: mutating RATING_SCALE throws TypeError and leaves module intact
+  ---
+  duration_ms: 0.444107
+  type: 'test'
+  ...
+# Subtest: AC-6: module exports are notchChange and RATING_SCALE, no default
+ok 6 - AC-6: module exports are notchChange and RATING_SCALE, no default
+  ---
+  duration_ms: 0.161867
+  type: 'test'
+  ...
+# Subtest: AC-7: all 361 pairs return j - i as an integer number
+ok 7 - AC-7: all 361 pairs return j - i as an integer number
+  ---
+  duration_ms: 0.412763
+  type: 'test'
+  ...
+# Subtest: AC-7: concrete rows of Table A
+ok 8 - AC-7: concrete rows of Table A
+  ---
+  duration_ms: 0.158709
+  type: 'test'
+  ...
+# Subtest: AC-8: lower and mixed case input is accepted
+ok 9 - AC-8: lower and mixed case input is accepted
+  ---
+  duration_ms: 0.229535
+  type: 'test'
+  ...
+# Subtest: AC-9: whitespace removed by trim() (incl. NBSP and BOM) is accepted
+ok 10 - AC-9: whitespace removed by trim() (incl. NBSP and BOM) is accepted
+  ---
+  duration_ms: 0.330041
+  type: 'test'
+  ...
+# Subtest: AC-10: whitespace trim() keeps, or inside the rating, throws RangeError
+ok 11 - AC-10: whitespace trim() keeps, or inside the rating, throws RangeError
+  ---
+  duration_ms: 1.06573
+  type: 'test'
+  ...
+# Subtest: AC-11: unknown rating strings throw RangeError as previous and as current
+ok 12 - AC-11: unknown rating strings throw RangeError as previous and as current
+  ---
+  duration_ms: 0.482028
+  type: 'test'
+  ...
+# Subtest: AC-12: empty and whitespace-only strings throw RangeError
+ok 13 - AC-12: empty and whitespace-only strings throw RangeError
+  ---
+  duration_ms: 0.143292
+  type: 'test'
+  ...
+# Subtest: AC-13: non-string-primitive input throws RangeError (never TypeError, never returns)
+ok 14 - AC-13: non-string-primitive input throws RangeError (never TypeError, never returns)
+  ---
+  duration_ms: 0.485364
+  type: 'test'
+  ...
+# Subtest: AC-14: both arguments invalid still throws RangeError
+ok 15 - AC-14: both arguments invalid still throws RangeError
+  ---
+  duration_ms: 0.077701
+  type: 'test'
+  ...
+# Subtest: AC-15: values whose string conversion throws still produce RangeError
+ok 16 - AC-15: values whose string conversion throws still produce RangeError
+  ---
+  duration_ms: 0.229755
+  type: 'test'
+  ...
+# Subtest: AC-15: error message names the offending argument
+ok 17 - AC-15: error message names the offending argument
+  ---
+  duration_ms: 0.095755
+  type: 'test'
+  ...
+# Subtest: AC-16: module runs in a clean child process with no output and returns a number
+ok 18 - AC-16: module runs in a clean child process with no output and returns a number
+  ---
+  duration_ms: 24.542964
+  type: 'test'
+  ...
+# Subtest: AC-16: source has no import, require, console or process (comments removed)
+ok 19 - AC-16: source has no import, require, console or process (comments removed)
+  ---
+  duration_ms: 0.532827
+  type: 'test'
+  ...
+# Subtest: AC-17: package.json has no dependencies; source and unit-test files exist and use node:test
+ok 20 - AC-17: package.json has no dependencies; source and unit-test files exist and use node:test
+  ---
+  duration_ms: 0.310981
+  type: 'test'
+  ...
+# Subtest: AC-17: the unit-test file runs green under node --test (tap)
+ok 21 - AC-17: the unit-test file runs green under node --test (tap)
+  ---
+  duration_ms: 87.043188
+  type: 'test'
+  ...
+# Subtest: AC-18: JSDoc blocks precede RATING_SCALE and notchChange and describe the contract
+ok 22 - AC-18: JSDoc blocks precede RATING_SCALE and notchChange and describe the contract
+  ---
+  duration_ms: 0.480988
+  type: 'test'
+  ...
+# Subtest: AC-18: README.md is byte-identical to main
+ok 23 - AC-18: README.md is byte-identical to main
+  ---
+  duration_ms: 2.849746
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 180.059432
