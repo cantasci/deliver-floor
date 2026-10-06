@@ -1,0 +1,36 @@
+2b2708c3a91cdddcc34ee3970abb97a1d7564392
+Merge job/JOB-20261006-0056-rating-notch-change: Rating notch change
+
+----
+c98c734529ad9b5b557fdaf114636de689187ee9
+Merge T-01: ratings-lib: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests
+
+----
+6e1edcb789e53ed6ce675450f26ff569b82a84e7
+T-01 QA: integration tests for notchChange (AC-1..AC-17)
+
+----
+3d56f04ac9640b42d64cd12c7f00f8c012798b1b
+T-01: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests
+
+Implements pure function notchChange(previous, current) that returns the signed
+notch change between two credit ratings on a frozen 19-step scale. Includes
+comprehensive unit tests covering all 17 acceptance criteria:
+
+- RATING_SCALE: frozen array of ratings (AAA to CCC-), best first
+- notchChange: synchronous function that validates inputs, trims whitespace,
+  performs case-insensitive matching, and returns index difference
+- Input validation: strict type checking, rejection of non-strings including
+  String objects, arrays, functions, symbols, bigints
+- Error handling: all invalid inputs throw RangeError with descriptive messages
+- Purity: no imports, no I/O, no side effects, no mutation of RATING_SCALE
+
+----
+e9efbfdf0d8b8f9ad3d495916338820f0ae51586
+no .deliver.json: the first /deliver writes it
+
+----
+e115d2ceaa82b906ecdea2f85cf8d85d04c67247
+seed: watchlist-poc
+
+----

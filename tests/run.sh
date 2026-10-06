@@ -1115,6 +1115,8 @@ contains "…committed in the repo's commit format" "$(git log --format=%s -n 5)
 R2="$(cat "$KJ2/report.md")"
 [[ $R2 == *"## Lessons learned"* && $R2 == *"## Feedback for the deliver kit"* && $R2 == *"The stop-guard held Michael"* && $R2 == *"### New standards"* && $R2 == *"## Follow-ups (found during the job, outside its scope)"* && $R2 == *"suite_v2._balanced"* ]] \
   && ok "the PR body lists the lessons, the new standard, the kit feedback and the follow-ups" || bad "report: $R2"
+contains "after ship a lesson is refused, with why (seen live: one learned after ship reached no PR)" "$("$DL" learn ba "late" --topic late --evidence "x" 2>&1)" "the job is shipped"
+contains "…a follow-up too" "$("$DL" followup "late" 2>&1)" "the job is shipped"
 contains "shared lessons go to their own branch in the shared repo (a PR there)" "$(git -C "$SB" show "deliver/$(basename "$KJ2"):lessons.md" 2>&1)" "- project: kp"
 "$DL" cleanup --all >/dev/null 2>&1
 "$DL" new "Next" "x" >/dev/null 2>&1; KJ3="$KP/.work/$(cat .work/ACTIVE)"

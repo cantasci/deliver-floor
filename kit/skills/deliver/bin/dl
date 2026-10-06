@@ -642,8 +642,13 @@ cmd_clarify() {
 # FAIL, a QA fail, a review "changes", a block, a refused merge). It reaches the project's .deliver/knowledge/lessons.md (or,
 # scope shared, the shared knowledge repo) only through this job's PR; scope kit is a defect of the flow itself, listed for
 # the deliver kit in the PR.
+# Lessons, standards and follow-ups ride with the job's PR: after dl ship there is no PR left to carry them.
+not_shipped() {
+  [[ "$(jq -r '.shipped // false' "$JOBJ")" != true && -z "$(jq -r '.knowledge_published.head // ""' "$JOBJ")" ]] \
+    || refuse 1 "the job is shipped — what it learned had to be recorded before dl ship (closing, step 3). Record it in the next job (dl learn there, with this job's evidence), or add it to .deliver/knowledge/lessons.md with a PR of its own"
+}
 cmd_learn() {
-  load_job
+  load_job; not_shipped
   local role=${1:-} text=${2:-} topic="" card="" scope=project ev=() a; shift 2 2>/dev/null || true
   while [[ $# -gt 0 ]]; do
     a=$1; case $a in
@@ -674,7 +679,7 @@ cmd_knowledge() {
     list) node "$BIN_DIR/knowledge.mjs" list "$ROOT" "${2:-}" "${3:-}" "${4:-}" ;;
     topics) load_job; node "$BIN_DIR/knowledge.mjs" topics "$ROOT" "$JOB_DIR" | jq . ;;
     promote) # dl knowledge promote <topic> "<rule>" [--applies-to a,b] [--scope project|shared] — a standard, with this job's PR
-      load_job
+      load_job; not_shipped
       local topic=${2:-} rule=${3:-} ap="" sc=project; shift 3 2>/dev/null || true
       while [[ $# -gt 0 ]]; do case $1 in --applies-to) ap=${2:-}; shift 2 ;; --scope) sc=${2:-}; shift 2 ;; *) die "unknown option: $1" ;; esac; done
       [[ -n $topic && -n $rule ]] || die 'usage: dl knowledge promote <topic> "<rule>" [--applies-to dev,qa] [--scope project|shared]'
@@ -1090,7 +1095,7 @@ knowledge_publish() {
 }
 # dl followup "<finding>" [--card T-xx] [--evidence "<…>"] — a defect seen outside the job's scope: recorded, listed in the PR
 cmd_followup() {
-  load_job
+  load_job; not_shipped
   local text=${1:-} card="" ev=""; shift || true
   while [[ $# -gt 0 ]]; do case $1 in --card) card=${2:-}; shift 2 ;; --evidence) ev=${2:-}; shift 2 ;; *) die "unknown option: $1" ;; esac; done
   [[ -n $text ]] || die 'usage: dl followup "<finding>" [--card T-xx] [--evidence "<what showed it>"]'

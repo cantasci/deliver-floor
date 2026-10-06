@@ -16,6 +16,8 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
 - A topic learned in three jobs asks for a standard: `dl knowledge promote <topic> "<rule>"` writes it (`## Must`, with
   the lessons behind it) in the same PR. `dl knowledge topics` lists the topics.
 - `dl followup "<finding>"`: a defect seen outside the job's scope, listed in the PR under "Follow-ups".
+- After `dl ship`, `dl learn`, `dl knowledge promote` and `dl followup` are refused with why — a lesson recorded after
+  the ship reached no PR (seen live).
 
 **From a user's job**
 - The stop-guard no longer holds Michael while the agents he sent are still working (interactive subagent mode).

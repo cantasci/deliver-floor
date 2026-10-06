@@ -1,0 +1,146 @@
+{
+  "id": "JOB-20261006-0056-rating-notch-change",
+  "title": "Rating notch change",
+  "request": "Requirements: /home/user/skills-shop/examples/watchlist-poc/JOB-models.md\nRating notch change (Watchlist POC — one task)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a one-requirement slice of that document: the notch change that Indicators 11, 12 and 13 and the notch\ncalculator (REQ-06-02) are built on. It is small: one card.\n\n## Requirement\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 (part) | Given a previous and a current rating, the system computes the notch change between them | BBB+ → BB+ = 3-notch downgrade; BB+ → BBB+ = 3-notch upgrade; A → A = 0 |\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.\n  A notch is one step on this scale. Input is trimmed with `String.prototype.trim()` and case-insensitive (\"bbb+\" = \"BBB+\").\n- C2. Every invalid input (an unknown rating, an empty string, a non-string) is rejected with a RangeError. A String object\n  such as `new String('A')` is a non-string. No banking-regulation or internal-policy constraint applies to this slice.\n- C3. The result is signed: downgrade positive, upgrade negative, unchanged 0.\n- C4. No UI, CLI or printed output; other parts of the POC import the function.\n\n## Contract\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer (C3).\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.\n\n## Staffing\n\n- The backend developer works on the **haiku** model.",
+  "created": "2026-10-06T00:56:06Z",
+  "repo": "/tmp/claude-0/live/k050b/models/repo",
+  "phase": "done",
+  "stack": [
+    "node",
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-06-02: notch calculator domain logic"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "provider": "claude",
+      "model": "haiku",
+      "why": "Staffing: The backend developer works on the haiku model"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "Plain Node ESM (javascript) code"
+    }
+  ],
+  "assumptions": [
+    "Single card slice; no UI/CLI (C4)"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261006-0056-rating-notch-change",
+  "integration_worktree": "/tmp/claude-0/live/k050b/models/repo/.work/JOB-20261006-0056-rating-notch-change/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "c98c734529ad9b5b557fdaf114636de689187ee9",
+    "log": "/tmp/claude-0/live/k050b/models/repo/.work/JOB-20261006-0056-rating-notch-change/gates/verify-all-010935.log",
+    "at": "2026-10-06T01:09:35Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 3,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "npm test",
+    "worktree_setup": "",
+    "worktree_exclude": [
+      ".claude/settings.local.json",
+      ".env",
+      ".venv",
+      "node_modules"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "2b2708c3a91cdddcc34ee3970abb97a1d7564392",
+    "at": "2026-10-06T01:11:02Z"
+  },
+  "frozen": {
+    "readiness_sha256": "8923e015dfc525cfbedc5c819afe7b32b4751b443d4663d4f8c7b704199e12e1",
+    "at": "2026-10-06T00:59:38Z"
+  },
+  "pm_decisions": [
+    {
+      "at": "2026-10-06T01:09:04Z",
+      "what": "AC-8 expected value corrected from 2 to 3 in plan.md/spec (BBB=8, BB=11); product unchanged",
+      "why": "QA found a BA typo that contradicts AC-6 and the C1 index table; no implementation could return 2",
+      "card": "T-01"
+    }
+  ],
+  "followups": [
+    {
+      "text": "Dev unit test test/ratings/notch.test.mjs: AC-16 reads the source relative to cwd (use import.meta.url); AC-14 lacks err.constructor===RangeError and AC-15 lacks message-contains-value checks; -0 guard in notchChange is dead code",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T01:09:32Z"
+    },
+    {
+      "text": "board.json T-01 acceptance AC-8 text still says 2 (corrected to 3 in plan.md/spec); dev AC-8 test does not assert the value and dev AC-10 test lacks the U+00A0 case; no run on Node 18 (gates ran Node 22)",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-06T01:11:02Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "c98c734529ad9b5b557fdaf114636de689187ee9",
+    "shared_pr": ""
+  }
+}

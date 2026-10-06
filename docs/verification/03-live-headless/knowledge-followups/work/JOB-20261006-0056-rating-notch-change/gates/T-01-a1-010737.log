@@ -1,0 +1,236 @@
+# gate: T-01  attempt: 1  2026-10-06T01:07:37Z
+ok    on job/JOB-20261006-0056-rating-notch-change--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/ratings/integration/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE
+    # Subtest: AC-1: RATING_SCALE has correct values and is frozen
+    ok 1 - AC-1: RATING_SCALE has correct values and is frozen
+      ---
+      duration_ms: 1.291975
+      type: 'test'
+      ...
+    1..1
+ok 1 - RATING_SCALE
+  ---
+  duration_ms: 1.962839
+  type: 'suite'
+  ...
+# Subtest: Module exports
+    # Subtest: AC-2: Correct named exports, no default export
+    ok 1 - AC-2: Correct named exports, no default export
+      ---
+      duration_ms: 0.292148
+      type: 'test'
+      ...
+    1..1
+ok 2 - Module exports
+  ---
+  duration_ms: 0.388225
+  type: 'suite'
+  ...
+# Subtest: notchChange basic functionality
+    # Subtest: AC-3: Downgrade BBB+ to BB+ returns 3
+    ok 1 - AC-3: Downgrade BBB+ to BB+ returns 3
+      ---
+      duration_ms: 0.232832
+      type: 'test'
+      ...
+    # Subtest: AC-4: Upgrade BB+ to BBB+ returns -3
+    ok 2 - AC-4: Upgrade BB+ to BBB+ returns -3
+      ---
+      duration_ms: 0.088525
+      type: 'test'
+      ...
+    # Subtest: AC-5: No change returns 0 for all 19 ratings
+    ok 3 - AC-5: No change returns 0 for all 19 ratings
+      ---
+      duration_ms: 0.162168
+      type: 'test'
+      ...
+    1..3
+ok 3 - notchChange basic functionality
+  ---
+  duration_ms: 0.631701
+  type: 'suite'
+  ...
+# Subtest: notchChange all pairs and spot values
+    # Subtest: AC-6: All 361 pairs follow formula and antisymmetry
+    ok 1 - AC-6: All 361 pairs follow formula and antisymmetry
+      ---
+      duration_ms: 1.468847
+      type: 'test'
+      ...
+    # Subtest: AC-6: Spot values
+    ok 2 - AC-6: Spot values
+      ---
+      duration_ms: 0.161433
+      type: 'test'
+      ...
+    1..2
+ok 4 - notchChange all pairs and spot values
+  ---
+  duration_ms: 1.86687
+  type: 'suite'
+  ...
+# Subtest: notchChange range and synchronicity
+    # Subtest: AC-7: Min and max values
+    ok 1 - AC-7: Min and max values
+      ---
+      duration_ms: 0.295409
+      type: 'test'
+      ...
+    # Subtest: AC-8: Result is synchronous (not Promise)
+    ok 2 - AC-8: Result is synchronous (not Promise)
+      ---
+      duration_ms: 0.217116
+      type: 'test'
+      ...
+    1..2
+ok 5 - notchChange range and synchronicity
+  ---
+  duration_ms: 0.654332
+  type: 'suite'
+  ...
+# Subtest: notchChange case insensitivity
+    # Subtest: AC-9: Case-insensitive matching
+    ok 1 - AC-9: Case-insensitive matching
+      ---
+      duration_ms: 0.132464
+      type: 'test'
+      ...
+    1..1
+ok 6 - notchChange case insensitivity
+  ---
+  duration_ms: 0.179586
+  type: 'suite'
+  ...
+# Subtest: notchChange whitespace handling
+    # Subtest: AC-10: Trim leading/trailing whitespace
+    ok 1 - AC-10: Trim leading/trailing whitespace
+      ---
+      duration_ms: 0.082552
+      type: 'test'
+      ...
+    # Subtest: AC-11: Reject inner whitespace
+    ok 2 - AC-11: Reject inner whitespace
+      ---
+      duration_ms: 0.109433
+      type: 'test'
+      ...
+    1..2
+ok 7 - notchChange whitespace handling
+  ---
+  duration_ms: 0.240986
+  type: 'suite'
+  ...
+# Subtest: notchChange invalid symbols
+    # Subtest: AC-12: Reject unknown symbols
+    ok 1 - AC-12: Reject unknown symbols
+      ---
+      duration_ms: 0.489679
+      type: 'test'
+      ...
+    1..1
+ok 8 - notchChange invalid symbols
+  ---
+  duration_ms: 0.544282
+  type: 'suite'
+  ...
+# Subtest: notchChange empty/whitespace strings
+    # Subtest: AC-13: Reject empty or whitespace-only strings
+    ok 1 - AC-13: Reject empty or whitespace-only strings
+      ---
+      duration_ms: 0.18844
+      type: 'test'
+      ...
+    1..1
+ok 9 - notchChange empty/whitespace strings
+  ---
+  duration_ms: 0.237093
+  type: 'suite'
+  ...
+# Subtest: notchChange non-string inputs
+    # Subtest: AC-14: Reject non-string inputs
+    ok 1 - AC-14: Reject non-string inputs
+      ---
+      duration_ms: 0.292691
+      type: 'test'
+      ...
+    # Subtest: AC-14: Missing arguments throw RangeError
+    ok 2 - AC-14: Missing arguments throw RangeError
+      ---
+      duration_ms: 0.173253
+      type: 'test'
+      ...
+    1..2
+ok 10 - notchChange non-string inputs
+  ---
+  duration_ms: 0.542856
+  type: 'suite'
+  ...
+# Subtest: notchChange error messages
+    # Subtest: AC-15: Error message names the argument
+    ok 1 - AC-15: Error message names the argument
+      ---
+      duration_ms: 0.121105
+      type: 'test'
+      ...
+    # Subtest: AC-15: Both invalid gives error about previous
+    ok 2 - AC-15: Both invalid gives error about previous
+      ---
+      duration_ms: 0.060247
+      type: 'test'
+      ...
+    1..2
+ok 11 - notchChange error messages
+  ---
+  duration_ms: 0.242126
+  type: 'suite'
+  ...
+# Subtest: notchChange purity and module integrity
+    # Subtest: AC-16: No imports or console statements in source
+    ok 1 - AC-16: No imports or console statements in source
+      ---
+      duration_ms: 0.599925
+      type: 'test'
+      ...
+    # Subtest: AC-16: RATING_SCALE remains frozen and unchanged after calls
+    ok 2 - AC-16: RATING_SCALE remains frozen and unchanged after calls
+      ---
+      duration_ms: 0.179946
+      type: 'test'
+      ...
+    1..2
+ok 12 - notchChange purity and module integrity
+  ---
+  duration_ms: 0.845609
+  type: 'suite'
+  ...
+# Subtest: notchChange edge cases
+    # Subtest: Extra arguments are ignored
+    ok 1 - Extra arguments are ignored
+      ---
+      duration_ms: 0.214409
+      type: 'test'
+      ...
+    1..1
+ok 13 - notchChange edge cases
+  ---
+  duration_ms: 0.298959
+  type: 'suite'
+  ...
+1..13
+# tests 21
+# suites 13
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71.526895
+ok    verify passed

@@ -343,6 +343,8 @@ OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
    PR; `shared` — the shared knowledge repo, its own PR; `kit` — a defect of the flow itself, listed for the deliver kit.
    Reuse a topic that `"$DL" knowledge topics` already lists. When `dl learn` says PROMOTE (a topic seen in three jobs, no
    standard yet), write the rule: `"$DL" knowledge promote <topic> "<one checkable rule>" --applies-to <kinds/roles>`.
+   Lessons, promotions and follow-ups are recorded **before** `dl ship` — it writes them into the PR; afterwards `dl`
+   refuses them.
 4. `"$DL" ship` — per `settings.merge_mode`:
    - `human`: pushes `job/<id>`, opens the PR → phase `awaiting_pr_merge`. The human reviews and merges.
    - `semi`: same + auto-merge armed: GitHub merges once a human approves and checks pass.

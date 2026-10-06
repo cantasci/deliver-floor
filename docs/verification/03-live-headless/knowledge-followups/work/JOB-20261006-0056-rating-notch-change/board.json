@@ -1,0 +1,114 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "ratings-lib: add src/ratings/notch.mjs (RATING_SCALE + notchChange) with unit tests",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "ratings-lib",
+      "context": "WHY: REQ-06-02 (part). Indicators 11, 12 and 13 and the REQ-06-02 notch calculator need one pure function that returns the signed notch change between a previous and a current credit rating. This card builds only that function and the scale it uses. Indicators 11/12/13, WL mapping, agency-scale mapping, outlooks or watch flags, CLI, UI, logging, storage, config and docs are all OUT of scope. The repo is new: src/ and test/ contain only .gitkeep. Plain Node.js 18+ ES modules. package.json has type=module and the script test = 'node --test'. Do NOT add npm dependencies or devDependencies, and do NOT edit package.json. Read CLAUDE.md first. Commit format: 'T-01: <what changed>', with no AI attribution of any kind.\n\nFILES (only these): src/ratings/notch.mjs (new) and test/ratings/notch.test.mjs (new). Tests use node:test and node:assert/strict. The file must be found by bare 'node --test' on Node 18.\n\nEXACT CONTRACT for src/ratings/notch.mjs:\n1) Exactly two NAMED exports and no default export: 'export const RATING_SCALE' and 'export function notchChange'. Object.keys(import * as m) sorted must be ['RATING_SCALE','notchChange']. Do not export helpers.\n2) RATING_SCALE = Object.freeze([...]) of the 19 ratings, best first, in this exact order: AAA=0, AA+=1, AA=2, AA-=3, A+=4, A=5, A-=6, BBB+=7, BBB=8, BBB-=9, BB+=10, BB=11, BB-=12, B+=13, B=14, B-=15, CCC+=16, CCC=17, CCC-=18. Upper-case canonical symbols. ESM is strict mode, so RATING_SCALE.push('CC') must throw a TypeError and the length stays 19. notchChange must read from this array (or a private lookup built from it) and never mutate it.\n3) notchChange(previous, current) is SYNCHRONOUS. It returns a plain integer number, never a Promise. Result = index(current) - index(previous). Downgrade is POSITIVE and upgrade is NEGATIVE: notchChange('BBB+','BB+') === 3, notchChange('BB+','BBB+') === -3, notchChange('A','A') === 0. Range -18..18. Ignore extra arguments after the second.\n4) Validation runs per argument, 'previous' BEFORE 'current'. Steps: (a) the argument must satisfy typeof x === 'string', anything else throws a RangeError. (b) s = x.trim() (String.prototype.trim; also removes tab, newline and the BOM U+FEFF). (c) Match s case-insensitively against RATING_SCALE using locale-independent toUpperCase(). Do NOT use toLocaleUpperCase. Do NOT normalise Unicode. Full-width characters such as 'ＡＡＡ' must be rejected. (d) No match, including the empty string after trim, throws a RangeError. Inner whitespace is NOT removed, so 'BBB +' and 'B B' are invalid.\n5) Errors: EVERY invalid input throws a RangeError, never a TypeError or any other type. This covers non-strings such as undefined, null, 7, 0, NaN, true, {}, ['A'], new String('A'), Symbol('A'), () => 'A' and 7n, plus missing arguments (notchChange('A'), notchChange()), empty or whitespace-only strings, and unknown symbols ('CC','C','D','NR','SD','Baa1','AAA+','BBB++','A1','B--','CCC-+','AAAA','+','-'). No fallback value, no partial result. The message names the argument ('previous' or 'current') and the received value, e.g. Invalid previous rating: received null. When both arguments are invalid (notchChange('XX', null)), the error is about 'previous'. Tests assert the error TYPE only (optionally that the message contains 'previous' or 'current').\n6) Purity: NO import statements, NO console.* calls, no I/O, no module-level side effects other than building the frozen scale and lookup. Importing it and calling it with valid or invalid input prints nothing.\n\nHAIKU-SLIP WARNINGS (each one breaks an AC):\n- Do NOT throw TypeError for non-strings. Throw RangeError (AC-14).\n- Do NOT accept String objects. Use typeof x === 'string'. Do NOT use String(x), x?.trim duck-typing or x instanceof String, because new String('A') must be rejected (AC-14).\n- Do NOT strip inner whitespace (no replace(/\\s/g,'')). Use trim() only (AC-11).\n- Do NOT reverse the sign. The result is index(current) - index(previous) (AC-3/AC-4).\n- Build the error message SAFELY so it cannot throw: a template literal on a Symbol throws TypeError, JSON.stringify(7n) throws TypeError, and a template literal on Object.create(null) throws TypeError. Use a private describe(value) helper that branches on typeof: string -> JSON.stringify(value); symbol -> String(value); bigint -> String(value) + 'n'; function -> 'function'; null -> 'null'; object -> Array.isArray ? 'array' : 'object'; anything else -> String(value). The thrown error must stay a RangeError for Symbol and BigInt (AC-14).\n- Nothing newer than Node 18 (no toSorted, Object.groupBy).\n\nUNIT TESTS (TDD; write them first) in test/ratings/notch.test.mjs cover AC-1..AC-16: exact RATING_SCALE contents, frozen state and push throwing TypeError; the exports check; the three REQ examples; r->r is 0 for all 19; the full 361-pair loop (indexOf difference, Number.isInteger, antisymmetry); the spot values; the +/-18 ends; sync and non-thenable results; case, trim and BOM cases; inner-whitespace rejection; every invalid value in BOTH positions with assert.throws(fn, RangeError); missing arguments; both-invalid; RATING_SCALE unchanged after calls. For AC-16, the TEST file may read the source with node:fs and assert it has no /^\\s*import\\s/m and no 'console.'.",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/ratings/integration/**"
+      ],
+      "qa_verify": "node --test test/ratings/integration/*.test.mjs",
+      "acceptance": [
+        "(AC-1) Given the module, when `RATING_SCALE` is imported, then: it deep-equals `['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC+','CCC','CCC-']`; `RATING_SCALE.length === 19` and `Object.isFrozen(RATING_SCALE) === true`; `RATING_SCALE.push('CC')` throws `TypeError`, and the length is still `19` afterwards.",
+        "(AC-2) Given `import * as m from '…/src/ratings/notch.mjs'`, then `Object.keys(m).sort()` deep-equals `['RATING_SCALE','notchChange']`, `m.default === undefined`, and `typeof m.notchChange === 'function'`.",
+        "(AC-3) Given `('BBB+','BB+')`, when `notchChange` is called, then it returns `3` (a downgrade is positive).",
+        "(AC-4) Given `('BB+','BBB+')`, when `notchChange` is called, then it returns `-3` (an upgrade is negative).",
+        "(AC-5) Given `('A','A')`, when `notchChange` is called, then it returns `0`, and `notchChange(r, r) === 0` for each of the 19 `r` in `RATING_SCALE`.",
+        "(AC-6) Given all 361 pairs `(p, c)` from `RATING_SCALE`, when `notchChange(p, c)` is called, then the result `=== RATING_SCALE.indexOf(c) - RATING_SCALE.indexOf(p)`; `Number.isInteger(result)` is true; `notchChange(c, p) === -notchChange(p, c)` (compare `0` with `===`, so `-0` is not an issue). Spot values: `('AAA','AA+')`→`1`, `('A-','BBB+')`→`1`, `('BBB-','BB+')`→`1`, `('B-','CCC+')`→`1`, `('AA','A')`→`3`, `('CCC','B+')`→`-4`.",
+        "(AC-7) Given the two ends of the scale, then `notchChange('AAA','CCC-') === 18`, `notchChange('CCC-','AAA') === -18`, and every one of the 361 results lies in `[-18, 18]`.",
+        "(AC-8) Given `('BBB','BB')`, when `notchChange` is called, then it returns `2` directly: `typeof result === 'number'`, `result instanceof Promise` is false, and `typeof result.then === 'undefined'`.",
+        "(AC-9) Given inputs that differ only in case, then `notchChange('bbb+','bb+') === 3`; `notchChange('Aa-','aa-') === 0`; `notchChange('ccc-','aaa') === -18`.",
+        "(AC-10) Given leading or trailing whitespace that `String.prototype.trim()` removes, then `notchChange(' BBB+ ','\\tBB+\\n') === 3`; `notchChange(' A ','A') === 0` (no-break space); `notchChange('﻿bb+ ','BBB+') === -3`, because the BOM is trimmed.",
+        "(AC-11) Given whitespace inside a rating, then `notchChange('BBB +','A')` and `notchChange('A','B B')` each throw `RangeError`. Inner whitespace is never removed.",
+        "(AC-12) Given an unknown symbol `x` in `'CC'`, `'C'`, `'D'`, `'NR'`, `'SD'`, `'Baa1'`, `'AAA+'`, `'BBB++'`, `'A1'`, `'B--'`, `'CCC-+'`, `'AAAA'`, `'+'`, `'-'`, then `notchChange(x,'A')` and `notchChange('A',x)` each throw `RangeError`. The full-width `'ＡＡＡ'` is also rejected in both positions.",
+        "(AC-13) Given an empty or whitespace-only string `x` in `''`, `'   '`, `'\\t\\n'`, then `notchChange(x,'A')` and `notchChange('A',x)` each throw `RangeError`.",
+        "(AC-14) Given a non-string `x` in `undefined`, `null`, `7`, `0`, `NaN`, `true`, `{}`, `['A']`, `new String('A')`, `Symbol('A')`, `() => 'A'`, `7n`, `Object.create(null)`, then `notchChange(x,'A')` and `notchChange('A',x)` each throw `RangeError`. A `TypeError` fails this criterion: assert `err instanceof RangeError` and `err.constructor === RangeError`. Also `notchChange('A')` and `notchChange()` each throw `RangeError`.",
+        "(AC-15) Given both arguments are invalid, then `notchChange('XX', null)` throws `RangeError` with no return value. Dev also asserts that `err.message` contains `'previous'` and not `'current'`. QA asserts only the type. For a single bad argument, the message names it and shows the received value: `notchChange('A', null)` gives a message containing `'current'` and `'null'`; `notchChange('XX','A')` gives a message containing `'previous'` and `'XX'`.",
+        "(AC-16) Given the module, then: from the repo root, `node -e \"import('./src/ratings/notch.mjs').then(m=>{m.notchChange('A','B');try{m.notchChange('x','A')}catch{}})\"` prints nothing to stdout or stderr and exits `0`; the source matches neither `/^\\s*import\\s/m` nor `/console\\./` (the test may read it with `node:fs`); after all the calls above, `RATING_SCALE` still deep-equals the AC-1 array.",
+        "(AC-17) Given the repo after the change, then: `test/ratings/notch.test.mjs` exists, imports `node:test` and `node:assert/strict`, and covers criteria 1 to 16; `node --test test/ratings/notch.test.mjs` and `npm test` both exit `0` with 0 failing tests; `package.json` has no `dependencies` or `devDependencies` and is unchanged; the commits are titled `T-01: …` and have no AI attribution."
+      ],
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-06T01:03:58Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/live/k050b/models/repo/.work/JOB-20261006-0056-rating-notch-change/wt/T-01",
+      "branch": "job/JOB-20261006-0056-rating-notch-change--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "3d56f04ac9640b42d64cd12c7f00f8c012798b1b",
+        "attempt": 1,
+        "log": "/tmp/claude-0/live/k050b/models/repo/.work/JOB-20261006-0056-rating-notch-change/gates/T-01-a1-010737.log",
+        "at": "2026-10-06T01:07:37Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-06T01:07:37.741Z",
+          "author": "gate",
+          "text": "PASS — 20 checks ok, 0 failed (T-01-a1-010737.log)"
+        },
+        {
+          "at": "2026-10-06T01:09:04.252Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1..AC-17 pass; 23 integration tests green; spec typo found in AC-8 (('BBB','BB') is 3 not 2), product correct"
+        },
+        {
+          "at": "2026-10-06T01:09:32.168Z",
+          "author": "reviewer",
+          "text": "approve — no blocking items; 8 nits (dev test gaps for AC-14 constructor check, AC-15 message values, AC-16 cwd-relative source read)"
+        }
+      ],
+      "qa": {
+        "verdict": "pass",
+        "head": "6e1edcb789e53ed6ce675450f26ff569b82a84e7",
+        "gate_head": "3d56f04ac9640b42d64cd12c7f00f8c012798b1b",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/live/k050b/models/repo/.work/JOB-20261006-0056-rating-notch-change/gates/T-01-qa-a1-010903.log",
+        "summary": "AC-1..AC-17 pass; 23 integration tests green; spec typo found in AC-8 (('BBB','BB') is 3 not 2), product correct",
+        "at": "2026-10-06T01:09:04Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "6e1edcb789e53ed6ce675450f26ff569b82a84e7",
+          "qa_verify": "PASS",
+          "summary": "AC-1..AC-17 pass; 23 integration tests green; spec typo found in AC-8 (('BBB','BB') is 3 not 2), product correct",
+          "at": "2026-10-06T01:09:04Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "6e1edcb789e53ed6ce675450f26ff569b82a84e7",
+          "summary": "no blocking items; 8 nits (dev test gaps for AC-14 constructor check, AC-15 message values, AC-16 cwd-relative source read)",
+          "at": "2026-10-06T01:09:32Z"
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "6e1edcb789e53ed6ce675450f26ff569b82a84e7",
+        "summary": "reviewer: approve — no blocking items; 8 nits (dev test gaps for AC-14 constructor check, AC-15 message values, AC-16 cwd-relative source read)",
+        "pending": [],
+        "at": "2026-10-06T01:09:32Z"
+      }
+    }
+  ]
+}
