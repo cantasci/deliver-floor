@@ -4,6 +4,14 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.8.1 — 2026-10-07
+
+**A QA pass runs the whole suite** (from a user's job: the reviewer of T-08 found that the dev's and QA's test helpers had
+the same file name, `sovereign_support.py`, so the full test run broke — each set of tests had passed on its own)
+- `dl qa <card> pass` also runs `verify_full` on the card's commit, with the dev's and QA's tests together, and refuses the
+  pass when it fails; the log is kept beside the QA log. Such a clash now goes back before any reviewer spends a round on it.
+- `qa_verify_full` (default `true`) turns it off for a suite too slow to run per card; the suite still runs at the end.
+
 ## 0.8.0 — 2026-10-07
 
 **Company and project standards that are checked, not only read — starting with the brand's visual identity**

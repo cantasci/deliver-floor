@@ -1,0 +1,138 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Watchlist level badge: wlBadgeHtml module, wlBadge.css and unit tests",
+      "role": "frontend",
+      "agent": "frontend-dev",
+      "component": "wl-badge",
+      "context": "WHY: REQ-UI-01. A reusable presentation helper that shows a client's Watchlist level as a badge with the text 'WL 1'..'WL 4', each level in its brand colour. Nothing uses it yet: client list, screens, persistence, level computation, deployment, docs, dark mode, i18n, ARIA are out of scope. Project rules (CLAUDE.md): plain Node 18+ ESM (.mjs), no npm dependencies, node:test + node:assert/strict. Commit format '<CARD-ID>: <what changed>', no AI attribution.\n\nFILES (create exactly these three; change nothing else, not web/tokens.css, package.json, docs): web/wlBadge.mjs, web/wlBadge.css, test/web/wlBadge.test.mjs.\n\nweb/wlBadge.mjs: pure ESM, no imports, no I/O, no default export. Only export: 'export function wlBadgeHtml(level)'. For 1..4 returns exactly '<span class=\"wl-badge wl-badge--N\">WL N</span>' (no extra attributes, whitespace or newline). Strict validation (X-input-types): accept only 'typeof level === \"number\" && Number.isInteger(level) && level >= 1 && level <= 4'. Anything else throws RangeError (never TypeError, never a returned string): 0, 5, -1, -0, 1.5, 3.999, NaN, +-Infinity, '2', 'WL 2', '', 2n, true, null, undefined, no argument, new Number(2), [1], {}, Symbol('x'). Message names the bad value and range 1-4, e.g. 'wlBadgeHtml: level must be 1-4, got 5'; build it with string concatenation and String(level), NOT a template literal (Symbol would throw TypeError). Tests assert only instanceof RangeError. Build output only after validation. No colour word, hex or colour function in this file, even in comments.\n\nweb/wlBadge.css: no @import of tokens.css (the page loads it first), no custom-property definitions. Rule .wl-badge has exactly five declarations: display: inline-block; font-family: var(--font-sans); color: var(--on-wl); border-radius: var(--radius-pill); padding: var(--space-1) calc(var(--space-1) * 2) (this shorthand). No font-size, font-weight, line-height, margin, width, height (UX-design: inherit size/weight). Exactly four modifiers .wl-badge--1..--4, no other .wl-badge--*; each has exactly one declaration 'background-color: var(--wl-N)'. No colour literal or keyword (no white, transparent, currentColor...).\n\nTOKENS (web/tokens.css, read-only): --font-sans, --radius-pill, --space-1, --on-wl, --wl-1..--wl-4.\nBRAND (.deliver/knowledge/brand-visual.md, read all): BV-colours only var(--...) tokens, no colour value in any other file incl. tests; BV-type var(--font-sans); BV-contrast WCAG 2.2 AA >= 4.5:1; BV-shape var(--radius-pill), var(--space-1); BV-voice short text, no '!'.\n\nTESTS test/web/wlBadge.test.mjs (TDD): import only node:* built-ins and '../../web/wlBadge.mjs'; resolve CSS/tokens via import.meta.url. Cover: AC-1 strict equality + repeat calls; AC-2/AC-3 assert.throws RangeError for every input above; AC-9 text 'WL N', 4 chars, no '!'; AC-5/AC-7 parse wlBadge.css statically (strip comments, split rules/declarations) and compare each rule's declarations to an exact allow-list (do not list colour names in the test: that would break BV-colours); only .wl-badge--1..4 selectors; AC-6 no '#hex', no colour function, no custom-property definition in css/mjs, mjs has no import and no fs/fetch; AC-8 read web/tokens.css at runtime, parse hex of --on-wl and --wl-1..4, compute WCAG contrast >= 4.5 (today ~6.29, 5.93, 5.93, 8.16); never hard-code a hex value in the test. AC-10: 'node --test' from the repo root exits 0 and picks the file up.\n\nNOTE: QA's integration tests live in test/web/qa/ (qa_scope) and are written by the QA role; the plan's AC-10 'only three files' applies to the dev's diff.\n\nPM DECISION: also throw RangeError for Object.create(null) and objects whose toString throws; the message code must not throw (fall back to typeof level when String(level) throws). Spec: .work/*/specs/T-01.md item 16.",
+      "depends_on": [],
+      "scope": [
+        "web/wlBadge.mjs",
+        "web/wlBadge.css",
+        "test/web/wlBadge.test.mjs"
+      ],
+      "verify": "node --test test/web/wlBadge.test.mjs",
+      "qa_scope": [
+        "test/web/qa/**"
+      ],
+      "qa_verify": "node --test \"test/web/qa/**/*.test.mjs\"",
+      "acceptance": [
+        "1. (AC-1) Given `web/wlBadge.mjs`, when `wlBadgeHtml(N)` is called for N = 1, 2, 3, 4, then it returns exactly `<span class=\"wl-badge wl-badge--N\">WL N</span>` (`assert.strictEqual`, no newline); a second call with the same N returns an identical string.",
+        "2. (AC-1, AC-10) The module's only export is the named function `wlBadgeHtml` (`Object.keys(mod)` deep-equals `['wlBadgeHtml']`, no `default`), and `wlBadgeHtml.length === 1`.",
+        "3. (AC-2) Given numbers outside the range or not whole, when `wlBadgeHtml` is called with each of `0, 5, -1, -0, 1.5, 3.999, NaN, Infinity, -Infinity`, then it throws an error with `instanceof RangeError`; never a TypeError, never returns a string.",
+        "4. (AC-3, X-input-types) Given non-number or boxed inputs, when called with each of `\"2\", \"WL 2\", \"\", 2n, true, null, undefined`, no argument, `new Number(2)`, `[1]`, `{}`, `Symbol('x')`, then it throws a `RangeError`; `Symbol('x')` must not cause a TypeError.",
+        "5. (AC-4, X-error-message) The RangeError message names the bad value and the range 1-4, e.g. `wlBadgeHtml: level must be 1-4, got 5`. Tests assert only `instanceof RangeError`; review checks the wording.",
+        "6. (AC-5) Given `web/wlBadge.css` (comments removed), when its rules are parsed, then it has the selectors exactly `.wl-badge`, `.wl-badge--1`, `.wl-badge--2`, `.wl-badge--3`, `.wl-badge--4`; no other `.wl-badge--*`, no other rule, no at-rule (no `@import`).",
+        "7. (AC-5) Each `.wl-badge--N` has exactly one declaration: `background-color: var(--wl-N)`, N matching the selector.",
+        "8. (AC-7, AC-5, UX-design) `.wl-badge` has exactly these five declarations (allow-list): `display: inline-block`, `font-family: var(--font-sans)`, `color: var(--on-wl)`, `border-radius: var(--radius-pill)`, `padding: var(--space-1) calc(var(--space-1) * 2)`; no `font-size`, `font-weight`, `line-height`, `margin`, `width`, `height`.",
+        "9. (AC-6, BV-colours) The raw text of `web/wlBadge.css` and `web/wlBadge.mjs`, comments included, has no hex colour (`#` + 3, 4, 6 or 8 hex digits), no colour function (`rgb(`, `rgba(`, `hsl(`, `hsla(`, `hwb(`, `lab(`, `lch(`, `oklab(`, `oklch(`, `color(`) and no custom-property definition (`--name:`). Colour keywords in the CSS are excluded by the allow-list in items 7-8.",
+        "10. (AC-8, BV-contrast, UX-a11y) Given `web/tokens.css` read at runtime, when the WCAG contrast of `--on-wl` against each of `--wl-1..--wl-4` is computed, then it is at least 4.5 (today 6.29, 5.93, 5.93, 8.16). The test hard-codes no hex value.",
+        "11. (AC-9, BV-voice) For N = 1..4 the text between `>` and `</span>` equals `WL N`, has length 4 and no `!`.",
+        "12. (AC-10, ARC-deps) `web/wlBadge.mjs` has no `import` (static or dynamic) and no `require`, `fetch`, `process`, `node:fs` or `readFile`.",
+        "13. (AC-10, ARC-deps) `test/web/wlBadge.test.mjs` imports only `node:*` built-ins and `../../web/wlBadge.mjs`; CSS and token files are located through `import.meta.url`.",
+        "14. (AC-10, DEL-ci, TST-strategy) `node --test` and `node --test test/web/wlBadge.test.mjs` from the repo root both exit 0, and the first runs the tests in `test/web/wlBadge.test.mjs`.",
+        "15. (AC-10) The dev's diff against main is exactly `web/wlBadge.mjs`, `web/wlBadge.css`, `test/web/wlBadge.test.mjs`; `web/tokens.css`, `package.json`, docs unchanged (QA's `test/web/qa/**` does not count).",
+        "16. (AC-3, PM decision) `Object.create(null)` and an object whose `toString` throws also throw a `RangeError`, never a TypeError: the message code must not throw (e.g. fall back to `typeof level` when `String(level)` throws)."
+      ],
+      "state": "merged",
+      "attempts": 2,
+      "notes": [],
+      "seat": "frontend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "frontend-dev",
+          "seat": "frontend#1",
+          "by": "michael",
+          "at": "2026-10-07T18:52:23Z"
+        },
+        {
+          "attempt": 2,
+          "agent": "frontend-dev",
+          "seat": "frontend#1",
+          "by": "michael",
+          "at": "2026-10-07T18:56:25Z"
+        }
+      ],
+      "worktree": ".work/JOB-20261007-1840-watchlist-level-badge/wt/T-01",
+      "branch": "job/JOB-20261007-1840-watchlist-level-badge--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "e1ba46bbcc7320d5c9ba92cec695c8b63c2a8668",
+        "attempt": 2,
+        "log": ".work/JOB-20261007-1840-watchlist-level-badge/gates/T-01-a2-185723.log",
+        "at": "2026-10-07T18:57:24Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-07T18:56:15.295Z",
+          "author": "gate",
+          "text": "FAIL — 11 checks ok, 1 failed (T-01-a1-185614.log)"
+        },
+        {
+          "at": "2026-10-07T18:57:24.472Z",
+          "author": "gate",
+          "text": "PASS — 14 checks ok, 0 failed (T-01-a2-185723.log)"
+        },
+        {
+          "at": "2026-10-07T18:58:43.699Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1 pass: api tests; AC-2 pass; AC-3 pass incl. Object.create(null); AC-4 pass (instanceof only); AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-10 pass (86/86 qa, 142/142 full)"
+        },
+        {
+          "at": "2026-10-07T18:59:28.003Z",
+          "author": "reviewer",
+          "text": "approve — AC met, standards ok; nits only (foreign outline commit reverted)"
+        }
+      ],
+      "qa_join": {
+        "head": "db7fad389b730f0a6131eb92797c0f71149588ef",
+        "qa_branch": "bb68c1b43bfb57d87c5ab38ba7b3025a3d963980",
+        "at": "2026-10-07T18:57:29Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "6f2d6c598090b192623789534329eedca7f4f26d",
+        "gate_head": "e1ba46bbcc7320d5c9ba92cec695c8b63c2a8668",
+        "qa_verify": "PASS",
+        "log": ".work/JOB-20261007-1840-watchlist-level-badge/gates/T-01-qa-a2-185841.log",
+        "summary": "AC-1 pass: api tests; AC-2 pass; AC-3 pass incl. Object.create(null); AC-4 pass (instanceof only); AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-10 pass (86/86 qa, 142/142 full)",
+        "at": "2026-10-07T18:58:43Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "6f2d6c598090b192623789534329eedca7f4f26d",
+          "qa_verify": "PASS",
+          "summary": "AC-1 pass: api tests; AC-2 pass; AC-3 pass incl. Object.create(null); AC-4 pass (instanceof only); AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-10 pass (86/86 qa, 142/142 full)",
+          "at": "2026-10-07T18:58:43Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "6f2d6c598090b192623789534329eedca7f4f26d",
+          "summary": "AC met, standards ok; nits only (foreign outline commit reverted)",
+          "at": "2026-10-07T18:59:27Z",
+          "standards": {
+            "BV-colours": "ok: css uses only var(--...) tokens; no colour value in mjs/css",
+            "BV-type": "ok: font-family var(--font-sans) only",
+            "BV-contrast": "ok: 6.29/5.93/5.93/8.16 >= 4.5, enforced by runtime test",
+            "BV-shape": "ok: var(--radius-pill) and var(--space-1)",
+            "BV-voice": "ok: text WL N, no exclamation mark"
+          }
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "6f2d6c598090b192623789534329eedca7f4f26d",
+        "summary": "reviewer: approve — AC met, standards ok; nits only (foreign outline commit reverted)",
+        "pending": [],
+        "at": "2026-10-07T18:59:27Z"
+      }
+    }
+  ]
+}

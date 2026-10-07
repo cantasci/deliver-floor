@@ -1069,6 +1069,16 @@ cmd_qa() {
     { echo "# qa_verify: $qverify"; (cd "$wt" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
     [[ $verdict == pass && $qres == FAIL ]] && { tail -n 25 "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; }
   fi
+  # The dev's tests and QA's pass one by one, yet the suite can still break once they are collected together (seen live: two
+  # test helpers with the same file name, sovereign_support.py — pytest stopped at collection; a reviewer found it). So a QA
+  # pass also runs the whole suite (verify_full) on the card's commit, with both sets of tests, before any reviewer looks.
+  local full; full="$(setting verify_full)"
+  if [[ $verdict == pass && -n $full && "$(setting qa_verify_full)" != false ]]; then
+    local flog="${qlog%.log}-full.log"
+    { echo "# verify_full on $card's commit (dev + QA tests together): $full"; (cd "$wt" && bash -c "$full") 2>&1; } > "$flog" 2>&1 || qres=FAIL
+    [[ -z "$(git -C "$wt" status --porcelain)" ]] || { echo "verify_full left changes in the card worktree:" >>"$flog"; git -C "$wt" status --porcelain >>"$flog"; git -C "$wt" checkout -q -- . 2>/dev/null; git -C "$wt" clean -fdq 2>/dev/null; qres=FAIL; }
+    [[ $qres == FAIL ]] && { tail -n 25 "$flog"; refuse 1 "QA reports pass, but the whole suite (verify_full) fails on $card's commit with the dev's and QA's tests together — see $flog. Often two test files or helpers with the same module name; the one in qa_scope is QA's to rename, any other goes back to the dev. Record: dl qa $card fail \"<what failed>\""; }
+  fi
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"log":$l,"summary":$s,"at":$t}
       | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"qa_verify":$r,"summary":$s,"at":$t}]))' \
     --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)"

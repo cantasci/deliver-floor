@@ -1,0 +1,133 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "wl-badge: wlBadgeHtml(level) + wlBadge.css level badge with unit tests",
+      "role": "frontend",
+      "component": "wl-badge",
+      "context": "WHY: The analyst's client list needs a badge that shows a client's Watchlist level as 'WL 1' to 'WL 4', each level in its brand colour (REQ-UI-01, Must, the only task in the job). This card delivers a pure presentation library: one ES module that returns the badge HTML string and one plain-CSS stylesheet. The client list itself, persistence, how the level is computed, and how WL 0 or a missing level is shown are OUT OF SCOPE. Also out of scope: font-size/font-weight/line-height, hover/focus, aria attributes, dark mode, i18n, docs/changelog, and browser or visual tests. The architecture is frozen (style library, component wl-badge, paths web/wlBadge.mjs, web/wlBadge.css, test/web/). Code lives in web/, not in src/<area>/. The contract wins over the README.\n\nREPO CONVENTIONS (CLAUDE.md): Node.js 18+ ES modules (.mjs), package.json has \"type\":\"module\" and \"test\":\"node --test\". No npm dependencies: do not add dependencies, devDependencies, node_modules or a lockfile. Tests use node:test + node:assert/strict and are named *.test.mjs. WL = Watchlist level, 0-4 in the domain, but this badge accepts only 1-4 (see below). Commit format: '<CARD-ID>: <what changed>', with no AI attribution of any kind.\n\nFILES YOU CREATE: (1) web/wlBadge.mjs (2) web/wlBadge.css (3) test/web/unit/wlBadge.test.mjs for the function (4) test/web/unit/wlBadgeCss.test.mjs for the stylesheet as text. From test/web/unit/, the import is '../../../web/wlBadge.mjs'. Resolve file paths in tests with new URL('../../../web/wlBadge.css', import.meta.url) so they do not depend on the cwd. Do NOT write to test/web/integration/ (that belongs to QA). web/tokens.css is READ-ONLY: never modify it. `git diff main -- web/tokens.css` must stay empty.\n\nEXISTING DESIGN TOKENS (web/tokens.css, consume them through var() only): --font-sans, --radius-pill, --space-1, --on-wl, --wl-1, --wl-2, --wl-3, --wl-4. The page will load tokens.css before wlBadge.css, so wlBadge.css must NOT contain @import.\n\nCONTRACT, JS (exact):\n  export function wlBadgeHtml(level)   // named export, no default export\n  Valid input is only the numbers 1, 2, 3, 4, matched by strict equality with no coercion: level === 1 || level === 2 || level === 3 || level === 4. The function returns exactly '<span class=\"wl-badge wl-badge--' + level + '\">WL ' + level + '</span>'. That means one space in 'WL n', no other attributes, no surrounding whitespace and no exclamation mark. It is pure and deterministic (same input, same output).\n  Any other value throws new RangeError('wlBadgeHtml: level must be 1, 2, 3 or 4, got ' + <value as text>). There is no fallback and no empty string. This includes 0 (WL 0 is valid in the domain, but the request says 'any other value throws', and the request wins), 5, -1, 1.5, 3.0000001, NaN, Infinity, -Infinity, '1', ' 1', 'WL 1', null, undefined, no argument, true, [1], {} and 1n. Build the message text so that it can never throw anything other than the RangeError. A template literal throws a TypeError on a Symbol, and String() throws on an object with no prototype, so guard the stringify (e.g. try { String(v) } catch { typeof v }). The output never contains caller-supplied text, so there is no injection path. Tests assert only the error TYPE (RangeError), not the message.\n\nCONTRACT, CSS (exact): web/wlBadge.css contains a base rule .wl-badge with EXACTLY these six declarations and no others:\n  color: var(--on-wl);\n  font-family: var(--font-sans);\n  border-radius: var(--radius-pill);\n  padding: var(--space-1) calc(var(--space-1) * 2);\n  display: inline-block;\n  white-space: nowrap;\nIt must not set font-size, font-weight or line-height. Add exactly one rule per level, and give each level rule only its background colour:\n  .wl-badge--1 { background-color: var(--wl-1); }\n  .wl-badge--2 { background-color: var(--wl-2); }\n  .wl-badge--3 { background-color: var(--wl-3); }\n  .wl-badge--4 { background-color: var(--wl-4); }\nDo not add rules for .wl-badge--0 or .wl-badge--5. No level rule may reference another level's token. No rule other than .wl-badge may set color or font-family. Every color/background/background-color value must be exactly a var(--...) reference.\n\nBRAND RULES (binding):\n- BV-colours: colours come only from var(--...) tokens. No hex, rgb/rgba, hsl/hsla or colour name may appear in web/wlBadge.css, web/wlBadge.mjs OR any file in test/web/, and that includes comments (never write things like 'white text'; the reviewer checks comments by hand). CAUTION for test authors: a test that searches for these must not contain the forbidden text itself. Use regexes such as /#[0-9a-fA-F]{3,8}\\b/ and /\\b(?:rgba?|hsla?)\\(/ and never the literal strings 'rgb(' or 'hsl('. Never keep a list of colour names; enforce names by checking that every colour property is exactly var(--...).\n- BV-type: text uses only var(--font-sans).\n- BV-contrast: WCAG 2.2 AA 4.5:1. This holds by construction (text var(--on-wl) on var(--wl-N); computed ratios 6.29/5.93/5.93/8.16). Never copy token values into any file.\n- BV-shape: radius var(--radius-pill), spacing unit var(--space-1).\n- BV-voice: interface text is short, with no exclamation marks.\n\nUNIT TEST GUIDANCE (TDD, write tests first): wlBadge.test.mjs covers the exact strings for 1-4, wlBadgeHtml(2) returning the same string on two calls, the string not containing '!', and assert.throws(fn, RangeError) for every invalid value listed above (including wlBadgeHtml() with no argument). wlBadgeCss.test.mjs reads web/wlBadge.css as text, strips comments, normalises whitespace, and finds each rule by its selector, never by line number. It then checks: the base rule's declaration set equals exactly the six above, with no font-size/font-weight/line-height; each .wl-badge--N appears exactly once and contains background-color: var(--wl-N) and no other --wl-M; there is no .wl-badge--0 or .wl-badge--5 rule; color/font-family appear only in .wl-badge; every color/background/background-color value matches ^var\\(--[\\w-]+\\)$; there is no @import; and wlBadge.css, wlBadge.mjs and all files under test/web/ contain no hex or rgb/hsl function. Read files with node:fs only; add no dependencies.",
+      "depends_on": [],
+      "scope": [
+        "web/wlBadge.mjs",
+        "web/wlBadge.css",
+        "test/web/unit/**"
+      ],
+      "verify": "node --test test/web/unit/wlBadge.test.mjs test/web/unit/wlBadgeCss.test.mjs",
+      "qa_scope": [
+        "test/web/integration/**"
+      ],
+      "qa_verify": "node --test test/web/integration/wlBadge.integration.test.mjs",
+      "acceptance": [
+        "AC-1 (1): wlBadgeHtml(1) → exact string for level 1",
+        "AC-1 (2): wlBadgeHtml(2..4) → exact strings, no whitespace/extra attributes",
+        "AC-1 (3): wlBadgeHtml(2) twice → identical",
+        "AC-1 (4): no result contains !",
+        "AC-1 (5): named export only, no default",
+        "AC-2 (6): 0,5,-1,1.5,3.0000001,NaN,±Infinity → RangeError",
+        "AC-3 (7): '1',' 1','WL 1',null,undefined,true,[1],{},1n → RangeError",
+        "AC-3 (8): no argument → RangeError",
+        "AC-3 (9): Symbol and null-prototype object → RangeError, not TypeError",
+        "AC-4 (10, QA): wlBadgeHtml(5) message === 'wlBadgeHtml: level must be 1, 2, 3 or 4, got 5'",
+        "AC-5 (11): exactly one .wl-badge--N rule each, sole declaration background-color: var(--wl-N)",
+        "AC-5 (12): no level rule references another --wl-M",
+        "AC-5 (13): no .wl-badge--0 or .wl-badge--5",
+        "AC-6 (14): .wl-badge has exactly the six declarations",
+        "AC-6 (15): no font-size/weight/line-height; color/font-family only in .wl-badge",
+        "AC-7 (16): no hex or rgb/hsl function in wlBadge.css, wlBadge.mjs, test/web/**",
+        "AC-7 (17): every color/background value is exactly var(--…)",
+        "AC-7 (18): no @import in wlBadge.css",
+        "AC-7 (19, QA): git diff main -- web/tokens.css is empty",
+        "AC-8 (20, QA): contrast of --on-wl on each --wl-N >= 4.5 from tokens.css at runtime",
+        "AC-9 (21, QA): package.json has no dependencies/devDependencies",
+        "AC-9 (22, QA): no node_modules or lockfile",
+        "AC-9 (23, QA): node --test exits 0 and runs the three test files"
+      ],
+      "agent": "frontend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "seat": "frontend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "frontend-dev",
+          "seat": "frontend#1",
+          "by": "michael",
+          "at": "2026-10-07T18:15:09Z"
+        }
+      ],
+      "worktree": "/tmp/claude-0/-home-user-skills-shop/84ed201f-6afd-5d10-b4bc-64a761ac3c14/scratchpad/brand/repo/.work/JOB-20261007-1757-watchlist-level-badge/wt/T-01",
+      "branch": "job/JOB-20261007-1757-watchlist-level-badge--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "4c890ccd72e12a6f86a6fd4f73194db563038faf",
+        "attempt": 1,
+        "log": "/tmp/claude-0/-home-user-skills-shop/84ed201f-6afd-5d10-b4bc-64a761ac3c14/scratchpad/brand/repo/.work/JOB-20261007-1757-watchlist-level-badge/gates/T-01-a1-181657.log",
+        "at": "2026-10-07T18:16:58Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-07T18:16:58.680Z",
+          "author": "gate",
+          "text": "PASS — 25 checks ok, 0 failed (T-01-a1-181657.log)"
+        },
+        {
+          "at": "2026-10-07T18:17:42.776Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1 pass: unit+integration; AC-2 pass; AC-3 pass; AC-4 pass: message exact; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass: 6.29/5.93/5.93/8.16; AC-9 pass: node --test 28/28"
+        },
+        {
+          "at": "2026-10-07T18:18:17.739Z",
+          "author": "reviewer",
+          "text": "approve — no blocking items; AC-1..9 covered, brand rules ok"
+        }
+      ],
+      "qa_join": {
+        "head": "5c702099240004fd742550eff3b13018e8c89625",
+        "qa_branch": "792ce232861c927cb9df12d15ae8131818896072",
+        "at": "2026-10-07T18:17:01Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "5c702099240004fd742550eff3b13018e8c89625",
+        "gate_head": "4c890ccd72e12a6f86a6fd4f73194db563038faf",
+        "qa_verify": "PASS",
+        "log": "/tmp/claude-0/-home-user-skills-shop/84ed201f-6afd-5d10-b4bc-64a761ac3c14/scratchpad/brand/repo/.work/JOB-20261007-1757-watchlist-level-badge/gates/T-01-qa-a1-181742.log",
+        "summary": "AC-1 pass: unit+integration; AC-2 pass; AC-3 pass; AC-4 pass: message exact; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass: 6.29/5.93/5.93/8.16; AC-9 pass: node --test 28/28",
+        "at": "2026-10-07T18:17:42Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "5c702099240004fd742550eff3b13018e8c89625",
+          "qa_verify": "PASS",
+          "summary": "AC-1 pass: unit+integration; AC-2 pass; AC-3 pass; AC-4 pass: message exact; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass: 6.29/5.93/5.93/8.16; AC-9 pass: node --test 28/28",
+          "at": "2026-10-07T18:17:42Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "5c702099240004fd742550eff3b13018e8c89625",
+          "summary": "no blocking items; AC-1..9 covered, brand rules ok",
+          "at": "2026-10-07T18:18:17Z",
+          "standards": {
+            "BV-colours": "ok: only var() tokens; no hex/rgb/hsl/colour names incl. comments; tokens.css unchanged",
+            "BV-type": "ok: font-family: var(--font-sans) only",
+            "BV-contrast": "ok: 6.29/5.93/5.93/8.16 >= 4.5, computed at runtime",
+            "BV-shape": "ok: radius-pill and space-1 padding",
+            "BV-voice": "ok: text is WL 1..4, no exclamation mark"
+          }
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "5c702099240004fd742550eff3b13018e8c89625",
+        "summary": "reviewer: approve — no blocking items; AC-1..9 covered, brand rules ok",
+        "pending": [],
+        "at": "2026-10-07T18:18:17Z"
+      }
+    }
+  ]
+}

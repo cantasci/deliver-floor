@@ -1,0 +1,66 @@
+2026-10-07T18:40:29Z	new	Watchlist level badge
+2026-10-07T18:40:32Z	jobset	stack: .stack=["javascript"]
+2026-10-07T18:40:38Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"frontend-lead","agent":"ecc:architect","why":"REQ-UI-01: badge UI component"},{"role":"frontend","agent":"frontend-dev","why":"REQ-UI-01: wlBadgeHtml + wlBadge.css"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"javascript stack: web/wlBadge.mjs"}]
+2026-10-07T18:40:38Z	roles	ba frontend-lead frontend qa reviewer
+2026-10-07T18:40:38Z	phase	readiness
+2026-10-07T18:40:53Z	dispatch	deliver:business-analyst
+2026-10-07T18:43:07Z	agent	deliver:business-analyst ad6040508312abc15: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"A badge shows a client's Watchlist level as the text \"WL 1\" to \"WL 4\", each level in its ow
+2026-10-07T18:43:44Z	jobset	roles: .roles += [{"role":"a11y","agent":"ecc:a11y-architect","why":"UX-a11y: WCAG 2.2 AA contrast decided (BV-contrast)"}]
+2026-10-07T18:43:45Z	roles	ba frontend-lead frontend qa reviewer a11y
+2026-10-07T18:43:45Z	phase	readiness
+2026-10-07T18:43:45Z	readiness	36 items: 19 decided, 8 n/a, 9 open
+2026-10-07T18:43:50Z	decide	DEL-docs: A: no doc changes — contract and scope name no docs; README is untouched
+2026-10-07T18:43:51Z	decide	X-error-message: A: tests assert instanceof RangeError only; message names the bad value and the range 1-4 — the request fixes only the error type
+2026-10-07T18:43:51Z	decide	X-test-location: A: test/web/wlBadge.test.mjs — mirrors the web/ folder; fits CLAUDE.md test/<area>/<name>.test.mjs and the architecture path test/web/
+2026-10-07T18:43:51Z	decide	X-css-verification: A: static text checks of web/wlBadge.css against the brand tokens, no literal colours — no browser and no dependencies are allowed, so a text check is the only automated proof
+2026-10-07T18:43:52Z	decide	X-reviewer: A: typescript-reviewer reviews the JS and the CSS against brand-visual.md; a11y reviews contrast — javascript maps to typescript-reviewer in roles.yaml; a11y role is on the job
+2026-10-07T18:43:56Z	readiness	36 items: 23 decided, 9 n/a, 4 open
+2026-10-07T18:43:59Z	phase	awaiting_clarification
+2026-10-07T18:44:36Z	clarify	UX-design: A: inherit font size and weight from the surrounding text; set display:inline-block only
+2026-10-07T18:44:36Z	clarify	DEL-deploy: A: no deployment in this delivery; module and stylesheet are merged into the repo for later use by the client list
+2026-10-07T18:44:37Z	clarify	X-input-types: A: strict — only the numbers 1, 2, 3, 4; "2", 2n, true throw a RangeError
+2026-10-07T18:44:37Z	clarify	X-browsers: A: current evergreen browsers; any screen size, the badge is inline
+2026-10-07T18:44:56Z	freeze	readiness + architecture frozen (12904587ca2c)
+2026-10-07T18:44:56Z	roles	ba frontend-lead frontend qa reviewer a11y
+2026-10-07T18:44:56Z	phase	planning
+2026-10-07T18:45:03Z	dispatch	deliver:business-analyst
+2026-10-07T18:47:25Z	agent	deliver:business-analyst a8bfbb7579f12624d: ## Goal Add a reusable presentation helper that shows a client's Watchlist level as a badge: the text "WL 1" to "WL 4", each level in its brand colour. It ships
+2026-10-07T18:47:40Z	jobset	assumptions: .assumptions += ["Named export wlBadgeHtml (not default)","Padding written as the shorthand from AC-7","wlBadge.css relies on the page loading web/tokens.css first; it neither imports nor redefines it"]
+2026-10-07T18:47:50Z	dispatch	ecc:architect
+2026-10-07T18:48:53Z	agent	ecc:architect a7e14c932c120aaa5: ```json [ { "tmp_id": "F1", "title": "Watchlist level badge: wlBadgeHtml(level) module, wlBadge.css and unit tests", "role": "frontend", "component": "wl-badge"
+2026-10-07T18:49:32Z	dispatch	deliver:business-analyst
+2026-10-07T18:51:23Z	agent	deliver:business-analyst af0866a38bc5b5a9d: === T-01 === # T-01: Watchlist level badge: wlBadgeHtml module, wlBadge.css and unit tests ## User story As a front-end developer building the client list, I wa
+2026-10-07T18:51:59Z	pm-decision	T-01: Reject Object.create(null)/throwing-toString inputs with RangeError too; message built without throwing — Plan scope says every input other than 1-4 throws RangeError; String(level) alone would throw TypeError for such objects
+2026-10-07T18:52:22Z	phase	executing
+2026-10-07T18:52:23Z	assign	T-01 → frontend-dev (frontend#1) attempt=1
+2026-10-07T18:52:24Z	qa-start	T-01 → QA writes its tests in .work/JOB-20261007-1840-watchlist-level-badge/wt/T-01-qa (branch job/JOB-20261007-1840-watchlist-level-badge--T-01-qa) while the dev builds
+2026-10-07T18:52:35Z	dispatch	deliver:frontend-dev
+2026-10-07T18:52:39Z	dispatch	deliver:qa-tester
+2026-10-07T18:54:08Z	agent	deliver:frontend-dev a27d35348f57c9e2c: status: stuck commit: dcb3ea7. My work is 200ed52; dcb3ea7 sits on top of it and I did not write it. verify: failed (52 of 55 pass; 3 fail because of dcb3ea7) o
+2026-10-07T18:56:01Z	agent	deliver:qa-tester a273f4be90a50f855: QA-WRITE for T-01 is done: the tests are written and committed as `bb68c1b` (`T-01 QA: integration tests for wlBadgeHtml, wlBadge.css and tokens contract`). The
+2026-10-07T18:56:15Z	gate	T-01 FAIL
+2026-10-07T18:56:25Z	assign	T-01 → frontend-dev (frontend#1) attempt=2
+2026-10-07T18:56:34Z	dispatch	deliver:frontend-dev
+2026-10-07T18:57:19Z	agent	deliver:frontend-dev a2459c1c345f8f1fd: The revert is committed and both test runs pass. The push failed because the repo has no `origin` remote configured. ```text status: done commit: e1ba46b (T-01:
+2026-10-07T18:57:24Z	gate	T-01 PASS
+2026-10-07T18:57:29Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-07T18:57:39Z	dispatch	deliver:qa-tester
+2026-10-07T18:58:36Z	agent	deliver:qa-tester a114af792816cfe5a: The verdict is **pass**. The first run on the dev's commit had 2 failures, both from one bug in my own test. I fixed it and committed, but I could not push. **T
+2026-10-07T18:58:43Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass: api tests; AC-2 pass; AC-3 pass incl. Object.create(null); AC-4 pass (instanceof only); AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass; AC-9 pass; AC-10 pass (86/86 qa, 142/142 full)
+2026-10-07T18:58:58Z	dispatch	ecc:typescript-reviewer
+2026-10-07T18:59:20Z	agent	ecc:typescript-reviewer aa1cc5223896a5ed1: {"verdict":"approve","blocking":[],"nits":["test/web/wlBadge.test.mjs tests the 'WL N' text (AC-9) with html.indexOf('>') and lastIndexOf('</span>'). It passes,
+2026-10-07T18:59:27Z	review	T-01 reviewer approve — AC met, standards ok; nits only (foreign outline commit reverted)
+2026-10-07T18:59:28Z	followup	T-01: Card T-01 branch received an unexplained foreign commit dcb3ea7 (box-shadow with rgba) while the dev worked; reverted by e1ba46b. Origin unknown: check what writes to card worktrees.
+2026-10-07T18:59:33Z	integrate	T-01 merged
+2026-10-07T18:59:38Z	phase	integrating
+2026-10-07T18:59:39Z	verify-all	PASS
+2026-10-07T18:59:44Z	phase	closing
+2026-10-07T18:59:51Z	dispatch	deliver:business-analyst
+2026-10-07T19:02:08Z	agent	deliver:business-analyst a794fc3b1c2549de6: ## Closing check: JOB-20261007-1840-watchlist-level-badge I checked the merged files on `job/JOB-20261007-1840-watchlist-level-badge` (HEAD `bdff367`, the same 
+2026-10-07T19:02:17Z	followup	T-01: Error message for rejected levels is ambiguous: "2", 2n and new Number(2) all read 'got 2', '' reads 'got ' — consider adding the type
+2026-10-07T19:02:17Z	followup	T-01: test/web/qa/helpers.mjs is picked up by node --test as a test file (no tests); rename or move it out of the test pattern
+2026-10-07T19:02:18Z	followup	T-01: Plan AC-10 'only three files' should say QA files in test/web/qa/** are allowed; PM clarified it on the card only
+2026-10-07T19:02:18Z	learn	qa (project, qa-import-scan): A QA check that scans a dev file for the word 'import' must match only import statements at line start; it false-failed on a string literal
+2026-10-07T19:02:18Z	learn	all (project, foreign-commit-on-card-branch): A foreign commit on a card branch (not written by the dev) breaks gate; the dev reports it as stuck and the PM has the dev revert it with a new commit, never a rewrite
+2026-10-07T19:02:29Z	knowledge	lessons/standards committed to job/JOB-20261007-1840-watchlist-level-badge: .deliver/knowledge/lessons.md 
+2026-10-07T19:02:29Z	ship	local merge into main

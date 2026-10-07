@@ -1,0 +1,54 @@
+2026-10-07T17:57:20Z	new	Watchlist level badge
+2026-10-07T17:57:33Z	jobset	stack: .stack=["javascript"]
+2026-10-07T17:57:33Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"frontend-lead","agent":"ecc:architect","why":"REQ-UI-01: a badge UI component (web/wlBadge.mjs + wlBadge.css)"},{"role":"frontend","agent":"frontend-dev","why":"REQ-UI-01: builds wlBadgeHtml and the badge CSS"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript: reviews the ESM module and its tests"}]
+2026-10-07T17:57:34Z	jobset	assumptions: .assumptions += ["Brand standard BV-* in .deliver/knowledge/brand-visual.md and tokens in web/tokens.css are the visual source; web/tokens.css is not modified."]
+2026-10-07T17:57:34Z	roles	ba frontend-lead frontend qa reviewer
+2026-10-07T17:57:34Z	phase	readiness
+2026-10-07T17:57:38Z	roles	ba frontend-lead frontend qa reviewer
+2026-10-07T17:57:38Z	phase	readiness
+2026-10-07T17:57:58Z	dispatch	deliver:business-analyst
+2026-10-07T18:03:41Z	agent	deliver:business-analyst ac37328206bc8530d: {"items":[ {"id":"PRD-goal","status":"decided","answer":"Give the analyst's client list a badge that shows each client's Watchlist level, WL 1 to WL 4, each in 
+2026-10-07T18:05:03Z	jobset	roles: .roles += [{"role":"a11y","agent":"ecc:a11y-architect","why":"UX-a11y decided: WCAG 2.2 AA contrast of the WL badge text on each level colour"}]
+2026-10-07T18:05:03Z	roles	ba frontend-lead frontend qa reviewer a11y
+2026-10-07T18:05:03Z	phase	readiness
+2026-10-07T18:05:04Z	decide	X-export: Named export: export function wlBadgeHtml(level) — The contract names the function wlBadgeHtml(level) and the AC calls wlBadgeHtml(1..4); a named export is the form that matches, and no default is needed
+2026-10-07T18:05:04Z	decide	X-error-message: RangeError message: 'wlBadgeHtml: level must be 1, 2, 3 or 4, got <value>'; tests assert only the type — The request fixes only the error type; a descriptive message helps debugging and no contract depends on it
+2026-10-07T18:05:04Z	decide	X-css-tokens: The page loads web/tokens.css before web/wlBadge.css; wlBadge.css has no @import and only references var(--…) — Keeps tokens.css the single source of colour values with no double loading; the standard says tokens.css is the only place values are written
+2026-10-07T18:05:04Z	readiness	36 items: 27 decided, 7 n/a, 2 open
+2026-10-07T18:05:10Z	phase	awaiting_clarification
+2026-10-07T18:07:46Z	clarify	DEL-deploy: A: merged to main only, no deployment; a later client-list slice imports web/wlBadge.mjs and links web/tokens.css + web/wlBadge.css
+2026-10-07T18:07:46Z	clarify	X-typography: Set only what the standard decides, plus display: inline-block and white-space: nowrap; size, weight and line-height inherit from the list
+2026-10-07T18:08:12Z	freeze	readiness + architecture frozen (38cb5265796a)
+2026-10-07T18:08:12Z	roles	ba frontend-lead frontend qa reviewer a11y
+2026-10-07T18:08:12Z	phase	planning
+2026-10-07T18:08:19Z	dispatch	deliver:business-analyst
+2026-10-07T18:09:33Z	agent	deliver:business-analyst a67d0609c5d47f139: I've written the plan below. Every AC traces to REQ-UI-01 or to a readiness decision, and none of the open questions changes the scope. The repo has no code yet
+2026-10-07T18:09:56Z	jobset	assumptions: .assumptions += ["A1: level colour set via background-color: var(--wl-N)","A2: valid levels are strictly the numbers 1-4, no coercion","A3: colour-literal test uses patterns + var()-only colour properties, no colour-name list"]
+2026-10-07T18:10:07Z	dispatch	ecc:architect
+2026-10-07T18:11:11Z	agent	ecc:architect a3db4679f0627f73f: ```json [{"tmp_id":"F1","title":"wl-badge: wlBadgeHtml(level) + wlBadge.css level badge with unit tests","role":"frontend","component":"wl-badge","context":"WHY
+2026-10-07T18:11:41Z	dispatch	deliver:business-analyst
+2026-10-07T18:14:22Z	agent	deliver:business-analyst ad502e3a1a97cd066: === T-01 === # T-01: wl-badge: wlBadgeHtml(level) + wlBadge.css level badge with unit tests ## User story As an analyst looking at the client list, I want each 
+2026-10-07T18:15:05Z	phase	executing
+2026-10-07T18:15:09Z	assign	T-01 → frontend-dev (frontend#1) attempt=1
+2026-10-07T18:15:13Z	qa-start	T-01 → QA writes its tests in /tmp/claude-0/-home-user-skills-shop/84ed201f-6afd-5d10-b4bc-64a761ac3c14/scratchpad/brand/repo/.work/JOB-20261007-1757-watchlist-level-badge/wt/T-01-qa (branch job/JOB-20261007-1757-watchlist-level-badge--T-01-qa) while the dev builds
+2026-10-07T18:15:24Z	dispatch	deliver:frontend-dev
+2026-10-07T18:15:31Z	dispatch	deliver:qa-tester
+2026-10-07T18:16:24Z	agent	deliver:frontend-dev aa695e42f26e43c05: status: done commit: 4c890cc verify: passed (`node --test test/web/unit/wlBadge.test.mjs test/web/unit/wlBadgeCss.test.mjs`: 18 of 18 pass) open issues: The car
+2026-10-07T18:16:54Z	agent	deliver:qa-tester a509ab8758a57c34e: QA-WRITE is done: the tests are committed but not pushed, and there is no verdict yet. The push was refused by the `deliver` bash-guard hook with "this director
+2026-10-07T18:16:58Z	gate	T-01 PASS
+2026-10-07T18:17:02Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-07T18:17:11Z	dispatch	deliver:qa-tester
+2026-10-07T18:17:37Z	agent	deliver:qa-tester aa003e1271fd78384: The T-01 verdict is pass: all nine acceptance criteria hold on the dev's commit 4c890cc. HEAD is 5c70209, which adds only my integration file on top of the dev'
+2026-10-07T18:17:42Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass: unit+integration; AC-2 pass; AC-3 pass; AC-4 pass: message exact; AC-5 pass; AC-6 pass; AC-7 pass; AC-8 pass: 6.29/5.93/5.93/8.16; AC-9 pass: node --test 28/28
+2026-10-07T18:17:52Z	dispatch	ecc:typescript-reviewer
+2026-10-07T18:18:12Z	agent	ecc:typescript-reviewer a9897f81e82505e14: ```json {"verdict":"approve","blocking":[],"nits":["test/web/unit/wlBadgeCss.test.mjs line 79 and test/web/unit/wlBadge.test.mjs line 29 contain a literal '!' c
+2026-10-07T18:18:17Z	review	T-01 reviewer approve — no blocking items; AC-1..9 covered, brand rules ok
+2026-10-07T18:18:18Z	integrate	T-01 merged
+2026-10-07T18:18:22Z	phase	integrating
+2026-10-07T18:18:22Z	verify-all	PASS
+2026-10-07T18:18:22Z	phase	closing
+2026-10-07T18:18:27Z	dispatch	deliver:business-analyst
+2026-10-07T18:19:20Z	agent	deliver:business-analyst aef8c03c70987d61c: ## Closing check: JOB-20261007-1757-watchlist-level-badge All nine acceptance criteria are met on the merged branch `job/JOB-20261007-1757-watchlist-level-badge
+2026-10-07T18:19:31Z	followup	T-01: Client-list slice: load web/tokens.css before web/wlBadge.css; decide what to show for WL 0 or no level (wlBadgeHtml throws for them)
+2026-10-07T18:19:32Z	followup	T-01: Colour names in comments are not detectable by the test; reviewers must keep checking comments by hand
+2026-10-07T18:19:32Z	ship	local merge into main

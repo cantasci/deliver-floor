@@ -1,0 +1,339 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Give the analyst's client list a badge that shows each client's Watchlist level, WL 1 to WL 4, each in its brand colour. Success is REQ-UI-01's AC: wlBadgeHtml(1..4) returns the badge for that level and any other value throws a RangeError, with the stylesheet following the brand standard (BV-colours, BV-type, BV-contrast, BV-shape, BV-voice).",
+      "source": "request: intro + REQ-UI-01",
+      "quote": "The analyst's client list shows each client's Watchlist level (WL 1–4). Build the badge that shows it."
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "The analyst, who sees the badge in the client list. The badge is display only; no role-based visibility in this slice (the client list is out of scope).",
+      "source": "request: intro + Out of scope",
+      "quote": "The analyst's client list shows each client's Watchlist level"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: web/wlBadge.mjs exporting wlBadgeHtml(level), web/wlBadge.css (one class per level) and tests under test/ run by node --test. Out of scope: the client list itself, persistence, how the level is computed. web/tokens.css is not modified.",
+      "source": "request: Contract + Out of scope",
+      "quote": "Out of scope: the client list itself, persistence, and how the level is computed."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Yes. wlBadgeHtml(n) === '<span class=\"wl-badge wl-badge--n\">WL n</span>' for n=1..4; 0, 5, -1, 1.5, NaN, Infinity, '1', null, undefined and no argument each throw a RangeError. In web/wlBadge.css .wl-badge--N sets its background to var(--wl-N); text var(--on-wl), font var(--font-sans), radius var(--radius-pill), padding var(--space-1) calc(var(--space-1) * 2). No hex, rgb(), hsl() or colour name in wlBadge.css or wlBadge.mjs.",
+      "source": "request: REQ-UI-01 + Contract",
+      "quote": "any other value throws a RangeError"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "No contradiction in the request. CLAUDE.md defines WL as 0–4 but the request covers 1–4 and says any other value throws, so wlBadgeHtml(0) throws (request wins). README says code lives in src/<area>/ but the contract puts the badge in web/ (request wins).",
+      "source": "request: REQ-UI-01 + Contract",
+      "quote": "any other value throws a RangeError"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "One requirement, REQ-UI-01, Must; one task.",
+      "source": "request: title + REQ-UI-01",
+      "quote": "UI slice, 1 task"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "web/wlBadge.mjs provides wlBadgeHtml(level); only the numbers 1, 2, 3, 4 are valid. Returns exactly '<span class=\"wl-badge wl-badge--' + level + '\">WL ' + level + '</span>' (one space, no other attributes, no surrounding whitespace). CSS classes .wl-badge and .wl-badge--1..4.",
+      "source": "request: Contract",
+      "quote": "wlBadgeHtml(level) → <span class=\"wl-badge wl-badge--<level>\">WL <level></span>"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Any value other than 1, 2, 3 or 4 throws a RangeError (instance of RangeError). No fallback, no empty string. Includes 0, 5, -1, 1.5, NaN, Infinity, numeric strings, null, undefined, missing argument.",
+      "source": "request: REQ-UI-01",
+      "quote": "any other value throws a RangeError"
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "Nothing to stay compatible with: web/ holds only tokens.css, src/ and test/ only .gitkeep.",
+      "source": "repo: git ls-files"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "A small UI module (function + stylesheet) inside the existing single-repo POC; no service.",
+      "source": "request: Contract",
+      "quote": "web/wlBadge.mjs — wlBadgeHtml(level) … web/wlBadge.css — the badge's styles"
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "One component wl-badge (web): web/wlBadge.mjs, web/wlBadge.css, tests under test/web/. Owner frontend, reviewer reviewer. web/tokens.css consumed, not changed.",
+      "source": "request: Contract",
+      "quote": "tests with node --test under test/"
+    },
+    {
+      "id": "ARC-ui",
+      "status": "decided",
+      "answer": "Yes, a web UI fragment: an HTML string (span) plus a stylesheet, rendered by the future client list. Plain ESM and plain CSS, no framework.",
+      "source": "request: intro + Contract",
+      "quote": "web/wlBadge.css — the badge's styles (one class per level)."
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Presentation layer: a pure function mapping a level to badge HTML, plus CSS. No BFF, middleware, core service or API.",
+      "source": "request: Contract + Out of scope",
+      "quote": "Out of scope: the client list itself, persistence, and how the level is computed."
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "JavaScript on Node.js 18+ as ES modules (.mjs) plus plain CSS; node:test + node:assert/strict.",
+      "source": "request: Contract notes + CLAUDE.md",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "ARC-deps",
+      "status": "decided",
+      "answer": "No new dependencies; Node built-ins only.",
+      "source": "request: Contract notes",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "No store; the level is an argument and persistence is out of scope.",
+      "source": "request: Out of scope",
+      "quote": "Out of scope: the client list itself, persistence"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external systems are called.",
+      "source": "request: Contract + Out of scope",
+      "quote": "Out of scope: the client list itself, persistence, and how the level is computed."
+    },
+    {
+      "id": "FE-stack",
+      "status": "decided",
+      "answer": "No web framework: a plain string and plain CSS. Design system = the brand standard + web/tokens.css. No state. Dark mode: no.",
+      "source": "request: Contract notes + standard: brand-visual.md",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "UX-a11y",
+      "status": "decided",
+      "answer": "WCAG 2.2 AA contrast, 4.5:1, between var(--on-wl) and each var(--wl-1..4); all pass (see X-contrast). Visible text 'WL n' carries the level, so colour is not the only cue. Not interactive; the contract fixes the markup, so no aria attributes are added. Role a11y is on the job.",
+      "source": "standard: brand-visual.md",
+      "quote": "Text and its background meet WCAG 2.2 AA contrast (4.5:1 for normal text)."
+    },
+    {
+      "id": "UX-i18n",
+      "status": "decided",
+      "answer": "No localisation: fixed label 'WL ' + digit 1–4; no locale formats, no RTL.",
+      "source": "request: REQ-UI-01 + Contract",
+      "quote": "the text \"WL 1\" … \"WL 4\""
+    },
+    {
+      "id": "UX-design",
+      "status": "decided",
+      "answer": "No screen designs; the brand standard decides: WL N background var(--wl-N), text var(--on-wl), font var(--font-sans), radius var(--radius-pill), padding var(--space-1) vertical and calc(var(--space-1) * 2) horizontal, dark mode no. Loading/empty/error states do not apply (invalid input throws).",
+      "source": "standard: brand-visual.md",
+      "quote": "Watchlist level colours: WL 1 → var(--wl-1), WL 2 → var(--wl-2), WL 3 → var(--wl-3), WL 4 → var(--wl-4); the text on every level badge is var(--on-wl)."
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No target stated; pure constant-time string function.",
+      "source": "request (no performance requirement stated)"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "No auth or secrets. Only 1–4 accepted, else RangeError; the output never contains caller-supplied text, so no injection path.",
+      "source": "request: REQ-UI-01",
+      "quote": "any other value throws a RangeError"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "No personal data; only a level number.",
+      "source": "request: Contract + Out of scope"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "Nothing to audit; the badge only renders.",
+      "source": "request: Contract"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "The brand standard (BV-colours, BV-type, BV-contrast, BV-shape, BV-voice) binds: no colour value outside web/tokens.css, including wlBadge.css, wlBadge.mjs and test files. No domain regulation named.",
+      "source": "standard: brand-visual.md",
+      "quote": "no colour value (hex, rgb, hsl or a colour name) is written in any other file."
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "node:test + node:assert/strict via node --test in test/web/. Unit: exact strings 1–4; RangeError for 0, 5, -1, 1.5, NaN, '1', null, undefined, none; CSS read as text: .wl-badge--N uses var(--wl-N), base uses var(--on-wl), var(--font-sans), var(--radius-pill), the stated padding; no colour literals in wlBadge.css/.mjs. Any contrast check reads values from web/tokens.css. No browser test.",
+      "source": "request: Contract notes + CLAUDE.md",
+      "quote": "tests with node --test under test/"
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "node --test must pass (verify_full). No lint/typecheck/scans configured.",
+      "source": "request: Contract notes + .deliver.json",
+      "quote": "tests with node --test under test/"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "question": "How is the badge delivered and consumed? Is it only merged to main of the POC repo for a later client-list slice to import, or must it be served or published somewhere now?",
+      "options": [
+        "A: merged to main only, no deployment; a later client-list slice imports web/wlBadge.mjs and links web/tokens.css + web/wlBadge.css",
+        "B: served as static assets from web/ by an existing host (which one?)",
+        "C: published as a package"
+      ],
+      "impact": "A needs no extra cards. B or C adds hosting or packaging work the request does not mention.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "question": "How is the badge delivered and consumed? Is it only merged to main of the POC repo for a later client-list slice to import, or must it be served or published somewhere now?",
+          "at": "2026-10-07T18:07:46.210Z"
+        }
+      ],
+      "answer": "A: merged to main only, no deployment; a later client-list slice imports web/wlBadge.mjs and links web/tokens.css + web/wlBadge.css",
+      "source": "human: test-human (fixture author) 2026-10-07"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "The request asks for no documentation, changelog or runbook.",
+      "source": "request: Contract"
+    },
+    {
+      "id": "X-wl-range",
+      "status": "decided",
+      "answer": "The badge exists only for WL 1–4. WL 0 is valid in the domain (CLAUDE.md) but wlBadgeHtml(0) throws, as the request says any other value throws. How the list shows WL 0 is the client list's concern (out of scope).",
+      "source": "request: REQ-UI-01",
+      "quote": "any other value throws a RangeError"
+    },
+    {
+      "id": "X-contrast",
+      "status": "decided",
+      "answer": "Contrast of var(--on-wl) on var(--wl-1..4), computed from web/tokens.css and re-verified by the PM: 6.29, 5.93, 5.93, 8.16 — all ≥ 4.5:1.",
+      "source": "standard: brand-visual.md",
+      "quote": "Text and its background meet WCAG 2.2 AA contrast (4.5:1 for normal text)."
+    },
+    {
+      "id": "X-export",
+      "status": "decided",
+      "question": "How does web/wlBadge.mjs export wlBadgeHtml?",
+      "options": [
+        "Named export: export function wlBadgeHtml(level) (recommended)",
+        "Default export",
+        "Both"
+      ],
+      "impact": "Fixes the import line of tests and the future client list.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "How does web/wlBadge.mjs export wlBadgeHtml?",
+          "at": "2026-10-07T18:05:04.066Z"
+        }
+      ],
+      "answer": "Named export: export function wlBadgeHtml(level)",
+      "source": "pm: michael 2026-10-07 — The contract names the function wlBadgeHtml(level) and the AC calls wlBadgeHtml(1..4); a named export is the form that matches, and no default is needed"
+    },
+    {
+      "id": "X-error-message",
+      "status": "decided",
+      "question": "What text does the RangeError carry?",
+      "options": [
+        "Message naming function, allowed values and received value; tests assert only the type",
+        "Any message"
+      ],
+      "impact": "None on the contract; tests assert RangeError only.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "What text does the RangeError carry?",
+          "at": "2026-10-07T18:05:04.349Z"
+        }
+      ],
+      "answer": "RangeError message: 'wlBadgeHtml: level must be 1, 2, 3 or 4, got <value>'; tests assert only the type",
+      "source": "pm: michael 2026-10-07 — The request fixes only the error type; a descriptive message helps debugging and no contract depends on it"
+    },
+    {
+      "id": "X-typography",
+      "status": "decided",
+      "question": "The brand standard decides colour, typeface, radius and padding but not font size, weight, line-height or display. Should the badge set any of these?",
+      "options": [
+        "Set only what the standard decides, plus display: inline-block and white-space: nowrap; size, weight and line-height inherit from the list (recommended)",
+        "Fix a size and weight now (e.g. 12px bold)"
+      ],
+      "impact": "Changes how the badge looks in the list; no effect on the contract or on contrast.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "question": "The brand standard decides colour, typeface, radius and padding but not font size, weight, line-height or display. Should the badge set any of these?",
+          "at": "2026-10-07T18:07:46.480Z"
+        }
+      ],
+      "answer": "Set only what the standard decides, plus display: inline-block and white-space: nowrap; size, weight and line-height inherit from the list",
+      "source": "human: test-human (fixture author) 2026-10-07"
+    },
+    {
+      "id": "X-css-tokens",
+      "status": "decided",
+      "question": "Does web/wlBadge.css load the tokens itself (@import) or does the page load web/tokens.css?",
+      "options": [
+        "The page loads web/tokens.css before web/wlBadge.css; wlBadge.css only references var(--…) (recommended)",
+        "wlBadge.css starts with @import './tokens.css'"
+      ],
+      "impact": "File layout only; both comply with BV-colours.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Does web/wlBadge.css load the tokens itself (@import) or does the page load web/tokens.css?",
+          "at": "2026-10-07T18:05:04.657Z"
+        }
+      ],
+      "answer": "The page loads web/tokens.css before web/wlBadge.css; wlBadge.css has no @import and only references var(--…)",
+      "source": "pm: michael 2026-10-07 — Keeps tokens.css the single source of colour values with no double loading; the standard says tokens.css is the only place values are written"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "wl-badge",
+        "kind": "web",
+        "stack": [
+          "javascript",
+          "css"
+        ],
+        "path": [
+          "web/wlBadge.mjs",
+          "web/wlBadge.css",
+          "test/web/"
+        ],
+        "owner": "frontend",
+        "reviewer": "reviewer",
+        "notes": "Pure ESM function wlBadgeHtml(level) + plain CSS using only tokens from web/tokens.css (consumed, not modified). Tests under test/web/."
+      }
+    ]
+  }
+}

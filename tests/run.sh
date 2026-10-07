@@ -1266,6 +1266,30 @@ out="$(KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md)"
 contains "sync-md re-ingests without duplicates" "$out" "3 document(s) ingested (3 older version(s) replaced)"
 [[ "$(jq length "$TMP/kgroot/idx.json")" == 3 ]] && ok "knowledge graph holds the 3 standards (lessons join once a PR accepted them)" || bad "kg docs: $(cat "$TMP/kgroot/idx.json")"
 
+echo "QA pass runs the whole suite: tests that pass alone can break it together (seen live: two sovereign_support.py helpers)"
+QF="$TMP/qafull"; mkdir -p "$QF" && cd "$QF" && git init -q -b main
+# verify_full stands in for pytest: two test modules with the same name in one run break it (each set alone passes)
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"test -z \"$(find test -name \"*.py\" | sed \"s#.*/##\" | sort | uniq -d)\""}' > .deliver.json
+git add -A && git commit -qm i
+"$DL" new "QA full" "x" >/dev/null 2>&1; QJ="$QF/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.stack=["python"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:python-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$QJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"fetcher",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**","test/unit/**"],qa_scope:["test/it/**"],
+  verify:"test -f test/unit/sovereign_support.py",qa_verify:"test -f test/it/sovereign_support.py",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$QJ/board.json"
+"$DL" phase executing >/dev/null; WQ="$("$DL" wt add T-01)"
+mkdir -p "$WQ/src" "$WQ/test/unit" && echo x > "$WQ/src/fetcher.py" && echo 'def h(): return 1' > "$WQ/test/unit/sovereign_support.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01: fetcher"
+"$DL" gate T-01 >/dev/null 2>&1
+mkdir -p "$WQ/test/it" && echo 'def h(): return 2' > "$WQ/test/it/sovereign_support.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01 QA: it"
+out="$("$DL" qa T-01 pass "AC-1 pass" 2>&1)"
+contains "a QA pass is refused when the whole suite fails with the dev's and QA's tests together" "$out" "the whole suite (verify_full) fails on T-01's commit with the dev's and QA's tests together"
+contains "…and says what to look for and whose file it is" "$out" "the one in qa_scope is QA's to rename"
+[[ "$(jq -r '.cards[0].qa.verdict // "none"' "$QJ/board.json")" == none ]] && ok "…no pass was recorded" || bad "qa recorded: $(jq -c '.cards[0].qa' "$QJ/board.json")"
+ls "$QJ"/gates/T-01-qa-*-full.log >/dev/null 2>&1 && ok "…the suite's log is kept beside the QA log" || bad "no full-suite log"
+contains "a QA fail is recorded as before (the suite is run for a pass)" "$("$DL" qa T-01 fail "the suite breaks: two sovereign_support.py" 2>&1)" "qa: T-01 fail"
+git -C "$WQ" mv test/it/sovereign_support.py test/it/it_support.py && git -C "$WQ" commit -qm "T-01 QA: rename the helper"
+sed_qv='(.cards[0].qa_verify) = "test -f test/it/it_support.py"'; bedit "$QJ/board.json" "$sed_qv"
+contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
 echo "knowledge: lessons with what happened, into the project (and the shared repo) through the job's PR; a topic seen thrice becomes a standard"
 SB="$TMP/shared.git"; git init -q --bare -b main "$SB"; SW="$TMP/shared-w"; git clone -q "$SB" "$SW" 2>/dev/null
 mkdir -p "$SW/standards" && printf -- '---\napplies_to: [dev]\n---\n# Observability\n## Must\n- Log with the request id.\n' > "$SW/standards/observability.md"
