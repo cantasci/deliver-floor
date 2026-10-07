@@ -1,0 +1,49 @@
+job: JOB-20261007-1757-watchlist-level-badge · phase: done · plugin: 0.8.0
+
+## 1 · readiness: items settled from the standard
+- UX-a11y [decided] source: standard: brand-visual.md · quote: Text and its background meet WCAG 2.2 AA contrast (4.5:1 for normal text).
+- UX-design [decided] source: standard: brand-visual.md · quote: Watchlist level colours: WL 1 → var(--wl-1), WL 2 → var(--wl-2), WL 3 → var(--wl-3), WL 4 → var(--wl-4); the text on every level badge is var(--on-wl).
+- NFR-compliance [decided] source: standard: brand-visual.md · quote: no colour value (hex, rgb, hsl or a colour name) is written in any other file.
+- X-contrast [decided] source: standard: brand-visual.md · quote: Text and its background meet WCAG 2.2 AA contrast (4.5:1 for normal text).
+✅ 4 readiness item(s) settled from a standard, quoted
+- UI-related items:
+  ARC-ui [decided] request: intro + Contract
+  UX-a11y [decided] standard: brand-visual.md
+  UX-i18n [decided] request: REQ-UI-01 + Contract
+  UX-design [decided] standard: brand-visual.md
+
+## 2 · role cards
+- a11y.md: 5 brand rule(s)
+- ba.md: 5 brand rule(s)
+- frontend-lead.md: 5 brand rule(s)
+- frontend.md: 5 brand rule(s)
+- qa.md: 5 brand rule(s)
+- reviewer.md: 5 brand rule(s)
+
+## 3 · reviews per card
+### T-01 wl-badge: wlBadgeHtml(level) + wlBadge.css level badge with unit tests — state merged, attempts 1
+- reviewer approve @5c70209: no blocking items; AC-1..9 covered, brand rules ok
+  standards: {"BV-colours":"ok: only var() tokens; no hex/rgb/hsl/colour names incl. comments; tokens.css unchanged","BV-type":"ok: font-family: var(--font-sans) only","BV-contrast":"ok: 6.29/5.93/5.93/8.16 >= 4.5, computed at runtime","BV-shape":"ok: radius-pill and space-1 padding","BV-voice":"ok: text is WL 1..4, no exclamation mark"}
+✅ 1 review(s) recorded with per-rule standards answers
+violated answers recorded: 0
+
+## 4 · refusals of dl review in the event log
+3:2026-10-07T17:57:33Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"frontend-lead","agent":"ecc:architect","why":"REQ-UI-01: a badge UI component (web/wlBadge.mjs + wlBadge.css)"},{"role":"frontend","agent":"frontend-dev","why":"REQ-UI-01: builds wlBadgeHtml and the badge CSS"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack javascript: reviews the ESM module and its tests"}]
+5:2026-10-07T17:57:34Z	roles	ba frontend-lead frontend qa reviewer
+7:2026-10-07T17:57:38Z	roles	ba frontend-lead frontend qa reviewer
+12:2026-10-07T18:05:03Z	roles	ba frontend-lead frontend qa reviewer a11y
+22:2026-10-07T18:08:12Z	roles	ba frontend-lead frontend qa reviewer a11y
+43:2026-10-07T18:17:52Z	dispatch	ecc:typescript-reviewer
+44:2026-10-07T18:18:12Z	agent	ecc:typescript-reviewer a9897f81e82505e14: ```json {"verdict":"approve","blocking":[],"nits":["test/web/unit/wlBadgeCss.test.mjs line 79 and test/web/unit/wlBadge.test.mjs line 29 contain a literal '!' c
+45:2026-10-07T18:18:17Z	review	T-01 reviewer approve — no blocking items; AC-1..9 covered, brand rules ok
+53:2026-10-07T18:19:32Z	followup	T-01: Colour names in comments are not detectable by the test; reviewers must keep checking comments by hand
+
+## 5 · independent check of the delivered code
+b30a6b6 Merge job/JOB-20261007-1757-watchlist-level-badge: Watchlist level badge
+8e20ae1 Merge T-01: wl-badge: wlBadgeHtml(level) + wlBadge.css level badge with unit tests
+5c70209 Merge T-01: QA tests
+792ce23 T-01 QA: integration tests for error message, tokens diff, contrast and no-dependency criteria
+4c890cc T-01: add wlBadgeHtml, badge stylesheet and unit tests
+7f31362 Brand visual identity and its tokens
+f08775c seed: watchlist-poc
+✅ no colour value outside web/tokens.css
