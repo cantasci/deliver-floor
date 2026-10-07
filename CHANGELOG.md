@@ -4,6 +4,19 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.7.2 — 2026-10-07
+
+**A stopped agent is continued, not replaced** (from a user's job: after a usage limit, `resume` started a new agent)
+- `dl agents [card] [--all]`: which subagent worked on which card, read from Claude Code's own subagent transcripts — id,
+  session, last write, and whether it ended on an API error such as a usage limit. Jobs started before this release are found
+  the same way.
+- On resume Michael sends the card's stopped agent a SendMessage ("continue from where you stopped"): it goes on with its whole
+  history — no attempt used, nothing read again. Only when it cannot be reached (another session) does the card get a new agent
+  in the same worktree, as before. Resume the same session (`claude --continue` / `--resume`) to keep the agents.
+- A usage limit or an API error is not the card's failure: nothing is recorded, no attempt is used, the card is not blocked.
+- Verified live: an agent stopped mid-task was continued from a new Claude Code process resuming the same session — it did the
+  remaining steps without repeating the done ones, and told a codeword it had only been given in its first instructions.
+
 ## 0.7.1 — 2026-10-06
 
 **Switch the tracker of a running job** — `/deliver:tracker <local|jira|asana|linear|github> <why>`

@@ -65,6 +65,8 @@
 #                                  while the answer file its work order named is missing, empty or invalid JSON
 #   dl md-release                  end of job: send every seat home
 #   dl md-inbox                    your inbox on the floor: each new message once (sender as seat), then archived; flags unrecorded reports
+#   dl agents [card] [--all]       the subagents of this job's cards (from Claude Code's transcripts): id, session, last
+#                                  write, API error — continue a stopped one with SendMessage instead of a new agent
 #   dl playbook                    the path of the playbook (SKILL.md) of this dl's version — for a CLI that cannot run /deliver
 #   dl md-wait [seconds]           wait for the inbox (default 110 s, back within a second of a message), then md-inbox
 #   dl cleanup [--all]             remove card worktrees, clear ACTIVE (--all: integration worktree too)
@@ -1967,6 +1969,18 @@ REPO: $ROOT" --arg t "$(date -u +%FT%T.000Z)" \
   echo "Follow it on the floor, or here in Claude Code: /deliver:status · /deliver:board · /deliver:seats (Michael in the app drives the job)."
 }
 
+# dl agents [card] [--all] — the subagents that worked on this job's cards, from Claude Code's own transcripts: id, session,
+# when they last wrote, and whether they ended on an API error (a usage limit, credit). Michael continues a stopped one with
+# SendMessage to its id — its whole history intact — before he ever starts a new agent for the card (Resume).
+cmd_agents() {
+  load_job
+  local a; a="$(node "$BIN_DIR/agents.mjs" "$JOB_DIR" "$@")" || die "could not read the subagent transcripts"
+  if [[ "$(jq length <<<"$a")" == 0 ]]; then echo "no subagent of this job found in Claude Code's transcripts (${CLAUDE_CONFIG_DIR:-~/.claude}/projects/*/*/subagents/)"; return 0; fi
+  jq -r --slurpfile b "$BOARD" '(["CARD","STATE","ROLE AGENT","AGENT ID","SESSION","LAST WRITE","ENDED"] | @tsv),
+    (.[] | . as $x | [($x.card // "-"), (($b[0].cards[] | select(.id == $x.card) | .state) // "-"), ($x.agentType // "?"), $x.agentId,
+      ($x.sessionId[0:8]), ($x.last_at[0:19] | sub("T"; " ")), (if $x.apiError then "API ERROR: " + $x.apiError[0:60] else "ok" end)] | @tsv)' <<<"$a" | table
+}
+
 # dl abort "<why>" — the human stops the active job (/deliver:abort): phase aborted, the seats sent home, card worktrees and
 # ACTIVE cleared (branches kept), so a new job can start at once. With Michael live on the floor he is told instead and
 # releases the seats himself — from outside the app nobody else touches his inbox's job.
@@ -2058,6 +2072,7 @@ main() {
     md-wait) cmd_md_wait "$@" ;;
     abort) cmd_abort "$@" ;;
     playbook) echo "$(cd "$BIN_DIR/.." && pwd)/SKILL.md" ;;
+    agents) cmd_agents "$@" ;;
     version) jq -r '"deliver \(.version)"' "$BIN_DIR/../../../.claude-plugin/plugin.json" 2>/dev/null || echo "deliver (version unknown)"; echo "runs from: $(cd "$BIN_DIR/.." && pwd)" ;;
     cleanup) cmd_cleanup "$@" ;;
     jobs) cmd_jobs ;;
