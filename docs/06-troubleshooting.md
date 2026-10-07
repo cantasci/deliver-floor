@@ -37,7 +37,9 @@ Start with `/deliver:doctor` (or `scripts/doctor.sh <repo>`), then `/deliver:sta
 | `dl: REFUSED — all N '<role>' seats are busy` | more ready cards than seats | expected: the next free seat takes it. More parallelism: `count` on the role |
 | `IDLE <seat> — waiting: …` | the seat's cards depend on unmerged cards | nothing to do; it starts when the dependency merges |
 | Michael stopped mid-board | context/turns ran out, or `stop_guard_max` reached | `/deliver:deliver resume` — everything is in files |
-| A card stuck in `running` after a restart | its agent died with the session | `/deliver:deliver resume` re-dispatches into the same worktree (`dl wt add --resume`) |
+| A card stuck in `running` after a restart | its agent stopped with the session | resume the **same** session (`claude --continue` / `claude --resume`), then `/deliver:deliver resume`: Michael continues that agent with its history (`dl agents` finds it, SendMessage). In a new session he re-dispatches into the same worktree (`dl wt add --resume`) — no attempt used either way |
+| The usage limit stopped the job | the account's limit, not the card | not a failure: no attempt, no `blocked`. After the reset, resume the same session and `/deliver:deliver resume` (above) |
+| `/deliver:deliver resume` started a new agent instead of continuing the old one | the session was not the one the agent ran in, or the plugin is older than 0.7.2 | update the plugin; resume the session the job ran in |
 | Headless: agents vanish, cards stay `running` | background agents in `claude -p` die with the process | use `scripts/run-headless.sh` (disables background tasks); agent-guard refuses background agents when `DELIVER_HEADLESS=1` |
 | Same card failing again and again | card too big or `verify` wrong | it blocks after `max_attempts`; split it (`dl card add`), fix `verify`, `dl card T-xx retry` |
 | `git push` denied | bash-guard: main/master, force, or not the agent's own card branch | push the card branch from its worktree; force push is never allowed |

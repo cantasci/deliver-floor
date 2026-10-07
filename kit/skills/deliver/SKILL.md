@@ -333,6 +333,11 @@ Use "changes" only when there is at least one blocking item.
 
 ## Blocked
 
+**A usage limit or an API error is not the card's failure.** An agent that comes back with one (or never comes back because
+your own session stopped) did not fail its card: record nothing (no gate, QA or review verdict, no `blocked`), do not
+re-dispatch it and do not use an attempt. Stop and tell the human the limit stopped the job; after the reset they resume
+the same session and you continue that agent (**Resume**).
+
 A card is blocked when `dl` refuses another attempt or a dev returns `stuck`:
 `"$DL" card T-xx state blocked` + `"$DL" card T-xx note "<one-line reason>"`. Keep every other card moving.
 You do **not** ask the human (invariant 7). When `dl next` says DECIDE, decide each blocked card yourself:
@@ -427,8 +432,16 @@ Before the first job: `"$DL" knowledge sync-md` puts the company standards into 
 
 `"$DL" status` → read `job.json`, `plan.md`, the tail of `events.log` → continue from the phase:
 
-- `executing`: cards in `running` have no live agent after a restart: re-dispatch them with `"$DL" wt add T-xx --resume`
-  ("continue where the previous attempt stopped; check git log and the handoff"). Then follow `dl next`.
+- `executing`: a card in `running` whose agent stopped (a usage limit, an API error, a restart) is **continued, not
+  replaced**: `"$DL" agents T-xx` lists the agents that worked on it, from Claude Code's own transcripts — jobs started before
+  this rule included. Send the newest agent of the card's current step (the card's dev; QA for QA-WRITE) a message with
+  **SendMessage** to its AGENT ID: "Continue card T-xx from where you stopped — your history is intact; re-check git status
+  first." It goes on with its whole history: no attempt is used, nothing is re-read. Only when that is not possible (no agent
+  listed, or SendMessage says the agent is unknown — the transcript belongs to another session: tell the human that resuming
+  the same session, `claude --continue` / `claude --resume`, keeps the agents) re-dispatch the card with
+  `"$DL" wt add T-xx --resume` and a new agent ("continue where the previous attempt stopped; check git log and the
+  handoff") — no attempt is used either. Plan steps (BA, Leads): `"$DL" agents --all` lists them; continue those the same way.
+  Then follow `dl next`.
 - `awaiting_plan_approval`: the human answered (`dl status`) → continue; else re-ask (interactive) or stop (headless).
 - `awaiting_pr_merge`: `"$DL" pr`.
 - Any other phase → `"$DL" next`.

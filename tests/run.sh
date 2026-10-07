@@ -437,7 +437,7 @@ contains "other sessions are not restricted" "$(wg "$R/src/x.ts" "$R" "" /dev/nu
 contains "writes outside the repo are ignored" "$(wg "$TMP/elsewhere.txt" "$R" a1)" "rc=0"
 
 out="$(printf '%s' "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\",\"agent_type\":\"backend-dev\",\"agent_id\":\"abcdef1234\",\"last_assistant_message\":\"status: done\\ncommit: 123\"}" | "$H/subagent-log.sh"; tail -1 "$R/.work/$JOB/events.log")"
-contains "subagent-log appends the agent's summary" "$out" "backend-dev abcdef12: status: done commit: 123"
+contains "subagent-log appends the agent's summary, with its full id (what SendMessage needs)" "$out" "backend-dev abcdef1234: status: done commit: 123"
 n0="$(wc -l < "$R/.work/$JOB/events.log")"
 printf '%s' "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\",\"agent_type\":\"\",\"agent_id\":\"abcdef1234\",\"last_assistant_message\":\"/deliver status\"}" | "$H/subagent-log.sh"
 expect_ok "subagent-log skips Claude Code's own helper forks (no agent type)" test "$(wc -l < "$R/.work/$JOB/events.log")" -eq "$n0"
@@ -1517,6 +1517,32 @@ contains "…logged with who and why" "$(grep $'\tabort\t' "$SR/.work/$SJ/events
 expect_ok "…and the next job starts" bash -c "cd '$SR' && env -u AGENT_ID '$DL' new t2 r2"
 contains "Claude may not abort for the human (bash-guard)" "$(bg '"$DL" abort "x"')" "rc=2"
 contains "…nor pose as the human's slash command" "$(bg 'DELIVER_HUMAN_CMD=1 "$DL" card T-01 retry')" "rc=2"
+
+echo "a stopped agent is continued, not replaced: dl agents reads Claude Code's own subagent transcripts"
+AC="$TMP/agconf"; AJ="$SR/.work/$(cat "$SR/.work/ACTIVE")"; AJN="$(basename "$AJ")"
+mkag() { # mkag <session> <agent id> <type> <prompt> <ts> [api error text]
+  local d="$AC/projects/-p/$1/subagents"; mkdir -p "$d"
+  jq -nc --arg a "$2" --arg s "$1" --arg p "$4" --arg t "$5" '{type:"user",agentId:$a,sessionId:$s,isSidechain:true,timestamp:$t,message:{role:"user",content:$p}}' > "$d/agent-$2.jsonl"
+  if [[ -n ${6:-} ]]; then jq -nc --arg t "$5" --arg e "$6" '{type:"assistant",timestamp:$t,isApiErrorMessage:true,message:{content:[{type:"text",text:$e}]}}' >> "$d/agent-$2.jsonl"
+  else jq -nc --arg t "$5" '{type:"assistant",timestamp:$t,message:{content:[{type:"text",text:"working"}]}}' >> "$d/agent-$2.jsonl"; fi
+  jq -nc --arg ty "$3" '{agentType:$ty, description:"x"}' > "$d/agent-$2.meta.json"
+}
+mkag s1 aaa1 backend-dev "CARD: {\"id\":\"T-01\"} WORKTREE: $AJ/wt/T-01" 2026-10-07T09:00:00Z
+mkag s1 aaa2 backend-dev "CARD: {\"id\":\"T-01\"} WORKTREE: $AJ/wt/T-01" 2026-10-07T09:30:00Z "Claude AI usage limit reached|1791370800"
+mkag s1 bbb1 qa-tester "Role: QA/Test for card T-02. ROLE CARD: $AJ/roles/qa.md" 2026-10-07T09:10:00Z
+mkag s2 ccc1 backend-dev "CARD: T-01 WORKTREE: /elsewhere/.work/JOB-other/wt/T-01" 2026-10-07T10:00:00Z
+mkag s1 ddd1 business-analyst "MODE: PLAN ROLE CARD: $AJ/roles/ba.md" 2026-10-07T08:00:00Z
+out="$(cd "$SR" && CLAUDE_CONFIG_DIR="$AC" env -u AGENT_ID "$DL" agents 2>&1)"
+contains "dl agents finds the agent of each card from Claude Code's transcripts (jobs started before this, too)" "$out" "aaa2"
+[[ $out != *aaa1* && $out != *ccc1* ]] && ok "…the newest one of each role on the card, never another job's" || bad "agents: $out"
+contains "…with its session" "$out" "s1"
+contains "…and an agent that ended on an API error (a usage limit) is shown as such" "$out" "API ERROR: Claude AI usage limit reached"
+contains "…QA's agent on its card" "$out" "bbb1"
+contains "dl agents T-01 narrows to one card" "$(cd "$SR" && CLAUDE_CONFIG_DIR="$AC" env -u AGENT_ID "$DL" agents T-02 2>&1 | grep -c bbb1)" "1"
+contains "dl agents --all lists the plan steps' agents too" "$(cd "$SR" && CLAUDE_CONFIG_DIR="$AC" env -u AGENT_ID "$DL" agents --all 2>&1)" "ddd1"
+contains "no transcript: said so" "$(cd "$SR" && CLAUDE_CONFIG_DIR="$TMP/none" env -u AGENT_ID "$DL" agents 2>&1)" "no subagent of this job found"
+grep -q 'SendMessage' "$HERE/kit/skills/deliver/SKILL.md" && grep -q 'A usage limit or an API error is not the card' "$HERE/kit/skills/deliver/SKILL.md" \
+  && ok "the playbook continues a stopped agent with SendMessage before a new one, and a limit is not the card's failure" || bad "playbook resume rule"
 
 echo "live tests: the prepared human picks the answer that fits best"
 PA="$HERE/tests/pick-answer.mjs"; HA="$HERE/examples/watchlist-poc/HUMAN_ANSWERS.json"

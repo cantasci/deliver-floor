@@ -25,6 +25,15 @@ claude --model opus          # Michael benefits from the strongest model; roles 
 /deliver:deliver resume      # after a restart, or after you answered elsewhere
 ```
 
+**After a usage limit.** The work is in files, and the agents keep their history: Claude Code stores every subagent's
+transcript with its session. When the limit resets, **resume the same session** — `claude --continue` (the last one) or
+`claude --resume` (pick it) — then `/deliver:deliver resume`. Michael finds each stopped agent with `dl agents` and continues
+it with SendMessage: it goes on with its whole history, no attempt is used, nothing is read again. In a new session the
+agents cannot be continued (their transcripts belong to the old one): Michael then gives the card a new agent in the same
+worktree (`dl wt add --resume`, no attempt used either), which reads the commits and the handoff. Jobs started before 0.7.2
+are found the same way — the transcripts are Claude Code's, kept for 30 days by default (`cleanupPeriodDays`).
+
+
 - Agents run in the background: Michael moves each card on the moment its agent reports and assigns the cards it unblocks.
 - Open business questions come as one AskUserQuestion with the BA's options; your words are recorded with `dl clarify` (or answer yourself: `/deliver:answer <id> <answer>`).
 - `/deliver:status`, `/deliver:board` and `/deliver:timeline` give you the live board.
