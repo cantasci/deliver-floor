@@ -1,0 +1,489 @@
+# gate: T-01  attempt: 1  2026-10-07T18:56:14Z
+ok    on job/JOB-20261007-1840-watchlist-level-badge--T-01
+ok    working tree clean
+ok    2 commit(s)
+ok    all changes within scope ["web/wlBadge.mjs","web/wlBadge.css","test/web/wlBadge.test.mjs"] (+ QA tests ["test/web/qa/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/web/wlBadge.test.mjs
+TAP version 13
+# Subtest: wlBadgeHtml output (AC-1, AC-9)
+    # Subtest: level 1 returns the exact contract string
+    ok 1 - level 1 returns the exact contract string
+      ---
+      duration_ms: 1.048411
+      type: 'test'
+      ...
+    # Subtest: level 1 is stable across repeated calls
+    ok 2 - level 1 is stable across repeated calls
+      ---
+      duration_ms: 0.187681
+      type: 'test'
+      ...
+    # Subtest: level 1 text is "WL 1", 4 chars, no exclamation mark
+    ok 3 - level 1 text is "WL 1", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.181049
+      type: 'test'
+      ...
+    # Subtest: level 2 returns the exact contract string
+    ok 4 - level 2 returns the exact contract string
+      ---
+      duration_ms: 0.177431
+      type: 'test'
+      ...
+    # Subtest: level 2 is stable across repeated calls
+    ok 5 - level 2 is stable across repeated calls
+      ---
+      duration_ms: 0.136454
+      type: 'test'
+      ...
+    # Subtest: level 2 text is "WL 2", 4 chars, no exclamation mark
+    ok 6 - level 2 text is "WL 2", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.109569
+      type: 'test'
+      ...
+    # Subtest: level 3 returns the exact contract string
+    ok 7 - level 3 returns the exact contract string
+      ---
+      duration_ms: 0.261832
+      type: 'test'
+      ...
+    # Subtest: level 3 is stable across repeated calls
+    ok 8 - level 3 is stable across repeated calls
+      ---
+      duration_ms: 0.207431
+      type: 'test'
+      ...
+    # Subtest: level 3 text is "WL 3", 4 chars, no exclamation mark
+    ok 9 - level 3 text is "WL 3", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.217422
+      type: 'test'
+      ...
+    # Subtest: level 4 returns the exact contract string
+    ok 10 - level 4 returns the exact contract string
+      ---
+      duration_ms: 0.412227
+      type: 'test'
+      ...
+    # Subtest: level 4 is stable across repeated calls
+    ok 11 - level 4 is stable across repeated calls
+      ---
+      duration_ms: 0.098787
+      type: 'test'
+      ...
+    # Subtest: level 4 text is "WL 4", 4 chars, no exclamation mark
+    ok 12 - level 4 text is "WL 4", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.070649
+      type: 'test'
+      ...
+    # Subtest: 2.0 is the same as 2
+    ok 13 - 2.0 is the same as 2
+      ---
+      duration_ms: 0.093433
+      type: 'test'
+      ...
+    # Subtest: extra arguments are ignored
+    ok 14 - extra arguments are ignored
+      ---
+      duration_ms: 0.075491
+      type: 'test'
+      ...
+    1..14
+ok 1 - wlBadgeHtml output (AC-1, AC-9)
+  ---
+  duration_ms: 6.403336
+  type: 'suite'
+  ...
+# Subtest: module shape (AC-1, AC-10)
+    # Subtest: only export is the named function wlBadgeHtml
+    ok 1 - only export is the named function wlBadgeHtml
+      ---
+      duration_ms: 0.929063
+      type: 'test'
+      ...
+    # Subtest: wlBadgeHtml takes one parameter
+    ok 2 - wlBadgeHtml takes one parameter
+      ---
+      duration_ms: 0.103789
+      type: 'test'
+      ...
+    1..2
+ok 2 - module shape (AC-1, AC-10)
+  ---
+  duration_ms: 1.155531
+  type: 'suite'
+  ...
+# Subtest: invalid input throws RangeError (AC-2, AC-3, item 16)
+    # Subtest: number 0 throws RangeError
+    ok 1 - number 0 throws RangeError
+      ---
+      duration_ms: 0.633006
+      type: 'test'
+      ...
+    # Subtest: number 5 throws RangeError
+    ok 2 - number 5 throws RangeError
+      ---
+      duration_ms: 0.086597
+      type: 'test'
+      ...
+    # Subtest: number -1 throws RangeError
+    ok 3 - number -1 throws RangeError
+      ---
+      duration_ms: 0.093539
+      type: 'test'
+      ...
+    # Subtest: number -0 throws RangeError
+    ok 4 - number -0 throws RangeError
+      ---
+      duration_ms: 0.10808
+      type: 'test'
+      ...
+    # Subtest: number 1.5 throws RangeError
+    ok 5 - number 1.5 throws RangeError
+      ---
+      duration_ms: 0.078122
+      type: 'test'
+      ...
+    # Subtest: number 3.999 throws RangeError
+    ok 6 - number 3.999 throws RangeError
+      ---
+      duration_ms: 0.06844
+      type: 'test'
+      ...
+    # Subtest: number 1.0000001 throws RangeError
+    ok 7 - number 1.0000001 throws RangeError
+      ---
+      duration_ms: 0.065715
+      type: 'test'
+      ...
+    # Subtest: number NaN throws RangeError
+    ok 8 - number NaN throws RangeError
+      ---
+      duration_ms: 0.061794
+      type: 'test'
+      ...
+    # Subtest: number Infinity throws RangeError
+    ok 9 - number Infinity throws RangeError
+      ---
+      duration_ms: 0.209258
+      type: 'test'
+      ...
+    # Subtest: number -Infinity throws RangeError
+    ok 10 - number -Infinity throws RangeError
+      ---
+      duration_ms: 0.086151
+      type: 'test'
+      ...
+    # Subtest: "2" throws RangeError
+    ok 11 - "2" throws RangeError
+      ---
+      duration_ms: 0.121306
+      type: 'test'
+      ...
+    # Subtest: "WL 2" throws RangeError
+    ok 12 - "WL 2" throws RangeError
+      ---
+      duration_ms: 0.113434
+      type: 'test'
+      ...
+    # Subtest: "" throws RangeError
+    ok 13 - "" throws RangeError
+      ---
+      duration_ms: 0.079333
+      type: 'test'
+      ...
+    # Subtest: 2n throws RangeError
+    ok 14 - 2n throws RangeError
+      ---
+      duration_ms: 0.067026
+      type: 'test'
+      ...
+    # Subtest: true throws RangeError
+    ok 15 - true throws RangeError
+      ---
+      duration_ms: 0.060084
+      type: 'test'
+      ...
+    # Subtest: null throws RangeError
+    ok 16 - null throws RangeError
+      ---
+      duration_ms: 0.059658
+      type: 'test'
+      ...
+    # Subtest: undefined throws RangeError
+    ok 17 - undefined throws RangeError
+      ---
+      duration_ms: 0.054845
+      type: 'test'
+      ...
+    # Subtest: new Number(2) throws RangeError
+    ok 18 - new Number(2) throws RangeError
+      ---
+      duration_ms: 0.059818
+      type: 'test'
+      ...
+    # Subtest: [1] throws RangeError
+    ok 19 - [1] throws RangeError
+      ---
+      duration_ms: 0.159714
+      type: 'test'
+      ...
+    # Subtest: {} throws RangeError
+    ok 20 - {} throws RangeError
+      ---
+      duration_ms: 0.083208
+      type: 'test'
+      ...
+    # Subtest: Symbol throws RangeError
+    ok 21 - Symbol throws RangeError
+      ---
+      duration_ms: 0.113733
+      type: 'test'
+      ...
+    # Subtest: Object.create(null) throws RangeError
+    ok 22 - Object.create(null) throws RangeError
+      ---
+      duration_ms: 0.08527
+      type: 'test'
+      ...
+    # Subtest: object with throwing toString throws RangeError
+    ok 23 - object with throwing toString throws RangeError
+      ---
+      duration_ms: 0.111579
+      type: 'test'
+      ...
+    # Subtest: no argument throws RangeError
+    ok 24 - no argument throws RangeError
+      ---
+      duration_ms: 0.109709
+      type: 'test'
+      ...
+    1..24
+ok 3 - invalid input throws RangeError (AC-2, AC-3, item 16)
+  ---
+  duration_ms: 4.806381
+  type: 'suite'
+  ...
+# Subtest: wlBadge.css structure (AC-5, AC-7)
+    # Subtest: exactly the five expected selectors, in order, no at-rules or stray text
+    not ok 1 - exactly the five expected selectors, in order, no at-rules or stray text
+      ---
+      duration_ms: 1.719278
+      type: 'test'
+      location: '.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:123:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly deep-equal:
+        + actual - expected
+        
+          [
+            '.wl-badge',
+            '.wl-badge--1',
+            '.wl-badge--2',
+            '.wl-badge--3',
+            '.wl-badge--4',
+        +   '.wl-badge'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: '.wl-badge'
+        1: '.wl-badge--1'
+        2: '.wl-badge--2'
+        3: '.wl-badge--3'
+        4: '.wl-badge--4'
+      actual:
+        0: '.wl-badge'
+        1: '.wl-badge--1'
+        2: '.wl-badge--2'
+        3: '.wl-badge--3'
+        4: '.wl-badge--4'
+        5: '.wl-badge'
+      operator: 'deepStrictEqual'
+      stack: |-
+        TestContext.<anonymous> (file://.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:124:12)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        node:internal/test_runner/test:1440:71
+        node:internal/per_context/primordials:464:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:433:3)
+        node:internal/per_context/primordials:464:9
+        Array.map (<anonymous>)
+      ...
+    # Subtest: .wl-badge has exactly the five allow-listed declarations
+    not ok 2 - .wl-badge has exactly the five allow-listed declarations
+      ---
+      duration_ms: 0.559244
+      type: 'test'
+      location: '.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:132:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        2 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 2
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (file://.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:133:12)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:744:18)
+        Test.postRun (node:internal/test_runner/test:1173:19)
+        Test.run (node:internal/test_runner/test:1101:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1442:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+      ...
+    # Subtest: .wl-badge--1 has only background-color: var(--wl-1)
+    ok 3 - .wl-badge--1 has only background-color: var(--wl-1)
+      ---
+      duration_ms: 0.147946
+      type: 'test'
+      ...
+    # Subtest: .wl-badge--2 has only background-color: var(--wl-2)
+    ok 4 - .wl-badge--2 has only background-color: var(--wl-2)
+      ---
+      duration_ms: 0.152152
+      type: 'test'
+      ...
+    # Subtest: .wl-badge--3 has only background-color: var(--wl-3)
+    ok 5 - .wl-badge--3 has only background-color: var(--wl-3)
+      ---
+      duration_ms: 0.071442
+      type: 'test'
+      ...
+    # Subtest: .wl-badge--4 has only background-color: var(--wl-4)
+    ok 6 - .wl-badge--4 has only background-color: var(--wl-4)
+      ---
+      duration_ms: 0.061385
+      type: 'test'
+      ...
+    1..6
+not ok 4 - wlBadge.css structure (AC-5, AC-7)
+  ---
+  duration_ms: 2.947813
+  type: 'suite'
+  location: '.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:119:1'
+  failureType: 'subtestsFailed'
+  error: '2 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: brand colour rules (AC-6, BV-colours)
+    # Subtest: wlBadge.css has no hex colour, colour function or custom-property definition
+    not ok 1 - wlBadge.css has no hex colour, colour function or custom-property definition
+      ---
+      duration_ms: 0.488795
+      type: 'test'
+      location: '.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:162:5'
+      failureType: 'testCodeFailure'
+      error: 'colour function found'
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: '=='
+      stack: |-
+        TestContext.<anonymous> (file://.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:164:14)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Test.start (node:internal/test_runner/test:944:17)
+        node:internal/test_runner/test:1440:71
+        node:internal/per_context/primordials:464:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:433:3)
+        node:internal/per_context/primordials:464:9
+        Array.map (<anonymous>)
+      ...
+    # Subtest: wlBadge.mjs has no hex colour, colour function or custom-property definition
+    ok 2 - wlBadge.mjs has no hex colour, colour function or custom-property definition
+      ---
+      duration_ms: 0.211211
+      type: 'test'
+      ...
+    # Subtest: wlBadge.css does not import tokens
+    ok 3 - wlBadge.css does not import tokens
+      ---
+      duration_ms: 0.099505
+      type: 'test'
+      ...
+    1..3
+not ok 5 - brand colour rules (AC-6, BV-colours)
+  ---
+  duration_ms: 0.95646
+  type: 'suite'
+  location: '.work/JOB-20261007-1840-watchlist-level-badge/wt/T-01/test/web/wlBadge.test.mjs:153:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: module purity and test imports (AC-10, ARC-deps)
+    # Subtest: wlBadge.mjs has no import, require, fetch, process, fs or readFile
+    ok 1 - wlBadge.mjs has no import, require, fetch, process, fs or readFile
+      ---
+      duration_ms: 0.290286
+      type: 'test'
+      ...
+    # Subtest: this test file imports only node built-ins and the module under test
+    ok 2 - this test file imports only node built-ins and the module under test
+      ---
+      duration_ms: 0.284594
+      type: 'test'
+      ...
+    1..2
+ok 6 - module purity and test imports (AC-10, ARC-deps)
+  ---
+  duration_ms: 0.675109
+  type: 'suite'
+  ...
+# Subtest: contrast (AC-8, BV-contrast)
+    # Subtest: --on-wl on --wl-1 is at least 4.5:1
+    ok 1 - --on-wl on --wl-1 is at least 4.5:1
+      ---
+      duration_ms: 0.345593
+      type: 'test'
+      ...
+    # Subtest: --on-wl on --wl-2 is at least 4.5:1
+    ok 2 - --on-wl on --wl-2 is at least 4.5:1
+      ---
+      duration_ms: 0.194113
+      type: 'test'
+      ...
+    # Subtest: --on-wl on --wl-3 is at least 4.5:1
+    ok 3 - --on-wl on --wl-3 is at least 4.5:1
+      ---
+      duration_ms: 0.12788
+      type: 'test'
+      ...
+    # Subtest: --on-wl on --wl-4 is at least 4.5:1
+    ok 4 - --on-wl on --wl-4 is at least 4.5:1
+      ---
+      duration_ms: 0.112711
+      type: 'test'
+      ...
+    1..4
+ok 7 - contrast (AC-8, BV-contrast)
+  ---
+  duration_ms: 0.924319
+  type: 'suite'
+  ...
+1..7
+# tests 55
+# suites 7
+# pass 52
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 161.731375
+FAIL  verify failed (exit 1)

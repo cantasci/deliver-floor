@@ -1,0 +1,996 @@
+# verify_full on T-01's commit (dev + QA tests together): node --test
+TAP version 13
+# Subtest: test/web/qa/helpers.mjs
+ok 1 - test/web/qa/helpers.mjs
+  ---
+  duration_ms: 62.488536
+  type: 'test'
+  ...
+# Subtest: T-01 QA: wlBadgeHtml output (AC-1, AC-9)
+    # Subtest: AC-1: wlBadgeHtml(1) returns exactly the contract string
+    ok 1 - AC-1: wlBadgeHtml(1) returns exactly the contract string
+      ---
+      duration_ms: 1.974883
+      type: 'test'
+      ...
+    # Subtest: AC-1: a second call with 1 returns an identical string
+    ok 2 - AC-1: a second call with 1 returns an identical string
+      ---
+      duration_ms: 0.422425
+      type: 'test'
+      ...
+    # Subtest: AC-1: output for 1 has no newline and no attribute besides class
+    ok 3 - AC-1: output for 1 has no newline and no attribute besides class
+      ---
+      duration_ms: 0.631843
+      type: 'test'
+      ...
+    # Subtest: AC-9, BV-voice: text of the badge for 1 is "WL 1", 4 chars, no "!"
+    ok 4 - AC-9, BV-voice: text of the badge for 1 is "WL 1", 4 chars, no "!"
+      ---
+      duration_ms: 0.355187
+      type: 'test'
+      ...
+    # Subtest: AC-1: wlBadgeHtml(2) returns exactly the contract string
+    ok 5 - AC-1: wlBadgeHtml(2) returns exactly the contract string
+      ---
+      duration_ms: 5.728776
+      type: 'test'
+      ...
+    # Subtest: AC-1: a second call with 2 returns an identical string
+    ok 6 - AC-1: a second call with 2 returns an identical string
+      ---
+      duration_ms: 0.294174
+      type: 'test'
+      ...
+    # Subtest: AC-1: output for 2 has no newline and no attribute besides class
+    ok 7 - AC-1: output for 2 has no newline and no attribute besides class
+      ---
+      duration_ms: 0.292281
+      type: 'test'
+      ...
+    # Subtest: AC-9, BV-voice: text of the badge for 2 is "WL 2", 4 chars, no "!"
+    ok 8 - AC-9, BV-voice: text of the badge for 2 is "WL 2", 4 chars, no "!"
+      ---
+      duration_ms: 0.365743
+      type: 'test'
+      ...
+    # Subtest: AC-1: wlBadgeHtml(3) returns exactly the contract string
+    ok 9 - AC-1: wlBadgeHtml(3) returns exactly the contract string
+      ---
+      duration_ms: 0.416032
+      type: 'test'
+      ...
+    # Subtest: AC-1: a second call with 3 returns an identical string
+    ok 10 - AC-1: a second call with 3 returns an identical string
+      ---
+      duration_ms: 0.56855
+      type: 'test'
+      ...
+    # Subtest: AC-1: output for 3 has no newline and no attribute besides class
+    ok 11 - AC-1: output for 3 has no newline and no attribute besides class
+      ---
+      duration_ms: 0.190412
+      type: 'test'
+      ...
+    # Subtest: AC-9, BV-voice: text of the badge for 3 is "WL 3", 4 chars, no "!"
+    ok 12 - AC-9, BV-voice: text of the badge for 3 is "WL 3", 4 chars, no "!"
+      ---
+      duration_ms: 0.141148
+      type: 'test'
+      ...
+    # Subtest: AC-1: wlBadgeHtml(4) returns exactly the contract string
+    ok 13 - AC-1: wlBadgeHtml(4) returns exactly the contract string
+      ---
+      duration_ms: 0.195923
+      type: 'test'
+      ...
+    # Subtest: AC-1: a second call with 4 returns an identical string
+    ok 14 - AC-1: a second call with 4 returns an identical string
+      ---
+      duration_ms: 0.140624
+      type: 'test'
+      ...
+    # Subtest: AC-1: output for 4 has no newline and no attribute besides class
+    ok 15 - AC-1: output for 4 has no newline and no attribute besides class
+      ---
+      duration_ms: 0.228634
+      type: 'test'
+      ...
+    # Subtest: AC-9, BV-voice: text of the badge for 4 is "WL 4", 4 chars, no "!"
+    ok 16 - AC-9, BV-voice: text of the badge for 4 is "WL 4", 4 chars, no "!"
+      ---
+      duration_ms: 0.12403
+      type: 'test'
+      ...
+    # Subtest: AC-1: 2.0 is 2 (same string as wlBadgeHtml(2))
+    ok 17 - AC-1: 2.0 is 2 (same string as wlBadgeHtml(2))
+      ---
+      duration_ms: 0.214533
+      type: 'test'
+      ...
+    # Subtest: AC-1 edge: extra arguments are ignored
+    ok 18 - AC-1 edge: extra arguments are ignored
+      ---
+      duration_ms: 0.157828
+      type: 'test'
+      ...
+    # Subtest: AC-1 edge: a call after rejected inputs still returns the right badge (no state)
+    ok 19 - AC-1 edge: a call after rejected inputs still returns the right badge (no state)
+      ---
+      duration_ms: 0.634071
+      type: 'test'
+      ...
+    # Subtest: AC-1: a consumer can render a whole list of levels into one string
+    ok 20 - AC-1: a consumer can render a whole list of levels into one string
+      ---
+      duration_ms: 0.21231
+      type: 'test'
+      ...
+    1..20
+ok 2 - T-01 QA: wlBadgeHtml output (AC-1, AC-9)
+  ---
+  duration_ms: 15.9345
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: module surface (AC-1, AC-10)
+    # Subtest: AC-1, AC-10: the only export is the named function wlBadgeHtml, no default
+    ok 1 - AC-1, AC-10: the only export is the named function wlBadgeHtml, no default
+      ---
+      duration_ms: 1.003219
+      type: 'test'
+      ...
+    # Subtest: AC-1, AC-10: wlBadgeHtml.length === 1
+    ok 2 - AC-1, AC-10: wlBadgeHtml.length === 1
+      ---
+      duration_ms: 0.272625
+      type: 'test'
+      ...
+    1..2
+ok 3 - T-01 QA: module surface (AC-1, AC-10)
+  ---
+  duration_ms: 1.420472
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: numbers out of range or not whole (AC-2)
+    # Subtest: AC-2: wlBadgeHtml(0) throws RangeError
+    ok 1 - AC-2: wlBadgeHtml(0) throws RangeError
+      ---
+      duration_ms: 0.456153
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(5) throws RangeError
+    ok 2 - AC-2: wlBadgeHtml(5) throws RangeError
+      ---
+      duration_ms: 1.409648
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(-1) throws RangeError
+    ok 3 - AC-2: wlBadgeHtml(-1) throws RangeError
+      ---
+      duration_ms: 0.147046
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(-0) throws RangeError
+    ok 4 - AC-2: wlBadgeHtml(-0) throws RangeError
+      ---
+      duration_ms: 0.119327
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(1.5) throws RangeError
+    ok 5 - AC-2: wlBadgeHtml(1.5) throws RangeError
+      ---
+      duration_ms: 0.194891
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(3.999) throws RangeError
+    ok 6 - AC-2: wlBadgeHtml(3.999) throws RangeError
+      ---
+      duration_ms: 0.300696
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(1.0000001) throws RangeError
+    ok 7 - AC-2: wlBadgeHtml(1.0000001) throws RangeError
+      ---
+      duration_ms: 0.155891
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(NaN) throws RangeError
+    ok 8 - AC-2: wlBadgeHtml(NaN) throws RangeError
+      ---
+      duration_ms: 0.119461
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(Infinity) throws RangeError
+    ok 9 - AC-2: wlBadgeHtml(Infinity) throws RangeError
+      ---
+      duration_ms: 0.296975
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(-Infinity) throws RangeError
+    ok 10 - AC-2: wlBadgeHtml(-Infinity) throws RangeError
+      ---
+      duration_ms: 0.130551
+      type: 'test'
+      ...
+    # Subtest: AC-2: wlBadgeHtml(Number.MAX_SAFE_INTEGER) throws RangeError
+    ok 11 - AC-2: wlBadgeHtml(Number.MAX_SAFE_INTEGER) throws RangeError
+      ---
+      duration_ms: 0.201449
+      type: 'test'
+      ...
+    1..11
+ok 4 - T-01 QA: numbers out of range or not whole (AC-2)
+  ---
+  duration_ms: 3.856691
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: non-number and boxed inputs (AC-3, X-input-types)
+    # Subtest: AC-3: wlBadgeHtml("2") throws RangeError
+    ok 1 - AC-3: wlBadgeHtml("2") throws RangeError
+      ---
+      duration_ms: 0.481764
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml("WL 2") throws RangeError
+    ok 2 - AC-3: wlBadgeHtml("WL 2") throws RangeError
+      ---
+      duration_ms: 0.300513
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml("") throws RangeError
+    ok 3 - AC-3: wlBadgeHtml("") throws RangeError
+      ---
+      duration_ms: 0.177888
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(2n) throws RangeError
+    ok 4 - AC-3: wlBadgeHtml(2n) throws RangeError
+      ---
+      duration_ms: 0.162008
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(true) throws RangeError
+    ok 5 - AC-3: wlBadgeHtml(true) throws RangeError
+      ---
+      duration_ms: 0.134422
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(false) throws RangeError
+    ok 6 - AC-3: wlBadgeHtml(false) throws RangeError
+      ---
+      duration_ms: 0.128557
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(null) throws RangeError
+    ok 7 - AC-3: wlBadgeHtml(null) throws RangeError
+      ---
+      duration_ms: 0.128919
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(undefined) throws RangeError
+    ok 8 - AC-3: wlBadgeHtml(undefined) throws RangeError
+      ---
+      duration_ms: 0.196941
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(new Number(2)) throws RangeError
+    ok 9 - AC-3: wlBadgeHtml(new Number(2)) throws RangeError
+      ---
+      duration_ms: 0.151238
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml([1]) throws RangeError
+    ok 10 - AC-3: wlBadgeHtml([1]) throws RangeError
+      ---
+      duration_ms: 0.166098
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml({}) throws RangeError
+    ok 11 - AC-3: wlBadgeHtml({}) throws RangeError
+      ---
+      duration_ms: 0.225952
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(() => 2) throws RangeError
+    ok 12 - AC-3: wlBadgeHtml(() => 2) throws RangeError
+      ---
+      duration_ms: 0.153377
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml(Symbol('x')) throws RangeError
+    ok 13 - AC-3: wlBadgeHtml(Symbol('x')) throws RangeError
+      ---
+      duration_ms: 0.305457
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml({ valueOf: () => 2 }) throws RangeError
+    ok 14 - AC-3: wlBadgeHtml({ valueOf: () => 2 }) throws RangeError
+      ---
+      duration_ms: 0.315421
+      type: 'test'
+      ...
+    # Subtest: AC-3: wlBadgeHtml() with no argument throws RangeError
+    ok 15 - AC-3: wlBadgeHtml() with no argument throws RangeError
+      ---
+      duration_ms: 0.244133
+      type: 'test'
+      ...
+    # Subtest: AC-3: Symbol('x') is a RangeError and never a TypeError
+    ok 16 - AC-3: Symbol('x') is a RangeError and never a TypeError
+      ---
+      duration_ms: 0.36781
+      type: 'test'
+      ...
+    1..16
+ok 5 - T-01 QA: non-number and boxed inputs (AC-3, X-input-types)
+  ---
+  duration_ms: 4.14108
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: hostile objects (AC-3, PM decision, item 16)
+    # Subtest: AC-3: Object.create(null) throws RangeError, not TypeError
+    ok 1 - AC-3: Object.create(null) throws RangeError, not TypeError
+      ---
+      duration_ms: 3.402976
+      type: 'test'
+      ...
+    # Subtest: AC-3: an object whose toString throws gives a RangeError, not the thrown error
+    ok 2 - AC-3: an object whose toString throws gives a RangeError, not the thrown error
+      ---
+      duration_ms: 0.553668
+      type: 'test'
+      ...
+    # Subtest: AC-3: an object whose toString throws a TypeError still gives a RangeError
+    ok 3 - AC-3: an object whose toString throws a TypeError still gives a RangeError
+      ---
+      duration_ms: 0.575214
+      type: 'test'
+      ...
+    # Subtest: AC-3: an object whose Symbol.toPrimitive throws gives a RangeError
+    ok 4 - AC-3: an object whose Symbol.toPrimitive throws gives a RangeError
+      ---
+      duration_ms: 0.259018
+      type: 'test'
+      ...
+    1..4
+ok 6 - T-01 QA: hostile objects (AC-3, PM decision, item 16)
+  ---
+  duration_ms: 5.022543
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: wlBadge.css structure (AC-5)
+    # Subtest: AC-5: the selectors are exactly .wl-badge and .wl-badge--1..4, no other rule, no at-rule
+    ok 1 - AC-5: the selectors are exactly .wl-badge and .wl-badge--1..4, no other rule, no at-rule
+      ---
+      duration_ms: 2.777457
+      type: 'test'
+      ...
+    # Subtest: AC-5: .wl-badge--1 has exactly one declaration: background-color: var(--wl-1)
+    ok 2 - AC-5: .wl-badge--1 has exactly one declaration: background-color: var(--wl-1)
+      ---
+      duration_ms: 0.577233
+      type: 'test'
+      ...
+    # Subtest: AC-5: .wl-badge--2 has exactly one declaration: background-color: var(--wl-2)
+    ok 3 - AC-5: .wl-badge--2 has exactly one declaration: background-color: var(--wl-2)
+      ---
+      duration_ms: 0.322142
+      type: 'test'
+      ...
+    # Subtest: AC-5: .wl-badge--3 has exactly one declaration: background-color: var(--wl-3)
+    ok 4 - AC-5: .wl-badge--3 has exactly one declaration: background-color: var(--wl-3)
+      ---
+      duration_ms: 0.430065
+      type: 'test'
+      ...
+    # Subtest: AC-5: .wl-badge--4 has exactly one declaration: background-color: var(--wl-4)
+    ok 5 - AC-5: .wl-badge--4 has exactly one declaration: background-color: var(--wl-4)
+      ---
+      duration_ms: 0.363953
+      type: 'test'
+      ...
+    # Subtest: AC-5, AC-7, UX-design: .wl-badge has exactly the five allowed declarations
+    ok 6 - AC-5, AC-7, UX-design: .wl-badge has exactly the five allowed declarations
+      ---
+      duration_ms: 0.471467
+      type: 'test'
+      ...
+    # Subtest: AC-7, UX-design: .wl-badge sets no size, weight, spacing-outside or box dimension property
+    ok 7 - AC-7, UX-design: .wl-badge sets no size, weight, spacing-outside or box dimension property
+      ---
+      duration_ms: 0.422643
+      type: 'test'
+      ...
+    # Subtest: AC-5: the stylesheet defines no custom property and imports nothing
+    ok 8 - AC-5: the stylesheet defines no custom property and imports nothing
+      ---
+      duration_ms: 0.731408
+      type: 'test'
+      ...
+    1..8
+ok 7 - T-01 QA: wlBadge.css structure (AC-5)
+  ---
+  duration_ms: 7.640416
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: markup and stylesheet agree (AC-1, AC-5)
+    # Subtest: AC-1, AC-5: every class wlBadgeHtml(1) emits has a rule in wlBadge.css
+    ok 1 - AC-1, AC-5: every class wlBadgeHtml(1) emits has a rule in wlBadge.css
+      ---
+      duration_ms: 3.187485
+      type: 'test'
+      ...
+    # Subtest: AC-1, AC-5: every class wlBadgeHtml(2) emits has a rule in wlBadge.css
+    ok 2 - AC-1, AC-5: every class wlBadgeHtml(2) emits has a rule in wlBadge.css
+      ---
+      duration_ms: 0.573503
+      type: 'test'
+      ...
+    # Subtest: AC-1, AC-5: every class wlBadgeHtml(3) emits has a rule in wlBadge.css
+    ok 3 - AC-1, AC-5: every class wlBadgeHtml(3) emits has a rule in wlBadge.css
+      ---
+      duration_ms: 0.391498
+      type: 'test'
+      ...
+    # Subtest: AC-1, AC-5: every class wlBadgeHtml(4) emits has a rule in wlBadge.css
+    ok 4 - AC-1, AC-5: every class wlBadgeHtml(4) emits has a rule in wlBadge.css
+      ---
+      duration_ms: 0.27891
+      type: 'test'
+      ...
+    1..4
+ok 8 - T-01 QA: markup and stylesheet agree (AC-1, AC-5)
+  ---
+  duration_ms: 4.712711
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: wlBadge.css against web/tokens.css (AC-5, AC-8, BV-colours, BV-type, BV-shape)
+    # Subtest: BV-colours, BV-type, BV-shape: every var() in wlBadge.css is defined in tokens.css
+    ok 1 - BV-colours, BV-type, BV-shape: every var() in wlBadge.css is defined in tokens.css
+      ---
+      duration_ms: 0.628315
+      type: 'test'
+      ...
+    # Subtest: AC-5: the only custom properties wlBadge.css uses are the allowed tokens
+    ok 2 - AC-5: the only custom properties wlBadge.css uses are the allowed tokens
+      ---
+      duration_ms: 0.38913
+      type: 'test'
+      ...
+    # Subtest: BV-type, BV-shape: the font, radius and spacing tokens resolve to real values
+    ok 3 - BV-type, BV-shape: the font, radius and spacing tokens resolve to real values
+      ---
+      duration_ms: 0.195359
+      type: 'test'
+      ...
+    # Subtest: AC-8, BV-contrast, UX-a11y: --on-wl against each of --wl-1..--wl-4 is at least 4.5:1
+    ok 4 - AC-8, BV-contrast, UX-a11y: --on-wl against each of --wl-1..--wl-4 is at least 4.5:1
+      ---
+      duration_ms: 0.567628
+      type: 'test'
+      ...
+    # Subtest: AC-8, BV-contrast: the text and background tokens wlBadge.css really pairs meet 4.5:1
+    ok 5 - AC-8, BV-contrast: the text and background tokens wlBadge.css really pairs meet 4.5:1
+      ---
+      duration_ms: 0.596295
+      type: 'test'
+      ...
+    1..5
+ok 9 - T-01 QA: wlBadge.css against web/tokens.css (AC-5, AC-8, BV-colours, BV-type, BV-shape)
+  ---
+  duration_ms: 2.622551
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: no colour literal in the badge files (AC-6, BV-colours)
+    # Subtest: AC-6: web/wlBadge.css (comments included) has no hex colour
+    ok 1 - AC-6: web/wlBadge.css (comments included) has no hex colour
+      ---
+      duration_ms: 0.316806
+      type: 'test'
+      ...
+    # Subtest: AC-6: web/wlBadge.css (comments included) has no colour function
+    ok 2 - AC-6: web/wlBadge.css (comments included) has no colour function
+      ---
+      duration_ms: 0.342364
+      type: 'test'
+      ...
+    # Subtest: AC-6: web/wlBadge.css (comments included) has no custom-property definition
+    ok 3 - AC-6: web/wlBadge.css (comments included) has no custom-property definition
+      ---
+      duration_ms: 0.215347
+      type: 'test'
+      ...
+    # Subtest: AC-6: web/wlBadge.mjs (comments included) has no hex colour
+    ok 4 - AC-6: web/wlBadge.mjs (comments included) has no hex colour
+      ---
+      duration_ms: 0.148589
+      type: 'test'
+      ...
+    # Subtest: AC-6: web/wlBadge.mjs (comments included) has no colour function
+    ok 5 - AC-6: web/wlBadge.mjs (comments included) has no colour function
+      ---
+      duration_ms: 0.387682
+      type: 'test'
+      ...
+    # Subtest: AC-6: web/wlBadge.mjs (comments included) has no custom-property definition
+    ok 6 - AC-6: web/wlBadge.mjs (comments included) has no custom-property definition
+      ---
+      duration_ms: 0.125007
+      type: 'test'
+      ...
+    1..6
+ok 10 - T-01 QA: no colour literal in the badge files (AC-6, BV-colours)
+  ---
+  duration_ms: 1.741291
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: web/wlBadge.mjs is dependency-free (AC-10, ARC-deps)
+    # Subtest: AC-10: the module file exists
+    ok 1 - AC-10: the module file exists
+      ---
+      duration_ms: 1.599037
+      type: 'test'
+      ...
+    # Subtest: AC-10: no import (static or dynamic) and no require
+    ok 2 - AC-10: no import (static or dynamic) and no require
+      ---
+      duration_ms: 0.893476
+      type: 'test'
+      ...
+    # Subtest: AC-10: no fetch, process, node:fs or readFile
+    ok 3 - AC-10: no fetch, process, node:fs or readFile
+      ---
+      duration_ms: 0.45657
+      type: 'test'
+      ...
+    # Subtest: AC-10: the source has exactly one export and it is the function wlBadgeHtml
+    ok 4 - AC-10: the source has exactly one export and it is the function wlBadgeHtml
+      ---
+      duration_ms: 3.794128
+      type: 'test'
+      ...
+    1..4
+ok 11 - T-01 QA: web/wlBadge.mjs is dependency-free (AC-10, ARC-deps)
+  ---
+  duration_ms: 11.829359
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: the dev unit-test file (AC-10, ARC-deps, TST-strategy)
+    # Subtest: AC-10: test/web/wlBadge.test.mjs exists
+    ok 1 - AC-10: test/web/wlBadge.test.mjs exists
+      ---
+      duration_ms: 0.410158
+      type: 'test'
+      ...
+    # Subtest: AC-10, ARC-deps: it imports only node:* built-ins and ../../web/wlBadge.mjs
+    ok 2 - AC-10, ARC-deps: it imports only node:* built-ins and ../../web/wlBadge.mjs
+      ---
+      duration_ms: 0.579363
+      type: 'test'
+      ...
+    # Subtest: AC-10, ARC-deps: it locates CSS and token files through import.meta.url
+    ok 3 - AC-10, ARC-deps: it locates CSS and token files through import.meta.url
+      ---
+      duration_ms: 0.391661
+      type: 'test'
+      ...
+    # Subtest: AC-10, DEL-ci: "node --test test/web/wlBadge.test.mjs" from the repo root exits 0
+    ok 4 - AC-10, DEL-ci: "node --test test/web/wlBadge.test.mjs" from the repo root exits 0
+      ---
+      duration_ms: 194.463479
+      type: 'test'
+      ...
+    1..4
+ok 12 - T-01 QA: the dev unit-test file (AC-10, ARC-deps, TST-strategy)
+  ---
+  duration_ms: 196.411623
+  type: 'suite'
+  ...
+# Subtest: T-01 QA: the whole suite picks the card up (AC-10, DEL-ci, TST-strategy)
+    # Subtest: AC-10, DEL-ci: "node --test" from the repo root exits 0 and runs test/web/wlBadge.test.mjs
+    ok 1 - AC-10, DEL-ci: "node --test" from the repo root exits 0 and runs test/web/wlBadge.test.mjs
+      ---
+      duration_ms: 498.706003
+      type: 'test'
+      ...
+    # Subtest: AC-10, ARC-deps: package.json still declares no dependencies
+    ok 2 - AC-10, ARC-deps: package.json still declares no dependencies
+      ---
+      duration_ms: 3.131051
+      type: 'test'
+      ...
+    1..2
+ok 13 - T-01 QA: the whole suite picks the card up (AC-10, DEL-ci, TST-strategy)
+  ---
+  duration_ms: 502.298541
+  type: 'suite'
+  ...
+# Subtest: wlBadgeHtml output (AC-1, AC-9)
+    # Subtest: level 1 returns the exact contract string
+    ok 1 - level 1 returns the exact contract string
+      ---
+      duration_ms: 1.839568
+      type: 'test'
+      ...
+    # Subtest: level 1 is stable across repeated calls
+    ok 2 - level 1 is stable across repeated calls
+      ---
+      duration_ms: 0.278021
+      type: 'test'
+      ...
+    # Subtest: level 1 text is "WL 1", 4 chars, no exclamation mark
+    ok 3 - level 1 text is "WL 1", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.315445
+      type: 'test'
+      ...
+    # Subtest: level 2 returns the exact contract string
+    ok 4 - level 2 returns the exact contract string
+      ---
+      duration_ms: 0.188608
+      type: 'test'
+      ...
+    # Subtest: level 2 is stable across repeated calls
+    ok 5 - level 2 is stable across repeated calls
+      ---
+      duration_ms: 0.124023
+      type: 'test'
+      ...
+    # Subtest: level 2 text is "WL 2", 4 chars, no exclamation mark
+    ok 6 - level 2 text is "WL 2", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.232769
+      type: 'test'
+      ...
+    # Subtest: level 3 returns the exact contract string
+    ok 7 - level 3 returns the exact contract string
+      ---
+      duration_ms: 1.992136
+      type: 'test'
+      ...
+    # Subtest: level 3 is stable across repeated calls
+    ok 8 - level 3 is stable across repeated calls
+      ---
+      duration_ms: 0.236316
+      type: 'test'
+      ...
+    # Subtest: level 3 text is "WL 3", 4 chars, no exclamation mark
+    ok 9 - level 3 text is "WL 3", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.349991
+      type: 'test'
+      ...
+    # Subtest: level 4 returns the exact contract string
+    ok 10 - level 4 returns the exact contract string
+      ---
+      duration_ms: 0.508453
+      type: 'test'
+      ...
+    # Subtest: level 4 is stable across repeated calls
+    ok 11 - level 4 is stable across repeated calls
+      ---
+      duration_ms: 0.104008
+      type: 'test'
+      ...
+    # Subtest: level 4 text is "WL 4", 4 chars, no exclamation mark
+    ok 12 - level 4 text is "WL 4", 4 chars, no exclamation mark
+      ---
+      duration_ms: 0.154253
+      type: 'test'
+      ...
+    # Subtest: 2.0 is the same as 2
+    ok 13 - 2.0 is the same as 2
+      ---
+      duration_ms: 0.121455
+      type: 'test'
+      ...
+    # Subtest: extra arguments are ignored
+    ok 14 - extra arguments are ignored
+      ---
+      duration_ms: 0.081311
+      type: 'test'
+      ...
+    1..14
+ok 14 - wlBadgeHtml output (AC-1, AC-9)
+  ---
+  duration_ms: 9.276132
+  type: 'suite'
+  ...
+# Subtest: module shape (AC-1, AC-10)
+    # Subtest: only export is the named function wlBadgeHtml
+    ok 1 - only export is the named function wlBadgeHtml
+      ---
+      duration_ms: 1.012766
+      type: 'test'
+      ...
+    # Subtest: wlBadgeHtml takes one parameter
+    ok 2 - wlBadgeHtml takes one parameter
+      ---
+      duration_ms: 0.113681
+      type: 'test'
+      ...
+    1..2
+ok 15 - module shape (AC-1, AC-10)
+  ---
+  duration_ms: 1.286135
+  type: 'suite'
+  ...
+# Subtest: invalid input throws RangeError (AC-2, AC-3, item 16)
+    # Subtest: number 0 throws RangeError
+    ok 1 - number 0 throws RangeError
+      ---
+      duration_ms: 0.984404
+      type: 'test'
+      ...
+    # Subtest: number 5 throws RangeError
+    ok 2 - number 5 throws RangeError
+      ---
+      duration_ms: 0.206076
+      type: 'test'
+      ...
+    # Subtest: number -1 throws RangeError
+    ok 3 - number -1 throws RangeError
+      ---
+      duration_ms: 0.162076
+      type: 'test'
+      ...
+    # Subtest: number -0 throws RangeError
+    ok 4 - number -0 throws RangeError
+      ---
+      duration_ms: 0.117596
+      type: 'test'
+      ...
+    # Subtest: number 1.5 throws RangeError
+    ok 5 - number 1.5 throws RangeError
+      ---
+      duration_ms: 0.117678
+      type: 'test'
+      ...
+    # Subtest: number 3.999 throws RangeError
+    ok 6 - number 3.999 throws RangeError
+      ---
+      duration_ms: 0.102984
+      type: 'test'
+      ...
+    # Subtest: number 1.0000001 throws RangeError
+    ok 7 - number 1.0000001 throws RangeError
+      ---
+      duration_ms: 0.176466
+      type: 'test'
+      ...
+    # Subtest: number NaN throws RangeError
+    ok 8 - number NaN throws RangeError
+      ---
+      duration_ms: 0.145741
+      type: 'test'
+      ...
+    # Subtest: number Infinity throws RangeError
+    ok 9 - number Infinity throws RangeError
+      ---
+      duration_ms: 0.32312
+      type: 'test'
+      ...
+    # Subtest: number -Infinity throws RangeError
+    ok 10 - number -Infinity throws RangeError
+      ---
+      duration_ms: 0.149375
+      type: 'test'
+      ...
+    # Subtest: "2" throws RangeError
+    ok 11 - "2" throws RangeError
+      ---
+      duration_ms: 0.267869
+      type: 'test'
+      ...
+    # Subtest: "WL 2" throws RangeError
+    ok 12 - "WL 2" throws RangeError
+      ---
+      duration_ms: 0.161491
+      type: 'test'
+      ...
+    # Subtest: "" throws RangeError
+    ok 13 - "" throws RangeError
+      ---
+      duration_ms: 0.120073
+      type: 'test'
+      ...
+    # Subtest: 2n throws RangeError
+    ok 14 - 2n throws RangeError
+      ---
+      duration_ms: 0.142927
+      type: 'test'
+      ...
+    # Subtest: true throws RangeError
+    ok 15 - true throws RangeError
+      ---
+      duration_ms: 0.12906
+      type: 'test'
+      ...
+    # Subtest: null throws RangeError
+    ok 16 - null throws RangeError
+      ---
+      duration_ms: 0.151929
+      type: 'test'
+      ...
+    # Subtest: undefined throws RangeError
+    ok 17 - undefined throws RangeError
+      ---
+      duration_ms: 0.115511
+      type: 'test'
+      ...
+    # Subtest: new Number(2) throws RangeError
+    ok 18 - new Number(2) throws RangeError
+      ---
+      duration_ms: 0.129637
+      type: 'test'
+      ...
+    # Subtest: [1] throws RangeError
+    ok 19 - [1] throws RangeError
+      ---
+      duration_ms: 0.21211
+      type: 'test'
+      ...
+    # Subtest: {} throws RangeError
+    ok 20 - {} throws RangeError
+      ---
+      duration_ms: 0.282742
+      type: 'test'
+      ...
+    # Subtest: Symbol throws RangeError
+    ok 21 - Symbol throws RangeError
+      ---
+      duration_ms: 0.183638
+      type: 'test'
+      ...
+    # Subtest: Object.create(null) throws RangeError
+    ok 22 - Object.create(null) throws RangeError
+      ---
+      duration_ms: 0.238694
+      type: 'test'
+      ...
+    # Subtest: object with throwing toString throws RangeError
+    ok 23 - object with throwing toString throws RangeError
+      ---
+      duration_ms: 0.188758
+      type: 'test'
+      ...
+    # Subtest: no argument throws RangeError
+    ok 24 - no argument throws RangeError
+      ---
+      duration_ms: 0.243118
+      type: 'test'
+      ...
+    1..24
+ok 16 - invalid input throws RangeError (AC-2, AC-3, item 16)
+  ---
+  duration_ms: 8.271292
+  type: 'suite'
+  ...
+# Subtest: wlBadge.css structure (AC-5, AC-7)
+    # Subtest: exactly the five expected selectors, in order, no at-rules or stray text
+    ok 1 - exactly the five expected selectors, in order, no at-rules or stray text
+      ---
+      duration_ms: 0.290113
+      type: 'test'
+      ...
+    # Subtest: .wl-badge has exactly the five allow-listed declarations
+    ok 2 - .wl-badge has exactly the five allow-listed declarations
+      ---
+      duration_ms: 0.238764
+      type: 'test'
+      ...
+    # Subtest: .wl-badge--1 has only background-color: var(--wl-1)
+    ok 3 - .wl-badge--1 has only background-color: var(--wl-1)
+      ---
+      duration_ms: 0.296868
+      type: 'test'
+      ...
+    # Subtest: .wl-badge--2 has only background-color: var(--wl-2)
+    ok 4 - .wl-badge--2 has only background-color: var(--wl-2)
+      ---
+      duration_ms: 0.158531
+      type: 'test'
+      ...
+    # Subtest: .wl-badge--3 has only background-color: var(--wl-3)
+    ok 5 - .wl-badge--3 has only background-color: var(--wl-3)
+      ---
+      duration_ms: 0.140454
+      type: 'test'
+      ...
+    # Subtest: .wl-badge--4 has only background-color: var(--wl-4)
+    ok 6 - .wl-badge--4 has only background-color: var(--wl-4)
+      ---
+      duration_ms: 0.202514
+      type: 'test'
+      ...
+    1..6
+ok 17 - wlBadge.css structure (AC-5, AC-7)
+  ---
+  duration_ms: 1.619093
+  type: 'suite'
+  ...
+# Subtest: brand colour rules (AC-6, BV-colours)
+    # Subtest: wlBadge.css has no hex colour, colour function or custom-property definition
+    ok 1 - wlBadge.css has no hex colour, colour function or custom-property definition
+      ---
+      duration_ms: 0.382868
+      type: 'test'
+      ...
+    # Subtest: wlBadge.mjs has no hex colour, colour function or custom-property definition
+    ok 2 - wlBadge.mjs has no hex colour, colour function or custom-property definition
+      ---
+      duration_ms: 0.206395
+      type: 'test'
+      ...
+    # Subtest: wlBadge.css does not import tokens
+    ok 3 - wlBadge.css does not import tokens
+      ---
+      duration_ms: 0.152334
+      type: 'test'
+      ...
+    1..3
+ok 18 - brand colour rules (AC-6, BV-colours)
+  ---
+  duration_ms: 0.998108
+  type: 'suite'
+  ...
+# Subtest: module purity and test imports (AC-10, ARC-deps)
+    # Subtest: wlBadge.mjs has no import, require, fetch, process, fs or readFile
+    ok 1 - wlBadge.mjs has no import, require, fetch, process, fs or readFile
+      ---
+      duration_ms: 0.252391
+      type: 'test'
+      ...
+    # Subtest: this test file imports only node built-ins and the module under test
+    ok 2 - this test file imports only node built-ins and the module under test
+      ---
+      duration_ms: 0.477035
+      type: 'test'
+      ...
+    1..2
+ok 19 - module purity and test imports (AC-10, ARC-deps)
+  ---
+  duration_ms: 0.898096
+  type: 'suite'
+  ...
+# Subtest: contrast (AC-8, BV-contrast)
+    # Subtest: --on-wl on --wl-1 is at least 4.5:1
+    ok 1 - --on-wl on --wl-1 is at least 4.5:1
+      ---
+      duration_ms: 0.520827
+      type: 'test'
+      ...
+    # Subtest: --on-wl on --wl-2 is at least 4.5:1
+    ok 2 - --on-wl on --wl-2 is at least 4.5:1
+      ---
+      duration_ms: 0.248512
+      type: 'test'
+      ...
+    # Subtest: --on-wl on --wl-3 is at least 4.5:1
+    ok 3 - --on-wl on --wl-3 is at least 4.5:1
+      ---
+      duration_ms: 0.265567
+      type: 'test'
+      ...
+    # Subtest: --on-wl on --wl-4 is at least 4.5:1
+    ok 4 - --on-wl on --wl-4 is at least 4.5:1
+      ---
+      duration_ms: 0.224484
+      type: 'test'
+      ...
+    1..4
+ok 20 - contrast (AC-8, BV-contrast)
+  ---
+  duration_ms: 1.516172
+  type: 'suite'
+  ...
+1..20
+# tests 142
+# suites 19
+# pass 142
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 897.074685

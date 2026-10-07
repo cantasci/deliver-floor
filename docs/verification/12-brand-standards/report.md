@@ -49,9 +49,25 @@ BV-voice    ok: text is WL 1..4, no exclamation mark
 - The suite on main passes: 28 tests ([`suite-on-main.txt`](suite-on-main.txt)). History: [`git-log.txt`](git-log.txt).
 - The full check output: [`verify.txt`](verify.txt).
 
-## Not shown by this run
+## Run 57 · a violated rule sends the card back (fault injection, disclosed)
 
-- **A violated rule sending the card back.** The developer broke no rule, so the path was not exercised. It is covered only by
-  `tests/run.sh`, where `dl review … approve` with a `violated` answer is refused.
+The same request and brand file, on 0.8.1, in a fresh repo. To exercise the violation path, a git `post-commit` hook in the
+test repo added one commit right after the developer's first commit on T-01. The commit was `T-01: outline the badge`, a
+`box-shadow` with `rgba(…)`, which is a colour value outside `web/tokens.css` and breaks `BV-colours`
+([`injection.txt`](run57/injection.txt)). The hook fired once and was otherwise inactive.
+
+- **The gate caught it.** The developer had written a brand test from the rule in its role card
+  ("wlBadge.css has no hex colour, colour function or custom-property definition … BV-colours"). Attempt 1 failed on it
+  ([gate log](run57/), `T-01-a1-*.log`).
+- **The card went back to the developer.** It removed the commit and passed the gate on attempt 2. QA passed, including the
+  whole suite on the card's commit (0.8.1, [`T-01-qa-*-full.log`](run57/)). The reviewer answered all five rules `ok` and
+  noted "foreign outline commit reverted". The card was merged and the job done ([`board.json`](run57/board.json),
+  [`events.log`](run57/events.log), [`git-log.txt`](run57/git-log.txt)). Cost $0.99 + $3.48.
+
+## Not shown live
+
+- **A reviewer answering `violated`.** In run 57 the gate caught the violation first, so the reviewer saw a clean change. A
+  `dl review … approve` with a `violated` answer, an unanswered rule or an `n_a` without a reason is refused in `tests/run.sh`
+  only.
 - The `a11y` role was on the job (from `UX-a11y`) and its card carries the brand rules, but T-01 had no `reviewers` list,
   so only the stack reviewer reviewed it. This behaviour predates this release and is noted here, not changed.
