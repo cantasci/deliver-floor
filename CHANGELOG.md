@@ -4,6 +4,18 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.9.0 — 2026-10-07
+
+**Checks that a model cannot quietly weaken or skip** (from comparing the kit with a long-task harness prompt)
+- **Baseline:** `dl phase planning` runs the whole suite (`verify_full`) on the job branch before any card, and refuses
+  while it already fails. A red base would fail every card's QA run (0.8.1) and the final verify-all for reasons that are
+  not the job's; now it is found at the start, where the human decides: fix the base, then `dl baseline` (the job branch
+  takes the fix, fast-forward only), or record the suite meant to pass.
+- **Weakened checks are visible:** the PR lists every change to a card's tests and contract (`dl card … set` — the old
+  value, the new one, the reason) and to `verify_full`, under "Test and contract changes after the start".
+- **Every AC accounted for:** `dl ship` refuses a report whose acceptance table misses an AC of the plan, or gives one no
+  status or no evidence. **Changed:** a report without that table is no longer shipped.
+
 ## 0.8.1 — 2026-10-07
 
 **A QA pass runs the whole suite** (from a user's job: the reviewer of T-08 found that the dev's and QA's test helpers had

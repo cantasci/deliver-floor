@@ -164,7 +164,10 @@ STANDARDS (company + project — a standard settles an item only where it states
    does not actually answer its question, put it back to the human — this is still the start:
    `"$DL" reopen <id> "<why the answer does not answer it>"` (it is open again and QUESTIONS.md asks it; never edit the item). Check every answer **before** `dl phase planning`:
    after the freeze you no longer ask (invariant 7), so a gap found later is decided by you within the frozen decisions.
-4. `"$DL" phase planning` — refused until nothing is open. It **freezes** `readiness.json` (decisions + architecture): from now
+4. `"$DL" phase planning` — refused until nothing is open, and while the whole suite (`verify_full`) already fails on the job
+   branch before any card (the **baseline**, run here): a red base would fail every card's QA and the final verify-all for
+   reasons that are not the job's. That is the human's call, now at the start — ask them: fix the base, then `"$DL" baseline`
+   (the job branch takes the fix), or record the suite meant to pass in `.deliver.json`. It **freezes** `readiness.json` (decisions + architecture): from now
    on they do not change, and `dl` refuses every step if the file is edited. Only the human can reopen them (`dl unfreeze`).
    `readiness.md` goes to every later BA, Lead and dev prompt as binding context.
 
@@ -377,7 +380,10 @@ For each AC: met / not met / partially, with the evidence (test name, QA result,
 OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
 ```
 
-2. Write `.work/<job>/report.md` from that + the board (it is the PR body). An AC "not met" → fix card, back to Phase 3.
+2. Write `.work/<job>/report.md` from that + the board (it is the PR body): its Acceptance criteria table has a row for
+   **every** AC of plan.md, each with one status (✅ ❌ ⚠️) and its evidence — `dl ship` refuses one missing. An AC "not
+   met" → fix card, back to Phase 3. `dl ship` adds every change to a card's tests and contract (`dl card … set`) and to
+   `verify_full` to the PR, with its reason: change a check only when it was wrong, never to get a pass.
 3. **Memory:** for every QA failure, blocking review item, refused merge or blocked card that a rule would have prevented,
    record what to do differently, with what happened: `"$DL" learn <role|all> "<one-line lesson>" --topic <slug> --card T-xx`
    (or `--evidence "<what happened>"`). `--scope project` (default) — goes into `.deliver/knowledge/lessons.md` with this

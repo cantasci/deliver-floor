@@ -46,6 +46,8 @@
 #   dl integrate <card>            --no-ff merge into the job branch → merged (needs gate PASS + QA pass +
 #                                  review approve, all on the current commit; exit 3 on conflict, 5 when the
 #                                  repo's commit rules refuse the merge message)
+#   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
+#                                  which refuses while it fails: a suite already red is the human's call, at the start)
 #   dl verify-all                  run verify_full in the integration worktree
 #   dl ship                        deliver per merge_mode: human|semi|auto → push + PR (+ auto-merge / merge on green),
 #                                  local → merge into the base branch. Needs verify-all PASS + report.md (phase closing)
@@ -524,7 +526,8 @@ cmd_phase() {
         local why="readiness.json is incomplete (dl readiness)"
         [[ $rr -eq 3 ]] && why="open questions for the human remain (QUESTIONS.md) — ask, record with dl clarify"
         [[ $rr -eq 4 ]] && why="implementation details are open — decide them as PM: dl decide <id> \"<decision>\" \"<rationale>\""
-        [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $why" ;;
+        [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $why"
+        baseline_holds ;;
       awaiting_plan_approval)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
@@ -634,6 +637,32 @@ verified_head() {
   local v; v="$(jq -r '.verify_all.head // ""' "$JOBJ")"
   [[ $v == "$1" ]] && return 0
   [[ -n $v ]] && git -C "$ROOT" merge-base --is-ancestor "$v" "$1" 2>/dev/null && [[ -z "$(git -C "$ROOT" diff --name-only "$v" "$1" | grep -v '^\.deliver/knowledge/')" ]]
+}
+# Every change to a card's contract (verify, qa_verify, acceptance, scope …) and to the job's suite (verify_full) after the
+# start goes into the PR with its reason: a test command made weaker to get a pass is the human's to see.
+report_contract_changes() {
+  grep -q '<!-- deliver:contract-changes -->' "$JOB_DIR/report.md" && return 0
+  local cards suite; cards="$(jq -r '[.cards[] | .id as $c | (.history // [])[] | "- **\($c)** `\(.field)`: `\(.from | tojson | .[0:160])` → `\(.to | tojson | .[0:160])` — _\(.reason)_ (\(.at))"] | join("\n")' "$BOARD")"
+  suite="$(awk -F'\t' '$2=="jobset" && $3 ~ /verify_full|qa_verify_full/ {print "- job settings: `" substr($3,1,200) "` (" $1 ")"}' "$JOB_DIR/events.log" 2>/dev/null)"
+  { printf '\n<!-- deliver:contract-changes -->\n## Test and contract changes after the start\n\nWhat was checked changed here, each with its reason — a weaker check is a weaker delivery.\n\n'
+    if [[ -z $cards$suite ]]; then echo "None: every card was checked with the contract it was planned with."
+    else
+      if [[ -n $cards ]]; then printf '%s\n' "$cards"; fi
+      if [[ -n $suite ]]; then printf '%s\n' "$suite"; fi
+    fi
+  } >> "$JOB_DIR/report.md"
+}
+# The report's acceptance table must account for every AC of the plan: a status and its evidence each, not the template's.
+report_ac_errors() {
+  local ac row ev st errs=""
+  for ac in $(grep -oE '^- (AC-[0-9]+)' "$JOB_DIR/plan.md" 2>/dev/null | sed 's/^- //' | sort -u); do
+    row="$(grep -E "^\|[[:space:]]*$ac[[:space:]]*\|" "$JOB_DIR/report.md" | head -n 1)"
+    if [[ -z $row ]]; then errs+="$ac has no row; "; continue; fi
+    st="$(awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}' <<<"$row")"; ev="$(awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}' <<<"$row")"
+    [[ -z $st || $st == *" / "* ]] && errs+="$ac has no status; "
+    [[ -z $ev || $ev == "test name, gate log, screenshot" ]] && errs+="$ac has no evidence; "
+  done
+  printf '%s' "$errs"
 }
 report_decisions() {
   local n; n="$(jq '(.pm_decisions // []) | length' "$JOBJ")"
@@ -1279,6 +1308,38 @@ cmd_integrate() {
   echo "MERGED: $card → $JOB_BRANCH"
 }
 
+# The baseline: the whole suite on the job branch before any card changes it. A suite that is already red would fail every
+# card's QA run and the final verify-all for reasons that are not the job's — so it is found here, at the start, while the
+# human is still asked: fix the base first (then dl baseline again), or make verify_full the suite that is meant to pass.
+run_baseline() {
+  local cmd head log result=FAIL base; cmd="$(setting verify_full)"; base="$(jq -r .base_branch "$JOBJ")"
+  # the base was fixed after the job started (no card yet): the job branch takes it — fast-forward only, nothing is rewritten
+  if [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification || "$(phase_now)" == intake ]] \
+     && git -C "$ROOT" merge-base --is-ancestor "$JOB_BRANCH" "$base" 2>/dev/null && [[ "$(branch_head "$JOB_BRANCH")" != "$(branch_head "$base")" ]]; then
+    git -C "$IWT" merge -q --ff-only "$base" && log_event baseline "job branch fast-forwarded to $base ($(branch_head "$base" | cut -c1-12)) before any card"
+  fi
+  head="$(branch_head "$JOB_BRANCH")"
+  if [[ -z $cmd ]]; then
+    jq_inplace "$JOBJ" --arg h "$head" --arg t "$(now)" '.baseline = {"result":"NONE","head":$h,"at":$t}'
+    log_event baseline "no verify_full yet — nothing to run"; echo "baseline: no verify_full yet (a repo without a suite) — nothing to run"; return 0
+  fi
+  log="$JOB_DIR/gates/baseline-$(date +%H%M%S).log"; mkdir -p "$JOB_DIR/gates"
+  { echo "# baseline: $cmd on $JOB_BRANCH at ${head:0:12}, before any card"; (cd "$IWT" && bash -c "$cmd") 2>&1; } > "$log" 2>&1 && result=PASS
+  [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; git -C "$IWT" checkout -q -- . 2>/dev/null; git -C "$IWT" clean -fdq 2>/dev/null; result=FAIL; }
+  jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" '.baseline = {"result":$r,"head":$h,"command":$c,"log":$l,"at":$t}'
+  log_event baseline "$result ($cmd)"; echo "baseline: $result  ($cmd · log: $log)"
+  [[ $result == PASS ]] || { tail -n 25 "$log"; return 1; }
+}
+baseline_holds() {
+  local b; b="$(jq -c '.baseline // {}' "$JOBJ")"
+  if [[ "$(jq -r .head <<<"$b")" == "$(branch_head "$JOB_BRANCH")" && "$(jq -r .command <<<"$b")" == "$(setting verify_full)" ]]; then
+    case "$(jq -r .result <<<"$b")" in PASS) return 0 ;; FAIL) ;; esac
+  fi
+  [[ "$(jq -r .result <<<"$b")" == NONE && -z "$(setting verify_full)" ]] && return 0
+  run_baseline >&2 || refuse 1 "the whole suite (verify_full) already fails on $JOB_BRANCH before any card — every card's QA run and the final verify-all would fail for reasons that are not the job's. This is the human's call, at the start: fix the base branch first, then: dl baseline; or record the suite that is meant to pass in .deliver.json (verify_full) and dl jobset it. Log: $(jq -r '.baseline.log' "$JOBJ")"
+}
+cmd_baseline() { load_job; run_baseline; }
+
 cmd_verify_all() {
   load_job
   local cmd log head; cmd="$(setting verify_full)"; log="$JOB_DIR/gates/verify-all-$(date +%H%M%S).log"
@@ -1315,8 +1376,10 @@ cmd_ship() {
   [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS ]] && verified_head "$head" \
     || refuse 1 "verify-all has not passed on the current job branch — dl verify-all"
   ! cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md" || refuse 1 "report.md is still the template — the PM closing check writes it first (it is also the PR body)"
+  local acerr; acerr="$(report_ac_errors)"
+  [[ -z $acerr ]] || refuse 1 "report.md does not account for every acceptance criterion of plan.md: ${acerr% }— each AC has a row in the Acceptance criteria table with its status (✅ ❌ ⚠️) and its evidence (test name, log, file)"
   knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
-  report_decisions; report_lessons; report_followups
+  report_decisions; report_contract_changes; report_lessons; report_followups
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
     [[ $on == "$base" ]] || refuse 1 "merge_mode=local merges into '$base' in the main checkout, which is on '${on:-detached}'. Switch it to $base (or merge yourself: git merge --no-ff $JOB_BRANCH)"
@@ -1886,7 +1949,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -2084,6 +2147,7 @@ main() {
     review) cmd_review "$@" ;;
     integrate) cmd_integrate "$@" ;;
     verify-all) cmd_verify_all ;;
+    baseline) cmd_baseline ;;
     ship) cmd_ship ;;
     pr) cmd_pr ;;
     approve) cmd_approve "$@" ;;

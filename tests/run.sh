@@ -202,6 +202,10 @@ qa_tests() { # qa_tests <worktree> <card> [fail] — the "QA role": commit an in
   git -C "$1" add -A && git -C "$1" commit -qm "$2 QA: integration tests"
 }
 B="$R/.work/$JOB/board.json"
+report_ok() { # report_ok <job dir> [title] — the closing check's report: a row with status and evidence for every AC of plan.md
+  { echo "# ${2:-Delivery report}"; echo; echo "| AC | Status | Evidence |"; echo "| --- | --- | --- |"
+    grep -oE '^- AC-[0-9]+' "$1/plan.md" 2>/dev/null | sed 's/^- //' | sort -u | while read -r a; do echo "| $a | ✅ | test/$a.test.mjs (gate log) |"; done; } > "$1/report.md"
+}
 jq -n --argjson a "$(card T-01 '[]' '["src/add/**","test/add/**"]' 'node --test test/add/*.test.mjs' 'AC-1: add')" \
       --argjson b "$(card T-02 '[]' '["src/sub/**","test/sub/**"]' 'node --test test/sub/*.test.mjs' 'AC-2: sub')" \
       --argjson c "$(card T-03 '["T-01","T-02"]' '["src/index.mjs","test/index.test.mjs"]' 'node --test test/index.test.mjs' 'AC-1 AC-2 index')" \
@@ -353,9 +357,17 @@ expect_ok "closing" "$DL" phase closing
 expect_fail 1 "approve merge no longer exists" "$DL" approve merge
 expect_fail 1 "ship refused while report.md is the template" "$DL" ship
 contains "next asks for the report" "$("$DL" next)" "REPORT"
-echo "# Delivery report — all ACs met" > "$R/.work/$JOB/report.md"
+printf '# Delivery report\n\n| AC | Status | Evidence |\n| --- | --- | --- |\n| AC-1 | ✅ / ❌ / ⚠️ | test name, gate log, screenshot |\n' > "$R/.work/$JOB/report.md"
+out="$("$DL" ship 2>&1)"
+contains "ship refuses a report that does not account for every AC of the plan (a missing row)…" "$out" "AC-2 has no row"
+contains "…an AC without its status" "$out" "AC-1 has no status"
+contains "…or without its evidence" "$out" "AC-1 has no evidence"
+report_ok "$R/.work/$JOB" "Delivery report — all ACs met"
 expect_fail 1 "done refused before shipping" "$DL" phase done
 expect_ok "ship (local) merges into the base" "$DL" ship
+contains "the PR body lists every change to a card's tests, with its reason (a weaker check is the human's to see)" "$(cat "$R/.work/$JOB/report.md")" "## Test and contract changes after the start"
+contains "…the change itself and why" "$(cat "$R/.work/$JOB/report.md")" '**T-03** `qa_verify`'
+contains "…with the reason given" "$(cat "$R/.work/$JOB/report.md")" "_back to the file form_"
 contains "the PR body lists Michael's own decisions" "$(cat "$R/.work/$JOB/report.md")" "## Decisions Michael took himself"
 contains "…with the reason" "$(cat "$R/.work/$JOB/report.md")" "the reviewer's finding is small and in scope"
 [[ -f $R/src/add/add.mjs && -f $R/src/sub/sub.mjs && "$(jq -r .phase "$R/.work/$JOB/job.json")" == done ]] && ok "local merge delivered the cards, phase done" || bad "local ship"
@@ -1290,6 +1302,22 @@ contains "a QA fail is recorded as before (the suite is run for a pass)" "$("$DL
 git -C "$WQ" mv test/it/sovereign_support.py test/it/it_support.py && git -C "$WQ" commit -qm "T-01 QA: rename the helper"
 sed_qv='(.cards[0].qa_verify) = "test -f test/it/it_support.py"'; bedit "$QJ/board.json" "$sed_qv"
 contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
+echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
+BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
+echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "baseline" "x" >/dev/null 2>&1; BJ="$BL/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all
+out="$("$DL" phase planning 2>&1)"
+contains "planning is refused while the suite already fails before any card" "$out" "already fails on job/"
+contains "…and says it is the human's call, at the start" "$out" "This is the human's call, at the start"
+[[ "$(jq -r .phase "$BJ/job.json")" == readiness && "$(jq -r .baseline.result "$BJ/job.json")" == FAIL ]] && ok "…the job stays in readiness, the red baseline recorded" || bad "baseline: $(jq -c '{phase, baseline}' "$BJ/job.json")"
+ls "$BJ"/gates/baseline-*.log >/dev/null 2>&1 && ok "…its log kept" || bad "no baseline log"
+echo x > ok.txt && git add -A && git commit -qm "fix the base"
+out="$("$DL" baseline 2>&1)"
+contains "dl baseline runs it again once the base is fixed — the job branch takes the fix (fast-forward, no card yet)" "$out" "baseline: PASS"
+[[ "$(git rev-parse "$(jq -r .branch "$BJ/job.json")")" == "$(git rev-parse main)" ]] && ok "…the job branch is at the fixed base" || bad "job branch not fast-forwarded"
+expect_ok "…and planning goes ahead" "$DL" phase planning
 echo "knowledge: lessons with what happened, into the project (and the shared repo) through the job's PR; a topic seen thrice becomes a standard"
 SB="$TMP/shared.git"; git init -q --bare -b main "$SB"; SW="$TMP/shared-w"; git clone -q "$SB" "$SW" 2>/dev/null
 mkdir -p "$SW/standards" && printf -- '---\napplies_to: [dev]\n---\n# Observability\n## Must\n- Log with the request id.\n' > "$SW/standards/observability.md"
@@ -1332,7 +1360,7 @@ contains "a standard grows only out of recorded lessons" "$("$DL" knowledge prom
 "$DL" learn all "The stop-guard held Michael while three agents worked" --topic stop-guard-wait --evidence "stop hook fired 4 times with T-04 QA running" --scope kit >/dev/null
 "$DL" followup "suite_v2._balanced accepts an empty industry_keys map" --card T-01 --evidence "T-05 QA report" >/dev/null
 "$DL" integrate T-01 >/dev/null && "$DL" phase integrating >/dev/null && "$DL" verify-all >/dev/null && "$DL" phase closing >/dev/null
-echo "# Report" > "$KJ2/report.md"
+report_ok "$KJ2" Report
 out="$("$DL" ship 2>&1)"; contains "ship goes through after the lessons commit (verify-all ran on the code; only .deliver/knowledge changed since)" "$out" "SHIPPED"
 contains "the project's lessons file on main carries the lesson with its evidence" "$(cat .deliver/knowledge/lessons.md)" "topic: qa-verify-files"$'\n'"qa_verify and verify run test files, never a bare directory"$'\n'"- evidence: "
 contains "…and the new standard, its rule under ## Must" "$(cat .deliver/knowledge/qa-verify-files.md 2>&1)" "## Must"$'\n'"- verify and qa_verify run test files, never a bare directory"
@@ -1382,7 +1410,7 @@ shipjob() { # shipjob <mode> → a repo with one merged card, in phase closing w
   mkdir -p "$w/src" && echo 1 > "$w/src/a.txt" && git -C "$w" add -A && git -C "$w" commit -qm "T-01"
   "$DL" gate T-01 >/dev/null && qa_tests "$w" T-01 && "$DL" qa T-01 pass "ok" >/dev/null && "$DL" review T-01 approve ok >/dev/null && "$DL" integrate T-01 >/dev/null
   "$DL" phase integrating >/dev/null && "$DL" verify-all >/dev/null && "$DL" phase closing >/dev/null
-  echo "# report" > ".work/$j/report.md"
+  report_ok ".work/$j" report
 }
 shipjob human; : > "$GHLOG"
 out="$("$DL" ship 2>&1)"; contains "human: PR opened, waits for the human" "$out" "waiting for the human"
