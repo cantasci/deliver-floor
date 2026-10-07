@@ -209,7 +209,7 @@ added to your board — add it there, or map the stage to your own name with `tr
 | --- | --- | --- |
 | another tracker (Trello, Azure Boards…) | one class with `open`, `sync`, `note`, `branch` (and optionally `check`) in `kit/skills/deliver/bin/trackers/<name>.mjs`, then `"tracker": {"kind": "<name>"}` — nothing else changes | [10 § Adding a tracker](docs/10-trackers.md#adding-a-tracker-linear-azure-boards-github-projects-) |
 | a role (data, devops…) | an entry in `roles.yaml` and an agent in `kit/agents/` (or an ECC agent) | [04 § Adding a role](docs/04-roles.md#adding-a-role-example-data) |
-| your company's standards | Markdown files with a `## Must` list; every matching role gets them in its role card | [08 § A standard](docs/08-knowledge.md#1-a-standard) |
+| your company's standards (brand DNA …) | Markdown files with a `## Must` list; every matching role gets them in its role card, and each reviewer answers every rule (`ok` / `violated` / `n_a`) before a card is approved. `dl knowledge new brand-visual` starts the visual identity | [08 § A standard](docs/08-knowledge.md#1-a-standard) |
 | a default per project | a key in `.deliver.json` (validated by its schema) | [03-settings](docs/03-settings.md) |
 
 ## How it was verified

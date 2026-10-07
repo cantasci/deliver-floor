@@ -9,8 +9,9 @@
 //          "owner": "backend", "reviewer": "reviewer-java", "notes": "…" } … ] } }
 // architecture is the frozen technical frame: every card belongs to one component; its stack decides the dev's
 // skills and the reviewer. Once the job is planned, readiness.json is frozen (dl checks its hash on every step).
-//   decided → answer + source (a section of the request, a repo file, or "human: <name> <date>"); a decision taken from
-//             the request or a repo file also carries `quote`: the words that state it, verbatim ("a … b" for fragments)
+//   decided → answer + source (a section of the request, a repo file, "standard: <file>" — a company or project standard
+//             from knowledge, e.g. the brand's visual identity — or "human: <name> <date>"); a decision taken from the
+//             request, a repo file or a standard also carries `quote`: the words that state it, verbatim ("a … b" for fragments)
 //   n_a     → answer says why it does not apply + source
 //   open    → a question (+ options, impact) and its owner:
 //             "business" — the answer changes scope, observable behaviour, a contract or a business rule → the human answers
@@ -25,6 +26,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseYaml, loadCatalog } from "./roles.mjs";
+import { collect } from "./knowledge.mjs";
 
 const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const catalog = () => parseYaml(readFileSync(join(SKILL_DIR, "readiness.yaml"), "utf8"), "readiness.yaml").items ?? [];
@@ -77,9 +79,27 @@ export function checkArchitecture(job, arch) {
 // it. An interpretation of a term the request uses but does not define is not a decision — it is an open business item.
 // (Seen live: "Input is trimmed" was decided as String.prototype.trim(), citing a clause that never defined trimming.)
 const norm = (t) => String(t).toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim();
+// A company or project standard (shared standards/, .deliver/knowledge/ — brand, architecture …) settles an item only where it
+// states it in so many words: source "standard: <file>" + the quote, found verbatim in that document.
+const standardDoc = (src, job) => {
+  const m = String(src).match(/^\s*standard:\s*([\w.-]+)/i);
+  if (!m) return null;
+  const d = collect(job.repo ?? ".").docs.find((x) => x.name === m[1] || x.name === `${m[1]}.md`);
+  return d ? { name: d.name, text: norm(readFileSync(d.path, "utf8")) } : { name: m[1], text: null };
+};
+function standardError(i, job) {
+  const d = standardDoc(i.source, job);
+  if (!d) return undefined;   // not a standard: the other rules apply
+  if (d.text === null) return `standard '${d.name}' is not one of this job's standards (shared standards/, ~/.deliver/knowledge, .deliver/knowledge/)`;
+  const fr = String(i.quote ?? "").split(/\s*(?:…|\.\.\.)\s*/).map(norm).filter(Boolean);
+  if (!fr.length) return `decided from standard '${d.name}' needs \`quote\`: its words that state this decision, verbatim`;
+  const miss = fr.filter((f) => !d.text.includes(f));
+  return miss.length ? `quote not found in standard '${d.name}': "${miss[0].slice(0, 80)}" — a standard settles only what it states; else the item is open` : null;
+}
 function quoteError(i, job) {
   const src = String(i.source);
   if (/^\s*(human|pm):/i.test(src)) return null;                 // answered by the business / decided by Michael (dl clarify / dl decide)
+  const se = standardError(i, job); if (se !== undefined) return se;
   if (!i.quote || !String(i.quote).trim()) return 'decided from a source needs `quote`: the words of the request (or repo file) that state this decision, verbatim. If the source only uses the term without stating the decision, the item is open (owner "business")';
   let hay = norm(job.request ?? "");
   for (const m of src.matchAll(/[\w./-]+\.(md|json|ya?ml|txt|mjs|js|ts|java|go|py|kt|swift)\b/g)) {
@@ -93,11 +113,12 @@ function quoteError(i, job) {
 // never by a repo file, a convention or an inference. (Seen live: a seed repo's "pure functions, no I/O" in CLAUDE.md was
 // taken as the whole product's architecture — no UI, no database, no API, no fetchers — and none of it was asked.)
 const askHuman = () => new Set(catalog().filter((c) => c.ask === "human").map((c) => c.id));
-const ASK_HUMAN = 'shapes the product (scope · architecture · UI · data · integrations · deployment): it is settled only by the request\'s own words (quote them) or by the human\'s answer, which Michael asks for and records (dl clarify). A repo file, a convention or silence is not enough — make it open, owner "business", for Michael to ask, and offer the repo\'s conventions as one of the options';
+const ASK_HUMAN = 'shapes the product (scope · architecture · UI · data · integrations · deployment): it is settled only by the request\'s own words (quote them), by a company or project standard that states it (source "standard: <file>", quoted), or by the human\'s answer, which Michael asks for and records (dl clarify). Any other repo file, a convention or silence is not enough — make it open, owner "business", for Michael to ask, and offer the repo\'s conventions as one of the options';
 function humanError(i, job) {
   const src = String(i.source ?? "");
   if (/^\s*human:/i.test(src)) return null;
   if (/^\s*pm:/i.test(src)) return `decided by the PM, but it ${ASK_HUMAN}`;
+  if (standardDoc(src, job)) return standardError(i, job);   // the company's or project's own standard, quoted (brand DNA …)
   const fr = String(i.quote ?? "").split(/\s*(?:…|\.\.\.)\s*/).map(norm).filter(Boolean);
   const req = norm(job.request ?? "");
   if (fr.length && fr.every((f) => req.includes(f))) return null;

@@ -223,5 +223,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     // a string: console.log colours a number under FORCE_COLOR (set in the floor's terminals), and dl could not read it
     console.log(String((job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev").reduce((n, r) => n + (r.count ?? 1), 0)));
   }
-  else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir>"); process.exit(2); }
+  else if (cmd === "kind") console.log(roleEntry({ role: arg }, loadCatalog())?.kind ?? "");   // dev | qa | review | ba | lead …
+  else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir> | dev-seats <job.json> | kind <role>"); process.exit(2); }
 }

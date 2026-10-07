@@ -86,6 +86,13 @@ const mustOf = (body) => {
   const m = body.match(/^##\s+Must\b.*\n([\s\S]*?)(?=^##\s|(?![\s\S]))/m);
   return m ? m[1].split("\n").filter((l) => /^\s*[-*]\s+/.test(l)).map((l) => l.replace(/^\s*[-*]\s+/, "").trim()) : [];
 };
+// Every Must rule has an id the reviewer answers to: "[BV-tokens] …" names it, else <file>#<position>. A rule still holding a
+// template placeholder ({{…}}) is not filled in: it reaches no role card and is reported, never passed on as a rule.
+const PLACEHOLDER = /\{\{[^}]*\}\}/;
+const rulesOf = (name, must) => must.map((t, i) => {
+  const m = t.match(/^\[([A-Za-z0-9][\w.-]*)\]\s*(.*)$/);
+  return { id: m ? m[1] : `${name.replace(/\.md$/, "")}#${i + 1}`, text: m ? m[2] : t, unfilled: PLACEHOLDER.test(t) };
+});
 
 function readDir(dir, origin) {
   if (!existsSync(dir) || !statSync(dir).isDirectory()) return [];
@@ -94,7 +101,10 @@ function readDir(dir, origin) {
     const { meta, body } = frontMatter(readFileSync(path, "utf8"));
     const title = meta.title || (body.match(/^#\s+(.+)$/m)?.[1] ?? f.replace(/\.md$/, ""));
     const arr = (v) => (v == null || v === "" ? [] : Array.isArray(v) ? v : [v]);
-    return { name: f, path, origin, title, applies_to: arr(meta.applies_to), stack: arr(meta.stack), topics: arr(meta.topics), must: mustOf(body) };
+    const rules = rulesOf(f, mustOf(body));
+    return { name: f, path, origin, title, applies_to: arr(meta.applies_to), stack: arr(meta.stack), topics: arr(meta.topics),
+      must: rules.filter((r) => !r.unfilled).map((r) => r.text), rules: rules.filter((r) => !r.unfilled),
+      unfilled: rules.filter((r) => r.unfilled).map((r) => r.id) };
   });
 }
 
@@ -129,8 +139,13 @@ export function section(repo, ctx) {
   }
   for (const d of a.docs) {
     out.push(`### ${d.title} (${d.origin}: \`${d.path}\`)`);
-    if (d.must.length) out.push("", ...d.must.map((m) => `- MUST: ${m}`));
+    if (d.rules.length) out.push("", ...d.rules.map((r) => `- MUST [${r.id}]: ${r.text}`));
+    if (d.unfilled.length) out.push("", `(not filled in yet, so not a rule: ${d.unfilled.join(", ")})`);
     out.push("", `Read the whole document before work that touches this topic.`, "");
+  }
+  if (a.docs.some((d) => d.rules.length)) {
+    if (ctx.kind === "review") out.push("Your review answers every MUST above by its id — `ok`, `violated: <where and what>` or `n_a: <why>` (the \"standards\" object of your answer); a violated MUST is a blocking item.", "");
+    if (ctx.kind === "ba") out.push("A standard settles a readiness item only where it states the answer in so many words: source `standard: <file>`, its words verbatim in `quote`. What it does not state stays open.", "");
   }
   if (a.lessons.length) {
     out.push("### Lessons from earlier jobs (memory)", "", ...a.lessons.map((l) => `- ${l.text} _(${l.at}${l.topic ? `, ${l.topic}` : ""}; ${l.origin})_`), "");
@@ -207,6 +222,34 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (cmd === "list") {
     const [kind, role, stack] = rest;
     console.log(JSON.stringify(applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean) }), null, 2));
+  } else if (cmd === "must") { // the Must rules a role answers to — a reviewer says ok | violated | n_a for each (dl review)
+    const [kind, role, stack] = rest;
+    const a = applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean) });
+    console.log(JSON.stringify(a.docs.flatMap((d) => d.rules.map((r) => ({ id: r.id, text: r.text, doc: d.name, origin: d.origin })))));
+  } else if (cmd === "orgdir") { console.log(orgDir());   // the company's standards on this machine (~/.deliver/knowledge)
+  } else if (cmd === "judge") { // a reviewer's answer per Must rule: {"<id>": "ok" | "violated: <what>" | "n_a: <why>"}
+    const [kind, role, stack, json = "", verdict = "approve"] = rest;
+    const rules = applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean) }).docs.flatMap((d) => d.rules.map((r) => ({ ...r, doc: d.name })));
+    const errs = [], out = {};
+    let given = {};
+    if (json.trim()) { try { given = JSON.parse(json); } catch (e) { errs.push(`--standards is not JSON: ${e.message}`); } }
+    if (given === null || typeof given !== "object" || Array.isArray(given)) { errs.push('--standards must be an object: {"<rule id>": "ok" | "violated: <what>" | "n_a: <why>"}'); given = {}; }
+    for (const r of rules) {
+      const v = given[r.id];
+      if (v === undefined) { if (verdict === "approve") errs.push(`${r.id} (${r.doc}) has no answer — every Must rule that applies is checked: ok | violated: <what> | n_a: <why>`); continue; }
+      const m = String(v).match(/^\s*(ok|violated|n_a)\s*(?::\s*(.*))?$/s);
+      if (!m) { errs.push(`${r.id}: '${String(v).slice(0, 40)}' — answer ok, violated: <what> or n_a: <why>`); continue; }
+      if (m[1] !== "ok" && !m[2]?.trim()) { errs.push(`${r.id}: ${m[1]} needs its reason after a colon (${m[1]}: …)`); continue; }
+      if (m[1] === "violated" && verdict === "approve") errs.push(`${r.id} (${r.doc}) is violated — "${m[2].trim()}": an approval cannot break a Must rule; ask for changes`);
+      out[r.id] = m[2]?.trim() ? `${m[1]}: ${m[2].trim()}` : m[1];
+    }
+    for (const id of Object.keys(given)) if (!rules.some((r) => r.id === id)) errs.push(`${id} is not a Must rule this reviewer answers to (${rules.map((r) => r.id).join(", ") || "none"})`);
+    if (errs.length) { for (const e of errs) console.error(e); process.exit(1); }
+    console.log(JSON.stringify(out));
+  } else if (cmd === "doc") { // one standards document by its file name, as the job sees it (shared ⊕ company ⊕ project)
+    const [name] = rest; const d = collect(repo).docs.find((x) => x.name === name || x.name === `${name}.md`);
+    if (!d) { console.error(`no standards document '${name}'`); process.exit(1); }
+    console.log(JSON.stringify({ name: d.name, path: d.path, origin: d.origin, text: readFileSync(d.path, "utf8"), unfilled: d.unfilled }));
   } else if (cmd === "learn") {
     const [jobDir, json] = rest; const r = learn(repo, jobDir, JSON.parse(json));
     console.log(JSON.stringify({ topic: r.lesson.topic, scope: r.lesson.scope, jobs: r.jobs, promote: r.promote }));

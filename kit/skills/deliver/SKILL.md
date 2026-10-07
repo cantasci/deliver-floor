@@ -133,11 +133,15 @@ JOB REQUEST:
 <the full request>
 REPO: <absolute repo root>   STACK: <stack>   ROLES: <job.roles>
 READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.mjs applicable <job dir>>
+STANDARDS (company + project — a standard settles an item only where it states it: source "standard: <file>", quote its
+  words verbatim): <output of: "$DL" knowledge list>
 ```
 
 2. **Verify the BA's work yourself, item by item** — you are the PM. Items marked `ask: human` in `readiness.yaml` (scope,
    architecture, UI, API/middleware, new dependencies, data, integrations, deployment) are never yours or the BA's to settle: only the
-   request's own words or the human's answer close them (`dl readiness` refuses a repo file or a convention as their source).
+   request's own words, a company or project standard that states it (`standard: <file>`, its words quoted — e.g. the brand's
+   colours from `brand-visual.md`) or the human's answer close them (`dl readiness` refuses any other repo file or a convention
+   as their source, and a standard whose quoted words are not in it).
    You are the single point of contact: the BA raises them to you as open business items, you ask the human, nobody else does.
    Then: is each source real, does each `n_a` truly not apply, does the
    architecture cover every part of the request (each service/app/db, its stack, its owner, and paths that hold both its
@@ -316,13 +320,16 @@ ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/reviewer.m
 CARD: <card JSON>
 CHANGE: run `git -C <worktree> diff <job.branch>...HEAD` (and `--stat`).
 QA RESULT: <the QA JSON>
-Check: acceptance criteria met, correctness bugs, security, test quality, scope.
-OUTPUT — only JSON: {"verdict":"approve|changes","blocking":[{"file":"…","line":0,"issue":"…","fix":"…"}],"nits":["…"]}
-Use "changes" only when there is at least one blocking item.
+STANDARDS (company + project Must rules you answer to, one by one): <output of: "$DL" knowledge must <reviewer role>>
+Check: acceptance criteria met, correctness bugs, security, test quality, scope, and every STANDARDS rule.
+OUTPUT — only JSON: {"verdict":"approve|changes","blocking":[{"file":"…","line":0,"issue":"…","fix":"…"}],"nits":["…"],
+  "standards":{"<rule id>":"ok | violated: <where and what> | n_a: <why it does not apply to this change>"}}
+Use "changes" only when there is at least one blocking item. A violated standard is a blocking item.
 ```
 
-   Record each verdict: `"$DL" review T-xx approve|changes "<one line>" --by <reviewer role>`, append them under `## Review`
-   in the handoff. Any `changes` → re-dispatch the dev with all blocking items together (same retry rule).
+   Record each verdict: `"$DL" review T-xx approve|changes "<one line>" --by <reviewer role> --standards '<the "standards"
+   object>'` — `dl` refuses an approval that leaves a rule unanswered or violated (send the reviewer back for the missing
+   answers; a violation means changes). Append them under `## Review` in the handoff. Any `changes` → re-dispatch the dev with all blocking items together (same retry rule).
 4. `"$DL" integrate T-xx` → merged. Exit 3 (conflict) → re-dispatch the dev with: "Conflict with the job branch: run
    `git merge <job.branch>` in your worktree, resolve, run verify, commit." Then gate → QA → review → integrate again.
    **Exit 5 is not a conflict**: the repo's commit rules (commitlint, a commit-msg hook) refused every merge message `dl`

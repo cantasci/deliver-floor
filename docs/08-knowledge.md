@@ -34,12 +34,48 @@ stack: [java, spring-boot]              # default: any stack
 Why we do it this way … (long text, examples, links)
 ```
 
-- The **`## Must`** bullets are copied into every matching role card as `MUST:` rules. Keep them short and checkable —
-  reviewers judge against them.
+- The **`## Must`** bullets are copied into every matching role card as `MUST [<id>]:` rules. Keep them short and
+  checkable — reviewers answer each one (below). Give a rule a lasting id by starting it with one: `- [API-problem] Map …`;
+  without one its id is `<file>#<position>` (`api-errors#1`), which changes when a rule is inserted above it.
+- A rule that still holds a `{{…}}` placeholder is **not a rule yet**: it reaches no role card, and the card names it as not
+  filled in. A template never passes a guess on as a rule.
 - The rest of the document is referenced by path ("read the whole document before work that touches this topic"), so long
   explanations cost no context until they are needed.
 - `applies_to` + `stack` decide which roles see it: a Spring Boot rule does not reach the Go dev; a QA rule does not reach the BA.
 - Files starting with `_` are ignored (drafts).
+
+### Reviewers answer every rule
+
+A reviewer's role card carries the Must rules that apply to it; its answer has one entry per rule id — `ok`,
+`violated: <where and what>` or `n_a: <why it does not apply to this change>` — and Michael records it with
+`dl review <card> approve "<summary>" --by <reviewer> --standards '{"BV-colours":"ok","api-errors#2":"n_a: no handler"}'`.
+`dl` refuses the approval while a rule that applies is unanswered or violated, an `n_a` or `violated` has no reason, or an
+id is not one of the reviewer's rules. The answers are kept with the review on the card. `dl knowledge must <role>` lists the
+rules a role answers to on the current job.
+
+### A standard settles what it states
+
+The Business Analyst may close a readiness item — even one that shapes the product (UI, architecture …), which otherwise only
+the request or the human settles — from a standard, where the standard states the answer in so many words: source
+`standard: <file>` and the words in `quote`, verbatim (`a … b` for fragments). `dl readiness` checks the words are in that
+document as the job sees it (shared ⊕ company ⊕ project). A standard that does not state it settles nothing: the item stays
+open and Michael asks the human.
+
+## 1a. Brand DNA: the visual identity
+
+```bash
+dl knowledge new brand-visual                    # → .deliver/knowledge/brand-visual.md (this project, through a PR)
+dl knowledge new brand-visual --scope company    # → ~/.deliver/knowledge/brand-visual.md (every project on this machine)
+```
+
+For the whole company in a shared knowledge repo, put the filled-in file in its `standards/`. A project's own file of the same
+name overrides the company's (the project can differ on purpose).
+
+The template has `## Must` rules with ids (`[BV-colours]`, `[BV-type]`, `[BV-logo]`, `[BV-contrast]`, `[BV-voice]`) and
+`{{…}}` where your values go, a `## Decides` list (primary colour, typefaces, radius, spacing, dark mode …) the BA can quote
+from, and sections for the tokens, the type scale, the logo and examples. It contains no brand values of its own: until you
+fill a rule in, it is not a rule. It applies to the BA, Lead, frontend, mobile, reviewers and QA; narrow `applies_to` to
+role names (`[ba, frontend, reviewer-ts, qa]`) if the other reviewers should not answer it.
 
 Good first standards: error handling, logging/observability, API conventions, testing (naming, where tests live, coverage),
 security baseline, accessibility target (WCAG level), definition of done, commit/branch conventions.
@@ -116,9 +152,11 @@ What not to put in either: secrets, customer data, anything you would not put in
 ```bash
 dl knowledge list                       # every applicable document + lessons, as JSON
 dl knowledge list dev backend java      # what a Java backend dev gets
-grep -A3 "MUST:" .work/<job>/roles/backend.md
+dl knowledge must reviewer-ts           # the rules (id, text, document) a role answers to on this job
+grep "MUST \[" .work/<job>/roles/backend.md
 ```
 
 `tests/run.sh` covers it: a company standard reaches the right roles only, a project standard overrides the company one,
-only `## Must` bullets are copied, lessons reach the next role cards and Michael's memory on the floor, and `sync-md` ingests
+only `## Must` bullets are copied (with their ids; a rule with a `{{…}}` left is not), a review approval is refused while a
+rule is unanswered or violated, a readiness item is settled by a standard only with its words quoted, lessons reach the next role cards and Michael's memory on the floor, and `sync-md` ingests
 standards + lessons into a knowledge-graph store.
