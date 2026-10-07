@@ -4,6 +4,20 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.8.0 — 2026-10-07
+
+**Company and project standards that are checked, not only read — starting with the brand's visual identity**
+- `dl knowledge new brand-visual [--scope company]`: a template for the visual identity (colours, typefaces, logo, contrast,
+  voice, tokens, type scale) with `{{…}}` where your values go. It holds no brand values of its own; a rule with a `{{…}}`
+  left reaches no role and is named as not filled in.
+- Every Must rule has an id (`[BV-colours] …`, else `<file>#<n>`); role cards show `MUST [<id>]: …` (before: `MUST: …`).
+- Review: each reviewer answers every rule that applies to it — `ok`, `violated: <what>` or `n_a: <why>` — and
+  `dl review … approve --standards '{…}'` is refused while one is unanswered or violated. The answers stay on the card.
+  **Changed:** an approval of a reviewer with Must rules and no `--standards` is now refused.
+- Readiness: a standard settles an item — also one that shapes the product (UI …) — where it states it: source
+  `standard: <file>` with its words quoted verbatim. Anything it does not state is still asked to you.
+- `dl knowledge must <role>`: the rules a role answers to on the current job.
+
 ## 0.7.2 — 2026-10-07
 
 **A stopped agent is continued, not replaced** (from a user's job: after a usage limit, `resume` started a new agent)

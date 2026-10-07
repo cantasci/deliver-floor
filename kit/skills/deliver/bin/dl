@@ -721,8 +721,19 @@ cmd_knowledge() {
       [[ "$(node "$BIN_DIR/knowledge.mjs" topics "$ROOT" "$JOB_DIR" | jq -r --arg t "$topic" '.[$t].jobs // 0')" -ge 1 ]] || refuse 1 "no lesson on topic '$topic' — a standard grows out of recorded lessons"
       node "$BIN_DIR/knowledge.mjs" promote "$ROOT" "$JOB_DIR" "$(jq -cn --arg t "$topic" --arg r "$rule" --arg a "$ap" --arg s "$sc" '{topic:$t, rule:$r, scope:$s, applies_to:($a | split(",") | map(select(. != "")))}')" >/dev/null
       log_event promote "$topic ($sc): $rule"; echo "standard proposed: $topic ($sc) — written with this job's PR" ;;
+    must) # dl knowledge must <role> — the Must rules (id + text) the role answers to on this job (a reviewer: in dl review)
+      load_job; [[ -n ${2:-} ]] || die "usage: dl knowledge must <role>"
+      local kind; kind="$(node "$BIN_DIR/roles.mjs" kind "$2" 2>/dev/null)"
+      node "$BIN_DIR/knowledge.mjs" must "$ROOT" "${kind:-review}" "$2" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" | jq -r 'if length == 0 then "(no Must rules apply)" else .[] | "\(.id)\t\(.text)\t(\(.doc), \(.origin))" end' ;;
+    new) # dl knowledge new <template> [--scope project|company] — a standards document to fill in (brand-visual …)
+      local tpl=${2:-} sc=project dest; [[ ${3:-} == --scope ]] && sc=${4:-}
+      [[ -n $tpl && -f $SKILL_DIR/templates/standards/$tpl.md ]] || die "usage: dl knowledge new <template> [--scope project|company] — templates: $(cd "$SKILL_DIR/templates/standards" && ls *.md | sed 's/\.md$//' | tr '\n' ' ')"
+      case $sc in project) dest="$ROOT/.deliver/knowledge" ;; company) dest="$(node "$BIN_DIR/knowledge.mjs" orgdir)" ;; *) die "--scope is project or company" ;; esac
+      [[ ! -e $dest/$tpl.md ]] || refuse 1 "$dest/$tpl.md exists — edit it; it is not overwritten"
+      mkdir -p "$dest" && cp "$SKILL_DIR/templates/standards/$tpl.md" "$dest/$tpl.md"
+      echo "written: $dest/$tpl.md — fill in every {{…}}; a rule with a {{…}} left is not a rule yet (dl knowledge list shows them)" ;;
     sync-md) node "$BIN_DIR/knowledge.mjs" sync-md "$ROOT" ;;
-    *) die "usage: dl knowledge [list [kind] [role] [stack,…] | topics | promote <topic> \"<rule>\" | sync-md]" ;;
+    *) die "usage: dl knowledge [list [kind] [role] [stack,…] | must <role> | new <template> [--scope project|company] | topics | promote <topic> \"<rule>\" | sync-md]" ;;
   esac
 }
 
@@ -1094,9 +1105,10 @@ cmd_qa_join() {
 
 cmd_review() {
   load_job
-  local card=${1:-} verdict=${2:-} summary=${3:-} by=""
-  [[ ${4:-} == --by ]] && by=${5:-}
-  [[ -n $card && ( $verdict == approve || $verdict == changes ) ]] || die 'usage: dl review <card> approve|changes "<summary>" [--by <reviewer role>]'
+  local card=${1:-} verdict=${2:-} summary=${3:-} by="" std=""
+  shift 3 2>/dev/null || shift $#
+  while [[ $# -gt 0 ]]; do case $1 in --by) by=${2:-}; shift 2 ;; --standards) std=${2:-}; shift 2 ;; *) die "unknown option: $1" ;; esac; done
+  [[ -n $card && ( $verdict == approve || $verdict == changes ) ]] || die 'usage: dl review <card> approve|changes "<summary>" [--by <reviewer role>] [--standards '"'"'{"<rule id>":"ok|violated: …|n_a: …"}'"'"']'
   card_exists "$card"
   local head; head="$(branch_head "$(card_get "$card" .branch)")"
   gate_holds "$card" "$head" || refuse 1 "$card has no passed gate for its current commit — run: dl gate $card"
@@ -1108,15 +1120,20 @@ cmd_review() {
   [[ -n $by ]] || by="${required%% *}"; [[ -n $by ]] || by="reviewer"
   if [[ -n $required && " $required " != *" $by "* ]]; then refuse 1 "$by is not a reviewer of $card (reviewers: $required)"; fi
   jq -e --arg r "$by" '.roles[] | select(.role==$r)' "$JOBJ" >/dev/null || [[ -z $required && $by == reviewer ]] || refuse 1 "role '$by' is not on this job"
+  # The company's and the project's standards (brand visual identity …): the reviewer answers every Must rule that applies
+  # to it, one by one; an approval with a rule unanswered or violated is refused.
+  local kind judged rr=0; kind="$(node "$BIN_DIR/roles.mjs" kind "$by" 2>/dev/null)"; [[ -n $kind ]] || kind=review
+  judged="$(node "$BIN_DIR/knowledge.mjs" judge "$(jq -r '.repo // "."' "$JOBJ")" "$kind" "$by" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" "$std" "$verdict" 2>&1)" || rr=$?
+  [[ $rr -eq 0 ]] || refuse 1 "$card: the standards check of this review is not complete —"$'\n'"$judged"
   card_set "$card" '(.cards[] | select(.id==$id)) |= (
-      .reviews = ((.reviews // []) + [{"by":$by,"verdict":$v,"head":$h,"summary":$s,"at":$t}])
+      .reviews = ((.reviews // []) + [{"by":$by,"verdict":$v,"head":$h,"summary":$s,"at":$t} + (if $std == {} then {} else {"standards":$std} end)])
       | ((.reviewers // [$by]) ) as $req
       | ([.reviews[] | select(.head==$h)] | group_by(.by) | map(last)) as $latest
       | ($req | map(. as $r | ($latest | map(select(.by==$r)) | first | .verdict) // "pending")) as $vs
       | .review = {"verdict": (if any($vs[]; .=="changes") then "changes" elif all($vs[]; .=="approve") then "approve" else "pending" end),
                    "head":$h, "summary": ([$latest[] | "\(.by): \(.verdict) — \(.summary)"] | join(" | ")),
                    "pending": [$req[] as $r | select(($vs[$req | index($r)]) == "pending") | $r], "at":$t})' \
-    --arg by "$by" --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)"
+    --arg by "$by" --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)" --argjson std "${judged:-"{}"}"
   reset_stop_guard; log_event review "$card $by $verdict${summary:+ — $summary}"
   tracker sync "$card"; tracker note "$card" "$by" "$verdict${summary:+ — $summary}"
   echo "review: $card $by $verdict  (card: $(card_get "$card" .review.verdict)$(card_get "$card" '.review.pending | if length>0 then ", waiting for " + join(", ") else "" end'))"

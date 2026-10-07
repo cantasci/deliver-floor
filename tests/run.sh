@@ -132,6 +132,19 @@ printf 'Orders are kept for 90 days.\n' > "$R/RETENTION.md"
 jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])} | .items[0].source = "RETENTION.md" | .items[0].quote = "kept for 90   days"' "$TMP/appl.json" > "$RJ/readiness.json"
 out="$("$DL" readiness 2>&1)"; [[ $out != *"quote not found"* ]] && ok "a quote from the repo file named in the source counts (whitespace-insensitive)" || bad "repo-file quote: $out"
 rm -f "$R/RETENTION.md"
+# Brand DNA: a company or project standard settles a product-shaping item where it states it — quoted, from that document
+mkdir -p "$R/.deliver/knowledge"; printf -- '---\napplies_to: [ba]\n---\n# Brand\n## Must\n- [BV-type] Text uses only the typeface Inter.\n## Decides\n- Primary colour: Deep Blue #0B3D91\n' > "$R/.deliver/knowledge/brand-visual.md"
+jq '{items: ([.[] | {id, status:"decided", answer:"x", source:"the request", quote:"Users can cancel orders"}])}
+    | (.items[] | select(.id=="ARC-ui")) |= {id, status:"decided", answer:"a web UI in the brand colours", source:"standard: brand-visual.md", quote:"Primary colour: deep blue   #0B3D91"}
+    | (.items[] | select(.id=="ARC-style")) |= {id, status:"decided", answer:"x", source:"standard: brand-visual.md", quote:"Primary colour: Bright Red"}
+    | (.items[] | select(.id=="ARC-data")) |= {id, status:"decided", answer:"x", source:"standard: nope.md", quote:"x"}
+    | (.items[] | select(.id=="ARC-deps")) |= {id, status:"decided", answer:"x", source:"standard: brand-visual"}' "$TMP/appl.json" > "$RJ/readiness.json"
+out="$("$DL" readiness 2>&1)"
+[[ $out != *"ARC-ui:"* ]] && ok "a product-shaping item is settled by a standard that states it, quoted (source standard: <file>)" || bad "standard source refused: $(grep ARC-ui <<<"$out")"
+contains "…not by words the standard does not hold" "$out" "ARC-style: quote not found in standard 'brand-visual.md'"
+contains "…not by a standard the job does not have" "$out" "ARC-data: standard 'nope.md' is not one of this job's standards"
+contains "…and not without its words" "$out" "ARC-deps: decided from standard 'brand-visual.md' needs \`quote\`"
+rm -f "$R/.deliver/knowledge/brand-visual.md"; rmdir "$R/.deliver/knowledge" 2>/dev/null || true
 contains "a missing architecture is an error" "$out" "architecture: architecture is missing"
 ready_all CON-interface
 out="$("$DL" readiness 2>&1)"; contains "an open item is reported as a question" "$out" "OPEN  CON-interface"
@@ -1218,12 +1231,26 @@ cd "$TMP/kn" && git init -q -b main && echo x > a && echo '{"dispatch":"subagent
 contains "a lesson without what happened is refused (no lessons on assumptions)" "$("$DL" learn qa "Check rounding" --topic rounding 2>&1)" "a lesson needs what happened"
 "$DL" learn qa "Check rounding at .5 boundaries — QA missed it in JOB-1" --topic rounding-boundaries --evidence "JOB-1: AC-4 failed in production at 2.5" >/dev/null
 "$DL" phase readiness >/dev/null
-grep -q "MUST: Map domain errors" ".work/$KJ/roles/backend.md" && ok "company standard's Must reaches the dev role" || bad "dev standard"
-grep -q "MUST: Map domain errors" ".work/$KJ/roles/qa.md" && bad "standard leaked to a role it does not apply to" || ok "applies_to filters roles"
+grep -q "MUST \[api-errors#1\]: Map domain errors" ".work/$KJ/roles/backend.md" && ok "company standard's Must reaches the dev role" || bad "dev standard"
+grep -q "MUST \[api-errors#1\]: Map domain errors" ".work/$KJ/roles/qa.md" && bad "standard leaked to a role it does not apply to" || ok "applies_to filters roles"
 grep -q "Tests live in test/<area>/" ".work/$KJ/roles/qa.md" && ! grep -q "Every AC has a test named" ".work/$KJ/roles/qa.md" && ok "project standard overrides the company one" || bad "override"
 grep -q "Never leak stack traces" ".work/$KJ/roles/reviewer.md" && ok "reviewer gets the review standards" || bad "reviewer standard"
 grep -q "Background" ".work/$KJ/roles/backend.md" && bad "whole document pasted" || ok "only Must bullets are copied (rest by reference)"
 grep -q "rounding at .5" ".work/$KJ/roles/qa.md" && ok "memory: a learned lesson reaches the next role cards" || bad "lesson"
+# Brand DNA: a standards template to fill in; a rule still holding {{…}} is not a rule; each rule has an id
+contains "dl knowledge new writes the brand template into the project's knowledge" "$("$DL" knowledge new brand-visual)" "written: $TMP/kn/.deliver/knowledge/brand-visual.md"
+contains "…and never overwrites a filled-in one" "$("$DL" knowledge new brand-visual 2>&1)" "exists — edit it"
+contains "…an unknown template is named with the ones there are" "$("$DL" knowledge new nope 2>&1)" "templates: brand-visual"
+sed -i.bak 's#{{the tokens file, e.g. src/styles/tokens.css}}#src/styles/tokens.css#' .deliver/knowledge/brand-visual.md && rm -f .deliver/knowledge/brand-visual.md.bak
+"$DL" phase readiness >/dev/null
+grep -q "MUST \[BV-colours\]: Colours come only from the brand tokens in src/styles/tokens.css" ".work/$KJ/roles/reviewer.md" && ok "a filled-in brand rule reaches the reviewer with its id" || bad "BV-colours not in reviewer card"
+grep -q "{{" ".work/$KJ/roles/reviewer.md" && bad "a placeholder reached a role card" || ok "rules still holding {{…}} reach no role card…"
+contains "…and are named as not filled in" "$(cat ".work/$KJ/roles/reviewer.md")" "(not filled in yet, so not a rule: BV-type, BV-logo, BV-contrast, BV-voice)"
+grep -q "BV-colours" ".work/$KJ/roles/backend.md" && bad "brand rule reached a role outside applies_to" || ok "brand rules follow applies_to (not the backend dev)"
+contains "the reviewer card says each MUST is answered by id" "$(cat ".work/$KJ/roles/reviewer.md")" "Your review answers every MUST above by its id"
+contains "the BA card says a standard settles only what it states" "$(cat ".work/$KJ/roles/ba.md")" 'source `standard: <file>`'
+out="$("$DL" knowledge must reviewer)"; contains "dl knowledge must lists the rules a reviewer answers, by id" "$out" "BV-colours"$'\t'
+contains "…company ones included" "$out" "api-errors#2"$'\t'"Never leak stack traces."
 mkdir -p "$TMP/mphive/agents/god"; HIVE_ROOT="$TMP/mphive" "$DL" learn all "Name QA tests after the AC id" --topic qa-test-names --evidence "review: tests named t1..t9" >/dev/null
 grep -q "/deliver lesson for kn .*Name QA tests after the AC id" "$TMP/mphive/agents/god/memory.md" \
   && ok "on the floor a lesson also lands in Michael's memory.md (mined into MemPalace)" || bad "lesson not in god memory"
@@ -1236,8 +1263,8 @@ JS
 touch "$TMP/res/kg.cjs"
 KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md >/dev/null
 out="$(KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md)"
-contains "sync-md re-ingests without duplicates" "$out" "2 document(s) ingested (2 older version(s) replaced)"
-[[ "$(jq length "$TMP/kgroot/idx.json")" == 2 ]] && ok "knowledge graph holds the 2 standards (lessons join once a PR accepted them)" || bad "kg docs: $(cat "$TMP/kgroot/idx.json")"
+contains "sync-md re-ingests without duplicates" "$out" "3 document(s) ingested (3 older version(s) replaced)"
+[[ "$(jq length "$TMP/kgroot/idx.json")" == 3 ]] && ok "knowledge graph holds the 3 standards (lessons join once a PR accepted them)" || bad "kg docs: $(cat "$TMP/kgroot/idx.json")"
 
 echo "knowledge: lessons with what happened, into the project (and the shared repo) through the job's PR; a topic seen thrice becomes a standard"
 SB="$TMP/shared.git"; git init -q --bare -b main "$SB"; SW="$TMP/shared-w"; git clone -q "$SB" "$SW" 2>/dev/null
@@ -1251,7 +1278,7 @@ git add -A && git commit -qm i
 [[ -d $DELIVER_HOME/shared/shared.git/.git || -d $DELIVER_HOME/shared/shared/.git ]] && ok "dl new clones the shared knowledge repo (settings.knowledge.repo)" || bad "no shared clone: $(ls "$DELIVER_HOME/shared" 2>&1)"
 "$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
 "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
-grep -q "MUST: Log with the request id" "$KJ2/roles/backend.md" && ok "…its standards reach the role cards" || bad "shared standard not in the role card"
+grep -q "MUST \\[observability#1\\]: Log with the request id" "$KJ2/roles/backend.md" && ok "…its standards reach the role cards" || bad "shared standard not in the role card"
 grep -q "qa_verify runs files" "$KJ2/roles/qa.md" && ok "accepted project lessons (.deliver/knowledge/lessons.md) reach the role cards" || bad "project lesson not in the role card"
 printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$KJ2/specs/T-01.md"
 jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
@@ -1261,7 +1288,17 @@ mkdir -p "$WK/src" && echo 1 > "$WK/src/a" && git -C "$WK" add -A && git -C "$WK
 "$DL" gate T-01 >/dev/null 2>&1; echo 1 > "$WK/src/ok" && git -C "$WK" add -A && git -C "$WK" commit -qm "T-01: ok"
 "$DL" wt add T-01 >/dev/null; "$DL" gate T-01 >/dev/null
 mkdir -p "$WK/it" && echo t > "$WK/it/t" && git -C "$WK" add -A && git -C "$WK" commit -qm "T-01 QA: it"
-"$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve ok >/dev/null
+"$DL" qa T-01 pass "AC-1 pass" >/dev/null
+# Brand DNA review: the reviewer answers every Must rule that applies (here the company's api-errors), one by one
+out="$("$DL" review T-01 approve ok 2>&1)"; contains "an approval without the standards answers is refused" "$out" "api-errors#1 (api-errors.md) has no answer"
+out="$("$DL" review T-01 approve ok --standards '{"api-errors#1":"ok","api-errors#2":"violated: the 500 handler returns err.stack"}' 2>&1)"
+contains "an approval that violates a Must rule is refused" "$out" "api-errors#2 (api-errors.md) is violated"
+contains "n_a needs its reason" "$("$DL" review T-01 approve ok --standards '{"api-errors#1":"ok","api-errors#2":"n_a"}' 2>&1)" "api-errors#2: n_a needs its reason"
+contains "an id that is not a rule of this reviewer is refused" "$("$DL" review T-01 approve ok --standards '{"api-errors#1":"ok","api-errors#2":"ok","BV-nope":"ok"}' 2>&1)" "BV-nope is not a Must rule this reviewer answers to"
+[[ "$(jq -r '.cards[0].reviews // [] | length' "$KJ2/board.json")" == 0 ]] && ok "…none of the refused reviews was recorded" || bad "refused review recorded"
+"$DL" review T-01 approve ok --standards '{"api-errors#1":"ok","api-errors#2":"n_a: no HTTP handler in this change"}' >/dev/null \
+  && [[ "$(jq -c '.cards[0].reviews[-1].standards' "$KJ2/board.json")" == '{"api-errors#1":"ok","api-errors#2":"n_a: no HTTP handler in this change"}' && "$(jq -r '.cards[0].review.verdict' "$KJ2/board.json")" == approve ]] \
+  && ok "an approval answering every rule is recorded with the answers" || bad "standards review: $(jq -c '.cards[0].reviews' "$KJ2/board.json")"
 out="$("$DL" learn qa "qa_verify and verify run test files, never a bare directory" --topic qa-verify-files --card T-01 2>&1)"
 contains "dl learn --card attaches what happened (the card's gate FAIL from the event log)" "$(jq -r '.[0].evidence | join(" | ")' "$KJ2/lessons.json")" "gate: T-01 FAIL"
 contains "…and a topic seen in three jobs asks for a standard" "$out" "PROMOTE: topic 'qa-verify-files' was learned in 3 jobs"
@@ -1287,7 +1324,7 @@ contains "shared lessons go to their own branch in the shared repo (a PR there)"
 "$DL" new "Next" "x" >/dev/null 2>&1; KJ3="$KP/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
 "$DL" phase readiness >/dev/null
-grep -q "MUST: verify and qa_verify run test files" "$KJ3/roles/qa.md" && ok "the next job's QA card carries the new standard as a MUST rule" || bad "promoted standard not in the next role card"
+grep -q "MUST \\[qa-verify-files#1\\]: verify and qa_verify run test files" "$KJ3/roles/qa.md" && ok "the next job's QA card carries the new standard as a MUST rule" || bad "promoted standard not in the next role card"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
