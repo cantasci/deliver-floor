@@ -84,6 +84,11 @@ out="$("$DL" phase planning 2>&1)"; contains "roles check names the missing alwa
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"api"},
   {"role":"backend","agent":"backend-dev","why":"lead"},{"role":"qa","agent":"qa-tester","why":"always"},
   {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack"}]'
+RJ0="$R/.work/$JOB"
+out="$("$DL" jobset '.settings.verify_full' 2>&1)"
+contains "dl jobset refuses an expression that reads instead of changes (seen live: job.json became the string \"npm test\")" "$out" "dl jobset changes the job, it does not read it"
+[[ "$(jq -r 'type' "$RJ0/job.json")" == object ]] && ok "…job.json is left as it was" || bad "job.json clobbered: $(head -c 80 "$RJ0/job.json")"
+contains "dl jobset refuses dropping the job's identity too" "$("$DL" jobset 'del(.id)' 2>&1)" "an object that is not this job"
 expect_fail 1 "planning refused before the readiness review" "$DL" phase planning
 expect_ok "phase readiness with valid roles" "$DL" phase readiness
 RJ="$R/.work/$JOB"

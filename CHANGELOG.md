@@ -19,6 +19,9 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
   break each other or pass by accident, so one at a time unless the project isolates runs (each gets `DELIVER_RUN_ID`).
 - `qa_verify` is not run twice: when the gate already passed it on the same commit, `dl qa` uses that result.
 - `dl timeline` shows each card's gate, QA and whole-suite durations, and how long Michael waited on test runs.
+- Fixed (seen in the live measurement run): `dl jobset '.settings.verify_full'` — a read, given to the command that
+  changes the job — replaced the whole `job.json` with the string `"npm test"`. `dl jobset` now refuses any expression whose
+  result is not this job, and writes nothing.
 
 ## 0.9.1 — 2026-10-08
 

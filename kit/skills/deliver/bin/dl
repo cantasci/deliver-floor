@@ -578,6 +578,9 @@ _jobset_sub() { ( _jobset_locked "$@" ); }
 _jobset_locked() {
   [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"
   local new; new="$(jq "$1" "$JOBJ")" || die "invalid jq expression"
+  # seen live: Michael read a value with dl jobset '.settings.verify_full' — the whole job.json became the string "npm test"
+  jq -e --arg id "$JOB" 'type == "object" and .id == $id' >/dev/null 2>&1 <<<"$new" \
+    || refuse 1 "dl jobset changes the job, it does not read it: '$1' gives $(jq -r 'if type == "object" then "an object that is not this job" else type end' <<<"$new" 2>/dev/null | head -n 1), not the job — nothing was written. To read a value: jq '$1' $JOBJ (or dl config); to change one: dl jobset '<path> = <value>'"
   local bad; bad="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" \
     '[($a|keys) + ($b|keys) | unique[] | select(. as $k | ($ok | index($k)) | not) | select($a[.] != $b[.])] | join(", ")')"
   [[ -z $bad ]] || refuse 1 "dl jobset may not change: $bad (use the dl command that owns it)"
