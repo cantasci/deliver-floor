@@ -12,7 +12,7 @@ is summarised away.
 
 ## The test data
 
-[`examples/watchlist-poc/`](../examples/watchlist-poc/) is a 2-requirement slice of `POC_Requirements_v0.2_EN.md`
+[`examples/watchlist-poc/`](../examples/watchlist-poc/) is a 2-requirement slice of [`POC_Requirements_v0.2_EN.md`](../examples/watchlist-poc/POC_Requirements_v0.2_EN.md)
 (REQ-06-02 notch calculator, REQ-03-12 country rating indicator):
 
 | File | Purpose |
