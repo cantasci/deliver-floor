@@ -371,6 +371,14 @@ contains "…with the reason given" "$(cat "$R/.work/$JOB/report.md")" "_back to
 contains "the PR body lists Michael's own decisions" "$(cat "$R/.work/$JOB/report.md")" "## Decisions Michael took himself"
 contains "…with the reason" "$(cat "$R/.work/$JOB/report.md")" "the reviewer's finding is small and in scope"
 [[ -f $R/src/add/add.mjs && -f $R/src/sub/sub.mjs && "$(jq -r .phase "$R/.work/$JOB/job.json")" == done ]] && ok "local merge delivered the cards, phase done" || bad "local ship"
+JR="$R/.deliver/jobs/$JOB"
+[[ -f $JR/request.md && -f $JR/readiness.json && -f $JR/readiness.md && -f $JR/plan.md && -f $JR/report.md && -f $JR/board.json && -f $JR/events.log ]] \
+  && ok "the job's record is in the repo with its code (.deliver/jobs/<job>: request, readiness, plan, report, board, events)" || bad "job record: $(ls "$JR" 2>&1)"
+contains "…the record's report is the final PR body (with the contract changes)" "$(cat "$JR/report.md")" "## Test and contract changes after the start"
+contains "…the request in the asker's words" "$(cat "$JR/request.md")" "$(jq -r .request "$R/.work/$JOB/job.json" | head -n 1)"
+[[ "$(jq -r '[.cards[] | select(.review.verdict == "approve")] | length' "$JR/board.json")" -ge 1 ]] && ok "…the board keeps every card's gate, QA and review verdicts" || bad "record board"
+! grep -q "$R/" "$JR/board.json" "$JR/events.log" && ok "…with paths relative to the repo (no machine paths)" || bad "absolute paths in the record"
+git -C "$R" log --format=%s main | gq "Record of $JOB\|record of " && ok "…committed by dl in the repo's commit format" || bad "record commit: $(git -C "$R" log --format=%s main | head -5)"
 
 echo "hooks"
 H="$HERE/kit/hooks/deliver"

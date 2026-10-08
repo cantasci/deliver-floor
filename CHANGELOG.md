@@ -4,6 +4,16 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.9.1 — 2026-10-08
+
+**The job's record is kept in git with its code** (from comparing the kit with Claude Academy's AI-native SDLC playbook,
+where every stage commits its artifact and the chain of commits is the audit trail)
+- `dl ship` commits `.deliver/jobs/<job>/` to the job branch: the request in the asker's words, the readiness decisions
+  with their sources and quotes, the plan, the BA's specs, the board (every card's gate, QA and review verdicts, with the
+  standards answers), the final report and the event log — paths relative to the repo. Before, all of it stayed in
+  `.work/`, outside git, and only the PR body reached the repo.
+- `record_job: false` in `.deliver.json` keeps it in `.work/` only.
+
 ## 0.9.0 — 2026-10-07
 
 **Checks that a model cannot quietly weaken or skip** (from comparing the kit with a long-task harness prompt)

@@ -383,7 +383,8 @@ OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
 2. Write `.work/<job>/report.md` from that + the board (it is the PR body): its Acceptance criteria table has a row for
    **every** AC of plan.md, each with one status (✅ ❌ ⚠️) and its evidence — `dl ship` refuses one missing. An AC "not
    met" → fix card, back to Phase 3. `dl ship` adds every change to a card's tests and contract (`dl card … set`) and to
-   `verify_full` to the PR, with its reason: change a check only when it was wrong, never to get a pass.
+   `verify_full` to the PR, with its reason: change a check only when it was wrong, never to get a pass. It also commits the
+   job's record (`.deliver/jobs/<job>/`: request, readiness, plan, specs, board, report, events) with the code.
 3. **Memory:** for every QA failure, blocking review item, refused merge or blocked card that a rule would have prevented,
    record what to do differently, with what happened: `"$DL" learn <role|all> "<one-line lesson>" --topic <slug> --card T-xx`
    (or `--evidence "<what happened>"`). `--scope project` (default) — goes into `.deliver/knowledge/lessons.md` with this
