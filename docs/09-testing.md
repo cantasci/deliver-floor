@@ -81,7 +81,8 @@ tests/e2e-munder.sh /tmp/e2e-md                # + xvfb-run, Playwright
 ```
 
 Each live run keeps everything: the sandbox repo with `.work/` (job, readiness, plan, board, specs, handoffs, gate logs,
-events), the `claude -p` transcripts (`.work/runs/*.jsonl`), the report, and for Munder Difflin the screenshots.
+events), the `claude -p` transcripts (`.work/runs/*.jsonl` — in the run's work folder only: `tests/archive-run.sh`
+leaves them out of `docs/verification/`), the report, and for Munder Difflin the screenshots.
 
 The fixtures of `tests/run.sh` and the headless/interactive scenarios run with Claude Code subagents — chosen explicitly
 (`"dispatch": "subagent"`, `scripts/sandbox.sh --subagent`), since the floor is the default. `tests/e2e-munder.sh` runs the
