@@ -12,7 +12,7 @@ is summarised away.
 
 ## The test data
 
-[`examples/watchlist-poc/`](../examples/watchlist-poc/) is a 2-requirement slice of `POC_Requirements_v0.2_EN.md`
+[`examples/watchlist-poc/`](../examples/watchlist-poc/) is a 2-requirement slice of [`POC_Requirements_v0.2_EN.md`](../examples/watchlist-poc/POC_Requirements_v0.2_EN.md)
 (REQ-06-02 notch calculator, REQ-03-12 country rating indicator):
 
 | File | Purpose |
@@ -81,7 +81,8 @@ tests/e2e-munder.sh /tmp/e2e-md                # + xvfb-run, Playwright
 ```
 
 Each live run keeps everything: the sandbox repo with `.work/` (job, readiness, plan, board, specs, handoffs, gate logs,
-events), the `claude -p` transcripts (`.work/runs/*.jsonl`), the report, and for Munder Difflin the screenshots.
+events), the `claude -p` transcripts (`.work/runs/*.jsonl` — in the run's work folder only: `tests/archive-run.sh`
+leaves them out of `docs/verification/`), the report, and for Munder Difflin the screenshots.
 
 The fixtures of `tests/run.sh` and the headless/interactive scenarios run with Claude Code subagents — chosen explicitly
 (`"dispatch": "subagent"`, `scripts/sandbox.sh --subagent`), since the floor is the default. `tests/e2e-munder.sh` runs the

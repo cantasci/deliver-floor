@@ -10,7 +10,7 @@ for f in report.md run.log doctor.log install.log init.log oracle.log drive.log;
 [[ -n $con && -f $con ]] && strip "$con" > "$dst/console.txt"
 R=$src/repo
 J="$(ls -d "$R"/.work/JOB-* | sort | tail -1)"
-(cd "$R/.work" && tar --exclude="$(basename "$J")/wt" --exclude='*.lock' -cf - "$(basename "$J")" $( [[ -d runs ]] && echo runs )) | tar -xf - -C "$dst/work"
+(cd "$R/.work" && tar --exclude="$(basename "$J")/wt" --exclude='*.lock' --exclude='*.jsonl' -cf - "$(basename "$J")" $( [[ -d runs ]] && echo runs )) | tar -xf - -C "$dst/work"
 git -C "$R" log --all --graph --format='%h %ad %an <%ae>  %s' --date=format:'%H:%M:%S' > "$dst/git-log.txt"
 git -C "$R" log --all --format='%H%n%B%n----' > "$dst/git-messages.txt"
 echo "archived $(basename "$J") → $dst ($(du -sh "$dst" | cut -f1))"

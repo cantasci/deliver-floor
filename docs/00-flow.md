@@ -174,7 +174,7 @@ job/JOB-…  ●──────────●(T-01)────────�
         └── T-02/                     live card worktrees (removed after merge)
 ```
 
-See [`../example/`](../example/) for a filled-in job, and run `tests/replay-watchlist.sh` to watch one being made.
+See a real job's record in [`verification/12-brand-standards/work/`](verification/12-brand-standards/work/), and run `tests/replay-watchlist.sh` to watch one being made.
 
 ## What a card looks like
 

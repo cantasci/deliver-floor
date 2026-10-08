@@ -1,6 +1,8 @@
 # Verification — what was asked, what was decided, where it is, and the proof
 
-Everything in this folder is raw output of real runs. Nothing is edited except stripping terminal colour codes.
+Everything in this folder is raw output of real runs. Nothing is edited except stripping terminal colour codes. The
+`claude -p` transcripts themselves (`.work/runs/*.jsonl`, 1 MB and more each) are not kept in the repo: each report
+quotes what it relies on from them (turns, cost, what an agent said).
 
 | Folder | Contents |
 | --- | --- |
