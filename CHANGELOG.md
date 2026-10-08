@@ -4,6 +4,19 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.9.2 — 2026-10-08
+
+**Where the test time goes, and one run fewer** (from a user's job: QA took long)
+- `dl timeline` shows each card's test runs — the gate, QA's run, the whole suite at the QA pass — and how long Michael
+  waited on them, so the slow step is measured, not guessed. Each run's duration is kept on the card.
+- `qa_verify` is not run twice: when the gate already passed it on the same commit, `dl qa` uses that result.
+- Fixed (seen in a live run): `dl jobset '.settings.verify_full'` — a read, given to the command that changes the job —
+  replaced the whole `job.json` with the string `"npm test"`. `dl jobset` now refuses any expression whose result is not
+  this job, and writes nothing.
+- Tried and not adopted: running the whole suite in the background. Measured live, it did not make the job faster
+  ([report](docs/verification/13-background-suite/report.md)); it waits for the user's own timeline to show the suite is
+  the bottleneck.
+
 ## 0.9.1 — 2026-10-08
 
 **The job's record is kept in git with its code** (from comparing the kit with Claude Academy's AI-native SDLC playbook,

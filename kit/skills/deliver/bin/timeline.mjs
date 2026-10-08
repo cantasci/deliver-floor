@@ -5,6 +5,8 @@
 // · seats / agents: how long each one worked (floor: md-send → md-done; subagents: dispatch → its SubagentStop) and
 //   what share of the job that is — a seat busy 10 % of the time is waiting on someone else 90 %
 // · cards: assigned → gate passed → QA recorded → review recorded → merged
+// · tests: how long dl's own test runs took per card (gate, QA, the whole suite at the QA pass — from board.json): each
+//   holds Michael up while it runs
 // · nobody working: stretches where no seat or agent had work (Michael alone — reading, recording, deciding — or idle)
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -55,11 +57,17 @@ for (const e of ev) {
   if (e.kind === "integrate" && /merged/.test(e.msg)) c(id).merged = e.t;
 }
 const span = (a, b) => (a && b ? min(b - a) : "-");
+let board = { cards: [] }; try { board = JSON.parse(readFileSync(join(jobDir, "board.json"), "utf8")); } catch { /* no board yet */ }
+const secs = (v) => (typeof v === "number" ? v : null);
+const tests = (board.cards ?? []).filter((k) => k.gate?.seconds != null || k.qa?.seconds != null || k.qa?.suite_seconds != null)
+  .map((k) => ({ id: k.id, gate_s: secs(k.gate?.seconds), qa_s: secs(k.qa?.seconds), suite_s: secs(k.qa?.suite_seconds) }));
 
 const out = {
   total_min: +min(total), nobody_working_min: +min(idle),
   phases: phases.map((p) => ({ phase: p.phase, min: +min(p.end - p.start) })),
   seats: [...busy].map(([who, ms]) => ({ who, busy_min: +min(ms), share: Math.round((100 * ms) / total) })).sort((a, b) => b.busy_min - a.busy_min),
+  tests,
+  michael_waited_on_tests_min: +min(1000 * tests.reduce((a, t) => a + (t.gate_s ?? 0) + (t.qa_s ?? 0) + (t.suite_s ?? 0), 0)),
   cards: [...cards.values()].map((x) => ({ id: x.id, dev: span(x.assigned, x.gate), gate_to_qa: span(x.gate, x.qa), qa_to_review: span(x.qa, x.review), review_to_merge: span(x.review, x.merged), total: span(x.assigned, x.merged) })),
 };
 if (process.argv.includes("--json")) { console.log(JSON.stringify(out, null, 2)); process.exit(0); }
@@ -71,4 +79,8 @@ for (const s of out.seats) console.log(`${s.who.padEnd(34)} ${String(s.busy_min)
 if (out.cards.length) {
   console.log("\ncard   dev → gate   gate → QA   QA → review   review → merge   assigned → merged (min)");
   for (const k of out.cards) console.log(`${k.id.padEnd(6)} ${String(k.dev).padStart(10)}   ${String(k.gate_to_qa).padStart(9)}   ${String(k.qa_to_review).padStart(11)}   ${String(k.review_to_merge).padStart(14)}   ${String(k.total).padStart(17)}`);
+}
+if (out.tests.length) {
+  console.log(`\ntests (s)   gate     QA   whole suite   — Michael waited on test runs: ${out.michael_waited_on_tests_min} min`);
+  for (const t of out.tests) console.log(`${t.id.padEnd(8)} ${String(t.gate_s ?? "-").padStart(6)} ${String(t.qa_s ?? "-").padStart(6)}   ${String(t.suite_s ?? "-").padStart(12)}`);
 }

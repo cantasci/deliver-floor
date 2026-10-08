@@ -1,0 +1,67 @@
+2026-10-08T18:16:20Z	new	Repayment delay indicators 2 and 3
+2026-10-08T18:16:35Z	jobset	stack: .stack=["javascript"]
+2026-10-08T18:16:35Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/03: indicator domain logic"},{"role":"backend","agent":"backend-dev","count":2,"why":"two backend developers in parallel, one per requirement (REQ-03-02, REQ-03-03)"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"JavaScript stack reviewer"}]
+2026-10-08T18:16:35Z	roles-defaults	qa: 2 seats — one per developer seat
+2026-10-08T18:16:35Z	jobset	assumptions: .assumptions += ["Stack is Node.js ESM (package.json type=module, CLAUDE.md); repo verify_full kept as configured (includes sleep 90)"]
+2026-10-08T18:16:35Z	roles	ba backend-lead backend qa reviewer
+2026-10-08T18:16:35Z	phase	readiness
+2026-10-08T18:16:51Z	dispatch	deliver:business-analyst
+2026-10-08T18:19:38Z	agent	deliver:business-analyst a4b6b03fa2fb0b3bc: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"This delivers the scoring logic for two repayment-delay indicators of the Watchlist Tool (EPIC-
+2026-10-08T18:20:16Z	decide	X-error-message: A: RangeError message names the function, the received value and the allowed options; tests assert only the error type — Helps callers diagnose bad dropdown values; message text is not part of the contract so tests must not depend on it
+2026-10-08T18:20:16Z	decide	X-options-immutability: A: Object.freeze the exported option arrays — Callers cannot mutate the list the dropdown renders from; deepStrictEqual against the ordered strings still passes
+2026-10-08T18:20:16Z	readiness	32 items: 20 decided, 12 n/a, 0 open
+2026-10-08T18:21:50Z	baseline	PASS (node --test && sleep 90)
+2026-10-08T18:21:50Z	freeze	readiness + architecture frozen (0bfa2e947d41)
+2026-10-08T18:21:50Z	roles	ba backend-lead backend qa reviewer
+2026-10-08T18:21:50Z	phase	planning
+2026-10-08T18:21:59Z	dispatch	deliver:business-analyst
+2026-10-08T18:23:56Z	agent	deliver:business-analyst ad959e183c161e4f9: I've written the plan below, ready for you to store as plan.md. It has 18 acceptance criteria and no open questions, because all 32 readiness items are decided 
+2026-10-08T18:24:33Z	dispatch	ecc:architect
+2026-10-08T18:25:42Z	agent	ecc:architect a8f7cde3e07de060c: ```json [ { "tmp_id": "B1", "title": "REQ-03-02: Indicator 2 'Days with delay' (daysWithDelayWl + DAYS_WITH_DELAY_OPTIONS)", "role": "backend", "component": "in
+2026-10-08T18:26:12Z	dispatch	deliver:business-analyst
+2026-10-08T18:27:59Z	agent	deliver:business-analyst ac8babac91898d7ec: === T-01 === # T-01: REQ-03-02: Indicator 2 "Days with delay" (daysWithDelayWl + DAYS_WITH_DELAY_OPTIONS) ## What to build Add a new module `src/indicators/days
+2026-10-08T18:28:53Z	phase	executing
+2026-10-08T18:28:58Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-08T18:28:59Z	qa-start	T-01 → QA writes its tests in .work/JOB-20261008-1816-repayment-delay-indicators-2-and/wt/T-01-qa (branch job/JOB-20261008-1816-repayment-delay-indicators-2-and--T-01-qa) while the dev builds
+2026-10-08T18:28:59Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-08T18:29:00Z	qa-start	T-02 → QA writes its tests in .work/JOB-20261008-1816-repayment-delay-indicators-2-and/wt/T-02-qa (branch job/JOB-20261008-1816-repayment-delay-indicators-2-and--T-02-qa) while the dev builds
+2026-10-08T18:29:14Z	dispatch	deliver:backend-dev
+2026-10-08T18:29:23Z	dispatch	deliver:backend-dev
+2026-10-08T18:29:29Z	dispatch	deliver:qa-tester
+2026-10-08T18:29:35Z	dispatch	deliver:qa-tester
+2026-10-08T18:30:20Z	agent	deliver:backend-dev ab22e4bc7b329b709: status: done commit: f1eb9ff verify: passed (`node --test test/indicators/daysWithDelay.test.mjs` gave 18 pass, 0 fail) open issues: - **Push not done.** The ba
+2026-10-08T18:30:27Z	agent	deliver:backend-dev a8bdb9eed2a887e57: status: done (the commit is not pushed) commit: 0ac5ef0 verify: passed (`node --test test/indicators/delayCount.test.mjs`, 15/15 pass). The grep for forbidden t
+2026-10-08T18:31:07Z	agent	deliver:qa-tester a51553ae422576210: The T-01 QA tests are written and committed locally as `f6b45fc`, but I could not push them. They fail for the right reason: `src/indicators/daysWithDelay.mjs` 
+2026-10-08T18:31:11Z	agent	deliver:qa-tester a84f7fa9fce9ce77b: The tests are written and committed, but I couldn't push them. The `bash-guard` hook rejects my push with "this directory is not a card worktree", even from ins
+2026-10-08T18:31:16Z	gate	T-01 PASS
+2026-10-08T18:31:17Z	gate	T-02 PASS
+2026-10-08T18:31:21Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-08T18:31:21Z	qa-join	T-02: QA's tests (1 commit(s)) joined the card branch
+2026-10-08T18:31:30Z	dispatch	deliver:qa-tester
+2026-10-08T18:31:34Z	dispatch	deliver:qa-tester
+2026-10-08T18:31:51Z	agent	deliver:qa-tester a8e19bca4fdce8fe3: ```json {"verdict":"pass", "tests":["test/integration/indicators/daysWithDelay.contract.test.mjs","test/integration/indicators/daysWithDelay.rejects.test.mjs"],
+2026-10-08T18:31:58Z	agent	deliver:qa-tester a439ff2834a03112a: ```json {"verdict":"pass", "tests":["test/integration/indicators/delayCount.contract.test.mjs","test/integration/indicators/delayCount.rejections.test.mjs"], "c
+2026-10-08T18:33:33Z	qa	T-02 pass (qa_verify PASS) — AC-5..15, 17 pass (42 integration tests); AC-16 grep clean; unit 15 pass
+2026-10-08T18:33:33Z	qa	T-01 pass (qa_verify PASS) — AC-1..4, 8..15, 17 pass (36 integration tests); AC-16 grep clean; unit 18 pass
+2026-10-08T18:33:44Z	dispatch	ecc:typescript-reviewer
+2026-10-08T18:33:49Z	dispatch	ecc:typescript-reviewer
+2026-10-08T18:33:59Z	agent	ecc:typescript-reviewer a0912b7a18d6da336: {"verdict":"approve","blocking":[],"nits":["src/indicators/daysWithDelay.mjs describeValue: for symbols, functions, objects and arrays the message gives only th
+2026-10-08T18:34:03Z	agent	ecc:typescript-reviewer a55d028ca6b5050ee: {"verdict":"approve","blocking":[],"nits":["src/indicators/delayCount.mjs: the error message for an object is just 'object' or 'array', and a function input wou
+2026-10-08T18:34:09Z	review	T-01 reviewer approve — R1-R4 followed, scope clean, no blocking items (nits only)
+2026-10-08T18:34:09Z	review	T-02 reviewer approve — R1-R4 followed, no numeric coercion, scope clean, no blocking items (nits only)
+2026-10-08T18:34:10Z	integrate	T-01 merged
+2026-10-08T18:34:11Z	integrate	T-02 merged
+2026-10-08T18:34:14Z	phase	integrating
+2026-10-08T18:35:45Z	verify-all	PASS
+2026-10-08T18:35:48Z	phase	closing
+2026-10-08T18:35:54Z	dispatch	deliver:business-analyst
+2026-10-08T18:37:49Z	agent	deliver:business-analyst a17916f40adfc63f5: Status words are written as text instead of the ✅ / ❌ / ⚠️ symbols you asked for, because my instructions do not allow emojis. **Result: all 18 ACs are 
+2026-10-08T18:37:58Z	followup	T-02: delayCount.mjs exports have line comments, not the JSDoc the T-02 card asked for (style only)
+2026-10-08T18:37:59Z	followup	T-01: Unit tests contain raw invisible characters (NBSP, BOM, U+200B, U+2264) instead of \u escapes; correct today, but an editor could turn them into plain spaces. T-01 handoff wrongly says escapes were used
+2026-10-08T18:37:59Z	followup	RangeError messages are formatted differently in daysWithDelay.mjs and delayCount.mjs (symbol/quoting); harmless while message text is not in the contract
+2026-10-08T18:37:59Z	followup	verify_full is 'node --test && sleep 90': every full run (baseline, each QA pass, verify-all) costs 90 s; consider dropping the sleep
+2026-10-08T18:37:59Z	pm-decision	Did not cut fix cards for the style follow-ups (JSDoc, raw invisible characters, message format) — All 18 ACs met, 111/111 tests pass, reviewers approved; none changes behaviour, and each fix cycle costs several 90 s full-suite runs. Listed as follow-ups in the PR.
+2026-10-08T18:37:59Z	learn	kit (project, push-guard): Card devs and QA cannot push their branches: bash-guard rejects 'git push' with 'this directory is not a card worktree' even from inside the worktree. Harmless in merge_mode local, but agents report it as an open issue
+2026-10-08T18:38:20Z	knowledge	lessons/standards committed to job/JOB-20261008-1816-repayment-delay-indicators-2-and: .deliver/knowledge/lessons.md 
+2026-10-08T18:38:20Z	record	the job's record committed to job/JOB-20261008-1816-repayment-delay-indicators-2-and: .deliver/jobs/JOB-20261008-1816-repayment-delay-indicators-2-and/
+2026-10-08T18:38:20Z	ship	local merge into main

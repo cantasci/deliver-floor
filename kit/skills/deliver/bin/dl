@@ -576,6 +576,9 @@ _jobset_sub() { ( _jobset_locked "$@" ); }
 _jobset_locked() {
   [[ -n ${1:-} ]] || die "usage: dl jobset '<jq expr>'"
   local new; new="$(jq "$1" "$JOBJ")" || die "invalid jq expression"
+  # seen live: Michael read a value with dl jobset '.settings.verify_full' — the whole job.json became the string "npm test"
+  jq -e --arg id "$JOB" 'type == "object" and .id == $id' >/dev/null 2>&1 <<<"$new" \
+    || refuse 1 "dl jobset changes the job, it does not read it: '$1' gives $(jq -r 'if type == "object" then "an object that is not this job" else type end' <<<"$new" 2>/dev/null | head -n 1), not the job — nothing was written. To read a value: jq '$1' $JOBJ (or dl config); to change one: dl jobset '<path> = <value>'"
   local bad; bad="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" \
     '[($a|keys) + ($b|keys) | unique[] | select(. as $k | ($ok | index($k)) | not) | select($a[.] != $b[.])] | join(", ")')"
   [[ -z $bad ]] || refuse 1 "dl jobset may not change: $bad (use the dl command that owns it)"
@@ -980,6 +983,7 @@ cmd_gate() {
   [[ -d $wt ]] || die "$card has no worktree — run: dl wt add $card"
   log="$JOB_DIR/gates/$card-a$attempt-$(date +%H%M%S).log"
   tmo="$(setting gate_timeout)"; tmo=${tmo:-1800}
+  local gt0; gt0=$(date +%s)
   {
     echo "# gate: $card  attempt: $attempt  $(now)"
     local on; on="$(git -C "$wt" symbolic-ref --short -q HEAD || echo DETACHED)"
@@ -1059,7 +1063,7 @@ cmd_gate() {
   grep -q '^FAIL' "$log" && fail=1
   head="$(git -C "$wt" rev-parse HEAD)"
   local result=PASS; [[ $fail -eq 0 ]] || result=FAIL
-  card_set "$card" '(.cards[] | select(.id==$id)).gate = {"result":$r,"head":$h,"attempt":($a|tonumber),"log":$l,"at":$t}' \
+  card_set "$card" '(.cards[] | select(.id==$id)).gate = {"result":$r,"head":$h,"attempt":($a|tonumber),"seconds":($sec|tonumber),"log":$l,"at":$t}' --arg sec "$(( $(date +%s) - gt0 ))" \
     --arg r "$result" --arg h "$head" --arg a "$attempt" --arg l "$log" --arg t "$(now)"
   # Review the card only after the dev has returned: if it is still running, move it to review.
   [[ "$(card_get "$card" .state)" == running ]] && card_set "$card" '(.cards[] | select(.id==$id)).state="review"'
@@ -1093,24 +1097,31 @@ cmd_qa() {
     [[ -n "$(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | node "$BIN_DIR/scope.mjs" "$qscope" | sort | comm -13 - <(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | sort))" ]] \
       || refuse 1 "no QA tests in qa_scope $(jq -c . <<<"$qscope") — the QA role writes integration/e2e tests for the card's acceptance criteria"
   fi
-  local qlog="$JOB_DIR/gates/$card-qa-a$(card_get "$card" .attempts)-$(date +%H%M%S).log" qres=PASS
+  local qlog="$JOB_DIR/gates/$card-qa-a$(card_get "$card" .attempts)-$(date +%H%M%S).log" qres=PASS qsec=0 fsec=null t0
   if [[ -n $qverify ]]; then
-    { echo "# qa_verify: $qverify"; (cd "$wt" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
-    [[ $verdict == pass && $qres == FAIL ]] && { tail -n 25 "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; }
+    if [[ "$(card_get "$card" '.gate.head // ""')" == "$head" ]] && grep -q '^ok    QA tests pass' "$(card_get "$card" '.gate.log // "/dev/null"')" 2>/dev/null; then
+      echo "# qa_verify passed in the gate on this same commit (${head:0:12}) — not run twice: $(card_get "$card" .gate.log)" > "$qlog"
+    else
+      t0=$(date +%s)
+      { echo "# qa_verify: $qverify"; (cd "$wt" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
+      qsec=$(( $(date +%s) - t0 ))
+      if [[ $verdict == pass && $qres == FAIL ]]; then tail -n 25 "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; fi
+    fi
   fi
   # The dev's tests and QA's pass one by one, yet the suite can still break once they are collected together (seen live: two
   # test helpers with the same file name, sovereign_support.py — pytest stopped at collection; a reviewer found it). So a QA
   # pass also runs the whole suite (verify_full) on the card's commit, with both sets of tests, before any reviewer looks.
   local full; full="$(setting verify_full)"
   if [[ $verdict == pass && -n $full && "$(setting qa_verify_full)" != false ]]; then
-    local flog="${qlog%.log}-full.log"
+    local flog="${qlog%.log}-full.log"; t0=$(date +%s)
     { echo "# verify_full on $card's commit (dev + QA tests together): $full"; (cd "$wt" && bash -c "$full") 2>&1; } > "$flog" 2>&1 || qres=FAIL
+    fsec=$(( $(date +%s) - t0 ))
     [[ -z "$(git -C "$wt" status --porcelain)" ]] || { echo "verify_full left changes in the card worktree:" >>"$flog"; git -C "$wt" status --porcelain >>"$flog"; git -C "$wt" checkout -q -- . 2>/dev/null; git -C "$wt" clean -fdq 2>/dev/null; qres=FAIL; }
     [[ $qres == FAIL ]] && { tail -n 25 "$flog"; refuse 1 "QA reports pass, but the whole suite (verify_full) fails on $card's commit with the dev's and QA's tests together — see $flog. Often two test files or helpers with the same module name; the one in qa_scope is QA's to rename, any other goes back to the dev. Record: dl qa $card fail \"<what failed>\""; }
   fi
-  card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"log":$l,"summary":$s,"at":$t}
+  card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"seconds":($sec|tonumber),"suite_seconds":($fsec|fromjson),"log":$l,"summary":$s,"at":$t}
       | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"qa_verify":$r,"summary":$s,"at":$t}]))' \
-    --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)"
+    --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)" --arg sec "$qsec" --arg fsec "$fsec"
   push_card "$card"
   reset_stop_guard; log_event qa "$card $verdict (qa_verify $qres) — $summary"
   tracker sync "$card"; tracker note "$card" qa-tester "$verdict (qa_verify $qres): $summary"

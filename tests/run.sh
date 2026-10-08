@@ -84,6 +84,11 @@ out="$("$DL" phase planning 2>&1)"; contains "roles check names the missing alwa
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"api"},
   {"role":"backend","agent":"backend-dev","why":"lead"},{"role":"qa","agent":"qa-tester","why":"always"},
   {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack"}]'
+RJ0="$R/.work/$JOB"
+out="$("$DL" jobset '.settings.verify_full' 2>&1)"
+contains "dl jobset refuses an expression that reads instead of changes (seen live: job.json became the string \"npm test\")" "$out" "dl jobset changes the job, it does not read it"
+[[ "$(jq -r 'type' "$RJ0/job.json")" == object ]] && ok "…job.json is left as it was" || bad "job.json clobbered: $(head -c 80 "$RJ0/job.json")"
+contains "dl jobset refuses dropping the job's identity too" "$("$DL" jobset 'del(.id)' 2>&1)" "an object that is not this job"
 expect_fail 1 "planning refused before the readiness review" "$DL" phase planning
 expect_ok "phase readiness with valid roles" "$DL" phase readiness
 RJ="$R/.work/$JOB"
@@ -1310,6 +1315,9 @@ contains "a QA fail is recorded as before (the suite is run for a pass)" "$("$DL
 git -C "$WQ" mv test/it/sovereign_support.py test/it/it_support.py && git -C "$WQ" commit -qm "T-01 QA: rename the helper"
 sed_qv='(.cards[0].qa_verify) = "test -f test/it/it_support.py"'; bedit "$QJ/board.json" "$sed_qv"
 contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
+[[ "$(jq -r '[.cards[0].gate.seconds, .cards[0].qa.seconds, .cards[0].qa.suite_seconds] | map(type) | join(",")' "$QJ/board.json")" == number,number,number ]] \
+  && ok "the gate, QA's run and the whole suite each record how long they took" || bad "durations: $(jq -c '.cards[0] | {g: .gate.seconds, q: .qa.seconds, s: .qa.suite_seconds}' "$QJ/board.json")"
+contains "dl timeline shows each card's test runs and how long Michael waited on them" "$("$DL" timeline 2>&1)" "Michael waited on test runs"
 echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
 BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
 echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i
