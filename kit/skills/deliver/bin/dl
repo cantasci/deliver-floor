@@ -632,11 +632,11 @@ cmd_pm_decide() {
   pm_decision "$what" "$why" "$card"; reset_stop_guard; echo "recorded: $what"
 }
 # report.md is the PR body: the decisions Michael took himself (after the start, and every re-seat) are appended once, at ship time
-# verify-all ran on this head — or on an earlier one, and since then only the job's lessons/standards were committed
+# verify-all ran on this head — or on an earlier one, and since then only the job's lessons/standards and its record were committed
 verified_head() {
   local v; v="$(jq -r '.verify_all.head // ""' "$JOBJ")"
   [[ $v == "$1" ]] && return 0
-  [[ -n $v ]] && git -C "$ROOT" merge-base --is-ancestor "$v" "$1" 2>/dev/null && [[ -z "$(git -C "$ROOT" diff --name-only "$v" "$1" | grep -v '^\.deliver/knowledge/')" ]]
+  [[ -n $v ]] && git -C "$ROOT" merge-base --is-ancestor "$v" "$1" 2>/dev/null && [[ -z "$(git -C "$ROOT" diff --name-only "$v" "$1" | grep -v '^\.deliver/knowledge/' | grep -v '^\.deliver/jobs/')" ]]
 }
 # Every change to a card's contract (verify, qa_verify, acceptance, scope …) and to the job's suite (verify_full) after the
 # start goes into the PR with its reason: a test command made weaker to get a pass is the human's to see.
@@ -1243,6 +1243,27 @@ knowledge_publish() {
   fi
   jq_inplace "$JOBJ" --arg h "$(branch_head "$JOB_BRANCH")" --arg u "$url" '.knowledge_published = {head:$h, shared_pr:$u}'
 }
+# The job's record goes into the repo with its code (.deliver/jobs/<job>/): the request, the readiness decisions with their
+# sources, the plan, the specs, the board (every gate, QA and review verdict), the report and the event log. Who asked for
+# what, what was decided and why, what was checked — kept in git, the audit trail, not only in the PR body.
+job_record_publish() {
+  [[ "$(jq -r '.record_published // ""' "$JOBJ")" == "" ]] || return 0
+  [[ "$(setting record_job)" != false ]] || { log_event record "not committed (settings.record_job=false)"; return 0; }
+  local d="$IWT/.deliver/jobs/$JOB" f
+  mkdir -p "$d"
+  jq -r '"# Request — \(.title)\n\nJob \(.id), opened \(.created_at // .created // "")\n\n\(.request)"' "$JOBJ" > "$d/request.md"
+  for f in readiness.json readiness.md plan.md report.md board.json events.log; do
+    [[ -f $JOB_DIR/$f ]] && sed "s#$ROOT/##g" "$JOB_DIR/$f" > "$d/$f"
+  done
+  [[ -d $JOB_DIR/specs ]] && { mkdir -p "$d/specs"; cp "$JOB_DIR"/specs/*.md "$d/specs/" 2>/dev/null || true; }
+  git -C "$IWT" add -f -- ".deliver/jobs/$JOB"
+  if ! git -C "$IWT" diff --cached --quiet; then
+    dl_commit "$IWT" "docs(deliver): record of ${JOB%%-[a-z]*}" "Record of $JOB" \
+      || { echo "NOT A CONFLICT: the repo refused dl's commit of the job's record (its commit-msg hook, output above) — allow 'docs' commits or set commit.merge_message's style, then dl ship again" >&2; git -C "$IWT" reset -q; exit 5; }
+    log_event record "the job's record committed to $JOB_BRANCH: .deliver/jobs/$JOB/"
+  fi
+  jq_inplace "$JOBJ" --arg h "$(branch_head "$JOB_BRANCH")" --arg p ".deliver/jobs/$JOB" '.record_published = {head:$h, path:$p}'
+}
 # dl followup "<finding>" [--card T-xx] [--evidence "<…>"] — a defect seen outside the job's scope: recorded, listed in the PR
 cmd_timeline() { load_job; node "$BIN_DIR/timeline.mjs" "$JOB_DIR" "$@"; }
 cmd_followup() {
@@ -1380,6 +1401,7 @@ cmd_ship() {
   [[ -z $acerr ]] || refuse 1 "report.md does not account for every acceptance criterion of plan.md: ${acerr% }— each AC has a row in the Acceptance criteria table with its status (✅ ❌ ⚠️) and its evidence (test name, log, file)"
   knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
   report_decisions; report_contract_changes; report_lessons; report_followups
+  job_record_publish; head="$(branch_head "$JOB_BRANCH")"
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
     [[ $on == "$base" ]] || refuse 1 "merge_mode=local merges into '$base' in the main checkout, which is on '${on:-detached}'. Switch it to $base (or merge yourself: git merge --no-ff $JOB_BRANCH)"
