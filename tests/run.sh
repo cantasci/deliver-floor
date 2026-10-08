@@ -1302,14 +1302,42 @@ mkdir -p "$WQ/src" "$WQ/test/unit" && echo x > "$WQ/src/fetcher.py" && echo 'def
 "$DL" gate T-01 >/dev/null 2>&1
 mkdir -p "$WQ/test/it" && echo 'def h(): return 2' > "$WQ/test/it/sovereign_support.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01 QA: it"
 out="$("$DL" qa T-01 pass "AC-1 pass" 2>&1)"
-contains "a QA pass is refused when the whole suite fails with the dev's and QA's tests together" "$out" "the whole suite (verify_full) fails on T-01's commit with the dev's and QA's tests together"
+contains "a QA pass starts the whole suite in the background and returns at once (Michael is not held up)" "$out" "whole suite running in the background"
+[[ "$(jq -r '.cards[0].qa.verdict' "$QJ/board.json")" == pass && "$(jq -r '.cards[0].suite.state' "$QJ/board.json")" == running ]] && ok "…QA's verdict is recorded, the suite run is on the card" || bad "qa/suite: $(jq -c '.cards[0] | {qa: .qa.verdict, suite}' "$QJ/board.json")"
+out="$("$DL" suite T-01 --wait 2>&1)"
+contains "dl suite --wait reports the run: the dev's and QA's tests break the suite together" "$out" "suite: T-01"
+contains "…FAIL, with its log" "$out" " FAIL "
+"$DL" review T-01 approve ok >/dev/null 2>&1
+out="$("$DL" integrate T-01 2>&1)"
+contains "integrate refuses while the whole suite fails on the card's commit (reviewed and QA-passed, still not merged)" "$out" "the whole suite (verify_full) does not pass"
 contains "…and says what to look for and whose file it is" "$out" "the one in qa_scope is QA's to rename"
-[[ "$(jq -r '.cards[0].qa.verdict // "none"' "$QJ/board.json")" == none ]] && ok "…no pass was recorded" || bad "qa recorded: $(jq -c '.cards[0].qa' "$QJ/board.json")"
-ls "$QJ"/gates/T-01-qa-*-full.log >/dev/null 2>&1 && ok "…the suite's log is kept beside the QA log" || bad "no full-suite log"
-contains "a QA fail is recorded as before (the suite is run for a pass)" "$("$DL" qa T-01 fail "the suite breaks: two sovereign_support.py" 2>&1)" "qa: T-01 fail"
+[[ "$(jq -r '.cards[0].state' "$QJ/board.json")" == review ]] && ok "…the card is not merged" || bad "merged despite a red suite"
+[[ "$(jq -r '.cards[0].suite.result' "$QJ/board.json")" == FAIL && "$(jq -r '.cards[0].suite.seconds | type' "$QJ/board.json")" == number ]] && ok "…the run's result and duration are on the card" || bad "suite record: $(jq -c '.cards[0].suite' "$QJ/board.json")"
+contains "a QA fail is recorded as before" "$("$DL" qa T-01 fail "the suite breaks: two sovereign_support.py" 2>&1)" "qa: T-01 fail"
 git -C "$WQ" mv test/it/sovereign_support.py test/it/it_support.py && git -C "$WQ" commit -qm "T-01 QA: rename the helper"
 sed_qv='(.cards[0].qa_verify) = "test -f test/it/it_support.py"'; bedit "$QJ/board.json" "$sed_qv"
 contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
+contains "…a new commit gets its own run, which passes" "$("$DL" suite T-01 --wait 2>&1)" " PASS "
+"$DL" review T-01 approve ok >/dev/null 2>&1
+contains "…and the card merges" "$("$DL" integrate T-01 2>&1)" "MERGED: T-01"
+ls "$QJ"/gates/T-01-suite-*.log >/dev/null 2>&1 && ok "the suite logs are kept per commit" || bad "no suite logs"
+[[ "$(jq -r '.cards[0].gate.seconds | type' "$QJ/board.json")" == number ]] && ok "the gate records how long it took" || bad "gate seconds"
+contains "dl timeline shows each card's test runs and how long Michael waited on them" "$("$DL" timeline 2>&1)" "Michael waited on the gate and QA runs"
+# two cards' suites at once share whatever the project shares (a database, a port): one at a time unless suite_parallel says more
+SR="$HERE/kit/skills/deliver/bin/suite-run.sh"; SS="$TMP/slots"; H0="$(git -C "$QF" rev-parse "$(jq -r .branch "$QJ/job.json")")"; GL="$TMP/glock"
+sr() { local n=$1; shift; bash "$SR" "$QF" "$TMP/co-$n" "$@"; }   # sr <name> <commit> <setup> <command> <base> <slots> <run id>
+sr a "$H0" "" "sleep 2" "$TMP/sa" "$SS" 1 A 60 "$GL" & pa=$!; sleep 0.5
+sr b "$H0" "" "true" "$TMP/sb" "$SS" 1 B 60 "$GL" & pb=$!; wait $pa $pb
+grep -q "waiting for a free suite slot" "$TMP/sb.log" && [[ "$(jq -r .result "$TMP/sa.result")$(jq -r .result "$TMP/sb.result")" == PASSPASS ]] \
+  && ok "with suite_parallel 1 a second suite waits for the first, then runs" || bad "slots: $(cat "$TMP/sb.log")"
+[[ ! -d $TMP/co-a && ! -d $TMP/co-b ]] && ok "…each in its own checkout of the commit, removed afterwards (the card's worktree is never touched)" || bad "checkouts left"
+sr c "$H0" 'touch .setup-ran' 'test -f .setup-ran && test -n "$DELIVER_RUN_ID" && test -f test/unit/sovereign_support.py' "$TMP/sc" "$SS" 1 T-09-abc 60 "$GL"
+[[ "$(jq -r .result "$TMP/sc.result")" == PASS ]] && ok "the checkout is set up (worktree_setup) and each run gets DELIVER_RUN_ID" || bad "setup/run id: $(cat "$TMP/sc.log")"
+sr d "0000000000000000000000000000000000000000" "" "true" "$TMP/sd" "$SS" 1 D 60 "$GL"
+[[ "$(jq -r .result "$TMP/sd.result")" == FAIL ]] && ok "a commit that cannot be checked out is a FAIL, never a pass" || bad "bad commit: $(cat "$TMP/sd.result")"
+bash "$SR" "$QF" "$TMP/co-e" "$H0" "" "sleep 30" "$TMP/se" "$SS" 1 E 60 "$GL" & pe=$!; sleep 2; kill -TERM $pe; wait $pe 2>/dev/null
+[[ "$(jq -r .result "$TMP/se.result")" == STOPPED ]] && ok "a stopped run says STOPPED (not a pass), and frees its slot" || bad "stop: $(cat "$TMP/se.result" 2>&1)"
+[[ ! -d $SS/1 && ! -d $TMP/co-e ]] && ok "…no slot or checkout left behind" || bad "slot/checkout left"
 echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
 BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
 echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i

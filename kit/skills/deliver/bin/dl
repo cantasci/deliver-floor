@@ -48,6 +48,8 @@
 #                                  repo's commit rules refuse the merge message)
 #   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
+#   dl suite <card> [--wait]       the whole suite of the card's commit, run in the background since its QA pass
+#                                  (dl integrate merges only on its PASS for that commit)
 #   dl verify-all                  run verify_full in the integration worktree
 #   dl ship                        deliver per merge_mode: human|semi|auto → push + PR (+ auto-merge / merge on green),
 #                                  local → merge into the base branch. Needs verify-all PASS + report.md (phase closing)
@@ -980,6 +982,7 @@ cmd_gate() {
   [[ -d $wt ]] || die "$card has no worktree — run: dl wt add $card"
   log="$JOB_DIR/gates/$card-a$attempt-$(date +%H%M%S).log"
   tmo="$(setting gate_timeout)"; tmo=${tmo:-1800}
+  local gt0; gt0=$(date +%s)
   {
     echo "# gate: $card  attempt: $attempt  $(now)"
     local on; on="$(git -C "$wt" symbolic-ref --short -q HEAD || echo DETACHED)"
@@ -1059,7 +1062,7 @@ cmd_gate() {
   grep -q '^FAIL' "$log" && fail=1
   head="$(git -C "$wt" rev-parse HEAD)"
   local result=PASS; [[ $fail -eq 0 ]] || result=FAIL
-  card_set "$card" '(.cards[] | select(.id==$id)).gate = {"result":$r,"head":$h,"attempt":($a|tonumber),"log":$l,"at":$t}' \
+  card_set "$card" '(.cards[] | select(.id==$id)).gate = {"result":$r,"head":$h,"attempt":($a|tonumber),"seconds":($sec|tonumber),"log":$l,"at":$t}' --arg sec "$(( $(date +%s) - gt0 ))" \
     --arg r "$result" --arg h "$head" --arg a "$attempt" --arg l "$log" --arg t "$(now)"
   # Review the card only after the dev has returned: if it is still running, move it to review.
   [[ "$(card_get "$card" .state)" == running ]] && card_set "$card" '(.cards[] | select(.id==$id)).state="review"'
@@ -1074,6 +1077,67 @@ cmd_gate() {
     grep -q '^FAIL  verify' "$log" && { echo "--- tail of the verify output:"; grep -v '^\(ok\|FAIL\)  ' "$log" | tail -n 30; }
     exit 1
   fi
+}
+
+# The whole suite of a card commit runs in the background (bin/suite-run.sh): started by a QA pass, it runs while the
+# reviewers read and Michael goes on with other cards; dl integrate merges only on its PASS for that same commit.
+suite_wanted() { [[ -n "$(setting verify_full)" && "$(setting qa_verify_full)" != false ]]; }
+suite_base() { echo "$JOB_DIR/gates/$1-suite-${2:0:12}"; }   # suite_base <card> <commit>
+suite_stop() { # suite_stop <card|all> — a run for an older commit (or of an ended job) is moot
+  local f p
+  for f in "$JOB_DIR"/gates/*-suite-*.pid; do
+    [[ -f $f ]] || continue
+    [[ $1 == all || $(basename "$f") == "$1"-suite-* ]] || continue
+    p="$(cat "$f" 2>/dev/null)"; [[ -n $p ]] && kill -TERM "$p" 2>/dev/null || true
+    rm -f "$f"
+  done
+  return 0
+}
+suite_start() { # suite_start <card> <commit>
+  local card=$1 h=$2 base slots tmo; base="$(suite_base "$card" "$h")"
+  suite_stop "$card"; mkdir -p "$JOB_DIR/gates"; rm -f "$base.result"; : > "$base.log"
+  slots="$(setting suite_parallel)"; [[ $slots =~ ^[1-9][0-9]*$ ]] || slots=1
+  tmo="$(setting gate_timeout)"; tmo=${tmo:-1800}
+  # its own checkout of the commit (the card's worktree stays the dev's: a fix may start there while this runs)
+  nohup bash "$BIN_DIR/suite-run.sh" "$ROOT" "$JOB_DIR/wt/_suite-$card-${h:0:12}" "$h" "$(setting worktree_setup)" "$(setting verify_full)" \
+    "$base" "$WORK/.suite-slots" "$slots" "$card-${h:0:12}" "$tmo" "$WORK/.lock-git" </dev/null >/dev/null 2>&1 &
+  echo $! > "$base.pid"
+  card_set "$card" '(.cards[] | select(.id==$id)).suite = {"state":"running","head":$h,"log":$l,"started":$t}' \
+    --arg h "$h" --arg l "$base.log" --arg t "$(now)"
+  log_event suite "$card started on ${h:0:12} (background; at most $slots at once)"
+}
+suite_state() { # suite_state <card> <commit> → PASS FAIL STALE STOPPED RUNNING DIED NONE (and the result JSON on line 2)
+  local base p; base="$(suite_base "$1" "$2")"
+  if [[ -f $base.result ]]; then jq -r .result "$base.result"; cat "$base.result"; return 0; fi
+  [[ -f $base.pid ]] || { echo NONE; return 0; }
+  p="$(cat "$base.pid")"; if kill -0 "$p" 2>/dev/null; then echo RUNNING; else echo DIED; fi
+}
+suite_record() { # the finished run onto the card, once
+  local card=$1 h=$2 out st res; out="$(suite_state "$card" "$h")"; st="$(head -n 1 <<<"$out")"; res="$(sed -n 2p <<<"$out")"
+  [[ -n $res && "$(card_get "$card" '.suite.result // ""')" != "$st" ]] || return 0
+  card_set "$card" '(.cards[] | select(.id==$id)).suite = ((.suite // {}) + ($r | fromjson) + {"state":"done","log":$l})' \
+    --arg r "$res" --arg l "$(suite_base "$card" "$h").log"
+  log_event suite "$card ${h:0:12} $st ($(jq -r .seconds <<<"$res") s)"
+}
+suite_wait() { # suite_wait <card> <commit> <seconds> → prints the final state (RUNNING if still running when time is up)
+  local card=$1 h=$2 left=$3 st
+  while :; do
+    st="$(suite_state "$card" "$h" | head -n 1)"
+    [[ $st == RUNNING && $left -gt 0 ]] || break
+    sleep 2; left=$((left - 2))
+  done
+  [[ $st == RUNNING || $st == NONE ]] || suite_record "$card" "$h"
+  echo "$st"
+}
+# dl suite <card> [--wait] — the background whole-suite run of the card's current commit
+cmd_suite() {
+  load_job
+  local card=${1:-}; [[ -n $card ]] || die "usage: dl suite <card> [--wait]"; card_exists "$card"
+  local h st; h="$(branch_head "$(card_get "$card" .branch)")"
+  if [[ ${2:-} == --wait ]]; then st="$(suite_wait "$card" "$h" 540)"; else st="$(suite_wait "$card" "$h" 0)"; fi
+  echo "suite: $card ${h:0:12} $st  (log: $(suite_base "$card" "$h").log)"
+  [[ $st == FAIL || $st == DIED || $st == STALE ]] && tail -n 25 "$(suite_base "$card" "$h").log"
+  return 0
 }
 
 cmd_qa() {
@@ -1093,28 +1157,29 @@ cmd_qa() {
     [[ -n "$(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | node "$BIN_DIR/scope.mjs" "$qscope" | sort | comm -13 - <(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | sort))" ]] \
       || refuse 1 "no QA tests in qa_scope $(jq -c . <<<"$qscope") — the QA role writes integration/e2e tests for the card's acceptance criteria"
   fi
-  local qlog="$JOB_DIR/gates/$card-qa-a$(card_get "$card" .attempts)-$(date +%H%M%S).log" qres=PASS
+  local qlog="$JOB_DIR/gates/$card-qa-a$(card_get "$card" .attempts)-$(date +%H%M%S).log" qres=PASS qsec=0 qt0
   if [[ -n $qverify ]]; then
-    { echo "# qa_verify: $qverify"; (cd "$wt" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
-    [[ $verdict == pass && $qres == FAIL ]] && { tail -n 25 "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; }
+    if [[ "$(card_get "$card" '.gate.head // ""')" == "$head" ]] && grep -q '^ok    QA tests pass' "$(card_get "$card" '.gate.log // "/dev/null"')" 2>/dev/null; then
+      echo "# qa_verify passed in the gate on this same commit (${head:0:12}) — not run twice: $(card_get "$card" .gate.log)" > "$qlog"
+    else
+      qt0=$(date +%s)
+      { echo "# qa_verify: $qverify"; (cd "$wt" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
+      qsec=$(( $(date +%s) - qt0 ))
+      if [[ $verdict == pass && $qres == FAIL ]]; then tail -n 25 "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; fi
+    fi
   fi
-  # The dev's tests and QA's pass one by one, yet the suite can still break once they are collected together (seen live: two
-  # test helpers with the same file name, sovereign_support.py — pytest stopped at collection; a reviewer found it). So a QA
-  # pass also runs the whole suite (verify_full) on the card's commit, with both sets of tests, before any reviewer looks.
-  local full; full="$(setting verify_full)"
-  if [[ $verdict == pass && -n $full && "$(setting qa_verify_full)" != false ]]; then
-    local flog="${qlog%.log}-full.log"
-    { echo "# verify_full on $card's commit (dev + QA tests together): $full"; (cd "$wt" && bash -c "$full") 2>&1; } > "$flog" 2>&1 || qres=FAIL
-    [[ -z "$(git -C "$wt" status --porcelain)" ]] || { echo "verify_full left changes in the card worktree:" >>"$flog"; git -C "$wt" status --porcelain >>"$flog"; git -C "$wt" checkout -q -- . 2>/dev/null; git -C "$wt" clean -fdq 2>/dev/null; qres=FAIL; }
-    [[ $qres == FAIL ]] && { tail -n 25 "$flog"; refuse 1 "QA reports pass, but the whole suite (verify_full) fails on $card's commit with the dev's and QA's tests together — see $flog. Often two test files or helpers with the same module name; the one in qa_scope is QA's to rename, any other goes back to the dev. Record: dl qa $card fail \"<what failed>\""; }
-  fi
-  card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"log":$l,"summary":$s,"at":$t}
+  card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"seconds":($sec|tonumber),"log":$l,"summary":$s,"at":$t}
       | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"qa_verify":$r,"summary":$s,"at":$t}]))' \
-    --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)"
+    --arg v "$verdict" --arg h "$head" --arg g "$g" --arg r "$qres" --arg l "$qlog" --arg s "$summary" --arg t "$(now)" --arg sec "$qsec"
   push_card "$card"
+  # The dev's tests and QA's pass one by one, yet the suite can still break once they are collected together (seen live: two
+  # test helpers named sovereign_support.py — pytest stopped at collection; a reviewer found it). A QA pass starts the whole
+  # suite on this commit in the background: the reviewers read meanwhile, dl integrate merges only on its PASS.
+  local suite_note=""
+  if [[ $verdict == pass ]] && suite_wanted; then suite_start "$card" "$head"; suite_note="  — whole suite running in the background (dl suite $card); review now, dl integrate waits for its PASS"; fi
   reset_stop_guard; log_event qa "$card $verdict (qa_verify $qres) — $summary"
   tracker sync "$card"; tracker note "$card" qa-tester "$verdict (qa_verify $qres): $summary"
-  echo "qa: $card $verdict  (qa_verify: $qres)"
+  echo "qa: $card $verdict  (qa_verify: $qres)$suite_note"
 }
 
 # dl qa-join <card> — after the gate, the tests QA wrote meanwhile (dl wt qa) join the card branch: only qa_scope files, merged
@@ -1312,6 +1377,15 @@ cmd_integrate() {
     || refuse 1 "$card: no QA pass on commit ${head:0:9} — dl qa $card pass|fail"
   [[ "$(card_get "$card" .review.verdict)" == approve && "$(card_get "$card" .review.head)" == "$head" ]] \
     || refuse 1 "$card: no Lead review approval on commit ${head:0:9} — review, then: dl review $card approve"
+  if suite_wanted; then
+    local st; st="$(suite_state "$card" "$head" | head -n 1)"
+    [[ $st == NONE || $st == STOPPED || $st == STALE || $st == DIED ]] && { suite_start "$card" "$head"; st=RUNNING; }
+    [[ $st == RUNNING ]] && { echo "integrate: waiting for $card's whole suite on ${head:0:12} …" >&2; st="$(suite_wait "$card" "$head" 540)"; }
+    [[ $st == PASS ]] || suite_record "$card" "$head"
+    [[ $st == RUNNING ]] && refuse 1 "$card: its whole suite is still running on ${head:0:12} (9 min waited) — dl suite $card --wait, then integrate"
+    [[ $st == PASS ]] || { tail -n 25 "$(suite_base "$card" "$head").log" >&2
+      refuse 1 "$card: the whole suite (verify_full) does not pass on ${head:0:12} with the dev's and QA's tests together ($st) — see $(suite_base "$card" "$head").log. Often two test files or helpers with the same module name; the one in qa_scope is QA's to rename, any other goes back to the dev. Record: dl qa $card fail \"<what failed>\""; }
+  fi
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
     || refuse 1 "the integration worktree has uncommitted changes — nothing may be written there by hand (git -C $IWT status)"
   local rc=0; dl_merge "$IWT" "$branch" "$card" "$title" || rc=$?
@@ -1879,6 +1953,7 @@ cmd_md_inbox() {
 
 cmd_cleanup() {
   load_job
+  suite_stop all
   local d
   for d in "$JOB_DIR"/wt/*; do
     [[ -d $d && $(basename "$d") != _integration ]] && git -C "$ROOT" worktree remove --force "$d"
@@ -1971,7 +2046,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all baseline suite ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -2102,6 +2177,7 @@ cmd_abort() {
   DL_NO_SEAL_CHECK=1 load_job
   local cur; cur="$(phase_now)"
   if [[ $cur != done && $cur != aborted ]]; then jq_inplace "$JOBJ" '.phase="aborted"'; log_event phase aborted; fi
+  suite_stop all
   log_event abort "${DELIVER_APPROVER:-${USER:-human}}: $why"
   if [[ "$(setting dispatch)" == munder && -n "$(jq -r '.munder.seats // {} | keys[]' "$JOBJ" 2>/dev/null)" ]]; then
     if ! ( cmd_md_release ) 2>/dev/null; then
@@ -2170,6 +2246,7 @@ main() {
     integrate) cmd_integrate "$@" ;;
     verify-all) cmd_verify_all ;;
     baseline) cmd_baseline ;;
+    suite) cmd_suite "$@" ;;
     ship) cmd_ship ;;
     pr) cmd_pr ;;
     approve) cmd_approve "$@" ;;

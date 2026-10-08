@@ -312,10 +312,13 @@ Commit your tests in this repo's commit format (your role card, "Commits"), leav
 ```
 
    Record: `"$DL" qa T-xx pass|fail "<AC-1 pass: …; AC-2 fail: …>"` — `dl` checks that QA only wrote in `qa_scope`, that
-   there are QA tests, and runs `qa_verify` itself (a "pass" with failing QA tests is refused). A pass also runs the whole
-   suite (`verify_full`) on the card's commit, with the dev's and QA's tests together: tests that pass alone can break it
-   together (two helpers with the same module name). Refused → record `dl qa T-xx fail "<what>"`; a clashing file in
-   `qa_scope` goes back to QA, any other to the dev. Append the JSON under `## QA` in the handoff. `fail` → re-dispatch the dev with the failing QA tests as PREVIOUS FEEDBACK; the next gate runs them too.
+   there are QA tests, and runs `qa_verify` itself (a "pass" with failing QA tests is refused; not run twice when the gate
+   already passed it on the same commit). A pass then starts the whole suite (`verify_full`) on the card's commit **in the
+   background** — the dev's and QA's tests together, in a checkout of its own: tests that pass alone can break it together
+   (two helpers with the same module name). Do not wait for it: dispatch the reviewers now and go on with other cards.
+   `dl integrate` merges only on its PASS for that commit (it waits for a run still going); a red run is refused with its
+   log → record `dl qa T-xx fail "<what>"`; a clashing file in `qa_scope` goes back to QA, any other to the dev.
+   `"$DL" suite T-xx [--wait]` shows the run. Append the JSON under `## QA` in the handoff. `fail` → re-dispatch the dev with the failing QA tests as PREVIOUS FEEDBACK; the next gate runs them too.
 3. **Review** (after QA passes) — every role in the card's `reviewers`, **in parallel** (one message): the stack reviewer and
    the ECC specialists (`ecc:a11y-architect`, `ecc:performance-optimizer`, `ecc:security-reviewer`, `ecc:silent-failure-hunter`):
 
