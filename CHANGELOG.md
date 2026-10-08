@@ -4,24 +4,18 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
-## 0.10.0 — 2026-10-08
+## 0.9.2 — 2026-10-08
 
-**Test runs no longer hold the job up** (from a user's job: QA took long, and the work did not look parallel)
-- Every test run of `dl` happened in Michael's own turn, one after another: while a card's whole suite ran (0.8.1), no
-  other card could be gated, QA-recorded or sent to review. Now a QA pass starts the whole suite in the background and
-  returns at once; the reviewers read meanwhile, and `dl integrate` merges only on the suite's PASS for that same commit
-  (it waits for a run still going; a red one is refused with its log). `dl suite <card> [--wait]` shows the run.
-- The suite runs in a checkout of its own at that commit (set up with `worktree_setup`, removed afterwards) — never in the
-  card's worktree, where a dev sent back for a fix may already be working.
-- Safety: a result counts only for the commit it ran on; a run that is missing, died, was stopped or could not check out
-  is never a pass; a newer commit of the card stops the older run; `dl abort` and cleanup stop running suites.
-- `suite_parallel` (default 1): how many suites run at once on the machine. Two suites sharing a database or a port could
-  break each other or pass by accident, so one at a time unless the project isolates runs (each gets `DELIVER_RUN_ID`).
+**Where the test time goes, and one run fewer** (from a user's job: QA took long)
+- `dl timeline` shows each card's test runs — the gate, QA's run, the whole suite at the QA pass — and how long Michael
+  waited on them, so the slow step is measured, not guessed. Each run's duration is kept on the card.
 - `qa_verify` is not run twice: when the gate already passed it on the same commit, `dl qa` uses that result.
-- `dl timeline` shows each card's gate, QA and whole-suite durations, and how long Michael waited on test runs.
-- Fixed (seen in the live measurement run): `dl jobset '.settings.verify_full'` — a read, given to the command that
-  changes the job — replaced the whole `job.json` with the string `"npm test"`. `dl jobset` now refuses any expression whose
-  result is not this job, and writes nothing.
+- Fixed (seen in a live run): `dl jobset '.settings.verify_full'` — a read, given to the command that changes the job —
+  replaced the whole `job.json` with the string `"npm test"`. `dl jobset` now refuses any expression whose result is not
+  this job, and writes nothing.
+- Tried and not adopted: running the whole suite in the background. Measured live, it did not make the job faster
+  ([report](docs/verification/13-background-suite/report.md)); it waits for the user's own timeline to show the suite is
+  the bottleneck.
 
 ## 0.9.1 — 2026-10-08
 

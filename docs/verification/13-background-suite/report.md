@@ -1,5 +1,8 @@
 # The whole suite in the background — measured live (0.9.1 vs 0.10.0)
 
+> **Outcome:** not adopted. It did not make the job faster, so the owner chose to keep only the measurement (0.9.2); see
+> [OPEN F21](../../OPEN.md). The 0.10.0 code stays in the branch history (commit `dba776e`).
+
 2026-10-08, `claude -p` headless, subagents. The same request (`examples/watchlist-poc/JOB-parallel.md`: two backend
 cards in parallel) on the same seed, with `verify_full = "node --test && sleep 90"` as a stand-in for a slow suite.
 Run side by side: plugin 0.9.1 (the suite synchronously in `dl qa`) and 0.10.0 (the suite in the background).
