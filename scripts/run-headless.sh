@@ -2,15 +2,16 @@
 # Unattended mode: keeps running "/deliver resume" headless until the job is done
 # or waits at a human gate. Start the job first (interactive /deliver, or the first run below).
 #
-#   scripts/run-headless.sh <repo path> ["<job description>"] [max rounds, default 10]
+#   scripts/run-headless.sh <repo path> ["<job description>"] [max rounds, default 40]
 #
 # When it stops for the human (open business questions → QUESTIONS.md, a blocked card or the optional plan gate →
 # APPROVAL.md), answer in the repo:  dl clarify <id> "<answer>"  ·  dl card T-xx retry  ·  dl approve plan | dl reject plan "<note>"
 # then start this script again. DELIVER_HEADLESS=1 makes the hooks refuse any answer or approval from the model itself.
-# A usage limit does not stop it: the round's last message names the reset ("resets 2:30pm (Europe/Berlin)"), the script waits
+# Each round is a fresh session: Michael ends his at every phase change and after every wave of cards (dl checkpoint), so
+# his context stays small. A usage limit does not stop it: the round's last message names the reset ("resets 2:30pm (Europe/Berlin)"), the script waits
 # until a minute past it and goes on (at most LIMIT_WAITS times, default 30). Out of credits it stops — that is the human's call.
 set -euo pipefail
-repo="$(cd "${1:?repo path required}" && pwd)"; request="${2:-}"; rounds="${3:-10}"
+repo="$(cd "${1:?repo path required}" && pwd)"; request="${2:-}"; rounds="${3:-40}"
 cd "$repo"
 command -v claude >/dev/null || { echo "claude CLI not found" >&2; exit 1; }
 # Unattended runs use Claude Code subagents; a floor job (Munder Difflin, the default) is run by the app's Michael.

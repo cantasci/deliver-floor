@@ -61,8 +61,10 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    one reports back, run that card's next step (gate → QA → review → integrate) and assign the cards it unblocks — never wait for
    a "wave". Headless (`DELIVER_HEADLESS=1`): background agents die with the process (measured), so dispatch in the foreground —
    but put **every** actionable item from `dl next` (new assignments, QA, reviews) into the same message, so all stages advance
-   together. A hook enforces the headless rule. On Munder Difflin there are no subagents: every role is a person at a seat
-   (`dl md-hire`, `dl md-send`), reporting through your inbox.
+   together. A hook enforces the headless rule. Headless, `dl next` also says **CHECKPOINT** at every phase change and after
+   every wave of cards (none running or in review): run `"$DL" checkpoint` and **end your turn** — the next round goes on in a
+   fresh session, from the files (`dl next` tells it where), so your context stays small. On Munder Difflin there are no
+   subagents: every role is a person at a seat (`dl md-hire`, `dl md-send`), reporting through your inbox.
 7. **The human is asked only at the start** — when the project or task is given (intake, readiness, `awaiting_clarification`):
    every open readiness item is answered by the human before planning, never on assumptions, never on the human's behalf.
    **After that you do not ask.** Whatever only a person could have decided is your decision as PM: take it, record it with its

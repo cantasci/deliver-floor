@@ -4,6 +4,20 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.14.0 — 2026-10-09
+
+**Headless: a fresh session for Michael at every phase and every wave** (from the same 65-hour live job: one session, 892
+calls, 427 M tokens — 60 % of the job's, 95 % of them re-reading its own growing context)
+- In an unattended run (`scripts/run-headless.sh`) `dl next` says `CHECKPOINT` at every phase change and after every wave of
+  cards — when none is running or in review, so no agent dies with the session. Michael runs `dl checkpoint` and ends his
+  turn; the next round starts a new session that reads where it is from the files (`dl next`). His context stays the size of
+  one phase or wave.
+- The stop-guard lets him stop right after a checkpoint, and holds him to the board again once anything happens after it.
+  `dl checkpoint` is refused while a card is at work, and to agents.
+- Rounds default to 40 (a round is now a phase or a wave). `checkpoints: false` turns it off. An interactive session and
+  the Munder Difflin floor are unchanged.
+- Not measured yet: how much it saves takes a live headless run of a long job.
+
 ## 0.13.0 — 2026-10-09
 
 **Michael reads less, and a usage limit no longer waits for a human** (from the same 65-hour live job: Michael spent 427 M

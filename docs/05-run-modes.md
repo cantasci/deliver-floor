@@ -61,6 +61,11 @@ scripts/run-headless.sh /path/to/repo                                          #
   the script again. The hooks refuse these commands from the model itself. After the start Michael asks nothing: a blocked
   card is split or dropped by him with its reason (`dl pm-decide`, `dl card … state archived "<why>"`), listed in the PR.
 - Permission mode is `auto` by default; otherwise `PERMISSION_MODE=acceptEdits` plus an allowlist ([02 § 4.5](02-setup.md#45-permissions)).
+- **A fresh session at every phase change and after every wave of cards.** `dl next` says `CHECKPOINT` when none is running
+  or in review; Michael runs `dl checkpoint` and ends his turn, and the next round starts a new session that reads where it
+  is from the files. His context stays the size of one phase or wave instead of growing for the whole job (live job: one
+  65-hour session, 427 M tokens, 95 % of them cache reads of its own context). `checkpoints: false` turns it off; rounds
+  default to 40.
 - **A usage limit does not stop it.** The round's last message names the reset ("You've hit your session limit · resets
   2:30pm (Europe/Berlin)"); the script waits until a minute past it and the job goes on — the wait is neither a round nor
   "no progress" (at most `LIMIT_WAITS` waits, default 30). Out of credits it stops: that is your call. The machine stays

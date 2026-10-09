@@ -49,6 +49,7 @@
 #   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
 #   dl verify-all                  run verify_full in the integration worktree
+#   dl checkpoint                  headless: end this session at a safe point (dl next: CHECKPOINT) — the next round is fresh
 #   dl env <card> [--qa] | integration   the DELIVER_PORT_BASE / DELIVER_RUN_ID of a test run in that worktree
 #                                  (every test command dl runs gets them; agents: eval "$(dl env T-xx)")
 #   dl stack-test <card>           run a merged card's stack tests (stack_verify) on the job branch once its stack_after
@@ -260,6 +261,28 @@ stay_awake() {
         </dev/null >/dev/null 2>&1 & } ;;
   esac
   return 0
+}
+
+# Headless: Michael's session ends at every phase change and after every wave of cards, and the next round goes on in a fresh
+# one (live job: one 65-hour session, 427 M tokens — 95 % of them re-reading its own growing context). All state is in files;
+# dl next tells the new session where it is. A safe point: no card running or in review (no agent dies with the session).
+checkpoint_due() {
+  case "$(phase_now)" in readiness|planning|executing|integrating|closing) ;; *) return 1 ;; esac
+  [[ -f $BOARD ]] || return 1
+  jq -e --slurpfile b "$BOARD" --arg ph "$(phase_now)" '
+    ([$b[0].cards[]? | select(.state | IN("running","review"))] | length) == 0
+    and ((.checkpoint.phase // "") != $ph or ([$b[0].cards[]? | select(.state == "merged")] | length) > (.checkpoint.merged // 0))' "$JOBJ" >/dev/null
+}
+
+cmd_checkpoint() { # dl checkpoint — Michael ends this session at a safe point; the next headless round starts a fresh one
+  load_job
+  local busy merged; busy="$(jq -r '[.cards[]? | select(.state | IN("running","review")) | .id] | join(" ")' "$BOARD")"
+  [[ -z $busy ]] || refuse 1 "cards are at work ($busy) — a checkpoint is taken when none is running or in review"
+  merged="$(jq '[.cards[]? | select(.state == "merged")] | length' "$BOARD")"
+  log_event checkpoint "$(phase_now), $merged card(s) merged — a fresh session goes on from here"
+  jq_inplace "$JOBJ" --arg p "$(phase_now)" --argjson m "$merged" --argjson e "$(wc -l < "$JOB_DIR/events.log" | tr -d ' ')" --arg t "$(now)" \
+    '.checkpoint = {"phase":$p,"merged":$m,"events":$e,"at":$t}'
+  reset_stop_guard; echo "checkpoint: end your turn now — the next round goes on in a fresh session (dl next tells it where)"
 }
 
 cmd_awake() { # dl awake <pid> — the machine stays awake until process <pid> ends (scripts/run-headless.sh: the whole run)
@@ -497,6 +520,10 @@ cmd_next() {
   load_job
   local phase gates_plan; phase="$(phase_now)"
   gates_plan="$(jq -r '.settings.gates.plan' "$JOBJ")"
+  if [[ ${DELIVER_HEADLESS:-} == 1 && "$(setting checkpoints)" != false ]] && checkpoint_due; then
+    echo "CHECKPOINT dl checkpoint, then end your turn — the next round goes on in a fresh session (all state is in files; dl next tells it where)"
+    return 0
+  fi
   case $phase in
     intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)" ;;
     readiness|awaiting_clarification)
@@ -2352,6 +2379,7 @@ main() {
     stack-test) cmd_stack_test "$@" ;;
     env) cmd_env "$@" ;;
     awake) cmd_awake "$@" ;;
+    checkpoint) cmd_checkpoint ;;
     baseline) cmd_baseline ;;
     ship) cmd_ship ;;
     pr) cmd_pr ;;
