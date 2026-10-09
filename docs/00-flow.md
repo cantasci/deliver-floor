@@ -41,6 +41,7 @@ bookkeeping and refuses anything out of order, hooks enforce isolation.
  │       │        reviewer / a11y-architect / performance-optimizer / silent-failure-hunter         │
  │       │                          dl review T-xx approve --by <role> (all on the same commit)     │
  │       │        dl integrate T-xx (--no-ff into the job branch)                     → Done        │
+ │       │        dl stack-test T-xx once its stack_after cards merged (e2e across cards)           │
  │       │        any fail → back to the same dev with the feedback (≤ max_attempts) → blocked     │
  │  5 INTEGRATE ► dl verify-all · job-level QA (qa-web / qa-mobile) · failure → fix card → 3        │
  │  6 CLOSE ────► Agent(business-analyst) MODE CLOSING: every AC vs evidence ──► report.md          │

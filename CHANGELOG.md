@@ -4,6 +4,96 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.14.0 — 2026-10-09
+
+**Headless: a fresh session for Michael at every phase and every wave** (from the same 65-hour live job: one session, 892
+calls, 427 M tokens — 60 % of the job's, 95 % of them re-reading its own growing context)
+- In an unattended run (`scripts/run-headless.sh`) `dl next` says `CHECKPOINT` at every phase change and after every wave of
+  cards — when none is running or in review, so no agent dies with the session. Michael runs `dl checkpoint` and ends his
+  turn; the next round starts a new session that reads where it is from the files (`dl next`). His context stays the size of
+  one phase or wave.
+- The stop-guard lets him stop right after a checkpoint, and holds him to the board again once anything happens after it.
+  `dl checkpoint` is refused while a card is at work, and to agents.
+- Rounds default to 40 (a round is now a phase or a wave). `checkpoints: false` turns it off. An interactive session and
+  the Munder Difflin floor are unchanged.
+- Not measured yet: how much it saves takes a live headless run of a long job.
+
+## 0.13.0 — 2026-10-09
+
+**Michael reads less, and a usage limit no longer waits for a human** (from the same 65-hour live job: Michael spent 427 M
+tokens — 60 % of the job, 95 % of it re-reading his own growing context — and 36.6 of the 65.7 hours were limit waits)
+- `dl status` shows the board as counts plus the cards in work (running, review, blocked); `dl status --full` (or `dl board`,
+  `/deliver:board`) shows every card. Before, every status printed the whole board — 40 lines for a 37-card job.
+- A failed run prints its last 8 lines and the log's path instead of 25–40 lines (gate, QA, the suites, stack tests,
+  baseline, verify-all); `DL_VERBOSE=1` prints them all. Every line Michael reads stays in his context for the rest of the job.
+- **`scripts/run-headless.sh` waits out a usage limit.** It reads the reset from Claude Code's own message ("You've hit
+  your session limit · resets 2:30pm (Europe/Berlin)" — in that time zone, across a DST change, a weekly limit's day),
+  sleeps until a minute past it and goes on; the wait is neither a round nor "no progress" (`LIMIT_WAITS`, default 30). Out
+  of credits it stops and says so. The machine stays awake for the whole run (`dl awake`). Before, the run stopped at the
+  limit and waited for someone to notice — the 2–4 hour gaps and the nights of the live job.
+
+## 0.12.0 — 2026-10-09
+
+**Fewer QA agents, the breaking card named at the merge, test runs that do not get in each other's way** (from the same
+65-hour live job)
+- **No QA agent while QA's tests pass.** After `dl qa-join`, `dl next` no longer asks for a QA-RUN agent: `dl qa … pass` runs
+  QA's tests (and the suite) on the dev's commit itself and refuses a pass they fail. Only then is QA asked — by continuing
+  the QA-WRITE agent (SendMessage; it has the spec and its tests in its history), not with a new one. Measured live: most
+  QA-RUN dispatches only ran the tests QA-WRITE had written and recorded the result; qa-tester was 47 % of the agents' tokens.
+- **The card that breaks the job branch is named at its merge.** Right after `dl integrate` the job branch runs the card's
+  component suite (`verify` on the component, 0.10.0): `BROKEN: … right after T-xx merged`, and `dl next` asks for a fix
+  card in that component until a later merge into it passes. Before, four cards broke the branch and the next card's QA
+  found it — blaming that card. `merge_verify: false` turns it off.
+- **Test runs share the machine without colliding.** Every test command `dl` runs gets `DELIVER_PORT_BASE` (its own 50
+  ports: T-07 → 20700, its QA worktree → 20750, the job branch → 20000) and `DELIVER_RUN_ID`; `dl env <card> [--qa]` gives
+  them to an agent's own runs, and the dev and QA role cards say to bind ports from it — never a fixed one (live: 8101 and
+  5173 collided). Every role: never stop a process you did not start, only your own by its PID (live: a QA agent's
+  `pkill -f vite` stopped other cards' servers).
+- **The machine stays awake while `dl` runs tests** — macOS `caffeinate`, Linux `systemd-inhibit`, Windows (Git Bash)
+  `SetThreadExecutionState` through PowerShell; the hold ends with that `dl` run (live: a sleeping laptop turned runs into
+  6–10 minute timeouts). `keep_awake: false` turns it off.
+- Fixed: a setting set to `false` was read as unset, so `qa_early`, `qa_verify_full` and `record_job` could not be turned off.
+
+## 0.11.0 — 2026-10-09
+
+**Stack tests run the moment the cards they need are merged — not at the end** (from a 65-hour live job: e2e tests left for
+the end failed 5 times at verify-all and cost a 2.2-hour extra round, long after the cards that broke them had merged)
+- A card may carry stack tests: tests that pass only once other cards are merged (an e2e flow across services) —
+  `stack_verify` (the command, run on the job branch) and `stack_after` (those cards). The Lead sets them; QA puts such a test
+  there instead of in `qa_verify`, never "deferred to the end".
+- The moment the card and its `stack_after` cards are merged, `dl next` says `STACK dl stack-test T-xx`; a failure (`FIX`)
+  gets a fix card right away, and the stack tests run again once it is merged. `dl phase integrating` is refused while one
+  is due or failing. Each run is kept on the card with the job branch commit it ran on.
+- `dl card … set stack_verify | stack_after` also works on a merged card (validated, logged, listed in the PR); the stack
+  tests are then due again.
+- `integrate`, `verify-all` and `stack-test` take turns in the integration worktree, as a card's gate, QA run and QA join do
+  in its own.
+
+## 0.10.0 — 2026-10-09
+
+**A QA pass runs the card's component suite, not the whole repo's** (from a 65-hour live job: QA's 23 whole-suite runs took
+7.7 hours, median 19 minutes, longest 56 — a fetcher card waited for scoring's 1476 tests, assessment's 1837 and 710
+Playwright tests)
+- A component in the architecture may name its own suite: `verify` on the component in `readiness.json` (the BA takes it
+  from the repo's files). A QA pass runs that suite on the card's commit instead of `verify_full`; the clash 0.8.1 catches —
+  two test files with one name — happens inside a component, so it is still caught. Without `verify` nothing changes.
+- The whole suite still runs on the job branch at the start (baseline) and at the end (`verify-all`). The component suites
+  are frozen with the architecture at planning, so none can be weakened during the job; `readiness.md` shows which suite each
+  component's QA pass runs, and the card records the one that ran.
+
+**Fixed: two faults the same job ran into**
+- `dl qa-join` refused QA's tests whenever another card had merged since QA's branch was cut: it compared QA's branch
+  with the job branch's tip, so the merged cards' files looked like QA's changes ("outside qa_scope"), and QA had to move
+  its tests by hand. It now compares from where QA's branch left the job branch, as the gate already did.
+- One gate, QA run or QA join per card at a time: they share the card worktree, and a second `dl gate` started two
+  minutes after the first deleted the first one's files and failed it with three false errors. The second is now
+  refused with who holds the card; the hold ends with that `dl` (a crashed one's is taken over).
+
+**Planning rules from the same job** (Lead and dev role cards)
+- A skeleton card's tests check what the skeleton provides, never that a stub stays empty: three fix cards came from one
+  skeleton whose tests failed as soon as later cards filled its stubs.
+- Test file names are unique within a component: two `build_support.py` broke the whole suite once collected together.
+
 ## 0.9.2 — 2026-10-08
 
 **Where the test time goes, and one run fewer** (from a user's job: QA took long)

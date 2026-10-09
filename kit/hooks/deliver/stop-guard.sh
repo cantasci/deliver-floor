@@ -20,6 +20,11 @@ jf="$root/.work/$job/job.json"; bf="$root/.work/$job/board.json"
 phase="$(jq -r .phase "$jf")"
 case $phase in executing|integrating) ;; *) exit 0 ;; esac
 
+# Michael took a checkpoint (dl checkpoint, headless) and nothing happened since: the stop is the point — the next round
+# goes on in a fresh session
+cp="$(jq -r '.checkpoint.events // -1' "$jf")"
+[[ $cp -ge 0 && $cp == "$(wc -l < "$root/.work/$job/events.log" 2>/dev/null | tr -d ' ')" ]] && exit 0
+
 open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$bf")"
 [[ $open -gt 0 ]] || exit 0
 

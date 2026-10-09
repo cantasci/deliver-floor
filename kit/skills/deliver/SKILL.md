@@ -61,8 +61,10 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    one reports back, run that card's next step (gate → QA → review → integrate) and assign the cards it unblocks — never wait for
    a "wave". Headless (`DELIVER_HEADLESS=1`): background agents die with the process (measured), so dispatch in the foreground —
    but put **every** actionable item from `dl next` (new assignments, QA, reviews) into the same message, so all stages advance
-   together. A hook enforces the headless rule. On Munder Difflin there are no subagents: every role is a person at a seat
-   (`dl md-hire`, `dl md-send`), reporting through your inbox.
+   together. A hook enforces the headless rule. Headless, `dl next` also says **CHECKPOINT** at every phase change and after
+   every wave of cards (none running or in review): run `"$DL" checkpoint` and **end your turn** — the next round goes on in a
+   fresh session, from the files (`dl next` tells it where), so your context stays small. On Munder Difflin there are no
+   subagents: every role is a person at a seat (`dl md-hire`, `dl md-send`), reporting through your inbox.
 7. **The human is asked only at the start** — when the project or task is given (intake, readiness, `awaiting_clarification`):
    every open readiness item is answered by the human before planning, never on assumptions, never on the human's behalf.
    **After that you do not ask.** Whatever only a person could have decided is your decision as PM: take it, record it with its
@@ -212,13 +214,16 @@ Rules:
 - context = everything a developer who has not seen the plan needs: why, files, decisions, contracts (exact names/signatures).
 - component = the architecture component the card belongs to; scope and qa_scope stay inside its path; role = its owner.
 - Order with depends_on using temporary ids (B1, B2… / F1…). Cards that touch the same files are never parallel.
+- A skeleton card's tests never require a stub to stay empty (later cards fill it). Test file names are unique within a component.
+- stack_verify + stack_after (only when needed) = tests that pass only once other cards are merged (an e2e flow across
+  services): the command, run on the job branch, and the tmp ids of those cards. They run the moment those cards merge.
 OUTPUT — only a JSON array:
-[{"tmp_id":"B1","title":"…","role":"backend","component":"orders-svc","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"]}]
+[{"tmp_id":"B1","title":"…","role":"backend","component":"orders-svc","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"],"stack_verify":"(optional) …","stack_after":["(optional) B2"]}]
 ```
 
 Then **you** merge the arrays into `.work/<job>/board.json` (`{"cards":[…]}`):
 
-- Ids `T-01`, `T-02`…; rewrite `depends_on` from tmp ids to T-ids (link cross-area deps yourself).
+- Ids `T-01`, `T-02`…; rewrite `depends_on` and `stack_after` from tmp ids to T-ids (link cross-area deps yourself).
 - Per card add `"agent"` (the role's agent from `roles.yaml`), `"state":"ready"`, `"attempts":0`, `"notes":[]`.
 
 Then the **Business Analyst specs every card** — one call with all cards:
@@ -296,9 +301,13 @@ Return: the tests written per AC.
    FAIL → **re-dispatch** the same agent: `"$DL" wt add T-xx` (bumps the attempt; REFUSED with exit 4 when attempts are used up →
    **Blocked**) with the FAIL lines as PREVIOUS FEEDBACK.
 2. **QA** (after the gate passes). When QA wrote its tests early (`dl next`: QA-JOIN): `"$DL" qa-join T-xx` — dl merges
-   them into the card branch (only `qa_scope` files, the repo's commit format); then QA's order says **MODE: QA-RUN — run
-   your tests on the dev's commit; change a test only where it contradicts the spec; record the verdict per AC** (the rest of
-   the prompt below, in the card worktree). Otherwise — call **Agent(subagent_type: "qa-tester")**:
+   them into the card branch (only `qa_scope` files, the repo's commit format). Then **no QA agent is called while its tests
+   pass**: record `"$DL" qa T-xx pass "<AC-n: the test QA-WRITE named for it; …>"` — dl runs QA's tests (and the suite) on
+   the dev's commit itself and refuses the pass when they fail. Only then does QA run: **continue the QA-WRITE agent**
+   (SendMessage to its agent id — it has the spec and its tests in its history, nothing is read again; on the floor: the
+   same QA seat) with **MODE: QA-RUN — your tests fail on the dev's commit (<the failing lines dl printed>); change a test only
+   where it contradicts the spec; record the verdict per AC** (in the card worktree; a new agent with the prompt below only
+   when that one cannot be reached). Without QA-WRITE — call **Agent(subagent_type: "qa-tester")**:
 
 ```text
 Role: QA/Test for card T-xx. Write and run its integration/e2e tests for the spec's acceptance criteria. No product code.
@@ -343,6 +352,12 @@ Use "changes" only when there is at least one blocking item. A violated standard
    repo accepts: `"$DL" jobset '.settings.commit.merge_message="<message with {card} {title} {key}>"'`, record it as your
    decision (`dl pm-decide`), and integrate again. Every commit follows the repo's convention (`settings.commit.convention`,
    detected at `dl new`); its hooks are never skipped.
+   `BROKEN` after `MERGED` (the card's component suite fails on the job branch right after the merge; `dl next`: FIX): that
+   card is the cause — have the Lead cut a fix card in that component now (`"$DL" card add`), naming it; a later card's QA
+   failure in that component is not that card's fault until the fix is merged.
+5. **Stack tests** — `dl next` says `STACK dl stack-test T-xx` the moment a card and the cards its stack tests need
+   (`stack_after`) are merged: run it then, not at the end. A failure (`FIX`) gets a fix card now (`"$DL" card add`), and the
+   stack test runs again once it is merged. `dl phase integrating` is refused while one is due or failing.
 
 ## Blocked
 

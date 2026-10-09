@@ -414,6 +414,18 @@ bedit "$B" '.cards[2].state="running"'; rm -f "$R/.work/$JOB/.stop-blocks"
 contains "headless: Michael may not stop while agents run in the foreground flow" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"
 contains "agent-guard: headless background dispatch is denied" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":true,"subagent_type":"backend-dev"}}')" "rc=2"
 contains "agent-guard: headless foreground dispatch is fine" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":false}}')" "rc=0"
+bedit "$B" '(.cards[] | select(.state == "running" or .state == "review")) |= (.state = "ready")'; rm -f "$R/.work/$JOB/.stop-blocks"
+contains "headless, a wave done and none at work: dl next says CHECKPOINT — a fresh session for the next wave" "$(DELIVER_HEADLESS=1 "$DL" next)" "CHECKPOINT dl checkpoint, then end your turn"
+[[ "$("$DL" next)" != *CHECKPOINT* ]] && ok "…only headless (an interactive session is not cut)" || bad "CHECKPOINT outside headless"
+contains "headless with open cards: Michael is held" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"; rm -f "$R/.work/$JOB/.stop-blocks"
+expect_ok "dl checkpoint records the safe point" "$DL" checkpoint
+contains "…and Michael may end his session there" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=0"
+[[ "$(DELIVER_HEADLESS=1 "$DL" next)" != *CHECKPOINT* ]] && ok "…the fresh session gets the work, not another checkpoint" || bad "CHECKPOINT again: $(DELIVER_HEADLESS=1 "$DL" next)"
+printf '%s\tdispatch\tbackend-dev\n' "$(date -u +%FT%TZ)" >> "$R/.work/$JOB/events.log"
+contains "…once anything happens after it, he is held to the board again" "$(DELIVER_HEADLESS=1 hook stop-guard.sh "{\"cwd\":\"$R\",\"transcript_path\":\"$TR\"}")" "rc=2"; rm -f "$R/.work/$JOB/.stop-blocks"
+bedit "$B" '.cards[2].state="running"'
+contains "a checkpoint is refused while a card is at work (its agent would die with the session)" "$("$DL" checkpoint 2>&1)" "cards are at work (T-03)"
+contains "an agent cannot take a checkpoint" "$(printf '%s' '{"tool_input":{"command":"dl checkpoint"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 contains "agent-guard: headless dispatch without an explicit false is denied (subagents default to background)" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"subagent_type":"business-analyst"}}')" "rc=2"
 contains "agent-guard: headless with background tasks disabled lets any dispatch through (no background mode exists)" "$(DELIVER_HEADLESS=1 CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":"false"}}')" "rc=0"
 contains "agent-guard: the string \"false\" counts as foreground" "$(DELIVER_HEADLESS=1 hook agent-guard.sh '{"tool_input":{"run_in_background":"false"}}')" "rc=0"
@@ -1318,6 +1330,141 @@ contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pa
 [[ "$(jq -r '[.cards[0].gate.seconds, .cards[0].qa.seconds, .cards[0].qa.suite_seconds] | map(type) | join(",")' "$QJ/board.json")" == number,number,number ]] \
   && ok "the gate, QA's run and the whole suite each record how long they took" || bad "durations: $(jq -c '.cards[0] | {g: .gate.seconds, q: .qa.seconds, s: .qa.suite_seconds}' "$QJ/board.json")"
 contains "dl timeline shows each card's test runs and how long Michael waited on them" "$("$DL" timeline 2>&1)" "Michael waited on test runs"
+echo "A QA pass runs the card's component suite when the architecture gives it one (live job: 23 whole-suite runs, 19 min median)"
+QC="$TMP/qacomp"; mkdir -p "$QC" && cd "$QC" && git init -q -b main
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"touch \"$HOME/whole-suite\""}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "QA component" "x" >/dev/null 2>&1; QJ="$QC/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"true"}]}' ready_all
+contains "a component suite that proves nothing is refused at readiness" "$("$DL" readiness 2>&1)" "component 'app': verify must be the command that runs this component's whole test suite"
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"test ! -e test/it/clash.py && touch \"$HOME/app-suite\""}]}' ready_all
+"$DL" readiness >/dev/null 2>&1
+contains "readiness.md shows the suite each component's QA pass runs" "$(cat "$QJ/readiness.md")" '`test ! -e test/it/clash.py && touch "$HOME/app-suite"`'
+"$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$QJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["test/it/**"],
+  verify:"test -f src/a.py",qa_verify:"test -f test/it/t.py",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$QJ/board.json"
+"$DL" phase executing >/dev/null; WQ="$("$DL" wt add T-01)"
+mkdir -p "$WQ/src" && echo x > "$WQ/src/a.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01: a"
+"$DL" gate T-01 >/dev/null 2>&1
+mkdir -p "$WQ/test/it" && echo t > "$WQ/test/it/t.py" && echo c > "$WQ/test/it/clash.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01 QA: it"
+rm -f "$HOME/whole-suite" "$HOME/app-suite"
+contains "a QA pass is refused when the component's suite fails, and says which suite" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "the app component's suite (architecture) fails on T-01's commit"
+git -C "$WQ" rm -q test/it/clash.py && git -C "$WQ" commit -qm "T-01 QA: drop the clash"
+contains "…after the fix the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
+[[ -f $HOME/app-suite && ! -e $HOME/whole-suite ]] && ok "…it ran the app component's suite, not the whole one" || bad "suites run: $(ls "$HOME")"
+contains "…and the card records which suite ran" "$(jq -r '.cards[0].qa.suite' "$QJ/board.json")" 'touch "$HOME/app-suite"'
+QCIW="$(jq -r .integration_worktree "$QJ/job.json")"   # meanwhile another card merged a file that clashes once T-01 is in
+mkdir -p "$QCIW/test/it" && echo c > "$QCIW/test/it/clash.py" && git -C "$QCIW" add -A && git -C "$QCIW" commit -qm "T-02: another card"
+"$DL" review T-01 approve ok >/dev/null 2>&1
+out="$("$DL" integrate T-01 2>&1)"
+contains "right after the merge the job branch runs the card's component suite — the card that breaks it is named at once" "$out" "BROKEN: the app suite fails on"
+contains "…the merge itself stands" "$out" "MERGED: T-01"
+contains "…the check is kept on the card" "$(jq -r '.cards[0].merge_check | "\(.result) \(.component)"' "$QJ/board.json")" "FAIL app"
+contains "…and dl next asks for a fix card in that component now" "$("$DL" next)" "FIX     the app suite fails on the job branch since T-01 merged"
+rm -f "$HOME/app-suite"; cd "$R"
+echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
+ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "stack" "x" >/dev/null 2>&1; SJ="$ST/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null 2>&1
+for c in T-01 T-02 T-03; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$SJ/specs/$c.md"; done
+stcard() { jq -n --arg id "$1" --arg d "$2" '{id:$id,title:$d,role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/\($d)/**"],qa_scope:["it/\($d)/**"],
+  verify:"test -f src/\($d)/f",qa_verify:"test -f it/\($d)/t",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}'; }
+jq -n --argjson a "$(stcard T-01 a)" --argjson b "$(stcard T-02 b)" '{cards:[$a + {stack_verify:"true", stack_after:["T-01","T-09"]}, $b]}' > "$SJ/board.json"
+out="$("$DL" validate 2>&1)"
+contains "a stack test that proves nothing is refused" "$out" "T-01: stack_verify 'true' proves nothing"
+contains "…stack_after naming the card itself" "$out" "T-01: stack_after names the card itself"
+contains "…or an unknown card" "$out" "T-01: stack_after references unknown card T-09"
+jq -n --argjson a "$(stcard T-01 a)" --argjson b "$(stcard T-02 b)" '{cards:[$a + {verify:"test -f src/a/f && echo \"$DELIVER_PORT_BASE $DELIVER_RUN_ID\" > \"$HOME/st-gate-env\"",
+  stack_verify:"test -f src/a/f && echo \"$DELIVER_PORT_BASE\" > \"$HOME/st-stack-env\" && test -f src/b/f && test ! -e src/b/broken", stack_after:["T-02"]}, $b]}' > "$SJ/board.json"
+expect_ok "a card with stack tests and the cards they need is valid" "$DL" validate
+"$DL" phase executing >/dev/null
+stmerge() { # stmerge <card> <dir> [extra file the dev also commits] — dev, gate, QA, review, merge
+  local w; w="$("$DL" wt add "$1")"; mkdir -p "$w/src/$2" "$w/it/$2" && echo x > "$w/src/$2/f" && { [[ -z ${3:-} ]] || echo x > "$w/src/$2/$3"; }
+  git -C "$w" add -A && git -C "$w" commit -qm "$1: $2" && "$DL" gate "$1" >/dev/null 2>&1 && echo t > "$w/it/$2/t" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: $2" \
+    && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review "$1" approve ok >/dev/null 2>&1 && "$DL" integrate "$1" >/dev/null 2>&1
+}
+stmerge T-01 a || bad "T-01 did not merge"
+contains "every test run dl makes gets its card's port base and a run id (live job: fixed ports 8101 / 5173 collided)" "$(cat "$HOME/st-gate-env" 2>/dev/null)" "20100 $(cat .work/ACTIVE)-T-01-"
+contains "dl env: the same for an agent's own runs — each card its 50 ports, its QA worktree apart" "$("$DL" env T-01) | $("$DL" env T-01 --qa) | $("$DL" env T-02)" "DELIVER_PORT_BASE=20100 DELIVER_RUN_ID=$(cat .work/ACTIVE)-T-01 | export DELIVER_PORT_BASE=20150 DELIVER_RUN_ID=$(cat .work/ACTIVE)-T-01-qa | export DELIVER_PORT_BASE=20200"
+[[ "$("$DL" next)" != *"STACK"* ]] && ok "a merged card's stack tests wait while a card they need is not merged" || bad "STACK too early: $("$DL" next)"
+contains "…and dl stack-test says which card they wait for" "$("$DL" stack-test T-01 2>&1)" "T-01's stack tests wait for T-02 to merge"
+stmerge T-02 b broken || bad "T-02 did not merge"
+contains "the moment T-02 merges, dl next says to run T-01's stack tests" "$("$DL" next)" "STACK   dl stack-test T-01"
+contains "…integrating is refused until they pass (not left for the end)" "$("$DL" phase integrating 2>&1)" "stack tests have not passed on the job branch: T-01"
+FB="$TMP/fakebin"; mkdir -p "$FB"   # the sleep blockers, recording how dl calls them
+printf '#!/bin/sh\necho "caffeinate $*" >> "%s/awake.log"\n' "$TMP" > "$FB/caffeinate"
+printf '#!/bin/sh\necho "systemd-inhibit $1" >> "%s/awake.log"\n' "$TMP" > "$FB/systemd-inhibit"; chmod +x "$FB"/*
+expect_fail 1 "dl stack-test runs them on the job branch: T-02 broke them" env PATH="$FB:$PATH" "$DL" stack-test T-01
+contains "…with the job branch's own port base" "$(cat "$HOME/st-stack-env" 2>/dev/null)" "20000"
+case "$(uname -s)" in
+  Darwin) contains "the machine stays awake while dl runs tests, until that dl ends (macOS: caffeinate -i -w <dl's pid>)" "$(cat "$TMP/awake.log" 2>/dev/null)" "caffeinate -i -w " ;;
+  Linux)  contains "the machine stays awake while dl runs tests, until that dl ends (Linux: systemd-inhibit)" "$(cat "$TMP/awake.log" 2>/dev/null)" "systemd-inhibit --what=idle:sleep" ;;
+  *)      ok "(the sleep blocker of $(uname -s) is not checked here)" ;;
+esac
+rm -f "$TMP/awake.log"; "$DL" jobset '.settings.keep_awake=false' >/dev/null
+"$DL" card T-01 set stack_verify "seq 1 20 && test ! -e src/b/broken" "a stack test that talks" >/dev/null
+out="$(env PATH="$FB:$PATH" "$DL" stack-test T-01 2>&1)"
+contains "a failed run prints its last lines and where the rest is — Michael re-reads every line he reads (live: 427 M tokens)" "$out" "… the last 8 of 21 lines — the whole output: "
+[[ $out != *$'\n12\n'* && $out == *$'\n20\n'* ]] && ok "…only the last 8" || bad "tail: $out"
+contains "…DL_VERBOSE=1 prints them all" "$(DL_VERBOSE=1 env PATH="$FB:$PATH" "$DL" stack-test T-01 2>&1)" $'\n12\n'
+[[ ! -s $TMP/awake.log ]] && ok "…keep_awake=false: no blocker (a setting set to false reads as false — before, dl read it as unset, and qa_early, qa_verify_full, record_job could not be turned off)" || bad "a blocker ran with keep_awake=false: $(cat "$TMP/awake.log")"
+contains "…recorded on the card with the job branch commit" "$(jq -r '.cards[0].stack | "\(.result) \(.head | length)"' "$SJ/board.json")" "FAIL 40"
+contains "…and dl next asks for a fix card now" "$("$DL" next)" "FIX     T-01's stack tests fail on the job branch"
+jq -n '{title:"fix b",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["src/b/**"],qa_scope:["it/b/**"],
+  verify:"test ! -e src/b/broken",qa_verify:"test -f it/b/t",acceptance:["AC-1: x"],context:"remove what broke T-01'"'"'s stack tests"}' > "$TMP/stfix.json"
+contains "the fix card is added" "$("$DL" card add "$TMP/stfix.json" "T-01's stack tests fail after T-02" 2>&1)" "T-03"
+W3="$("$DL" wt add T-03)"; git -C "$W3" rm -q src/b/broken && git -C "$W3" commit -qm "T-03: fix b" && "$DL" gate T-03 >/dev/null 2>&1
+echo t2 > "$W3/it/b/t2" && git -C "$W3" add -A && git -C "$W3" commit -qm "T-03 QA: b" && "$DL" qa T-03 pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review T-03 approve ok >/dev/null 2>&1
+expect_ok "…and merged" "$DL" integrate T-03
+contains "once the fix is merged, dl next asks for the stack tests again" "$("$DL" next)" "STACK   dl stack-test T-01"
+contains "…and they pass" "$("$DL" stack-test T-01 2>&1)" "STACK PASSED: T-01"
+contains "…then the job goes on to integrating" "$("$DL" next)" "PHASE   dl phase integrating"
+expect_ok "a merged card's stack command may be fixed (validated, logged)" "$DL" card T-01 set stack_verify "test -f src/a/f && test -f src/b/f" "narrower check"
+contains "…and its stack tests are due again" "$("$DL" next)" "STACK   dl stack-test T-01"
+"$DL" stack-test T-01 >/dev/null 2>&1
+expect_ok "integrating once every stack test passed" "$DL" phase integrating
+contains "dl status: the board as counts and the cards in work, not every card" "$("$DL" status)" "cards:    3 — merged 3"
+[[ "$("$DL" status)" != *"ID"*"STATE"*"ROLE"* ]] && ok "…no card table" || bad "status still prints the board"
+contains "…every card with dl status --full" "$("$DL" status --full)" "summary: merged=3"
+[[ ! -e $SJ/.card-lock-integration ]] && ok "integrate, stack-test and verify-all give the integration worktree back" || bad "integration lock left behind"
+contains "an agent cannot run the stack tests (Michael records them)" "$(printf '%s' '{"tool_input":{"command":"dl stack-test T-01"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+cd "$R"
+echo "run-headless: a usage limit is waited out until its reset, not handed to the human (live job: 36.6 of 65.7 hours were limit waits)"
+LR="$SDIR/bin/limit-reset.mjs"; NOW="$(node -e 'console.log(Date.UTC(2026,9,9,10,0)/1000)')"   # 12:00 in Berlin
+utc() { node -e "console.log(Date.UTC($1)/1000)"; }
+contains "the reset is read from Claude Code's own message, in its time zone" "$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)" | node "$LR" "$NOW")" "$(utc 2026,9,9,12,30)"
+contains "…a time already past today is tomorrow's" "$(echo "You've hit your session limit · resets 11am (Europe/Berlin)" | node "$LR" "$NOW")" "$(utc 2026,9,10,9,0)"
+contains "…a weekly limit names its day" "$(echo "You've hit your weekly limit · resets Oct 12, 3pm (Europe/Istanbul)" | node "$LR" "$NOW")" "$(utc 2026,9,12,12,0)"
+contains "…across the end of daylight saving" "$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)" | node "$LR" "$(utc 2026,9,24,23,0)")" "$(utc 2026,9,25,13,30)"
+expect_fail 2 "out of credits: no reset — the human's call" bash -c "echo \"You're out of usage credits. Switch to another model\" | node '$LR'"
+expect_fail 1 "no limit in the text: nothing to wait for" bash -c "echo 'all done' | node '$LR'"
+HL="$TMP/headless"; mkdir -p "$HL/.work/JOB-x" && git -C "$HL" init -q -b main && echo '{"dispatch":"subagent"}' > "$HL/.deliver.json"
+echo JOB-x > "$HL/.work/ACTIVE"; : > "$HL/.work/JOB-x/events.log"
+HB="$TMP/hlbin"; mkdir -p "$HB"
+cat > "$HB/claude" <<'FAKE'
+#!/bin/sh
+# a claude -p round: the first one meets a usage limit (HL_MODE=limit) or no credits; the next one finishes the job
+n=$(cat "$HL_CNT" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$HL_CNT"
+case "$HL_MODE:$n" in
+  limit:1) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'ve hit your session limit · resets 2:30pm (Europe/Berlin)"}' ;;
+  credits:*) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'re out of usage credits. Switch to another model."}' ;;
+  *) jq '.phase = "done"' "$HL_JF" > "$HL_JF.t" && mv "$HL_JF.t" "$HL_JF"; echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
+esac
+FAKE
+printf '#!/bin/sh\necho "$*" >> "%s/hl-sleep"\n' "$TMP" > "$HB/sleep"; printf '#!/bin/sh\nexit 0\n' > "$HB/caffeinate"; chmod +x "$HB"/*
+hl() { echo '{"phase":"executing"}' > "$HL/.work/JOB-x/job.json"; rm -f "$TMP/hl-n" "$TMP/hl-sleep"
+  PATH="$HB:$PATH" HL_MODE=$1 HL_CNT="$TMP/hl-n" HL_JF="$HL/.work/JOB-x/job.json" "$HERE/scripts/run-headless.sh" "$HL" 2>&1; }
+out="$(hl limit)"
+contains "a round that meets a usage limit waits for the reset Claude Code names" "$out" "⏸  usage limit: You've hit your session limit · resets 2:30pm (Europe/Berlin) — waiting"
+[[ "$(cat "$TMP/hl-sleep" 2>/dev/null)" =~ ^[0-9]+$ && "$(cat "$TMP/hl-sleep")" -ge 60 ]] && ok "…sleeps until a minute past it" || bad "sleep: $(cat "$TMP/hl-sleep" 2>/dev/null)"
+contains "…then the job goes on by itself, the wait neither a round nor 'no progress'" "$out" "✔ job JOB-x: done"
+[[ "$(cat "$TMP/hl-n")" == 2 ]] && ok "…in the round after the wait" || bad "claude ran $(cat "$TMP/hl-n") times"
+out="$(hl credits)"; rc=$?
+contains "out of credits it stops and says so: the human's call" "$out" "out of usage credits — add credits or switch the model"
+[[ ! -e $TMP/hl-sleep ]] && ok "…without waiting" || bad "waited on no credits"
 echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
 BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
 echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i
@@ -1491,11 +1638,20 @@ contains "QA's tests join only after the gate" "$("$DL" qa-join T-01 2>&1)" "T-0
 contains "after the gate dl next says QA-JOIN" "$("$DL" next)" "QA-JOIN dl qa-join T-01"
 echo x > "$QW/src/b" && git -C "$QW" add src && git -C "$QW" commit -qm "T-01 QA: oops"
 contains "QA's branch may change only qa_scope" "$("$DL" qa-join T-01 2>&1)" "changed files outside qa_scope: src/b"
+[[ ! -e $QJ/.card-lock-T-01 ]] && ok "…a refused dl gives the card back (no lock left behind)" || bad "lock left after a refusal"
 git -C "$QW" reset -q --hard HEAD~1
-out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into the card branch" "$out" "QA tests joined T-01"
+QIW="$(jq -r .integration_worktree "$QJ/job.json")"   # another card merges into the job branch after QA's branch was cut
+mkdir -p "$QIW/other" && echo o > "$QIW/other/o" && git -C "$QIW" add other && git -C "$QIW" commit -qm "T-02: another card"
+out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into the card branch — cards merged since QA's branch was cut are not QA's changes" "$out" "QA tests joined T-01"
 [[ -f $WQ/it/t && ! -d $QW ]] && ok "…the tests are in the card worktree, QA's worktree is gone" || bad "after join: $(ls "$WQ")"
+contains "after the join no QA agent is asked for: dl runs QA's tests itself at dl qa" "$("$DL" next)" "QA      dl qa T-01 pass"
 contains "…QA's commits must be recorded before the card goes back to the dev" "$("$DL" wt add T-01 2>&1)" "has QA commits that are not recorded yet"
-expect_ok "the gate after the join counts QA's tests as QA's, not the dev's" "$DL" gate T-01
+sleep 60 & LKP=$!; mkdir "$QJ/.card-lock-T-01" && echo $LKP > "$QJ/.card-lock-T-01/pid" && echo "gate T-01" > "$QJ/.card-lock-T-01/what"
+contains "a second gate on a card is refused while one runs (live run: T-37 gated twice at once, the second failed the first)" "$("$DL" gate T-01 2>&1)" "T-01 is busy: dl gate T-01 is running"
+contains "…QA on that card too" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "T-01 is busy"
+kill $LKP 2>/dev/null; wait $LKP 2>/dev/null
+expect_ok "the gate after the join counts QA's tests as QA's, not the dev's (the dead gate's lock is taken over)" "$DL" gate T-01
+[[ ! -e $QJ/.card-lock-T-01 ]] && ok "…the lock goes with the dl that held it" || bad "lock left after the gate"
 "$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve ok >/dev/null
 expect_ok "…and the card merges as before" "$DL" integrate T-01
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"

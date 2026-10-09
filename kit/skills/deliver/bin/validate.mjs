@@ -60,9 +60,23 @@ for (const c of cards) {
 }
 
 for (const c of cards) {
-  for (const k of ["verify", "qa_verify"]) {
+  for (const k of ["verify", "qa_verify", "stack_verify"]) {
     const bad = nodeTestDirArgs(c[k]);
     if (bad.length) errors.push(`${c.id ?? "(no id)"}: ${k} runs 'node --test ${bad.join(" ")}' — a directory fails on Node 22+ (MODULE_NOT_FOUND); name the files or a glob: node --test '${bad[0].replace(/\/$/, "")}/**/*.test.mjs'`);
+  }
+}
+
+// Stack tests: the card's tests that need other cards' work (an e2e flow across services) — dl stack-test runs them on the
+// job branch as soon as the card and its stack_after cards are merged, never at the end of the job.
+for (const c of cards) {
+  const id = c.id ?? "(no id)";
+  if (c.stack_verify === undefined && c.stack_after === undefined) continue;
+  if (typeof c.stack_verify !== "string" || !c.stack_verify.trim()) errors.push(`${id}: 'stack_verify' is empty (the command that runs the card's stack tests on the job branch)`);
+  else if (/^\s*(true|:|echo\b|exit 0)/.test(c.stack_verify)) errors.push(`${id}: stack_verify '${c.stack_verify}' proves nothing`);
+  if (!Array.isArray(c.stack_after) || c.stack_after.length === 0) errors.push(`${id}: 'stack_after' must list the cards whose work its stack tests need`);
+  else for (const d of c.stack_after) {
+    if (d === id) errors.push(`${id}: stack_after names the card itself`);
+    else if (!byId.has(d)) errors.push(`${id}: stack_after references unknown card ${d}`);
   }
 }
 
