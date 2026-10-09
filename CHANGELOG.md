@@ -4,6 +4,20 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.13.0 — 2026-10-09
+
+**Michael reads less, and a usage limit no longer waits for a human** (from the same 65-hour live job: Michael spent 427 M
+tokens — 60 % of the job, 95 % of it re-reading his own growing context — and 36.6 of the 65.7 hours were limit waits)
+- `dl status` shows the board as counts plus the cards in work (running, review, blocked); `dl status --full` (or `dl board`,
+  `/deliver:board`) shows every card. Before, every status printed the whole board — 40 lines for a 37-card job.
+- A failed run prints its last 8 lines and the log's path instead of 25–40 lines (gate, QA, the suites, stack tests,
+  baseline, verify-all); `DL_VERBOSE=1` prints them all. Every line Michael reads stays in his context for the rest of the job.
+- **`scripts/run-headless.sh` waits out a usage limit.** It reads the reset from Claude Code's own message ("You've hit
+  your session limit · resets 2:30pm (Europe/Berlin)" — in that time zone, across a DST change, a weekly limit's day),
+  sleeps until a minute past it and goes on; the wait is neither a round nor "no progress" (`LIMIT_WAITS`, default 30). Out
+  of credits it stops and says so. The machine stays awake for the whole run (`dl awake`). Before, the run stopped at the
+  limit and waited for someone to notice — the 2–4 hour gaps and the nights of the live job.
+
 ## 0.12.0 — 2026-10-09
 
 **Fewer QA agents, the breaking card named at the merge, test runs that do not get in each other's way** (from the same

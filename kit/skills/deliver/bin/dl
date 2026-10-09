@@ -246,7 +246,7 @@ test_env() {
 stay_awake() {
   [[ -n ${DELIVER_AWAKE:-} || "$(setting keep_awake)" == false ]] && return 0
   export DELIVER_AWAKE=1   # one hold per dl run; a dl that a test command calls needs none
-  local me=$$ wpid
+  local me=${1:-$$} wpid
   case "$(uname -s)" in
     Darwin) command -v caffeinate >/dev/null 2>&1 && { caffeinate -i -w "$me" </dev/null >/dev/null 2>&1 & } ;;
     Linux) command -v systemd-inhibit >/dev/null 2>&1 && { systemd-inhibit --what=idle:sleep --who=deliver --why="dl is running tests" \
@@ -262,12 +262,29 @@ stay_awake() {
   return 0
 }
 
+cmd_awake() { # dl awake <pid> — the machine stays awake until process <pid> ends (scripts/run-headless.sh: the whole run)
+  [[ ${1:-} =~ ^[0-9]+$ ]] || die "usage: dl awake <pid>"
+  resolve_root; JOBJ=/dev/null; [[ -f $WORK/ACTIVE ]] && load_job
+  stay_awake "$1"; echo "the machine stays awake while process $1 runs"
+}
+
 cmd_env() { # dl env <card> [--qa] | integration — the variables of a test run in that worktree, for an agent's own runs
   load_job
   local c=${1:-}; [[ -n $c ]] || die "usage: dl env <card> [--qa] | dl env integration"
   [[ $c == integration ]] || card_exists "$c"
   local q=""; [[ ${2:-} == --qa ]] && q=qa
   echo "export DELIVER_PORT_BASE=$(port_base "$c" $q) DELIVER_RUN_ID=$JOB-$c${q:+-qa}"
+}
+
+# show_tail <lines> <log> < output — the end of a failed run: a few lines, and where the rest is. Michael re-reads every line
+# he ever read on each turn (live job: 427 M of his tokens, 95 % of them cache reads), so dl prints little; DL_VERBOSE=1
+# prints all <lines>, and the log keeps everything.
+show_tail() {
+  local n=8 all c; [[ ${DL_VERBOSE:-} == 1 ]] && n=$1; (( n > $1 )) && n=$1
+  all="$(cat)"; c=$(printf '%s\n' "$all" | wc -l | tr -d ' ')
+  printf '%s\n' "$all" | tail -n "$n"
+  (( c > n )) && echo "  … the last $n of $c lines — the whole output: $2"
+  return 0
 }
 
 log_event() { printf '%s\t%s\t%s\n' "$(now)" "$1" "$2" >> "$JOB_DIR/events.log"; }
@@ -452,7 +469,13 @@ cmd_status() {
   load_job
   jq -r '"job:      \(.id)\ntitle:    \(.title)\nrepo:     \(.repo // "-")\nphase:    \(.phase)\nbranch:   \(.branch)  (base: \(.base_branch))\nplan gate: \(if .settings.gates.plan then (.gates.plan.status // "pending") else "off" end)\nmerge:    \(.settings.merge_mode)\(if .pr.url then "  PR: \(.pr.url) (\(.pr.state // "?"))" else "" end)\ndispatch: \(.settings.dispatch // "subagent")"' "$JOBJ"
   echo
-  cmd_board
+  # the board in a few lines — the counts and the cards in work; every card with --full (or dl board)
+  if [[ ${1:-} == --full ]]; then cmd_board
+  else
+    jq -r '"cards:    \(.cards | length)" + (if (.cards | length) > 0 then " — " + ([.cards | group_by(.state)[] | "\(.[0].state) \(length)"] | join(" · ")) else "" end),
+      (.cards[] | select(.state | IN("running","review","blocked")) | "  \(.id)  \(.state)\(if .seat then " (" + .seat + ")" else "" end)  \(.title[0:70])")' "$BOARD"
+    echo "  (every card: dl board · /deliver:board)"
+  fi
   local te; te="$(grep -c $'\ttracker-error\t' "$JOB_DIR/events.log" 2>/dev/null || true)"
   [[ ${te:-0} -gt 0 ]] && echo "tracker: $te sync error(s) — last: $(grep $'\ttracker-error\t' "$JOB_DIR/events.log" | tail -1 | cut -f3 | cut -c1-160) (dl tracker sync retries)"
   echo
@@ -1157,7 +1180,7 @@ cmd_gate() {
   else
     log_event gate "$card FAIL"
     echo "GATE FAILED: $card  (log: $log)"; grep '^FAIL' "$log"
-    grep -q '^FAIL  verify' "$log" && { echo "--- tail of the verify output:"; grep -v '^\(ok\|FAIL\)  ' "$log" | tail -n 30; }
+    grep -q '^FAIL  verify' "$log" && { echo "--- tail of the verify output:"; grep -v '^\(ok\|FAIL\)  ' "$log" | show_tail 30 "$log"; }
     exit 1
   fi
 }
@@ -1187,7 +1210,7 @@ cmd_qa() {
       t0=$(date +%s)
       { echo "# qa_verify: $qverify"; (cd "$wt" && test_env "$card" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
       qsec=$(( $(date +%s) - t0 ))
-      if [[ $verdict == pass && $qres == FAIL ]]; then tail -n 25 "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; fi
+      if [[ $verdict == pass && $qres == FAIL ]]; then show_tail 25 "$qlog" < "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; fi
     fi
   fi
   # The dev's tests and QA's pass one by one, yet the suite can still break once they are collected together (seen live: two
@@ -1204,7 +1227,7 @@ cmd_qa() {
     { echo "# the $suite on $card's commit (dev + QA tests together): $full"; (cd "$wt" && test_env "$card" && bash -c "$full") 2>&1; } > "$flog" 2>&1 || qres=FAIL
     fsec=$(( $(date +%s) - t0 ))
     [[ -z "$(git -C "$wt" status --porcelain)" ]] || { echo "the $suite left changes in the card worktree:" >>"$flog"; git -C "$wt" status --porcelain >>"$flog"; git -C "$wt" checkout -q -- . 2>/dev/null; git -C "$wt" clean -fdq 2>/dev/null; qres=FAIL; }
-    [[ $qres == FAIL ]] && { tail -n 25 "$flog"; refuse 1 "QA reports pass, but the $suite fails on $card's commit with the dev's and QA's tests together — see $flog. Often two test files or helpers with the same module name; the one in qa_scope is QA's to rename, any other goes back to the dev. Record: dl qa $card fail \"<what failed>\""; }
+    [[ $qres == FAIL ]] && { show_tail 25 "$flog" < "$flog"; refuse 1 "QA reports pass, but the $suite fails on $card's commit with the dev's and QA's tests together — see $flog. Often two test files or helpers with the same module name; the one in qa_scope is QA's to rename, any other goes back to the dev. Record: dl qa $card fail \"<what failed>\""; }
   fi
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.qa = {"verdict":$v,"head":$h,"gate_head":$g,"qa_verify":$r,"seconds":($sec|tonumber),"suite_seconds":($fsec|fromjson),"suite":(if $fsec == "null" then null else $su end),"log":$l,"summary":$s,"at":$t}
       | .qas = ((.qas // []) + [{"verdict":$v,"head":$h,"qa_verify":$r,"summary":$s,"at":$t}]))' \
@@ -1441,7 +1464,7 @@ cmd_integrate() {
     log_event merge-check "$card $mres ($comp suite)"; tracker note "$card" integrate "the $comp suite on $JOB_BRANCH after the merge: $mres"
     if [[ $mres == PASS ]]; then echo "ok    the $comp suite passes on $JOB_BRANCH after the merge"
     else
-      echo "BROKEN: the $comp suite fails on $JOB_BRANCH right after $card merged — see $mlog"; tail -n 20 "$mlog"
+      echo "BROKEN: the $comp suite fails on $JOB_BRANCH right after $card merged — see $mlog"; show_tail 20 "$mlog" < "$mlog"
       echo "$card is the cause: open a fix card in component $comp now (dl card add <card.json> \"<why>\"), before other $comp cards are blamed for it."
     fi
   fi
@@ -1467,7 +1490,7 @@ run_baseline() {
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; git -C "$IWT" checkout -q -- . 2>/dev/null; git -C "$IWT" clean -fdq 2>/dev/null; result=FAIL; }
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" '.baseline = {"result":$r,"head":$h,"command":$c,"log":$l,"at":$t}'
   log_event baseline "$result ($cmd)"; echo "baseline: $result  ($cmd · log: $log)"
-  [[ $result == PASS ]] || { tail -n 25 "$log"; return 1; }
+  [[ $result == PASS ]] || { show_tail 25 "$log" < "$log"; return 1; }
 }
 baseline_holds() {
   local b; b="$(jq -c '.baseline // {}' "$JOBJ")"
@@ -1490,7 +1513,7 @@ cmd_verify_all() {
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; result=FAIL; }
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg t "$(now)" '.verify_all = {"result":$r,"head":$h,"log":$l,"at":$t}'
   reset_stop_guard; log_event verify-all "$result"
-  if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; tail -n 40 "$log"; exit 1; fi
+  if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; exit 1; fi
 }
 
 # Stack tests: a card's tests that need other cards' work (an e2e flow across services) run on the job branch as soon as the
@@ -1527,7 +1550,7 @@ cmd_stack_test() {
     --arg r "$result" --arg h "$head" --arg sec "$sec" --arg l "$log" --arg t "$(now)"
   reset_stop_guard; log_event stack-test "$card $result"; tracker note "$card" stack-test "$result on the job branch ($(basename "$log"))"
   if [[ $result == PASS ]]; then echo "STACK PASSED: $card  (log: $log)"; return 0; fi
-  echo "STACK FAILED: $card  (log: $log)"; tail -n 30 "$log"
+  echo "STACK FAILED: $card  (log: $log)"; show_tail 30 "$log" < "$log"
   echo "Open a fix card now (dl card add <card.json> \"<why>\"); once it is merged, dl stack-test $card again."
   exit 1
 }
@@ -2299,7 +2322,7 @@ main() {
     floor-open) cmd_floor_open "$@" ;;
     config) cmd_config "$@" ;;
     new) cmd_new "$@" ;;
-    status) cmd_status ;;
+    status) cmd_status "$@" ;;
     next) cmd_next ;;
     board) cmd_board ;;
     phase) cmd_phase "$@" ;;
@@ -2328,6 +2351,7 @@ main() {
     verify-all) cmd_verify_all ;;
     stack-test) cmd_stack_test "$@" ;;
     env) cmd_env "$@" ;;
+    awake) cmd_awake "$@" ;;
     baseline) cmd_baseline ;;
     ship) cmd_ship ;;
     pr) cmd_pr ;;

@@ -1393,7 +1393,11 @@ case "$(uname -s)" in
   *)      ok "(the sleep blocker of $(uname -s) is not checked here)" ;;
 esac
 rm -f "$TMP/awake.log"; "$DL" jobset '.settings.keep_awake=false' >/dev/null
-env PATH="$FB:$PATH" "$DL" stack-test T-01 >/dev/null 2>&1
+"$DL" card T-01 set stack_verify "seq 1 20 && test ! -e src/b/broken" "a stack test that talks" >/dev/null
+out="$(env PATH="$FB:$PATH" "$DL" stack-test T-01 2>&1)"
+contains "a failed run prints its last lines and where the rest is — Michael re-reads every line he reads (live: 427 M tokens)" "$out" "… the last 8 of 21 lines — the whole output: "
+[[ $out != *$'\n12\n'* && $out == *$'\n20\n'* ]] && ok "…only the last 8" || bad "tail: $out"
+contains "…DL_VERBOSE=1 prints them all" "$(DL_VERBOSE=1 env PATH="$FB:$PATH" "$DL" stack-test T-01 2>&1)" $'\n12\n'
 [[ ! -s $TMP/awake.log ]] && ok "…keep_awake=false: no blocker (a setting set to false reads as false — before, dl read it as unset, and qa_early, qa_verify_full, record_job could not be turned off)" || bad "a blocker ran with keep_awake=false: $(cat "$TMP/awake.log")"
 contains "…recorded on the card with the job branch commit" "$(jq -r '.cards[0].stack | "\(.result) \(.head | length)"' "$SJ/board.json")" "FAIL 40"
 contains "…and dl next asks for a fix card now" "$("$DL" next)" "FIX     T-01's stack tests fail on the job branch"
@@ -1410,9 +1414,45 @@ expect_ok "a merged card's stack command may be fixed (validated, logged)" "$DL"
 contains "…and its stack tests are due again" "$("$DL" next)" "STACK   dl stack-test T-01"
 "$DL" stack-test T-01 >/dev/null 2>&1
 expect_ok "integrating once every stack test passed" "$DL" phase integrating
+contains "dl status: the board as counts and the cards in work, not every card" "$("$DL" status)" "cards:    3 — merged 3"
+[[ "$("$DL" status)" != *"ID"*"STATE"*"ROLE"* ]] && ok "…no card table" || bad "status still prints the board"
+contains "…every card with dl status --full" "$("$DL" status --full)" "summary: merged=3"
 [[ ! -e $SJ/.card-lock-integration ]] && ok "integrate, stack-test and verify-all give the integration worktree back" || bad "integration lock left behind"
 contains "an agent cannot run the stack tests (Michael records them)" "$(printf '%s' '{"tool_input":{"command":"dl stack-test T-01"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 cd "$R"
+echo "run-headless: a usage limit is waited out until its reset, not handed to the human (live job: 36.6 of 65.7 hours were limit waits)"
+LR="$SDIR/bin/limit-reset.mjs"; NOW="$(node -e 'console.log(Date.UTC(2026,9,9,10,0)/1000)')"   # 12:00 in Berlin
+utc() { node -e "console.log(Date.UTC($1)/1000)"; }
+contains "the reset is read from Claude Code's own message, in its time zone" "$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)" | node "$LR" "$NOW")" "$(utc 2026,9,9,12,30)"
+contains "…a time already past today is tomorrow's" "$(echo "You've hit your session limit · resets 11am (Europe/Berlin)" | node "$LR" "$NOW")" "$(utc 2026,9,10,9,0)"
+contains "…a weekly limit names its day" "$(echo "You've hit your weekly limit · resets Oct 12, 3pm (Europe/Istanbul)" | node "$LR" "$NOW")" "$(utc 2026,9,12,12,0)"
+contains "…across the end of daylight saving" "$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)" | node "$LR" "$(utc 2026,9,24,23,0)")" "$(utc 2026,9,25,13,30)"
+expect_fail 2 "out of credits: no reset — the human's call" bash -c "echo \"You're out of usage credits. Switch to another model\" | node '$LR'"
+expect_fail 1 "no limit in the text: nothing to wait for" bash -c "echo 'all done' | node '$LR'"
+HL="$TMP/headless"; mkdir -p "$HL/.work/JOB-x" && git -C "$HL" init -q -b main && echo '{"dispatch":"subagent"}' > "$HL/.deliver.json"
+echo JOB-x > "$HL/.work/ACTIVE"; : > "$HL/.work/JOB-x/events.log"
+HB="$TMP/hlbin"; mkdir -p "$HB"
+cat > "$HB/claude" <<'FAKE'
+#!/bin/sh
+# a claude -p round: the first one meets a usage limit (HL_MODE=limit) or no credits; the next one finishes the job
+n=$(cat "$HL_CNT" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$HL_CNT"
+case "$HL_MODE:$n" in
+  limit:1) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'ve hit your session limit · resets 2:30pm (Europe/Berlin)"}' ;;
+  credits:*) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'re out of usage credits. Switch to another model."}' ;;
+  *) jq '.phase = "done"' "$HL_JF" > "$HL_JF.t" && mv "$HL_JF.t" "$HL_JF"; echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
+esac
+FAKE
+printf '#!/bin/sh\necho "$*" >> "%s/hl-sleep"\n' "$TMP" > "$HB/sleep"; printf '#!/bin/sh\nexit 0\n' > "$HB/caffeinate"; chmod +x "$HB"/*
+hl() { echo '{"phase":"executing"}' > "$HL/.work/JOB-x/job.json"; rm -f "$TMP/hl-n" "$TMP/hl-sleep"
+  PATH="$HB:$PATH" HL_MODE=$1 HL_CNT="$TMP/hl-n" HL_JF="$HL/.work/JOB-x/job.json" "$HERE/scripts/run-headless.sh" "$HL" 2>&1; }
+out="$(hl limit)"
+contains "a round that meets a usage limit waits for the reset Claude Code names" "$out" "⏸  usage limit: You've hit your session limit · resets 2:30pm (Europe/Berlin) — waiting"
+[[ "$(cat "$TMP/hl-sleep" 2>/dev/null)" =~ ^[0-9]+$ && "$(cat "$TMP/hl-sleep")" -ge 60 ]] && ok "…sleeps until a minute past it" || bad "sleep: $(cat "$TMP/hl-sleep" 2>/dev/null)"
+contains "…then the job goes on by itself, the wait neither a round nor 'no progress'" "$out" "✔ job JOB-x: done"
+[[ "$(cat "$TMP/hl-n")" == 2 ]] && ok "…in the round after the wait" || bad "claude ran $(cat "$TMP/hl-n") times"
+out="$(hl credits)"; rc=$?
+contains "out of credits it stops and says so: the human's call" "$out" "out of usage credits — add credits or switch the model"
+[[ ! -e $TMP/hl-sleep ]] && ok "…without waiting" || bad "waited on no credits"
 echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
 BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
 echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i

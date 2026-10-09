@@ -145,6 +145,8 @@ Components (with their path, stack, dev owner and reviewer) are not set on roles
 | `ASANA_TOKEN` · `LINEAR_API_KEY` · `GITHUB_TOKEN` (or `GH_TOKEN`) | Asana, Linear, GitHub Projects credentials — [10](10-trackers.md#asana-linear-github-projects) |
 | `HIVE_ROOT`, `KG_CLI`, `KG_ROOT` | Set by Munder Difflin in its terminals: hive folder, knowledge graph CLI and store |
 | `PERMISSION_MODE` | `scripts/run-headless.sh` permission mode (`auto` default) |
+| `LIMIT_WAITS` | `scripts/run-headless.sh`: how many usage limits it waits out (until a minute past the reset) before it stops (default 30) |
+| `DL_VERBOSE=1` | `dl` prints a failed run's whole tail (25–40 lines) instead of its last 8 and the log's path |
 | `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` | Set by `run-headless.sh`: no background agents in `-p` runs |
 | `GATEGUARD_EXEMPT_GLOBS` | Set by `install.sh`: ECC's GateGuard lets Michael write `.work/` files |
 

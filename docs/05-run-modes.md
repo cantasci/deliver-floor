@@ -61,6 +61,11 @@ scripts/run-headless.sh /path/to/repo                                          #
   the script again. The hooks refuse these commands from the model itself. After the start Michael asks nothing: a blocked
   card is split or dropped by him with its reason (`dl pm-decide`, `dl card … state archived "<why>"`), listed in the PR.
 - Permission mode is `auto` by default; otherwise `PERMISSION_MODE=acceptEdits` plus an allowlist ([02 § 4.5](02-setup.md#45-permissions)).
+- **A usage limit does not stop it.** The round's last message names the reset ("You've hit your session limit · resets
+  2:30pm (Europe/Berlin)"); the script waits until a minute past it and the job goes on — the wait is neither a round nor
+  "no progress" (at most `LIMIT_WAITS` waits, default 30). Out of credits it stops: that is your call. The machine stays
+  awake for the whole run (`keep_awake`). For a long job this is the mode to use: an interactive session stopped by a limit
+  waits until you come back (live job: 36.6 of 65.7 hours were limit waits).
 
 ## 4. Agent SDK
 
