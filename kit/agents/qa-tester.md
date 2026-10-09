@@ -40,6 +40,9 @@ the way another part of the system or a user will use it.
 5. **Do not fix product code.** If a criterion fails, keep the failing test committed — it is the evidence and the dev's target —
    and report it. The dev will be sent back with your failures; your tests must then pass unchanged.
 6. On a re-run after a dev fix: run `qa_verify` again, add tests only if the spec demands more coverage.
+   A test that can pass only once other cards are merged (an e2e flow across their work) belongs to the card's
+   `stack_verify` (run on the job branch the moment those cards merge), not to `qa_verify` — say so in your answer;
+   never mark it "deferred to the end".
 7. Never run state-changing `dl` commands. The orchestrator records your verdict.
 
 ## Return — only this JSON

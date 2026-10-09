@@ -1344,6 +1344,52 @@ contains "…after the fix the pass goes through" "$("$DL" qa T-01 pass "AC-1 pa
 [[ -f $HOME/app-suite && ! -e $HOME/whole-suite ]] && ok "…it ran the app component's suite, not the whole one" || bad "suites run: $(ls "$HOME")"
 contains "…and the card records which suite ran" "$(jq -r '.cards[0].qa.suite' "$QJ/board.json")" 'touch "$HOME/app-suite"'
 rm -f "$HOME/app-suite"; cd "$R"
+echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
+ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "stack" "x" >/dev/null 2>&1; SJ="$ST/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null 2>&1
+for c in T-01 T-02 T-03; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$SJ/specs/$c.md"; done
+stcard() { jq -n --arg id "$1" --arg d "$2" '{id:$id,title:$d,role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/\($d)/**"],qa_scope:["it/\($d)/**"],
+  verify:"test -f src/\($d)/f",qa_verify:"test -f it/\($d)/t",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}'; }
+jq -n --argjson a "$(stcard T-01 a)" --argjson b "$(stcard T-02 b)" '{cards:[$a + {stack_verify:"true", stack_after:["T-01","T-09"]}, $b]}' > "$SJ/board.json"
+out="$("$DL" validate 2>&1)"
+contains "a stack test that proves nothing is refused" "$out" "T-01: stack_verify 'true' proves nothing"
+contains "…stack_after naming the card itself" "$out" "T-01: stack_after names the card itself"
+contains "…or an unknown card" "$out" "T-01: stack_after references unknown card T-09"
+jq -n --argjson a "$(stcard T-01 a)" --argjson b "$(stcard T-02 b)" '{cards:[$a + {stack_verify:"test -f src/a/f && test -f src/b/f && test ! -e src/b/broken", stack_after:["T-02"]}, $b]}' > "$SJ/board.json"
+expect_ok "a card with stack tests and the cards they need is valid" "$DL" validate
+"$DL" phase executing >/dev/null
+stmerge() { # stmerge <card> <dir> [extra file the dev also commits] — dev, gate, QA, review, merge
+  local w; w="$("$DL" wt add "$1")"; mkdir -p "$w/src/$2" "$w/it/$2" && echo x > "$w/src/$2/f" && { [[ -z ${3:-} ]] || echo x > "$w/src/$2/$3"; }
+  git -C "$w" add -A && git -C "$w" commit -qm "$1: $2" && "$DL" gate "$1" >/dev/null 2>&1 && echo t > "$w/it/$2/t" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: $2" \
+    && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review "$1" approve ok >/dev/null 2>&1 && "$DL" integrate "$1" >/dev/null 2>&1
+}
+stmerge T-01 a || bad "T-01 did not merge"
+[[ "$("$DL" next)" != *"STACK"* ]] && ok "a merged card's stack tests wait while a card they need is not merged" || bad "STACK too early: $("$DL" next)"
+contains "…and dl stack-test says which card they wait for" "$("$DL" stack-test T-01 2>&1)" "T-01's stack tests wait for T-02 to merge"
+stmerge T-02 b broken || bad "T-02 did not merge"
+contains "the moment T-02 merges, dl next says to run T-01's stack tests" "$("$DL" next)" "STACK   dl stack-test T-01"
+contains "…integrating is refused until they pass (not left for the end)" "$("$DL" phase integrating 2>&1)" "stack tests have not passed on the job branch: T-01"
+expect_fail 1 "dl stack-test runs them on the job branch: T-02 broke them" "$DL" stack-test T-01
+contains "…recorded on the card with the job branch commit" "$(jq -r '.cards[0].stack | "\(.result) \(.head | length)"' "$SJ/board.json")" "FAIL 40"
+contains "…and dl next asks for a fix card now" "$("$DL" next)" "FIX     T-01's stack tests fail on the job branch"
+jq -n '{title:"fix b",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["src/b/**"],qa_scope:["it/b/**"],
+  verify:"test ! -e src/b/broken",qa_verify:"test -f it/b/t",acceptance:["AC-1: x"],context:"remove what broke T-01'"'"'s stack tests"}' > "$TMP/stfix.json"
+contains "the fix card is added" "$("$DL" card add "$TMP/stfix.json" "T-01's stack tests fail after T-02" 2>&1)" "T-03"
+W3="$("$DL" wt add T-03)"; git -C "$W3" rm -q src/b/broken && git -C "$W3" commit -qm "T-03: fix b" && "$DL" gate T-03 >/dev/null 2>&1
+echo t2 > "$W3/it/b/t2" && git -C "$W3" add -A && git -C "$W3" commit -qm "T-03 QA: b" && "$DL" qa T-03 pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review T-03 approve ok >/dev/null 2>&1
+expect_ok "…and merged" "$DL" integrate T-03
+contains "once the fix is merged, dl next asks for the stack tests again" "$("$DL" next)" "STACK   dl stack-test T-01"
+contains "…and they pass" "$("$DL" stack-test T-01 2>&1)" "STACK PASSED: T-01"
+contains "…then the job goes on to integrating" "$("$DL" next)" "PHASE   dl phase integrating"
+expect_ok "a merged card's stack command may be fixed (validated, logged)" "$DL" card T-01 set stack_verify "test -f src/a/f && test -f src/b/f" "narrower check"
+contains "…and its stack tests are due again" "$("$DL" next)" "STACK   dl stack-test T-01"
+"$DL" stack-test T-01 >/dev/null 2>&1
+expect_ok "integrating once every stack test passed" "$DL" phase integrating
+[[ ! -e $SJ/.card-lock-integration ]] && ok "integrate, stack-test and verify-all give the integration worktree back" || bad "integration lock left behind"
+contains "an agent cannot run the stack tests (Michael records them)" "$(printf '%s' '{"tool_input":{"command":"dl stack-test T-01"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+cd "$R"
 echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
 BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
 echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i

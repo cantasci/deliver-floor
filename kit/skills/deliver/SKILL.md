@@ -213,13 +213,15 @@ Rules:
 - component = the architecture component the card belongs to; scope and qa_scope stay inside its path; role = its owner.
 - Order with depends_on using temporary ids (B1, B2… / F1…). Cards that touch the same files are never parallel.
 - A skeleton card's tests never require a stub to stay empty (later cards fill it). Test file names are unique within a component.
+- stack_verify + stack_after (only when needed) = tests that pass only once other cards are merged (an e2e flow across
+  services): the command, run on the job branch, and the tmp ids of those cards. They run the moment those cards merge.
 OUTPUT — only a JSON array:
-[{"tmp_id":"B1","title":"…","role":"backend","component":"orders-svc","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"]}]
+[{"tmp_id":"B1","title":"…","role":"backend","component":"orders-svc","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"],"stack_verify":"(optional) …","stack_after":["(optional) B2"]}]
 ```
 
 Then **you** merge the arrays into `.work/<job>/board.json` (`{"cards":[…]}`):
 
-- Ids `T-01`, `T-02`…; rewrite `depends_on` from tmp ids to T-ids (link cross-area deps yourself).
+- Ids `T-01`, `T-02`…; rewrite `depends_on` and `stack_after` from tmp ids to T-ids (link cross-area deps yourself).
 - Per card add `"agent"` (the role's agent from `roles.yaml`), `"state":"ready"`, `"attempts":0`, `"notes":[]`.
 
 Then the **Business Analyst specs every card** — one call with all cards:
@@ -344,6 +346,9 @@ Use "changes" only when there is at least one blocking item. A violated standard
    repo accepts: `"$DL" jobset '.settings.commit.merge_message="<message with {card} {title} {key}>"'`, record it as your
    decision (`dl pm-decide`), and integrate again. Every commit follows the repo's convention (`settings.commit.convention`,
    detected at `dl new`); its hooks are never skipped.
+5. **Stack tests** — `dl next` says `STACK dl stack-test T-xx` the moment a card and the cards its stack tests need
+   (`stack_after`) are merged: run it then, not at the end. A failure (`FIX`) gets a fix card now (`"$DL" card add`), and the
+   stack test runs again once it is merged. `dl phase integrating` is refused while one is due or failing.
 
 ## Blocked
 

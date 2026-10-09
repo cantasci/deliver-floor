@@ -49,6 +49,8 @@
 #   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
 #   dl verify-all                  run verify_full in the integration worktree
+#   dl stack-test <card>           run a merged card's stack tests (stack_verify) on the job branch once its stack_after
+#                                  cards are merged too — dl next says when; they never wait for the end of the job
 #   dl ship                        deliver per merge_mode: human|semi|auto → push + PR (+ auto-merge / merge on green),
 #                                  local → merge into the base branch. Needs verify-all PASS + report.md (phase closing)
 #   dl pr                          PR state (awaiting_pr_merge): merged → done; closed → aborted; open → checks/review
@@ -205,9 +207,10 @@ gate_holds() { # gate_holds <card> <head>
   git -C "$ROOT" merge-base --is-ancestor "$g" "$2" 2>/dev/null && [[ -z "$(outside "$g" "$2" "$(card_get "$1" '.qa_scope // []')")" ]]
 }
 
-# card_lock <card> <what> — one gate, QA run or QA join per card at a time: they share the card worktree, and a second
-# gate running over the first deleted its files and failed it (live run: T-37, gated at 12:48 and 12:50). A second caller
-# is refused, never queued; the lock goes with this dl process, and a lock whose process is gone is taken over.
+# card_lock <card | integration> <what> — one gate, QA run or QA join per card at a time: they share the card worktree, and a
+# second gate running over the first deleted its files and failed it (live run: T-37, gated at 12:48 and 12:50). The same for
+# the integration worktree (integrate, verify-all, stack-test). A second caller is refused, never queued; the lock goes with
+# this dl process, and a lock whose process is gone is taken over.
 card_lock() {
   local d="$JOB_DIR/.card-lock-$1" pid what
   if ! mkdir "$d" 2>/dev/null; then
@@ -491,9 +494,16 @@ cmd_next() {
       fi
       jq -r '.cards[] | select(.state=="running") | "WAIT    \(.id) (agent running)"' "$BOARD"
       jq -r --argjson max "$(setting max_attempts)" '.cards[] | select(.state=="ready" and .attempts >= $max) | "BLOCK   \(.id) (no attempts left: dl card \(.id) state blocked)"' "$BOARD"
+      # a merged card's stack tests, the moment the cards they need are merged (stack_after) — never left for the end
+      local sdue sid sres shead jh; sdue="$(stack_due)"; jh="$(branch_head "$JOB_BRANCH")"
+      while IFS=$'\x1f' read -r sid sres shead; do
+        [[ -z $sid ]] && continue
+        if [[ $sres == FAIL && $shead == "$jh" ]]; then echo "FIX     $sid's stack tests fail on the job branch ($(card_get "$sid" .stack.log)) — a fix card now: dl card add <card.json> \"<why>\"; once it is merged: dl stack-test $sid"
+        else echo "STACK   dl stack-test $sid  (the cards its stack tests need are merged — run them now, not at the end)"; fi
+      done <<<"$sdue"
       local open; open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$BOARD")"
-      local busy=0; { [[ -n ${r// /} || $running -gt 0 ]] || jq -e '.cards[] | select(.state=="review")' "$BOARD" >/dev/null; } && busy=1
-      if [[ $open -eq 0 ]] && ! jq -e '.cards[] | select(.state=="blocked")' "$BOARD" >/dev/null; then
+      local busy=0; { [[ -n ${r// /} || $running -gt 0 || -n $sdue ]] || jq -e '.cards[] | select(.state=="review")' "$BOARD" >/dev/null; } && busy=1
+      if [[ $open -eq 0 && -z $sdue ]] && ! jq -e '.cards[] | select(.state=="blocked")' "$BOARD" >/dev/null; then
         echo "PHASE   dl phase integrating"
       elif [[ $busy -eq 0 ]]; then
         # Nothing moves on its own: Michael decides about every blocked card — the human is not asked after the start.
@@ -557,6 +567,7 @@ cmd_phase() {
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       integrating)
         [[ $cur == executing || $cur == integrating ]] || refuse 1 "integrating comes after executing (now: $cur)"
+        [[ -z "$(stack_due)" ]] || refuse 1 "stack tests have not passed on the job branch: $(stack_due | cut -d$'\x1f' -f1 | tr '\n' ' ')— run each now (dl stack-test <card>); a failure gets a fix card now, not at the end"
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
           || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl card add …) or drop it (dl card <id> state archived \"<reason>\")" ;;
       closing)
@@ -915,7 +926,7 @@ cmd_wt() {
   esac
 }
 
-CARD_FIELDS="title context verify qa_verify scope qa_scope acceptance depends_on component"
+CARD_FIELDS="title context verify qa_verify scope qa_scope acceptance depends_on component stack_verify stack_after"
 cmd_card_add() { # dl card add <card.json> "<reason>"
   local file=${1:-} reason=${2:-}
   [[ -f $file && -n $reason ]] || die 'usage: dl card add <card.json> "<reason>"'
@@ -963,11 +974,14 @@ cmd_card() {
       [[ " $CARD_FIELDS " == *" $field "* && -n $value && -n $reason ]] || die "usage: dl card $card set <$(tr ' ' '|' <<<"$CARD_FIELDS")> <value> \"<reason>\""
       # The command that runs the tests may be fixed on a running card too (e.g. a form Node 22 rejects) — validated and logged;
       # the rest of the contract changes only while the card is ready or blocked.
-      [[ $cur == ready || $cur == blocked || ( ($field == verify || $field == qa_verify) && ($cur == running || $cur == review) ) ]] \
-        || refuse 1 "$card is $cur — a card's contract changes only while it is ready or blocked (verify / qa_verify: also while running)"
+      # Stack tests run after the merge, so their command and cards may be fixed on a merged card too (a new run is then due).
+      [[ $cur == ready || $cur == blocked || ( ($field == verify || $field == qa_verify) && ($cur == running || $cur == review) ) \
+         || ( ($field == stack_verify || $field == stack_after) && $cur != archived ) ]] \
+        || refuse 1 "$card is $cur — a card's contract changes only while it is ready or blocked (verify / qa_verify: also while running; stack_verify / stack_after: until archived)"
       local json; json="$(jq -c . <<<"$value" 2>/dev/null)" || json="$(jq -cn --arg v "$value" '$v')"
       cp "$BOARD" "$BOARD.bak"
-      card_set "$card" '(.cards[] | select(.id==$id)) |= (.history = ((.history // []) + [{"at":$t,"by":"michael","field":$f,"from":.[$f],"to":$v,"reason":$r}]) | .[$f] = $v)' \
+      card_set "$card" '(.cards[] | select(.id==$id)) |= (.history = ((.history // []) + [{"at":$t,"by":"michael","field":$f,"from":.[$f],"to":$v,"reason":$r}]) | .[$f] = $v
+          | if ($f | startswith("stack_")) then .stack = null else . end)' \
         --arg f "$field" --argjson v "$json" --arg r "$reason" --arg t "$(now)"
       if ! node "$BIN_DIR/validate.mjs" "$BOARD" > "$JOB_DIR/.validate.out" 2>&1; then
         mv "$BOARD.bak" "$BOARD"; seal "$BOARD"; grep -E '^ERROR' "$JOB_DIR/.validate.out" >&2; refuse 1 "the change makes the board invalid — reverted"
@@ -1335,7 +1349,7 @@ merge_refused_msg() { # what Michael does when the repo refuses every merge mess
 cmd_integrate() {
   load_job; assert_frozen
   local card=${1:-}; [[ -n $card ]] || die "usage: dl integrate <card>"
-  card_exists "$card"
+  card_exists "$card"; card_lock integration "integrate $card"
   local branch title head
   branch="$(card_get "$card" .branch)"; title="$(card_get "$card" .title)"
   [[ $branch != null ]] || die "$card has no branch"
@@ -1396,7 +1410,7 @@ baseline_holds() {
 cmd_baseline() { load_job; run_baseline; }
 
 cmd_verify_all() {
-  load_job
+  load_job; card_lock integration verify-all
   local cmd log head; cmd="$(setting verify_full)"; log="$JOB_DIR/gates/verify-all-$(date +%H%M%S).log"
   [[ -n $cmd ]] || refuse 1 "verify_full is not set — it follows the stack (ARC-stack): record the full test command with dl jobset '.settings.verify_full=\"<command>\"' (and in .deliver.json for the next jobs)"
   head="$(branch_head "$JOB_BRANCH")"
@@ -1407,6 +1421,45 @@ cmd_verify_all() {
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg t "$(now)" '.verify_all = {"result":$r,"head":$h,"log":$l,"at":$t}'
   reset_stop_guard; log_event verify-all "$result"
   if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; tail -n 40 "$log"; exit 1; fi
+}
+
+# Stack tests: a card's tests that need other cards' work (an e2e flow across services) run on the job branch as soon as the
+# card and its stack_after cards are merged — never at the end (live job: e2e tests left for the end failed 5 times at
+# verify-all and cost a 2.2-hour extra round, long after the cards that broke them had merged).
+# stack_due → "<id>\x1f<last result>\x1f<head it ran on>" per merged card with stack_verify whose stack_after cards are merged
+# (or dropped) and whose stack tests have not passed
+stack_due() {
+  jq -r '(.cards | map({key:.id, value:.state}) | from_entries) as $s
+    | .cards[] | select((.stack_verify // "") != "" and .state == "merged" and (.stack.result // "") != "PASS"
+        and ((.stack_after // []) | all(($s[.] // "") | IN("merged","archived"))))
+    | [.id, (.stack.result // ""), (.stack.head // "")] | join("\u001f")' "$BOARD"
+}
+
+cmd_stack_test() {
+  load_job; assert_frozen
+  local card=${1:-}; [[ -n $card ]] || die "usage: dl stack-test <card>"
+  card_exists "$card"
+  local cmd waiting; cmd="$(card_get "$card" '.stack_verify // ""')"
+  [[ -n $cmd ]] || refuse 1 "$card has no stack tests (stack_verify)"
+  [[ "$(card_get "$card" .state)" == merged ]] || refuse 1 "$card is $(card_get "$card" .state) — its stack tests run on the job branch once it is merged"
+  waiting="$(jq -r --arg id "$card" '(.cards | map({key:.id, value:.state}) | from_entries) as $s
+    | (.cards[] | select(.id==$id) | .stack_after // [])[] | select(($s[.] // "") | IN("merged","archived") | not)' "$BOARD" | tr '\n' ' ')"
+  [[ -z $waiting ]] || refuse 1 "$card's stack tests wait for ${waiting% } to merge (stack_after) — dl next says when they can run"
+  card_lock integration "stack-test $card"
+  [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
+    || refuse 1 "the integration worktree has uncommitted changes — nothing may be written there by hand (git -C $IWT status)"
+  local head log result=FAIL t0 sec; head="$(branch_head "$JOB_BRANCH")"; log="$JOB_DIR/gates/$card-stack-$(date +%H%M%S).log"; t0=$(date +%s)
+  { echo "# stack tests of $card on $JOB_BRANCH ${head:0:12}: $cmd"; (cd "$IWT" && bash -c "$cmd") 2>&1; } > "$log" 2>&1 && result=PASS
+  sec=$(( $(date +%s) - t0 ))
+  [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "the stack tests left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; git -C "$IWT" checkout -q -- . 2>/dev/null; git -C "$IWT" clean -fdq 2>/dev/null; result=FAIL; }
+  card_set "$card" '(.cards[] | select(.id==$id)) |= (.stack = {"result":$r,"head":$h,"seconds":($sec|tonumber),"log":$l,"at":$t}
+      | .stacks = ((.stacks // []) + [{"result":$r,"head":$h,"at":$t}]))' \
+    --arg r "$result" --arg h "$head" --arg sec "$sec" --arg l "$log" --arg t "$(now)"
+  reset_stop_guard; log_event stack-test "$card $result"; tracker note "$card" stack-test "$result on the job branch ($(basename "$log"))"
+  if [[ $result == PASS ]]; then echo "STACK PASSED: $card  (log: $log)"; return 0; fi
+  echo "STACK FAILED: $card  (log: $log)"; tail -n 30 "$log"
+  echo "Open a fix card now (dl card add <card.json> \"<why>\"); once it is merged, dl stack-test $card again."
+  exit 1
 }
 
 cmd_approve() { human_only "approving the plan"; _gate_record "${1:-}" approved "${2:-}"; }
@@ -2203,6 +2256,7 @@ main() {
     review) cmd_review "$@" ;;
     integrate) cmd_integrate "$@" ;;
     verify-all) cmd_verify_all ;;
+    stack-test) cmd_stack_test "$@" ;;
     baseline) cmd_baseline ;;
     ship) cmd_ship ;;
     pr) cmd_pr ;;

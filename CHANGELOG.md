@@ -4,6 +4,21 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.11.0 — 2026-10-09
+
+**Stack tests run the moment the cards they need are merged — not at the end** (from a 65-hour live job: e2e tests left for
+the end failed 5 times at verify-all and cost a 2.2-hour extra round, long after the cards that broke them had merged)
+- A card may carry stack tests: tests that pass only once other cards are merged (an e2e flow across services) —
+  `stack_verify` (the command, run on the job branch) and `stack_after` (those cards). The Lead sets them; QA puts such a test
+  there instead of in `qa_verify`, never "deferred to the end".
+- The moment the card and its `stack_after` cards are merged, `dl next` says `STACK dl stack-test T-xx`; a failure (`FIX`)
+  gets a fix card right away, and the stack tests run again once it is merged. `dl phase integrating` is refused while one
+  is due or failing. Each run is kept on the card with the job branch commit it ran on.
+- `dl card … set stack_verify | stack_after` also works on a merged card (validated, logged, listed in the PR); the stack
+  tests are then due again.
+- `integrate`, `verify-all` and `stack-test` take turns in the integration worktree, as a card's gate, QA run and QA join do
+  in its own.
+
 ## 0.10.0 — 2026-10-09
 
 **A QA pass runs the card's component suite, not the whole repo's** (from a 65-hour live job: QA's 23 whole-suite runs took

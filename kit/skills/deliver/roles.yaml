@@ -37,6 +37,7 @@ rules:
     - "context must let a developer who never saw the plan do the card: why, files, decisions, contracts."
     - "Cards that touch the same files must be ordered with depends_on; parallel cards never share scope."
     - "A scaffold/skeleton card's tests check what the skeleton provides (files, imports, contract shapes), never that a stub stays empty or unimplemented: later cards fill those stubs, and such a test breaks each of them (live run: three fix cards from one skeleton)."
+    - "A test that can pass only once other cards are merged (an e2e flow across several cards' work) is a stack test: give its card stack_verify (the command, run on the job branch) and stack_after (those cards). It runs the moment they merge — never left for the end of the job, where its failures are found long after the cards that caused them."
     - "Test file names are unique within a component: no two cards' scope or qa_scope may create a test file with the same name (one test runner collects them all; two build_support.py broke a whole suite). Name test files after the card's area."
   dev:
     - "Work only inside the card worktree you were given. Every path is relative to it."
@@ -62,6 +63,7 @@ rules:
     - "Every AC gets a verdict, pass or fail, with the test that shows it."
     - "Tests never depend on the state of the git working tree or of other cards' work (uncommitted files, git status, git log of the card): they test the product, the same in every worktree and on the job branch."
     - "Test the commit the gate passed (DEV'S COMMIT in your order); never search the history for it."
+    - "A test that can pass only once other cards are merged goes into the card's stack tests (stack_verify), not qa_verify: it runs on the job branch as soon as those cards merge. Never mark a test 'deferred to the end'."
     - "A defect you see outside this card goes under 'Out of scope' in your answer — Michael records it; never fix it here."
 
 roles:
