@@ -34,6 +34,7 @@ Start with `/deliver:doctor` (or `scripts/doctor.sh <repo>`), then `/deliver:sta
 | `FAIL out-of-scope file` | the dev touched a file outside `scope` | legit: `dl card T-xx set scope '[…]' "<reason>"` on a ready/blocked card; otherwise the retry fixes it |
 | `dl qa` refused: changes outside `qa_scope` | QA edited product code or unit tests | QA reverts; product bugs go back to the dev as failing tests |
 | `dl phase integrating` refused: stack tests have not passed | a merged card's stack tests (`stack_verify`) are due or failing on the job branch | `dl stack-test T-xx` now; a failure gets a fix card (`dl card add`), then run it again once the fix is merged |
+| `BROKEN: the <component> suite fails on job/… right after T-xx merged` | that card broke the job branch together with what was already merged (its own branch passed) | a fix card in that component now (`dl card add`); `dl next` keeps saying FIX until a later merge into the component passes |
 | `dl: REFUSED — T-xx is busy: dl gate T-xx is running on it` | a gate, QA run or QA join is already running on that card (they share its worktree) | wait for it to finish; never start a second one. A hold whose `dl` died is taken over by the next call |
 | `CONFLICT` on integrate (exit 3) | two cards edited the same area | the dev merges the job branch in its worktree (Michael does this); next time add `depends_on` or split scopes (validate warns) |
 | `dl: REFUSED — all N '<role>' seats are busy` | more ready cards than seats | expected: the next free seat takes it. More parallelism: `count` on the role |

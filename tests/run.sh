@@ -1343,6 +1343,14 @@ git -C "$WQ" rm -q test/it/clash.py && git -C "$WQ" commit -qm "T-01 QA: drop th
 contains "…after the fix the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
 [[ -f $HOME/app-suite && ! -e $HOME/whole-suite ]] && ok "…it ran the app component's suite, not the whole one" || bad "suites run: $(ls "$HOME")"
 contains "…and the card records which suite ran" "$(jq -r '.cards[0].qa.suite' "$QJ/board.json")" 'touch "$HOME/app-suite"'
+QCIW="$(jq -r .integration_worktree "$QJ/job.json")"   # meanwhile another card merged a file that clashes once T-01 is in
+mkdir -p "$QCIW/test/it" && echo c > "$QCIW/test/it/clash.py" && git -C "$QCIW" add -A && git -C "$QCIW" commit -qm "T-02: another card"
+"$DL" review T-01 approve ok >/dev/null 2>&1
+out="$("$DL" integrate T-01 2>&1)"
+contains "right after the merge the job branch runs the card's component suite — the card that breaks it is named at once" "$out" "BROKEN: the app suite fails on"
+contains "…the merge itself stands" "$out" "MERGED: T-01"
+contains "…the check is kept on the card" "$(jq -r '.cards[0].merge_check | "\(.result) \(.component)"' "$QJ/board.json")" "FAIL app"
+contains "…and dl next asks for a fix card in that component now" "$("$DL" next)" "FIX     the app suite fails on the job branch since T-01 merged"
 rm -f "$HOME/app-suite"; cd "$R"
 echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
 ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
@@ -1357,7 +1365,8 @@ out="$("$DL" validate 2>&1)"
 contains "a stack test that proves nothing is refused" "$out" "T-01: stack_verify 'true' proves nothing"
 contains "…stack_after naming the card itself" "$out" "T-01: stack_after names the card itself"
 contains "…or an unknown card" "$out" "T-01: stack_after references unknown card T-09"
-jq -n --argjson a "$(stcard T-01 a)" --argjson b "$(stcard T-02 b)" '{cards:[$a + {stack_verify:"test -f src/a/f && test -f src/b/f && test ! -e src/b/broken", stack_after:["T-02"]}, $b]}' > "$SJ/board.json"
+jq -n --argjson a "$(stcard T-01 a)" --argjson b "$(stcard T-02 b)" '{cards:[$a + {verify:"test -f src/a/f && echo \"$DELIVER_PORT_BASE $DELIVER_RUN_ID\" > \"$HOME/st-gate-env\"",
+  stack_verify:"test -f src/a/f && echo \"$DELIVER_PORT_BASE\" > \"$HOME/st-stack-env\" && test -f src/b/f && test ! -e src/b/broken", stack_after:["T-02"]}, $b]}' > "$SJ/board.json"
 expect_ok "a card with stack tests and the cards they need is valid" "$DL" validate
 "$DL" phase executing >/dev/null
 stmerge() { # stmerge <card> <dir> [extra file the dev also commits] — dev, gate, QA, review, merge
@@ -1366,12 +1375,26 @@ stmerge() { # stmerge <card> <dir> [extra file the dev also commits] — dev, ga
     && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review "$1" approve ok >/dev/null 2>&1 && "$DL" integrate "$1" >/dev/null 2>&1
 }
 stmerge T-01 a || bad "T-01 did not merge"
+contains "every test run dl makes gets its card's port base and a run id (live job: fixed ports 8101 / 5173 collided)" "$(cat "$HOME/st-gate-env" 2>/dev/null)" "20100 $(cat .work/ACTIVE)-T-01-"
+contains "dl env: the same for an agent's own runs — each card its 50 ports, its QA worktree apart" "$("$DL" env T-01) | $("$DL" env T-01 --qa) | $("$DL" env T-02)" "DELIVER_PORT_BASE=20100 DELIVER_RUN_ID=$(cat .work/ACTIVE)-T-01 | export DELIVER_PORT_BASE=20150 DELIVER_RUN_ID=$(cat .work/ACTIVE)-T-01-qa | export DELIVER_PORT_BASE=20200"
 [[ "$("$DL" next)" != *"STACK"* ]] && ok "a merged card's stack tests wait while a card they need is not merged" || bad "STACK too early: $("$DL" next)"
 contains "…and dl stack-test says which card they wait for" "$("$DL" stack-test T-01 2>&1)" "T-01's stack tests wait for T-02 to merge"
 stmerge T-02 b broken || bad "T-02 did not merge"
 contains "the moment T-02 merges, dl next says to run T-01's stack tests" "$("$DL" next)" "STACK   dl stack-test T-01"
 contains "…integrating is refused until they pass (not left for the end)" "$("$DL" phase integrating 2>&1)" "stack tests have not passed on the job branch: T-01"
-expect_fail 1 "dl stack-test runs them on the job branch: T-02 broke them" "$DL" stack-test T-01
+FB="$TMP/fakebin"; mkdir -p "$FB"   # the sleep blockers, recording how dl calls them
+printf '#!/bin/sh\necho "caffeinate $*" >> "%s/awake.log"\n' "$TMP" > "$FB/caffeinate"
+printf '#!/bin/sh\necho "systemd-inhibit $1" >> "%s/awake.log"\n' "$TMP" > "$FB/systemd-inhibit"; chmod +x "$FB"/*
+expect_fail 1 "dl stack-test runs them on the job branch: T-02 broke them" env PATH="$FB:$PATH" "$DL" stack-test T-01
+contains "…with the job branch's own port base" "$(cat "$HOME/st-stack-env" 2>/dev/null)" "20000"
+case "$(uname -s)" in
+  Darwin) contains "the machine stays awake while dl runs tests, until that dl ends (macOS: caffeinate -i -w <dl's pid>)" "$(cat "$TMP/awake.log" 2>/dev/null)" "caffeinate -i -w " ;;
+  Linux)  contains "the machine stays awake while dl runs tests, until that dl ends (Linux: systemd-inhibit)" "$(cat "$TMP/awake.log" 2>/dev/null)" "systemd-inhibit --what=idle:sleep" ;;
+  *)      ok "(the sleep blocker of $(uname -s) is not checked here)" ;;
+esac
+rm -f "$TMP/awake.log"; "$DL" jobset '.settings.keep_awake=false' >/dev/null
+env PATH="$FB:$PATH" "$DL" stack-test T-01 >/dev/null 2>&1
+[[ ! -s $TMP/awake.log ]] && ok "…keep_awake=false: no blocker (a setting set to false reads as false — before, dl read it as unset, and qa_early, qa_verify_full, record_job could not be turned off)" || bad "a blocker ran with keep_awake=false: $(cat "$TMP/awake.log")"
 contains "…recorded on the card with the job branch commit" "$(jq -r '.cards[0].stack | "\(.result) \(.head | length)"' "$SJ/board.json")" "FAIL 40"
 contains "…and dl next asks for a fix card now" "$("$DL" next)" "FIX     T-01's stack tests fail on the job branch"
 jq -n '{title:"fix b",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["src/b/**"],qa_scope:["it/b/**"],
@@ -1569,6 +1592,7 @@ QIW="$(jq -r .integration_worktree "$QJ/job.json")"   # another card merges into
 mkdir -p "$QIW/other" && echo o > "$QIW/other/o" && git -C "$QIW" add other && git -C "$QIW" commit -qm "T-02: another card"
 out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into the card branch — cards merged since QA's branch was cut are not QA's changes" "$out" "QA tests joined T-01"
 [[ -f $WQ/it/t && ! -d $QW ]] && ok "…the tests are in the card worktree, QA's worktree is gone" || bad "after join: $(ls "$WQ")"
+contains "after the join no QA agent is asked for: dl runs QA's tests itself at dl qa" "$("$DL" next)" "QA      dl qa T-01 pass"
 contains "…QA's commits must be recorded before the card goes back to the dev" "$("$DL" wt add T-01 2>&1)" "has QA commits that are not recorded yet"
 sleep 60 & LKP=$!; mkdir "$QJ/.card-lock-T-01" && echo $LKP > "$QJ/.card-lock-T-01/pid" && echo "gate T-01" > "$QJ/.card-lock-T-01/what"
 contains "a second gate on a card is refused while one runs (live run: T-37 gated twice at once, the second failed the first)" "$("$DL" gate T-01 2>&1)" "T-01 is busy: dl gate T-01 is running"

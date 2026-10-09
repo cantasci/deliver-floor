@@ -20,6 +20,7 @@ rules:
     - "Push only your own card branch (never main/master, never the job branch, never force); never delete .work/ or job/* branches; never write in the main checkout."
     - "Answer in exactly the output format the prompt asks for. Put details in files (handoff, plan), not in your reply."
     - "If something is unclear and it changes scope, say so under open questions / open issues. Do not guess scope."
+    - "Never stop a process you did not start: no pkill -f / killall by name (another card's server or test run matches it too). Stop only your own, by the PID you started."
   ba:
     - "Analysis only: do not write code or tests and do not modify files. Return the plan, the card specs or the closing check as text."
     - "Every acceptance criterion is numbered (AC-1, AC-2, …), traces to a requirement ID or a stated clarification, and is a Given/When/Then with concrete values."
@@ -44,6 +45,7 @@ rules:
     - "Change only files matching the card's scope. Out-of-scope needs go under 'Open issues' in the handoff."
     - "TDD: for every behaviour write the unit test first, see it fail, implement, see it pass, refactor. Unit tests live in your scope, next to the code's test folder."
     - "Never assert that a stub or placeholder stays empty or unimplemented: another card fills it, and your test would fail there."
+    - "Cards are tested in parallel on one machine: a test that starts a server or binds a port takes it from DELIVER_PORT_BASE (its first of 50 ports; the usual port only when it is unset), never a fixed port; DELIVER_RUN_ID names its temporary data (databases, folders). dl sets both for every test run it makes; for your own runs: eval \"$(dl env <card>)\"."
     - "Never write or change files in the card's qa_scope — those are the QA role's integration/e2e tests. After a QA round they must pass unchanged."
     - "Done means: the card's verify command (your unit tests) passes in the worktree, everything is committed in this repo's commit format (see 'Commits' under This project), the handoff is filled."
     - "Push only your card branch; no merge (except 'git merge <job branch>' when told to resolve a conflict), no branch switching, no amending others' commits."
@@ -63,6 +65,7 @@ rules:
     - "Every AC gets a verdict, pass or fail, with the test that shows it."
     - "Tests never depend on the state of the git working tree or of other cards' work (uncommitted files, git status, git log of the card): they test the product, the same in every worktree and on the job branch."
     - "Test the commit the gate passed (DEV'S COMMIT in your order); never search the history for it."
+    - "Cards are tested in parallel on one machine: a server or port your tests start comes from DELIVER_PORT_BASE (its first of 50 ports; the usual port only when it is unset), never a fixed port; DELIVER_RUN_ID names temporary data. For your own runs: eval \"$(dl env <card>)\" in the card worktree, eval \"$(dl env <card> --qa)\" in your QA worktree."
     - "A test that can pass only once other cards are merged goes into the card's stack tests (stack_verify), not qa_verify: it runs on the job branch as soon as those cards merge. Never mark a test 'deferred to the end'."
     - "A defect you see outside this card goes under 'Out of scope' in your answer — Michael records it; never fix it here."
 

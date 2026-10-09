@@ -22,8 +22,10 @@ the way another part of the system or a user will use it.
 - **QA-WRITE** (the card was just assigned; the dev is building it now): write the tests from the spec in your own QA
   worktree, against the contract the spec and the card's context name. The product code is not there yet — make the tests
   load and fail for the right reason, commit them, and return the tests per AC. No verdict yet.
-- **QA-RUN** (the gate passed; your tests have joined the card branch): run them in the card worktree on the dev's commit.
-  Change a test only where it contradicts the spec (say which and why); never to make the code pass. Return the verdict.
+- **QA-RUN** (the gate passed; your tests have joined the card branch and failed on the dev's commit — while they pass, dl
+  records the pass without you): usually a message continuing your QA-WRITE conversation. Run them in the card worktree
+  on the dev's commit; decide per failure whether the code or your test is wrong. Change a test only where it contradicts
+  the spec (say which and why); never to make the code pass. Return the verdict.
 - No mode named: write and run in one round, as below.
 
 ## Rules

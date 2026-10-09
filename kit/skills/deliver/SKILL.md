@@ -299,9 +299,13 @@ Return: the tests written per AC.
    FAIL → **re-dispatch** the same agent: `"$DL" wt add T-xx` (bumps the attempt; REFUSED with exit 4 when attempts are used up →
    **Blocked**) with the FAIL lines as PREVIOUS FEEDBACK.
 2. **QA** (after the gate passes). When QA wrote its tests early (`dl next`: QA-JOIN): `"$DL" qa-join T-xx` — dl merges
-   them into the card branch (only `qa_scope` files, the repo's commit format); then QA's order says **MODE: QA-RUN — run
-   your tests on the dev's commit; change a test only where it contradicts the spec; record the verdict per AC** (the rest of
-   the prompt below, in the card worktree). Otherwise — call **Agent(subagent_type: "qa-tester")**:
+   them into the card branch (only `qa_scope` files, the repo's commit format). Then **no QA agent is called while its tests
+   pass**: record `"$DL" qa T-xx pass "<AC-n: the test QA-WRITE named for it; …>"` — dl runs QA's tests (and the suite) on
+   the dev's commit itself and refuses the pass when they fail. Only then does QA run: **continue the QA-WRITE agent**
+   (SendMessage to its agent id — it has the spec and its tests in its history, nothing is read again; on the floor: the
+   same QA seat) with **MODE: QA-RUN — your tests fail on the dev's commit (<the failing lines dl printed>); change a test only
+   where it contradicts the spec; record the verdict per AC** (in the card worktree; a new agent with the prompt below only
+   when that one cannot be reached). Without QA-WRITE — call **Agent(subagent_type: "qa-tester")**:
 
 ```text
 Role: QA/Test for card T-xx. Write and run its integration/e2e tests for the spec's acceptance criteria. No product code.
@@ -346,6 +350,9 @@ Use "changes" only when there is at least one blocking item. A violated standard
    repo accepts: `"$DL" jobset '.settings.commit.merge_message="<message with {card} {title} {key}>"'`, record it as your
    decision (`dl pm-decide`), and integrate again. Every commit follows the repo's convention (`settings.commit.convention`,
    detected at `dl new`); its hooks are never skipped.
+   `BROKEN` after `MERGED` (the card's component suite fails on the job branch right after the merge; `dl next`: FIX): that
+   card is the cause — have the Lead cut a fix card in that component now (`"$DL" card add`), naming it; a later card's QA
+   failure in that component is not that card's fault until the fix is merged.
 5. **Stack tests** — `dl next` says `STACK dl stack-test T-xx` the moment a card and the cards its stack tests need
    (`stack_after`) are merged: run it then, not at the end. A failure (`FIX`) gets a fix card now (`"$DL" card add`), and the
    stack test runs again once it is merged. `dl phase integrating` is refused while one is due or failing.

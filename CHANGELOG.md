@@ -4,6 +4,28 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.12.0 — 2026-10-09
+
+**Fewer QA agents, the breaking card named at the merge, test runs that do not get in each other's way** (from the same
+65-hour live job)
+- **No QA agent while QA's tests pass.** After `dl qa-join`, `dl next` no longer asks for a QA-RUN agent: `dl qa … pass` runs
+  QA's tests (and the suite) on the dev's commit itself and refuses a pass they fail. Only then is QA asked — by continuing
+  the QA-WRITE agent (SendMessage; it has the spec and its tests in its history), not with a new one. Measured live: most
+  QA-RUN dispatches only ran the tests QA-WRITE had written and recorded the result; qa-tester was 47 % of the agents' tokens.
+- **The card that breaks the job branch is named at its merge.** Right after `dl integrate` the job branch runs the card's
+  component suite (`verify` on the component, 0.10.0): `BROKEN: … right after T-xx merged`, and `dl next` asks for a fix
+  card in that component until a later merge into it passes. Before, four cards broke the branch and the next card's QA
+  found it — blaming that card. `merge_verify: false` turns it off.
+- **Test runs share the machine without colliding.** Every test command `dl` runs gets `DELIVER_PORT_BASE` (its own 50
+  ports: T-07 → 20700, its QA worktree → 20750, the job branch → 20000) and `DELIVER_RUN_ID`; `dl env <card> [--qa]` gives
+  them to an agent's own runs, and the dev and QA role cards say to bind ports from it — never a fixed one (live: 8101 and
+  5173 collided). Every role: never stop a process you did not start, only your own by its PID (live: a QA agent's
+  `pkill -f vite` stopped other cards' servers).
+- **The machine stays awake while `dl` runs tests** — macOS `caffeinate`, Linux `systemd-inhibit`, Windows (Git Bash)
+  `SetThreadExecutionState` through PowerShell; the hold ends with that `dl` run (live: a sleeping laptop turned runs into
+  6–10 minute timeouts). `keep_awake: false` turns it off.
+- Fixed: a setting set to `false` was read as unset, so `qa_early`, `qa_verify_full` and `record_job` could not be turned off.
+
 ## 0.11.0 — 2026-10-09
 
 **Stack tests run the moment the cards they need are merged — not at the end** (from a 65-hour live job: e2e tests left for
