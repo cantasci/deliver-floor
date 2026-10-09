@@ -212,6 +212,7 @@ Rules:
 - context = everything a developer who has not seen the plan needs: why, files, decisions, contracts (exact names/signatures).
 - component = the architecture component the card belongs to; scope and qa_scope stay inside its path; role = its owner.
 - Order with depends_on using temporary ids (B1, B2… / F1…). Cards that touch the same files are never parallel.
+- A skeleton card's tests never require a stub to stay empty (later cards fill it). Test file names are unique within a component.
 OUTPUT — only a JSON array:
 [{"tmp_id":"B1","title":"…","role":"backend","component":"orders-svc","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],"qa_verify":"…","acceptance":["AC-1: …"]}]
 ```

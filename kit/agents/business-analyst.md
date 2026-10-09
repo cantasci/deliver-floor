@@ -62,13 +62,16 @@ Add items the catalog lacks but this request needs, with ids starting `X-`.
 Also describe the **architecture** the request implies, component by component — every service, BFF, app, library, worker
 and database, each with its stack (e.g. `["java","spring-boot"]`, `["go"]`, `["postgres"]`), its repo path(s) — every directory its code AND its
 tests live in, e.g. `["src/ratings/", "test/unit/ratings/", "test/integration/ratings/"]`, or `"."` for a single-component repo — the dev role that
-owns it (`backend`, `frontend`, `mobile`, `database`) and its reviewer role (`reviewer-<stack>`). Mixed stacks are normal
+owns it (`backend`, `frontend`, `mobile`, `database`) and its reviewer role (`reviewer-<stack>`), and — when the repo gives
+the component a test suite of its own — `verify`: the command that runs that whole suite from the repo root (e.g.
+`cd services/orders && ./gradlew test`), taken from the repo's files (its build file, Makefile, package.json scripts). A QA
+pass runs it instead of the whole repo's suite; leave it out when the component has no suite of its own. Mixed stacks are normal
 (four Spring Boot services and one Go service). If the request does not settle a component's stack, layer (BFF vs core) or
 whether the database is owned separately, that is an `open` item — do not pick.
 
 Return **only** this JSON:
 `{"items":[{"id":"…","status":"decided|n_a|open","answer":"…","source":"…","quote":"…","question":"…","options":["…"],"impact":"…","owner":"business|pm"}],
-  "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":["services/orders/src/","services/orders/test/"],"owner":"backend","reviewer":"reviewer-java","notes":"…"}]}}`
+  "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":["services/orders/src/","services/orders/test/"],"owner":"backend","reviewer":"reviewer-java","verify":"cd services/orders && ./gradlew test","notes":"…"}]}}`
 
 ### PLAN — from the request to plan.md
 You also get readiness.md: every decision in it is binding (cite its id where it shapes a criterion).

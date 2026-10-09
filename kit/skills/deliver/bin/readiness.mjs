@@ -6,9 +6,10 @@
 //                  "question": "…", "options": ["…"], "impact": "…" } … ],
 //     "architecture": { "style": "microservices", "components": [
 //        { "id": "orders-svc", "kind": "service", "stack": ["java","spring-boot"], "path": "services/orders/",
-//          "owner": "backend", "reviewer": "reviewer-java", "notes": "…" } … ] } }
+//          "owner": "backend", "reviewer": "reviewer-java", "verify": "cd services/orders && ./gradlew test", "notes": "…" } … ] } }
 // architecture is the frozen technical frame: every card belongs to one component; its stack decides the dev's
-// skills and the reviewer. Once the job is planned, readiness.json is frozen (dl checks its hash on every step).
+// skills and the reviewer. `verify` (optional) runs the component's own whole suite from the repo root: a QA pass runs it
+// instead of verify_full. Once the job is planned, readiness.json is frozen (dl checks its hash on every step).
 //   decided → answer + source (a section of the request, a repo file, "standard: <file>" — a company or project standard
 //             from knowledge, e.g. the brand's visual identity — or "human: <name> <date>"); a decision taken from the
 //             request, a repo file or a standard also carries `quote`: the words that state it, verbatim ("a … b" for fragments)
@@ -71,6 +72,8 @@ export function checkArchitecture(job, arch) {
     const rev = roles.get(c.reviewer);
     if (!c.reviewer || !rev || !String(c.reviewer).startsWith("reviewer")) errors.push(`component '${id}': reviewer must name a reviewer role on this job (e.g. "reviewer-${(c.stack ?? ["x"])[0]}")`);
     else if (want.length && !want.includes(rev.agent)) errors.push(`component '${id}': reviewer ${c.reviewer} (${rev.agent}) does not match its stack — use one of ${[...new Set(want)].join(", ")}`);
+    if (c.verify !== undefined && (typeof c.verify !== "string" || !c.verify.trim() || /^\s*(true|:|echo\b|exit 0)/.test(c.verify)))
+      errors.push(`component '${id}': verify must be the command that runs this component's whole test suite from the repo root (e.g. "cd services/orders && ./gradlew test"), or be left out`);
   }
   return errors;
 }
@@ -177,8 +180,8 @@ export function check(jobDir) {
     "| Item | Status | Decision / reason | Source |", "| --- | --- | --- | --- |",
     ...items.map((i) => `| **${i.id}** ${q(i)} | ${i.status} | ${(i.status === "open" ? "❓ " + i.question : i.answer ?? "").replace(/\n/g, " ")} | ${(i.source ?? "").replace(/\n/g, " ")} |`), "",
     "## Architecture (frozen once the job is planned)", "", `Style: ${architecture?.style ?? "—"}`, "",
-    "| Component | Kind | Stack | Path | Owner (dev role) | Reviewer |", "| --- | --- | --- | --- | --- | --- |",
-    ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} | ${c.owner} | ${c.reviewer} |`), ""].join("\n");
+    "| Component | Kind | Stack | Path | Owner (dev role) | Reviewer | Suite at a QA pass |", "| --- | --- | --- | --- | --- | --- | --- |",
+    ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} | ${c.owner} | ${c.reviewer} | ${c.verify ? `\`${c.verify}\`` : "the whole suite (verify_full)"} |`), ""].join("\n");
   writeFileSync(join(jobDir, "readiness.md"), md);
   const qs = openBusiness.length ? [`# Questions before the work can start — ${job.id}`, "",
     "Answer each one in a terminal (or tell Michael):  dl clarify <id> \"<answer>\"", "",

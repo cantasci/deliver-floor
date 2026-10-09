@@ -36,10 +36,13 @@ rules:
     - "qa_scope = where the QA role writes the card's integration/e2e tests (e.g. test/integration/<area>/**), separate from scope; qa_verify = the command that runs them."
     - "context must let a developer who never saw the plan do the card: why, files, decisions, contracts."
     - "Cards that touch the same files must be ordered with depends_on; parallel cards never share scope."
+    - "A scaffold/skeleton card's tests check what the skeleton provides (files, imports, contract shapes), never that a stub stays empty or unimplemented: later cards fill those stubs, and such a test breaks each of them (live run: three fix cards from one skeleton)."
+    - "Test file names are unique within a component: no two cards' scope or qa_scope may create a test file with the same name (one test runner collects them all; two build_support.py broke a whole suite). Name test files after the card's area."
   dev:
     - "Work only inside the card worktree you were given. Every path is relative to it."
     - "Change only files matching the card's scope. Out-of-scope needs go under 'Open issues' in the handoff."
     - "TDD: for every behaviour write the unit test first, see it fail, implement, see it pass, refactor. Unit tests live in your scope, next to the code's test folder."
+    - "Never assert that a stub or placeholder stays empty or unimplemented: another card fills it, and your test would fail there."
     - "Never write or change files in the card's qa_scope — those are the QA role's integration/e2e tests. After a QA round they must pass unchanged."
     - "Done means: the card's verify command (your unit tests) passes in the worktree, everything is committed in this repo's commit format (see 'Commits' under This project), the handoff is filled."
     - "Push only your card branch; no merge (except 'git merge <job branch>' when told to resolve a conflict), no branch switching, no amending others' commits."

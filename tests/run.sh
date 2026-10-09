@@ -1318,6 +1318,32 @@ contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pa
 [[ "$(jq -r '[.cards[0].gate.seconds, .cards[0].qa.seconds, .cards[0].qa.suite_seconds] | map(type) | join(",")' "$QJ/board.json")" == number,number,number ]] \
   && ok "the gate, QA's run and the whole suite each record how long they took" || bad "durations: $(jq -c '.cards[0] | {g: .gate.seconds, q: .qa.seconds, s: .qa.suite_seconds}' "$QJ/board.json")"
 contains "dl timeline shows each card's test runs and how long Michael waited on them" "$("$DL" timeline 2>&1)" "Michael waited on test runs"
+echo "A QA pass runs the card's component suite when the architecture gives it one (live job: 23 whole-suite runs, 19 min median)"
+QC="$TMP/qacomp"; mkdir -p "$QC" && cd "$QC" && git init -q -b main
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"touch \"$HOME/whole-suite\""}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "QA component" "x" >/dev/null 2>&1; QJ="$QC/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"true"}]}' ready_all
+contains "a component suite that proves nothing is refused at readiness" "$("$DL" readiness 2>&1)" "component 'app': verify must be the command that runs this component's whole test suite"
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"test ! -e test/it/clash.py && touch \"$HOME/app-suite\""}]}' ready_all
+"$DL" readiness >/dev/null 2>&1
+contains "readiness.md shows the suite each component's QA pass runs" "$(cat "$QJ/readiness.md")" '`test ! -e test/it/clash.py && touch "$HOME/app-suite"`'
+"$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$QJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["test/it/**"],
+  verify:"test -f src/a.py",qa_verify:"test -f test/it/t.py",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$QJ/board.json"
+"$DL" phase executing >/dev/null; WQ="$("$DL" wt add T-01)"
+mkdir -p "$WQ/src" && echo x > "$WQ/src/a.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01: a"
+"$DL" gate T-01 >/dev/null 2>&1
+mkdir -p "$WQ/test/it" && echo t > "$WQ/test/it/t.py" && echo c > "$WQ/test/it/clash.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01 QA: it"
+rm -f "$HOME/whole-suite" "$HOME/app-suite"
+contains "a QA pass is refused when the component's suite fails, and says which suite" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "the app component's suite (architecture) fails on T-01's commit"
+git -C "$WQ" rm -q test/it/clash.py && git -C "$WQ" commit -qm "T-01 QA: drop the clash"
+contains "…after the fix the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
+[[ -f $HOME/app-suite && ! -e $HOME/whole-suite ]] && ok "…it ran the app component's suite, not the whole one" || bad "suites run: $(ls "$HOME")"
+contains "…and the card records which suite ran" "$(jq -r '.cards[0].qa.suite' "$QJ/board.json")" 'touch "$HOME/app-suite"'
+rm -f "$HOME/app-suite"; cd "$R"
 echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
 BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
 echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i
@@ -1491,11 +1517,19 @@ contains "QA's tests join only after the gate" "$("$DL" qa-join T-01 2>&1)" "T-0
 contains "after the gate dl next says QA-JOIN" "$("$DL" next)" "QA-JOIN dl qa-join T-01"
 echo x > "$QW/src/b" && git -C "$QW" add src && git -C "$QW" commit -qm "T-01 QA: oops"
 contains "QA's branch may change only qa_scope" "$("$DL" qa-join T-01 2>&1)" "changed files outside qa_scope: src/b"
+[[ ! -e $QJ/.card-lock-T-01 ]] && ok "…a refused dl gives the card back (no lock left behind)" || bad "lock left after a refusal"
 git -C "$QW" reset -q --hard HEAD~1
-out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into the card branch" "$out" "QA tests joined T-01"
+QIW="$(jq -r .integration_worktree "$QJ/job.json")"   # another card merges into the job branch after QA's branch was cut
+mkdir -p "$QIW/other" && echo o > "$QIW/other/o" && git -C "$QIW" add other && git -C "$QIW" commit -qm "T-02: another card"
+out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into the card branch — cards merged since QA's branch was cut are not QA's changes" "$out" "QA tests joined T-01"
 [[ -f $WQ/it/t && ! -d $QW ]] && ok "…the tests are in the card worktree, QA's worktree is gone" || bad "after join: $(ls "$WQ")"
 contains "…QA's commits must be recorded before the card goes back to the dev" "$("$DL" wt add T-01 2>&1)" "has QA commits that are not recorded yet"
-expect_ok "the gate after the join counts QA's tests as QA's, not the dev's" "$DL" gate T-01
+sleep 60 & LKP=$!; mkdir "$QJ/.card-lock-T-01" && echo $LKP > "$QJ/.card-lock-T-01/pid" && echo "gate T-01" > "$QJ/.card-lock-T-01/what"
+contains "a second gate on a card is refused while one runs (live run: T-37 gated twice at once, the second failed the first)" "$("$DL" gate T-01 2>&1)" "T-01 is busy: dl gate T-01 is running"
+contains "…QA on that card too" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "T-01 is busy"
+kill $LKP 2>/dev/null; wait $LKP 2>/dev/null
+expect_ok "the gate after the join counts QA's tests as QA's, not the dev's (the dead gate's lock is taken over)" "$DL" gate T-01
+[[ ! -e $QJ/.card-lock-T-01 ]] && ok "…the lock goes with the dl that held it" || bad "lock left after the gate"
 "$DL" qa T-01 pass "AC-1 pass" >/dev/null && "$DL" review T-01 approve ok >/dev/null
 expect_ok "…and the card merges as before" "$DL" integrate T-01
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"

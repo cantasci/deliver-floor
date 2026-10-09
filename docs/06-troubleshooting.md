@@ -33,6 +33,7 @@ Start with `/deliver:doctor` (or `scripts/doctor.sh <repo>`), then `/deliver:sta
 | Every gate fails at `verify` with "command not found" / missing modules | fresh worktree has no deps | set `worktree_setup` in `.deliver.json` ([02 § 4.1](02-setup.md#41-deliverjson--how-this-repo-is-verified-and-delivered)); for the running job `dl jobset '.settings.worktree_setup="…"'` and run it once in each `wt/*` |
 | `FAIL out-of-scope file` | the dev touched a file outside `scope` | legit: `dl card T-xx set scope '[…]' "<reason>"` on a ready/blocked card; otherwise the retry fixes it |
 | `dl qa` refused: changes outside `qa_scope` | QA edited product code or unit tests | QA reverts; product bugs go back to the dev as failing tests |
+| `dl: REFUSED — T-xx is busy: dl gate T-xx is running on it` | a gate, QA run or QA join is already running on that card (they share its worktree) | wait for it to finish; never start a second one. A hold whose `dl` died is taken over by the next call |
 | `CONFLICT` on integrate (exit 3) | two cards edited the same area | the dev merges the job branch in its worktree (Michael does this); next time add `depends_on` or split scopes (validate warns) |
 | `dl: REFUSED — all N '<role>' seats are busy` | more ready cards than seats | expected: the next free seat takes it. More parallelism: `count` on the role |
 | `IDLE <seat> — waiting: …` | the seat's cards depend on unmerged cards | nothing to do; it starts when the dependency merges |

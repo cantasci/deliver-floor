@@ -4,6 +4,31 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.10.0 — 2026-10-09
+
+**A QA pass runs the card's component suite, not the whole repo's** (from a 65-hour live job: QA's 23 whole-suite runs took
+7.7 hours, median 19 minutes, longest 56 — a fetcher card waited for scoring's 1476 tests, assessment's 1837 and 710
+Playwright tests)
+- A component in the architecture may name its own suite: `verify` on the component in `readiness.json` (the BA takes it
+  from the repo's files). A QA pass runs that suite on the card's commit instead of `verify_full`; the clash 0.8.1 catches —
+  two test files with one name — happens inside a component, so it is still caught. Without `verify` nothing changes.
+- The whole suite still runs on the job branch at the start (baseline) and at the end (`verify-all`). The component suites
+  are frozen with the architecture at planning, so none can be weakened during the job; `readiness.md` shows which suite each
+  component's QA pass runs, and the card records the one that ran.
+
+**Fixed: two faults the same job ran into**
+- `dl qa-join` refused QA's tests whenever another card had merged since QA's branch was cut: it compared QA's branch
+  with the job branch's tip, so the merged cards' files looked like QA's changes ("outside qa_scope"), and QA had to move
+  its tests by hand. It now compares from where QA's branch left the job branch, as the gate already did.
+- One gate, QA run or QA join per card at a time: they share the card worktree, and a second `dl gate` started two
+  minutes after the first deleted the first one's files and failed it with three false errors. The second is now
+  refused with who holds the card; the hold ends with that `dl` (a crashed one's is taken over).
+
+**Planning rules from the same job** (Lead and dev role cards)
+- A skeleton card's tests check what the skeleton provides, never that a stub stays empty: three fix cards came from one
+  skeleton whose tests failed as soon as later cards filled its stubs.
+- Test file names are unique within a component: two `build_support.py` broke the whole suite once collected together.
+
 ## 0.9.2 — 2026-10-08
 
 **Where the test time goes, and one run fewer** (from a user's job: QA took long)
