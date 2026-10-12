@@ -4,6 +4,21 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.15.0 — 2026-10-12
+
+**A frontend and a backend card's QA run side by side, not in turn** (seen live: both started the stack on 5173 and 8101,
+so one waited for the other)
+- `settings.ports` names the ports the project's test setup starts servers on, each an offset into a test run's 50 ports:
+  `{"WEB_PORT": 0, "API_PORT": 1}` → T-07's run gets `WEB_PORT=20700 API_PORT=20701`, its QA worktree 20750/20751, the job
+  branch 20000/20001. `dl` exports them for every test run (gate, QA, the suites, stack tests); `dl env <card>` prints them
+  for an agent's own runs. Before, every run had only `DELIVER_PORT_BASE` (0.12.0), which a test setup that names its
+  ports never read.
+- The fixed ports are found where test setups keep them — Playwright/Cypress/Vite configs, a backend fixture, compose files,
+  package.json scripts (a line that already reads its port from the environment does not count). `dl config --init` names
+  them, and in planning `dl next` says `PORTS` until they have names.
+- Lead: when the test setup binds fixed ports, a first-wave card makes it read the named ports (the old port as the
+  fallback), and every card whose QA starts that stack depends on it. Dev and QA role cards: use the project's port names.
+
 ## 0.14.0 — 2026-10-09
 
 **Headless: a fresh session for Michael at every phase and every wave** (from the same 65-hour live job: one session, 892

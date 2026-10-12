@@ -766,6 +766,13 @@ mkdir -p "$DR/mono/web" "$DR/mono/api" && echo '{"scripts":{"test":"jest"},"devD
 contains "a repo with a project per folder: each one's tests, in its folder" "$(det mono '{v:.verify_full,s:.worktree_setup}')" '{"v":"(cd api && go test ./...) && (cd web && npm test)","s":"(cd web && npm ci)"}'
 mkdir -p "$DR/make" && printf 'test:\n\tgo test ./...\n' > "$DR/make/Makefile" && echo 'module x' > "$DR/make/go.mod"
 contains "the repo's own Makefile test target wins" "$(det make .verify_full)" '"make test"'
+mkdir -p "$DR/ports/frontend" "$DR/ports/backend"
+printf '%s\n' "export default defineConfig({" "  use: { baseURL: 'http://localhost:5173' }," "  webServer: [{ command: 'npm run dev', port: 5173 }," \
+  "    { command: 'uvicorn app:app --port 8101', url: 'http://127.0.0.1:8101/health' }," "    { command: 'x', port: Number(process.env.OTHER_PORT ?? 9000) }]," "});" > "$DR/ports/frontend/playwright.config.ts"
+echo '{"scripts":{"start":"uvicorn app:app --port 8101"}}' > "$DR/ports/backend/package.json"
+contains "the fixed ports a test setup starts its servers on are found (live: 5173 and 8101 made QA runs wait for each other)" "$(det ports '.fixed_ports')" '[{"file":"backend/package.json","ports":[8101]},{"file":"frontend/playwright.config.ts","ports":[5173,8101]}]'
+[[ "$(det ports '.fixed_ports')" != *9000* ]] && ok "…a port read from the environment is not one (9000 comes from OTHER_PORT)" || bad "an env-driven port counted as fixed"
+contains "…and the evidence says to name them in settings.ports" "$(node "$DT" "$DR/ports" | jq -r '.evidence.ports')" 'name each port here ({"WEB_PORT": 0, "API_PORT": 1}'
 mkdir -p "$DR/empty"
 contains "a repo without code: no test command and no language assumed" "$(det empty '{v:.verify_full,s:.worktree_setup}')" '{"v":"","s":""}'
 mkdir -p "$DR/cfg/munder-difflin" && jq -n --arg r "$DR/pnpm" '{harnessHome:"/floors/pnpm", registeredRepos:[$r]}' > "$DR/cfg/munder-difflin/config.json"
@@ -1465,6 +1472,23 @@ contains "…then the job goes on by itself, the wait neither a round nor 'no pr
 out="$(hl credits)"; rc=$?
 contains "out of credits it stops and says so: the human's call" "$out" "out of usage credits — add credits or switch the model"
 [[ ! -e $TMP/hl-sleep ]] && ok "…without waiting" || bad "waited on no credits"
+echo "Ports by name: a frontend and a backend card's QA start the same stack side by side, not in turn (live: both on 5173 and 8101)"
+PT="$TMP/ports"; mkdir -p "$PT/frontend" && cd "$PT" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json
+echo "export default { webServer: { command: 'npm run dev', port: 5173 } }" > frontend/playwright.config.ts && git add -A && git commit -qm i
+"$DL" new "ports" "x" >/dev/null 2>&1; PJ="$PT/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null 2>&1
+contains "planning: dl next names the fixed ports and what to do about them" "$("$DL" next)" "PORTS   the test setup binds fixed ports (frontend/playwright.config.ts: 5173)"
+"$DL" jobset '.settings.ports={"WEB_PORT":0,"API_PORT":1}' >/dev/null
+[[ "$("$DL" next)" != *PORTS* ]] && ok "…once the ports have names it says no more" || bad "PORTS after naming: $("$DL" next)"
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$PJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"one",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/**"],
+  verify:"test -f src/a && echo \"$WEB_PORT $API_PORT\" > \"$HOME/pt-env\"",qa_verify:"test -f it/t",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$PJ/board.json"
+"$DL" phase executing >/dev/null; WP="$("$DL" wt add T-01)"; mkdir -p "$WP/src" && echo a > "$WP/src/a" && git -C "$WP" add -A && git -C "$WP" commit -qm "T-01: a"
+"$DL" gate T-01 >/dev/null 2>&1
+contains "every test run dl makes gets the named ports, from its card's own range" "$(cat "$HOME/pt-env" 2>/dev/null)" "20100 20101"
+contains "…dl env gives them to an agent's own runs — the QA worktree its own, the job branch its own" "$("$DL" env T-01 --qa) | $("$DL" env integration)" "WEB_PORT=20150 API_PORT=20151 | export DELIVER_PORT_BASE=20000 DELIVER_RUN_ID=$(cat .work/ACTIVE)-integration WEB_PORT=20000 API_PORT=20001"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 echo "baseline: the whole suite runs on the job branch before planning; already red → the human decides, at the start"
 BL="$TMP/baseline"; mkdir -p "$BL" && cd "$BL" && git init -q -b main
 echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"test -f ok.txt"}' > .deliver.json && git add -A && git commit -qm i
