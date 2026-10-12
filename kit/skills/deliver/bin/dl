@@ -240,7 +240,23 @@ port_base() {
 # test_env <card | integration> [qa] — every test command dl runs gets its run id and port base, with the machine kept awake
 test_env() {
   DELIVER_PORT_BASE="$(port_base "$@")"; DELIVER_RUN_ID="$JOB-$1${2:+-qa}-$(date +%H%M%S)-$$"
-  export DELIVER_PORT_BASE DELIVER_RUN_ID; stay_awake
+  export DELIVER_PORT_BASE DELIVER_RUN_ID
+  local kv; while IFS= read -r kv; do [[ -n $kv ]] && export "${kv?}"; done < <(port_names "$DELIVER_PORT_BASE")
+  stay_awake
+}
+# port_names <base> → "NAME=port" per name the project gives its ports (settings.ports: {"WEB_PORT": 0, "API_PORT": 1}), each
+# the run's port base + its offset — so a frontend and a backend card's QA start the same stack side by side, not in turn
+port_names() {
+  jq -r --argjson b "$1" '(.settings.ports // {}) | to_entries[]
+    | select((.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) and (.value | type == "number") and .value >= 0 and .value < 50)
+    | "\(.key)=\($b + .value)"' "$JOBJ" 2>/dev/null
+}
+# ports_hint — the test setup binds fixed ports and the project has not named its ports yet: parallel QA runs would collide
+ports_hint() {
+  [[ "$(jq -r '(.settings.ports // {}) | length' "$JOBJ")" == 0 ]] || return 0
+  local f; f="$(node "$BIN_DIR/detect.mjs" "$ROOT" 2>/dev/null | jq -r '[.fixed_ports[]? | "\(.file): \(.ports | map(tostring) | join(", "))"] | join("; ")')"
+  [[ -n $f ]] || return 0
+  echo "PORTS   the test setup binds fixed ports ($f) — two cards' QA runs collide there and one waits: name them (dl jobset '.settings.ports={\"WEB_PORT\":0,\"API_PORT\":1}', and in .deliver.json — each run gets its port base + the offset) and have the Lead cut a first-wave card that makes the setup read them (old port as the fallback); cards whose QA starts that stack depend on it"
 }
 # stay_awake — keep the machine from sleeping while this dl runs; the hold ends with this dl process (no cleanup needed).
 # macOS: caffeinate · Linux: systemd-inhibit · Windows (Git Bash): SetThreadExecutionState through PowerShell.
@@ -295,8 +311,8 @@ cmd_env() { # dl env <card> [--qa] | integration — the variables of a test run
   load_job
   local c=${1:-}; [[ -n $c ]] || die "usage: dl env <card> [--qa] | dl env integration"
   [[ $c == integration ]] || card_exists "$c"
-  local q=""; [[ ${2:-} == --qa ]] && q=qa
-  echo "export DELIVER_PORT_BASE=$(port_base "$c" $q) DELIVER_RUN_ID=$JOB-$c${q:+-qa}"
+  local q="" b; [[ ${2:-} == --qa ]] && q=qa; b="$(port_base "$c" $q)"
+  echo "export DELIVER_PORT_BASE=$b DELIVER_RUN_ID=$JOB-$c${q:+-qa}$(port_names "$b" | sed 's/^/ /' | tr -d '\n')"
 }
 
 # show_tail <lines> <log> < output — the end of a failed run: a few lines, and where the rest is. Michael re-reads every line
@@ -367,6 +383,7 @@ project_config_template() { # what the repo says (detect.mjs: test script, lockf
      max_parallel: $c[0].max_parallel, max_attempts: $c[0].max_attempts,
      roles: {},
      munder: ($c[0].munder | {hive_root: (if $d.hive_root != "" then $d.hive_root else .hive_root end), model, seat_timeout_minutes, app_command: ""}),
+     ports: ($c[0].ports // {}),
      tracker: {kind: "local"},
      commit: ($c[0].commit + (if ($c[0].commit.convention // "auto") == "auto" then {convention: $d.commit_convention} else {} end))}'
 }
@@ -538,7 +555,8 @@ cmd_next() {
       else echo "PHASE   dl phase planning  (readiness complete: $(jq '(.items // .) | length' "$JOB_DIR/readiness.json") items decided or n/a; planning freezes them)"; fi ;;
     planning)
       local nxt="dl phase executing  (no plan gate: the human is next at the PR)"; [[ $gates_plan == true ]] && nxt="dl phase awaiting_plan_approval"
-      echo "PLAN    BA plan → plan.md · Lead cards → board.json · BA card specs → specs/T-xx.md · dl validate, then: $nxt" ;;
+      echo "PLAN    BA plan → plan.md · Lead cards → board.json · BA card specs → specs/T-xx.md · dl validate, then: $nxt"
+      ports_hint ;;
     awaiting_plan_approval)
       case "$(jq -r '.gates.plan.status // "pending"' "$JOBJ")" in
         approved) echo "PHASE   dl phase executing" ;;

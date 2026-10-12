@@ -215,6 +215,8 @@ Rules:
 - component = the architecture component the card belongs to; scope and qa_scope stay inside its path; role = its owner.
 - Order with depends_on using temporary ids (B1, B2… / F1…). Cards that touch the same files are never parallel.
 - A skeleton card's tests never require a stub to stay empty (later cards fill it). Test file names are unique within a component.
+- The test setup starts servers on fixed ports (dl next: PORTS)? A first-wave card makes it read the port names in
+  settings.ports (old port as fallback); every card whose QA starts that stack depends on it.
 - stack_verify + stack_after (only when needed) = tests that pass only once other cards are merged (an e2e flow across
   services): the command, run on the job branch, and the tmp ids of those cards. They run the moment those cards merge.
 OUTPUT — only a JSON array:

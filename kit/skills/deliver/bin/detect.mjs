@@ -76,6 +76,40 @@ function stack(dir, where = "") {
   return null;
 }
 
+// Servers the test setup starts on fixed ports (Playwright's webServer, a dev server, a backend fixture). Cards are tested in
+// parallel on one machine, each run with its own ports (DELIVER_PORT_BASE, named by settings.ports) — a setup that binds a
+// fixed port makes two cards' QA runs collide, and one waits for the other (live job: 5173 and 8101, the QA of a frontend
+// and of a backend card). A line that already reads its port from the environment does not count.
+//   → [{ file: "frontend/playwright.config.ts", ports: [5173, 8101] }]
+const PORT_FILES = /^((playwright|cypress|vite|vitest|webpack|next|nuxt|astro|jest|karma|wdio)\.config\.[cm]?[jt]s|conftest\.py|pytest\.ini|docker-compose\.ya?ml|compose\.ya?ml|Procfile|\.env\.test|package\.json)$/;
+const PORT_RX = /(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d{4,5})\b|\bport["']?\s*[:=]\s*["']?(\d{4,5})\b|--port[= ](\d{4,5})\b|\s-p\s+(\d{4,5})\b/gi;
+const FROM_ENV = /process\.env|import\.meta\.env|os\.environ|getenv|\$\{?[A-Z_]*PORT|DELIVER_PORT_BASE/;
+export function fixedPorts(root) {
+  const out = [], seen = new Set();
+  const scan = (dir, where, depth) => {
+    let names = []; try { names = readdirSync(dir); } catch { return; }
+    for (const n of names.sort()) {
+      const p = join(dir, n);
+      let dirent = false; try { dirent = statSync(p).isDirectory(); } catch { continue; }
+      if (dirent) {
+        if (depth > 0 && !n.startsWith(".") && !["node_modules", "vendor", "dist", "build", ".venv", "venv", "target", "coverage"].includes(n)) scan(p, `${where}${n}/`, depth - 1);
+        continue;
+      }
+      if (!PORT_FILES.test(n)) continue;
+      let text = read(p);
+      if (n === "package.json") { const s = json(p)?.scripts ?? {}; text = Object.values(s).join("\n"); }
+      const ports = [];
+      for (const line of text.split("\n")) {
+        if (FROM_ENV.test(line) || /^\s*(\/\/|#)/.test(line)) continue;
+        for (const m of line.matchAll(PORT_RX)) { const v = Number(m[1] ?? m[2] ?? m[3] ?? m[4]); if (v >= 1024 && !ports.includes(v)) ports.push(v); }
+      }
+      if (ports.length && !seen.has(where + n)) { seen.add(where + n); out.push({ file: where + n, ports }); }
+    }
+  };
+  scan(root, "", 2);
+  return out;
+}
+
 // The repo's commit message convention — every commit of a job (the devs', QA's and dl's own merges) must follow it.
 // Read from the tools that enforce it, else from the history. → { convention: "conventional" | "plain", source, enforced }
 const CONVENTIONAL = /^(feat|fix|chore|docs|test|tests|refactor|perf|build|ci|style|revert)(\([^)]*\))?!?: \S/;
@@ -146,7 +180,10 @@ export function detect(repo) {
   const cc = commitConvention(root);
   evidence.commit = `${cc.source}${cc.enforced ? " — enforced: every commit must follow it" : ""}`;
 
-  return { verify_full: verify, worktree_setup: setup, worktree_exclude: exclude, merge_mode: remote ? "human" : "local", hive_root: hive, commit_convention: cc.convention, evidence };
+  const fixed = fixedPorts(root);
+  if (fixed.length) evidence.ports = `the test setup binds fixed ports — ${fixed.map((f) => `${f.file}: ${f.ports.join(", ")}`).join("; ")} — parallel QA runs collide there: name each port here ({"WEB_PORT": 0, "API_PORT": 1} → the port base + 0, + 1) and make the setup read them`;
+
+  return { verify_full: verify, worktree_setup: setup, worktree_exclude: exclude, merge_mode: remote ? "human" : "local", hive_root: hive, commit_convention: cc.convention, fixed_ports: fixed, evidence };
 }
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("detect.mjs")) {
