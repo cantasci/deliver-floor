@@ -1,0 +1,185 @@
+{
+  "id": "JOB-20261013-1448-indicator-13-external-rating",
+  "title": "Indicator 13 external rating",
+  "request": "Requirements: /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-light.md\nIndicator 13 (external rating change) — a small addition to the existing Watchlist code\n\nSource: POC_Requirements_v0.2_EN.md, EPIC-03. The rating scale, `notchChange` and Indicator 12 are already in this repo\n(`src/ratings/notch.mjs`, `src/indicators/countryRating.mjs`). This change adds one function next to them and changes\nnothing that exists.\n\n## Requirement (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-03-13 | Indicator 13 (External rating change): notch change of the client's external rating auto-calculated | 2 notch downgrade → WL=1; 3+ notches → WL=2 |\n\n## Clarifications (confirmed by the business unit)\n\n- A 1-notch downgrade, an upgrade and an unchanged rating give WL 0.\n- Ratings are read exactly as `notchChange` reads them (trimmed, case-insensitive); anything else is rejected with the\n  RangeError `notchChange` throws.\n- The existing exports and their behaviour stay as they are.\n\n## Contract\n\n- `src/indicators/externalRating.mjs` — `externalRatingChangeWl(previous, current)` → 0 | 1 | 2, built on `notchChange`.\n\nPlain Node ESM, no dependencies; tests with `node --test` under `test/`, like the existing ones.",
+  "created": "2026-10-13T12:48:17Z",
+  "repo": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo",
+  "phase": "done",
+  "stack": [
+    "node"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "why": "REQ-03-13: externalRatingChangeWl in src/indicators/externalRating.mjs"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "Plain Node ESM (.mjs) code"
+    },
+    {
+      "role": "blind",
+      "agent": "ecc:code-reviewer",
+      "why": "P0 ACs (AC-1, AC-2, AC-5): a wrong or silent WL misses a risky client"
+    }
+  ],
+  "assumptions": [
+    "X-reuse (PM): externalRatingChangeWl applies the thresholds to notchChange directly, as the contract says (built on notchChange) and like countryRatingChangeWl; it does not depend on notchCalculator's return shape"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261013-1448-indicator-13-external-rating",
+  "integration_worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "08da5ca551d2cfa11adae13249bd86d2ac278102",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/gates/verify-all-145651.log",
+    "at": "2026-10-13T12:56:51Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 2,
+    "qa_early": true,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "qa_verify_full": true,
+    "test_design": {
+      "risk": true
+    },
+    "review": {
+      "blind": "risk"
+    },
+    "light": {
+      "max_cards": 2
+    },
+    "merge_verify": true,
+    "keep_awake": true,
+    "checkpoints": true,
+    "ports": {},
+    "record_job": true,
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false,
+      "convention_source": "the history: 0 of the last 2 commits are Conventional Commits — no convention"
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "b3cad7fa3b84bcf299261b3f782b8e019213c542",
+    "at": "2026-10-13T12:57:11Z"
+  },
+  "track": "light",
+  "tracks": [
+    {
+      "to": "light",
+      "why": "one new function next to existing code, no new dependency/data/integration/UI",
+      "at": "2026-10-13T12:48:33Z",
+      "quote": "This change adds one function next to them and changes nothing that exists."
+    }
+  ],
+  "pm_decisions": [
+    {
+      "at": "2026-10-13T12:48:33Z",
+      "what": "the light path: a small change to existing code (\"This change adds one function next to them and changes nothing that exists.\")",
+      "why": "one new function next to existing code, no new dependency/data/integration/UI"
+    }
+  ],
+  "checkpoint": {
+    "phase": "planning",
+    "merged": 0,
+    "events": 21,
+    "at": "2026-10-13T12:52:15Z"
+  },
+  "baseline": {
+    "result": "PASS",
+    "head": "dd7098d7af24b5a22185c65e42138a2881009d4c",
+    "command": "node --test",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/gates/baseline-145211.log",
+    "at": "2026-10-13T12:52:11Z"
+  },
+  "frozen": {
+    "readiness_sha256": "ed04a19634d7180e720210a637f026170347dee9490d9aba6988704009393ef0",
+    "at": "2026-10-13T12:54:36Z"
+  },
+  "followups": [
+    {
+      "text": "Callers of externalRatingChangeWl must treat RangeError for D/SD/CC/C/NR/WD as manual review, not no-signal (scale ends at CCC-)",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-13T12:57:00Z"
+    },
+    {
+      "text": "WL thresholds in externalRating.mjs duplicate notchCalculator's; consider sharing if thresholds change",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-13T12:57:01Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "08da5ca551d2cfa11adae13249bd86d2ac278102",
+    "shared_pr": ""
+  },
+  "record_published": {
+    "head": "22575315da39e18964a17d60aa784ce1eedf4a3c",
+    "path": ".deliver/jobs/JOB-20261013-1448-indicator-13-external-rating"
+  }
+}

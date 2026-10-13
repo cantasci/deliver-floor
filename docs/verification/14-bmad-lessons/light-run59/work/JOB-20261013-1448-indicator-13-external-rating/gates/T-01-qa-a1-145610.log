@@ -1,0 +1,91 @@
+# qa_verify: node --test test/integration/indicators/externalRating.int.test.mjs
+TAP version 13
+# Subtest: AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; A → BBB+ returns 1
+ok 1 - AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; A → BBB+ returns 1
+  ---
+  duration_ms: 0.44
+  ...
+# Subtest: AC-1: boundaries — +1 notch gives 0 (not 1) and +3 gives 2 (not 1)
+ok 2 - AC-1: boundaries — +1 notch gives 0 (not 1) and +3 gives 2 (not 1)
+  ---
+  duration_ms: 0.046917
+  ...
+# Subtest: AC-1: every pair of RATING_SCALE with notchChange === 2 gives exactly 1
+ok 3 - AC-1: every pair of RATING_SCALE with notchChange === 2 gives exactly 1
+  ---
+  duration_ms: 0.134709
+  ...
+# Subtest: AC-2: downgrades of 3, 4 and 18 notches return 2 (BBB+→BB+, BBB+→BB, AAA→CCC-)
+ok 4 - AC-2: downgrades of 3, 4 and 18 notches return 2 (BBB+→BB+, BBB+→BB, AAA→CCC-)
+  ---
+  duration_ms: 0.040083
+  ...
+# Subtest: AC-2: every pair of RATING_SCALE with notchChange >= 3 gives the number 2
+ok 5 - AC-2: every pair of RATING_SCALE with notchChange >= 3 gives the number 2
+  ---
+  duration_ms: 0.47825
+  ...
+# Subtest: AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data)
+ok 6 - AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data)
+  ---
+  duration_ms: 0.037625
+  ...
+# Subtest: AC-3: argument order matters — (BBB-, BBB+) is 0 while (BBB+, BBB-) is 1
+ok 7 - AC-3: argument order matters — (BBB-, BBB+) is 0 while (BBB+, BBB-) is 1
+  ---
+  duration_ms: 0.070125
+  ...
+# Subtest: AC-3: every pair of RATING_SCALE with notchChange <= 1 gives 0 (never a negative WL)
+ok 8 - AC-3: every pair of RATING_SCALE with notchChange <= 1 gives 0 (never a negative WL)
+  ---
+  duration_ms: 0.165083
+  ...
+# Subtest: AC-3: Indicator 13 differs from Indicator 12 exactly on the 1-notch downgrade
+ok 9 - AC-3: Indicator 13 differs from Indicator 12 exactly on the 1-notch downgrade
+  ---
+  duration_ms: 0.289334
+  ...
+# Subtest: AC-4: whitespace and mixed case are read as notchChange reads them
+ok 10 - AC-4: whitespace and mixed case are read as notchChange reads them
+  ---
+  duration_ms: 0.252166
+  ...
+# Subtest: AC-4: inner whitespace is not trimmed — "BBB +" throws RangeError
+ok 11 - AC-4: inner whitespace is not trimmed — "BBB +" throws RangeError
+  ---
+  duration_ms: 0.207042
+  ...
+# Subtest: AC-5: unknown rating in either position throws RangeError with the notchChange message
+ok 12 - AC-5: unknown rating in either position throws RangeError with the notchChange message
+  ---
+  duration_ms: 0.059375
+  ...
+# Subtest: AC-5: off-scale and empty inputs throw RangeError in both positions, message equal to notchChange's
+ok 13 - AC-5: off-scale and empty inputs throw RangeError in both positions, message equal to notchChange's
+  ---
+  duration_ms: 0.431333
+  ...
+# Subtest: AC-5: Moody's notation (Baa1 → BBB) throws RangeError, no fallback value
+ok 14 - AC-5: Moody's notation (Baa1 → BBB) throws RangeError, no fallback value
+  ---
+  duration_ms: 0.032375
+  ...
+# Subtest: AC-6: Indicator 13 module imports only notchChange from ../ratings/notch.mjs
+ok 15 - AC-6: Indicator 13 module imports only notchChange from ../ratings/notch.mjs
+  ---
+  duration_ms: 1.067875
+  ...
+# Subtest: AC-6: existing consumers are unchanged — notchCalculator and countryRatingChangeWl still behave as before
+ok 16 - AC-6: existing consumers are unchanged — notchCalculator and countryRatingChangeWl still behave as before
+  ---
+  duration_ms: 0.231292
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 67.504416

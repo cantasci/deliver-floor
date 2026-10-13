@@ -1,0 +1,175 @@
+{
+  "id": "JOB-20261013-1448-rating-notch-calculator-and-coun",
+  "title": "Rating notch calculator and country indicator",
+  "request": "Requirements: /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB.md\nRating notch calculator + country rating change indicator (Watchlist POC slice)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a 2-requirement slice of that document. Build only these two requirements.\n\n## Requirements (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 | A notch calculator helper shall be available: analyst selects previous rating and current rating → system outputs notch change and resultant WL | BBB+ → BB+ = 2 notch downgrade → WL=1 displayed |\n| REQ-03-12 | Indicator 12 (Country rating change): Pre-filled from public source; notch change auto-calculated | 1 notch → WL=1; 2+ notches → WL=2; auto-filled value editable |\n\nRelated rule (REQ-03-13, Indicator 13 — external rating change): 2 notch downgrade → WL=1; 3+ notches → WL=2.\n\n## Clarifications for this slice (confirmed by the business unit)\n\n- C1. Rating scale, best to worst (19 steps): AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-.\n  A notch is one step on this scale. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else is rejected with a RangeError.\n- C2. The POC example for REQ-06-02 miscounts: BBB+ → BB+ is 3 notches (BBB+ → BBB → BBB- → BB+). The calculator's WL uses the\n  Indicator 13 thresholds (2 notches → WL=1, 3+ → WL=2), so BBB+ → BB+ = 3-notch downgrade → WL=2, and BBB+ → BBB- = 2 notches → WL=1.\n- C3. Upgrades and unchanged ratings → WL=0 for both indicators.\n- C4. Fetching the rating from a public source is OUT of scope for this slice; the indicator takes the previous and current rating as input.\n- C5. `notchCalculator(...).notches` is signed exactly like `notchChange` (downgrade positive, upgrade negative).\n- C6. A 1-notch downgrade gives calculator WL 0 (Indicator 13 starts at 2 notches); Indicator 12 is unaffected (1 notch → WL 1).\n- C7. \"Auto-filled value editable\" (REQ-03-12) is met by the contract: the caller passes whichever previous/current rating the\n  analyst confirmed or edited. No override parameter, no persistence and no audit trail in this slice.\n- C8. \"Displayed\" (REQ-06-02) is met by the returned `{ notches, direction, wl }`: the screens of the POC are built later\n  by other parts and render this value. No UI, CLI or printed output in this slice.\n\n## Contract (other parts of the POC will import exactly these)\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the 19 ratings of C1, best first.\n  - `notchChange(previous, current)` → integer; positive = downgrade, negative = upgrade, 0 = unchanged.\n  - `notchCalculator(previous, current)` → `{ notches, direction: \"downgrade\" | \"upgrade\" | \"unchanged\", wl }` (wl per C2/C3).\n- `src/indicators/countryRating.mjs`\n  - `countryRatingChangeWl(previous, current)` → 0 | 1 | 2 (REQ-03-12 thresholds, C3), built on `notchChange`.\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.",
+  "created": "2026-10-13T12:48:19Z",
+  "repo": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo",
+  "phase": "done",
+  "stack": [
+    "node",
+    "javascript"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-03-12 / REQ-06-02: pure domain logic modules notch.mjs and countryRating.mjs"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "why": "builds the cards of backend-lead: notchChange, notchCalculator, countryRatingChangeWl"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack reviewer for Node ESM JavaScript"
+    },
+    {
+      "role": "blind",
+      "agent": "ecc:code-reviewer",
+      "why": "REQ-06-02 / REQ-03-12: wrong WL thresholds would misrate credit risk (core flow)"
+    }
+  ],
+  "assumptions": [
+    "Stack is Node.js 18+ ESM per CLAUDE.md and the request (Plain Node ESM, no dependencies); full track: repo has no code yet"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261013-1448-rating-notch-calculator-and-coun",
+  "integration_worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "113c8db875e52a0b2436cfe5b994fe9de8edbd66",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/verify-all-150712.log",
+    "at": "2026-10-13T13:07:12Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 2,
+    "qa_early": true,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "qa_verify_full": true,
+    "test_design": {
+      "risk": true
+    },
+    "review": {
+      "blind": "risk"
+    },
+    "light": {
+      "max_cards": 2
+    },
+    "merge_verify": true,
+    "keep_awake": true,
+    "checkpoints": true,
+    "ports": {},
+    "record_job": true,
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false,
+      "convention_source": "the history: 0 of the last 1 commits are Conventional Commits — no convention"
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "8c3bb4b2b450c159c0cfcb397992afd7aea26854",
+    "at": "2026-10-13T13:08:50Z"
+  },
+  "checkpoint": {
+    "phase": "closing",
+    "merged": 2,
+    "events": 73,
+    "at": "2026-10-13T13:07:18Z"
+  },
+  "baseline": {
+    "result": "PASS",
+    "head": "bc1e752fee266488794a3d7e44619918226b8471",
+    "command": "node --test",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/baseline-145225.log",
+    "at": "2026-10-13T12:52:25Z"
+  },
+  "frozen": {
+    "readiness_sha256": "d6b440e9cb3ab0008dfeffd02f2ec3c93251306a48bdb12a5a581e983fb70767",
+    "at": "2026-10-13T12:52:26Z"
+  },
+  "followups": [
+    {
+      "text": "Default grades (CC, C, D, SD) are rejected by design (C1); needs a business decision for a later slice (R-4)",
+      "card": "",
+      "evidence": "",
+      "at": "2026-10-13T13:08:48Z"
+    },
+    {
+      "text": "Audit trail for analyst-edited ratings (C7/NFR-audit) belongs to a later part of the POC",
+      "card": "",
+      "evidence": "",
+      "at": "2026-10-13T13:08:48Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "0888848536603769d832f7eaa5c22c9c8af5607e",
+    "shared_pr": ""
+  },
+  "record_published": {
+    "head": "e8fe9bcb9081a9f2e84f4c09271bae6f45299125",
+    "path": ".deliver/jobs/JOB-20261013-1448-rating-notch-calculator-and-coun"
+  }
+}

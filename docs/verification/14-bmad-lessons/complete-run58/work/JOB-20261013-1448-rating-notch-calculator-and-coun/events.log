@@ -1,0 +1,80 @@
+2026-10-13T12:48:19Z	new	Rating notch calculator and country indicator
+2026-10-13T12:48:36Z	jobset	stack: .stack=["node","javascript"]
+2026-10-13T12:48:37Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12 / REQ-06-02: pure domain logic modules notch.mjs and countryRating.mjs"},{"role":"backend","agent":"backend-dev","why":"builds the cards of backend-lead: notchChange, notchCalculator, countryRatingChangeWl"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack reviewer for Node ESM JavaScript"},{"role":"blind","agent":"ecc:code-reviewer","why":"REQ-06-02 / REQ-03-12: wrong WL thresholds would misrate credit risk (core flow)"}]
+2026-10-13T12:48:37Z	jobset	assumptions: .assumptions += ["Stack is Node.js 18+ ESM per CLAUDE.md and the request (Plain Node ESM, no dependencies); full track: repo has no code yet"]
+2026-10-13T12:48:38Z	roles	ba qa backend-lead backend reviewer blind
+2026-10-13T12:48:38Z	phase	readiness
+2026-10-13T12:48:51Z	checkpoint	readiness, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T12:49:06Z	context	drafted from the repo: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/context.draft.md
+2026-10-13T12:49:24Z	dispatch	business-analyst
+2026-10-13T12:51:16Z	agent	business-analyst ab6313ac53e3a34b4: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Two features. (1) A notch calculator helper takes a previous and a current rating and returns t
+2026-10-13T12:51:41Z	decide	DEL-docs: JSDoc on the exports only — The request asks for no documentation; the contract is stated in the request and JSDoc keeps it next to the code.
+2026-10-13T12:51:42Z	decide	X-error-message: RangeError message names the argument and the offending value; previous is checked first; tests assert only the error type — Not part of the contract; helpful diagnostics at no cost.
+2026-10-13T12:51:42Z	decide	X-scale-immutability: Object.freeze RATING_SCALE — Importers share the scale; freezing prevents accidental mutation without changing the contract.
+2026-10-13T12:52:00Z	readiness	32 items: 20 decided, 9 n/a, 3 open
+2026-10-13T12:52:04Z	phase	awaiting_clarification
+2026-10-13T12:52:09Z	clarify	ARC-style: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T12:52:10Z	clarify	ARC-components: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T12:52:10Z	clarify	X-trim-whitespace: Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.
+2026-10-13T12:52:25Z	baseline	PASS (node --test)
+2026-10-13T12:52:26Z	freeze	readiness + architecture frozen (d6b440e9cb3a)
+2026-10-13T12:52:26Z	roles	ba qa backend-lead backend reviewer blind
+2026-10-13T12:52:26Z	phase	planning
+2026-10-13T12:52:33Z	context	proposed for .deliver/knowledge/architecture.md: architecture: 1 component(s) — repo (.)
+2026-10-13T12:52:40Z	dispatch	business-analyst
+2026-10-13T12:54:17Z	agent	business-analyst a04190c5139f2ecb9: ## Goal This delivers two requirements of the Watchlist POC as pure Node ESM library functions that other parts of the POC will import: 1. **REQ-06-02, the notc
+2026-10-13T12:55:00Z	dispatch	ecc:architect
+2026-10-13T12:55:56Z	agent	ecc:architect a4f47b3e59df47b7d: [{"tmp_id":"B1","title":"Rating scale and notch calculator (src/ratings/notch.mjs)","role":"backend","component":"repo","context":"WHY: REQ-06-02 of the Watchli
+2026-10-13T12:56:15Z	dispatch	business-analyst
+2026-10-13T12:58:35Z	agent	business-analyst ac9bfa13f9efce434: === T-01 === # T-01: Rating scale and notch calculator (src/ratings/notch.mjs) ## User story As a developer of the Watchlist POC, I want one shared rating scale
+2026-10-13T12:59:21Z	phase	executing
+2026-10-13T12:59:25Z	checkpoint	executing, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T12:59:49Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-13T12:59:54Z	qa-start	T-01 → QA writes its tests in /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/wt/T-01-qa (branch job/JOB-20261013-1448-rating-notch-calculator-and-coun--T-01-qa) while the dev builds
+2026-10-13T13:00:04Z	dispatch	backend-dev
+2026-10-13T13:00:11Z	dispatch	qa-tester
+2026-10-13T13:01:22Z	agent	backend-dev ab25f46b95dd5eb97: status: done commit: fd177d1 verify: passed (`node --test test/ratings/notch.test.mjs` runs 30 tests, all pass) open issues: `git push origin job/JOB-20261013-1
+2026-10-13T13:02:12Z	agent	qa-tester a7ee3c4aa877887c4: I wrote T-01's integration tests and committed them locally, but I could not push the branch. The `deliver bash-guard` hook rejected every `git push` ("this dir
+2026-10-13T13:02:17Z	gate	T-01 PASS
+2026-10-13T13:02:22Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-13T13:02:29Z	qa	T-01 pass (qa_verify PASS) — AC-1: AC-1 RATING_SCALE deep-equals the 19 C1 ratings; AC-2: AC-2 frozen, mutations throw TypeError; AC-3: AC-3 nine spec examples; AC-4: AC-4 case and trim whitespace tests; AC-5: AC-5 invalid values RangeError + X-error-message test; AC-6: AC-6 named examples incl. BBB+ to BB+ 3/WL2; AC-7: AC-7 upgrades and unchanged; AC-10: AC-10 all 361 pairs; AC-11: AC-11 purity tests (notch.purity.int.test.mjs)
+2026-10-13T13:02:40Z	dispatch	ecc:typescript-reviewer
+2026-10-13T13:02:44Z	dispatch	ecc:code-reviewer
+2026-10-13T13:02:54Z	agent	ecc:typescript-reviewer a8c7e0b328a51571e: ```json {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: the local helper named `indexOf` shadows the Array method name conceptually. Somethin
+2026-10-13T13:03:01Z	agent	ecc:code-reviewer a31dfe1061c8fb95e: {"findings":[{"file":"src/ratings/notch.mjs","line":26,"issue":"Rating input is trimmed and upper-cased before lookup, so non-canonical strings are accepted as 
+2026-10-13T13:03:06Z	review	T-01 reviewer approve — no blocking items; nits only
+2026-10-13T13:03:07Z	review	T-01 blind approve — 3 nits only, no blocking findings (trim/upper-case, WL cap, D/SD rejection are spec-mandated)
+2026-10-13T13:03:08Z	integrate	T-01 merged
+2026-10-13T13:03:09Z	merge-check	T-01 PASS (repo suite)
+2026-10-13T13:03:14Z	checkpoint	executing, 1 card(s) merged — a fresh session goes on from here
+2026-10-13T13:03:33Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-13T13:03:42Z	qa-start	T-02 → QA writes its tests in /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/wt/T-02-qa (branch job/JOB-20261013-1448-rating-notch-calculator-and-coun--T-02-qa) while the dev builds
+2026-10-13T13:03:54Z	dispatch	backend-dev
+2026-10-13T13:04:01Z	dispatch	qa-tester
+2026-10-13T13:04:53Z	agent	backend-dev ac312ad11f6564df8: status: done commit: df3dac2 verify: passed (`node --test test/indicators/countryRating.test.mjs`: 9 of 9 pass; full `node --test`: 118 of 118 pass) open issues
+2026-10-13T13:05:44Z	agent	qa-tester a4b4e364454927051: Card T-02's tests are written and committed, and there is no verdict yet (QA-WRITE). Without `src/indicators/countryRating.mjs`, `qa_verify` gives 75 failing an
+2026-10-13T13:05:49Z	gate	T-02 PASS
+2026-10-13T13:05:55Z	qa-join	T-02: QA's tests (1 commit(s)) joined the card branch
+2026-10-13T13:05:56Z	qa	T-02 pass (qa_verify PASS) — AC-8: countryRating.int.test.mjs spec examples + n=1..18 + C6 contrast; AC-9: countryRating.int.test.mjs Object.is +0 upgrade/unchanged; AC-4: countryRating.int.test.mjs case/whitespace kinds; AC-5: countryRating.int.test.mjs 32 invalid values RangeError + X message; AC-10: countryRating.int.test.mjs all 361 pairs, purity test source checks; AC-11: countryRating.purity.int.test.mjs child-process silence, only import notch.mjs
+2026-10-13T13:06:09Z	dispatch	ecc:typescript-reviewer
+2026-10-13T13:06:12Z	dispatch	ecc:code-reviewer
+2026-10-13T13:06:21Z	agent	ecc:typescript-reviewer a5b1c41f1b8316e6d: {"verdict":"approve","blocking":[],"nits":["The diff adds two QA integration test files under test/integration/indicators/. They are countryRating.int.test.mjs 
+2026-10-13T13:06:25Z	agent	ecc:code-reviewer a1ac7eef09446fe12: ```json {"findings":[ {"file":"test/indicators/countryRating.test.mjs","line":62,"issue":"The test 'all 361 pairs match the thresholds' computes its expected va
+2026-10-13T13:06:30Z	review	T-02 reviewer approve — no blocking items; nits only (QA files are in qa_scope)
+2026-10-13T13:06:31Z	review	T-02 blind approve — 3 nits only, no blocking findings
+2026-10-13T13:06:32Z	integrate	T-02 merged
+2026-10-13T13:06:33Z	merge-check	T-02 PASS (repo suite)
+2026-10-13T13:06:38Z	checkpoint	executing, 2 card(s) merged — a fresh session goes on from here
+2026-10-13T13:06:51Z	phase	integrating
+2026-10-13T13:06:52Z	verify-all	PASS
+2026-10-13T13:06:56Z	checkpoint	integrating, 2 card(s) merged — a fresh session goes on from here
+2026-10-13T13:07:12Z	verify-all	PASS
+2026-10-13T13:07:16Z	phase	closing
+2026-10-13T13:07:18Z	checkpoint	closing, 2 card(s) merged — a fresh session goes on from here
+2026-10-13T13:07:43Z	dispatch	business-analyst
+2026-10-13T13:08:36Z	agent	business-analyst aa0b12359aa2a8885: ## Closing check: JOB-20261013-1448 (rating notch calculator and Indicator 12) All 11 acceptance criteria are met and both NFRs pass. The job branch head is `11
+2026-10-13T13:08:48Z	followup	Default grades (CC, C, D, SD) are rejected by design (C1); needs a business decision for a later slice (R-4)
+2026-10-13T13:08:48Z	followup	Audit trail for analyst-edited ratings (C7/NFR-audit) belongs to a later part of the POC
+2026-10-13T13:08:49Z	knowledge	lessons/standards committed to job/JOB-20261013-1448-rating-notch-calculator-and-coun: .deliver/knowledge/architecture.md 
+2026-10-13T13:08:49Z	record	the job's record committed to job/JOB-20261013-1448-rating-notch-calculator-and-coun: .deliver/jobs/JOB-20261013-1448-rating-notch-calculator-and-coun/
+2026-10-13T13:08:50Z	ship	local merge into main

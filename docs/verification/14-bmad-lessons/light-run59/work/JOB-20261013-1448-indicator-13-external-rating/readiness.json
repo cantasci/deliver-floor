@@ -1,0 +1,163 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Indicator 13 calculates the client's WL from the notch change between previous and current external rating: 2-notch downgrade → WL 1, 3+ notches → WL 2; everything else WL 0.",
+      "source": "request, ## Requirement, REQ-03-13",
+      "quote": "2 notch downgrade → WL=1; 3+ notches → WL=2",
+      "owner": "business"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: src/indicators/externalRating.mjs exporting externalRatingChangeWl(previous, current), plus tests. Out of scope: any change to existing code, fetching/storing ratings, combining indicators, UI/API, new dependencies.",
+      "source": "request, intro",
+      "quote": "This change adds one function next to them and changes",
+      "owner": "business"
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "BBB+→BBB- (+2) gives 1; BBB+→BB+ (+3) gives 2; AAA→CCC- gives 2; BBB→BBB- (+1) gives 0; BB+→BBB+ (upgrade) gives 0; A→A gives 0; ' bbb+ '→'bb+' gives 2; BBB+→'nope' throws RangeError.",
+      "source": "request, REQ-03-13 and ## Clarifications",
+      "quote": "A 1-notch downgrade, an upgrade and an unchanged rating give WL 0.",
+      "owner": "business"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "No contradictions: the clarification settles direction (an upgrade of any size gives WL 0). Indicator 13 thresholds (2→1, 3+→2) differ from Indicator 12's by design.",
+      "source": "request, ## Clarifications",
+      "quote": "A 1-notch downgrade, an upgrade and an unchanged rating give WL 0.",
+      "owner": "business"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "Named export externalRatingChangeWl(previous, current) in src/indicators/externalRating.mjs → 0|1|2. Ratings read as notchChange reads them; notchChange(previous,current) > 0 is a downgrade; ≥3 → 2, ===2 → 1, else 0. Pure, no I/O.",
+      "source": "request, ## Contract",
+      "quote": "externalRatingChangeWl(previous, current)",
+      "owner": "business"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Anything off the scale (after trim/uppercase), including null/undefined/'' , throws the RangeError notchChange throws; no catching, no fallback.",
+      "source": "request, ## Clarifications",
+      "quote": "anything else is rejected with the",
+      "owner": "business"
+    },
+    {
+      "id": "CON-compat",
+      "status": "decided",
+      "answer": "Existing exports (RATING_SCALE, notchChange, notchCalculator, countryRatingChangeWl) and behaviour unchanged; existing tests stay green.",
+      "source": "request, ## Clarifications",
+      "quote": "The existing exports and their behaviour stay as they are.",
+      "owner": "business"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.",
+      "question": "What is the project's architecture style, so it can be confirmed in architecture.md?",
+      "options": [
+        "library: one component of pure functions (src/ratings, src/indicators), no runtime entry point",
+        "monolith: one deployable application that will grow these modules"
+      ],
+      "impact": "None on this change's code; only what the project standard records for later jobs.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "The request fixes where the change goes but does not state the architecture style; the draft leaves it a placeholder.",
+          "question": "What is the project's architecture style, so it can be confirmed in architecture.md?",
+          "at": "2026-10-13T12:51:54.255Z"
+        }
+      ],
+      "source": "human: e2e-human 2026-10-13"
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.",
+      "question": "Confirm the component list: one component 'repo' (library, Node.js 18+ ESM, path '.', suite npm test)?",
+      "options": [
+        "As drafted: one component, whole repo, suite npm test",
+        "Two library components: ratings (src/ratings) and indicators (src/indicators)"
+      ],
+      "impact": "None on this change's code; how components and verify commands are recorded for this and later jobs.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "The request adds no component. The component list exists only in the unconfirmed draft.",
+          "question": "Confirm the component list: one component 'repo' (library, Node.js 18+ ESM, path '.', suite npm test)?",
+          "at": "2026-10-13T12:51:54.589Z"
+        }
+      ],
+      "source": "human: e2e-human 2026-10-13"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js 18+ ES modules (.mjs), no npm dependencies; node:test with node:assert/strict, run with node --test.",
+      "source": "request, last line; repo CLAUDE.md",
+      "quote": "Plain Node ESM, no dependencies",
+      "owner": "business"
+    },
+    {
+      "id": "NFR-security",
+      "status": "n_a",
+      "answer": "Pure function over two rating strings: no auth, secrets or I/O. Input validation is covered by CON-errors.",
+      "source": "repo CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`.",
+      "owner": "pm"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "No personal data: inputs are two rating codes; nothing is stored or logged.",
+      "source": "repo CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`.",
+      "owner": "pm"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Dev unit tests (TDD) in test/unit/indicators/externalRating.test.mjs; QA integration tests in test/integration/indicators/externalRating.int.test.mjs using the real notchChange/RATING_SCALE, covering notches -18,-1,0,+1,+2,+3,+18, trim/case, and RangeError cases. Full suite: node --test.",
+      "source": "request, last line",
+      "quote": "tests with `node --test` under `test/`, like the existing ones.",
+      "owner": "pm"
+    },
+    {
+      "id": "X-rating-scale",
+      "status": "decided",
+      "answer": "Only the 19 grades of RATING_SCALE count; CC/C/D/SD, NR/WD and Moody's notation are rejected with RangeError. Risk to list in the plan: a client downgraded to D throws instead of getting WL 2.",
+      "source": "request, ## Clarifications",
+      "quote": "anything else is rejected with the",
+      "owner": "business"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "watchlist-poc",
+        "name": "watchlist-poc",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node"
+        ],
+        "path": [
+          "."
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "verify": "node --test",
+        "notes": "Single-component repo (draft, not yet confirmed). New code: src/indicators/externalRating.mjs; unit tests test/unit/indicators/, QA tests test/integration/indicators/."
+      }
+    ]
+  }
+}

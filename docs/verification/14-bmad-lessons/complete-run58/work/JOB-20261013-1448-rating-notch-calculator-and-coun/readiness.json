@@ -1,0 +1,313 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Two features. (1) A notch calculator helper takes a previous and a current rating and returns the notch change and the resulting WL. (2) Indicator 12 (country rating change) returns a WL from the notch change. Success means the slice's acceptance criteria pass under node --test.",
+      "source": "request: Requirements table REQ-06-02, REQ-03-12",
+      "quote": "A notch calculator helper shall be available: analyst selects previous rating and current rating → system outputs notch change and resultant WL"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "The business user is the analyst. The code users are other parts of the POC that import the contract. This slice has no roles or permissions.",
+      "source": "request: REQ-06-02; Contract section",
+      "quote": "other parts of the POC will import exactly these"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: REQ-06-02 and REQ-03-12 only, meaning RATING_SCALE, notchChange, notchCalculator and countryRatingChangeWl. Out of scope: fetching ratings from a public source, a separate Indicator 13 module, UI, CLI, printed output, an override parameter, persistence and an audit trail.",
+      "source": "request: intro, C4, C7, C8",
+      "quote": "Build only these two requirements."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Yes, with concrete values once the clarifications are applied. Calculator: BBB+→BB+ = 3 notches, WL 2. BBB+→BBB- = 2 notches, WL 1. A 1-notch downgrade gives WL 0. Upgrades and unchanged give WL 0. Indicator 12: 1-notch downgrade WL 1, 2 or more WL 2, upgrades and unchanged WL 0.",
+      "source": "request: C2, C3, C6, REQ-03-12",
+      "quote": "so BBB+ → BB+ = 3-notch downgrade → WL=2, and BBB+ → BBB- = 2 notches → WL=1."
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "Three conflicts, all resolved by the request. (1) The POC example for REQ-06-02 miscounts; C2 gives 3 notches and WL 2. (2) At 1 notch the calculator gives WL 0 and Indicator 12 gives WL 1 (C6). (3) 'editable' and 'displayed' are met by the contract (C7, C8).",
+      "source": "request: C2, C6, C7, C8",
+      "quote": "The POC example for REQ-06-02 miscounts: BBB+ → BB+ is 3 notches"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "n_a",
+      "answer": "The slice is exactly these two small requirements and both ship together, so no MoSCoW order is needed.",
+      "source": "request: intro",
+      "quote": "Build only these two requirements."
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "src/ratings/notch.mjs exports RATING_SCALE (19 ratings, best first), notchChange(previous, current) (integer, index(current)-index(previous), downgrade positive), notchCalculator(previous, current) returning {notches, direction, wl} with notches signed like notchChange and wl 0 below 2 notches, 1 for 2, 2 for 3 or more. src/indicators/countryRating.mjs exports countryRatingChangeWl(previous, current) returning 0|1|2, built on notchChange. Non-scale input is rejected (CON-errors).",
+      "source": "request: Contract; C1; C5",
+      "quote": "`notchCalculator(...).notches` is signed exactly like `notchChange` (downgrade positive, upgrade negative)."
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "All three functions throw RangeError for any value that is not on the scale after trimming and case-folding, including '', 'D', null, undefined and numbers; never a TypeError.",
+      "source": "request: C1",
+      "quote": "anything else is rejected with a RangeError."
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "Greenfield: src/ and test/ are empty, so there is no existing behaviour to keep.",
+      "source": "request: Contract section",
+      "quote": "other parts of the POC will import exactly these"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "question": "Which architecture style does this repo have? The draft architecture is not confirmed yet.",
+      "options": [
+        "As in the draft (context.draft.md): a library, one component 'repo' at path '.', suite npm test",
+        "A modular library: one package with areas src/ratings and src/indicators, still one component and one suite"
+      ],
+      "impact": "Low. Both options give the same code layout. Recommendation: library.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "question": "Which architecture style does this repo have? The draft architecture is not confirmed yet.",
+          "at": "2026-10-13T12:52:09.631Z"
+        }
+      ],
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.",
+      "source": "human: e2e-human 2026-10-13"
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "question": "Confirm the component list. The draft lists one library component, 'repo' (javascript, path '.', suite npm test).",
+      "options": [
+        "As in the draft: one component 'repo' holding src/ratings, src/indicators and test/",
+        "Two components, ratings and indicators (not recommended: one package.json, one suite)"
+      ],
+      "impact": "Decides card ownership and the QA verify command. Recommendation: the single component.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "question": "Confirm the component list. The draft lists one library component, 'repo' (javascript, path '.', suite npm test).",
+          "at": "2026-10-13T12:52:10.008Z"
+        }
+      ],
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.",
+      "source": "human: e2e-human 2026-10-13"
+    },
+    {
+      "id": "ARC-ui",
+      "status": "decided",
+      "answer": "No UI. 'Displayed' is met by the returned value.",
+      "source": "request: C8",
+      "quote": "No UI, CLI or printed output in this slice."
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Pure domain modules imported in-process by other parts of the POC. No API, BFF or middleware.",
+      "source": "request: Contract heading",
+      "quote": "other parts of the POC will import exactly these"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "JavaScript, plain Node.js ES modules (.mjs), Node 18+, tested with node:test.",
+      "source": "request: Contract section (last line)",
+      "quote": "Plain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`."
+    },
+    {
+      "id": "ARC-deps",
+      "status": "decided",
+      "answer": "No new dependencies.",
+      "source": "request: Contract section (last line)",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "ARC-data",
+      "status": "decided",
+      "answer": "No data store and no persistence.",
+      "source": "request: C7",
+      "quote": "No override parameter, no persistence and no audit trail in this slice."
+    },
+    {
+      "id": "ARC-integration",
+      "status": "decided",
+      "answer": "No external systems are called; ratings arrive as arguments.",
+      "source": "request: C4",
+      "quote": "Fetching the rating from a public source is OUT of scope for this slice"
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous pure functions with no I/O, queues or events.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "The request sets no target; the work is a lookup in a 19-item in-memory scale.",
+      "source": "request (no performance statement)",
+      "quote": ""
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "A library with no service and no runtime dependency.",
+      "source": "request: C4",
+      "quote": "Fetching the rating from a public source is OUT of scope for this slice"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Input validation only: strict scale membership, RangeError otherwise. No auth, no secrets.",
+      "source": "request: C1",
+      "quote": "anything else is rejected with a RangeError."
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "Inputs are only rating symbols; no personal data is processed or stored.",
+      "source": "request: C7",
+      "quote": "No override parameter, no persistence and no audit trail in this slice."
+    },
+    {
+      "id": "NFR-audit",
+      "status": "decided",
+      "answer": "No audit trail in this slice.",
+      "source": "request: C7",
+      "quote": "no audit trail in this slice."
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "Pure functions with no logging and no output.",
+      "source": "request: C8",
+      "quote": "No UI, CLI or printed output in this slice."
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "n_a",
+      "answer": "No regulation or policy is named; the binding rules are C1-C8. Wrong WL thresholds are a credit-risk concern, so criteria are rated P0/P1.",
+      "source": "request: Clarifications heading",
+      "quote": ""
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests with node:test and node:assert/strict in test/ratings/notch.test.mjs and test/indicators/countryRating.test.mjs. QA adds contract-level tests over the public imports. No coverage target. Test data: the C1 scale, C2/C3/C6 examples and boundary pairs.",
+      "source": "CLAUDE.md",
+      "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`. `npm test` runs everything."
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "No CI config, lint or typecheck in the repo. The merge check is the full suite, node --test.",
+      "source": ".deliver.json",
+      "quote": "\"verify_full\": \"node --test\""
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "answer": "Nothing is deployed. Other parts consume the modules by import; rollback is a git revert.",
+      "source": "request: Contract heading",
+      "quote": "other parts of the POC will import exactly these"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No documentation, changelog or runbook is requested; the contract is stated in the request.",
+      "source": "request: Contract section",
+      "quote": "other parts of the POC will import exactly these"
+    },
+    {
+      "id": "X-trim-whitespace",
+      "status": "decided",
+      "question": "C1 says the input is 'trimmed' but not which whitespace. Does trimming cover tabs, newlines and non-breaking spaces (String.prototype.trim), or only ASCII spaces? Is internal whitespace such as 'BBB +' rejected?",
+      "options": [
+        "String.prototype.trim (all Unicode whitespace at both ends); internal whitespace gives RangeError",
+        "Only leading and trailing ASCII spaces; everything else gives RangeError"
+      ],
+      "impact": "Changes which inputs are accepted vs. throw RangeError, e.g. '\\tBBB+\\n'. Recommendation: option 1.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "question": "C1 says the input is 'trimmed' but not which whitespace. Does trimming cover tabs, newlines and non-breaking spaces (String.prototype.trim), or only ASCII spaces? Is internal whitespace such as 'BBB +' rejected?",
+          "at": "2026-10-13T12:52:10.386Z"
+        }
+      ],
+      "answer": "Trimmed means String.prototype.trim(): leading and trailing whitespace of any kind (spaces, tabs, newlines, Unicode spaces such as NBSP) is removed; whitespace inside the value is not changed.",
+      "source": "human: e2e-human 2026-10-13"
+    },
+    {
+      "id": "X-error-message",
+      "status": "decided",
+      "question": "What should the RangeError message say, and which argument is reported first when both are invalid?",
+      "options": [
+        "A message naming the argument and the value, previous checked first",
+        "A generic message"
+      ],
+      "impact": "Not part of the contract; tests check only the error type.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "What should the RangeError message say, and which argument is reported first when both are invalid?",
+          "at": "2026-10-13T12:51:42.251Z"
+        }
+      ],
+      "answer": "RangeError message names the argument and the offending value; previous is checked first; tests assert only the error type",
+      "source": "pm: michael 2026-10-13 — Not part of the contract; helpful diagnostics at no cost."
+    },
+    {
+      "id": "X-scale-immutability",
+      "status": "decided",
+      "question": "Should RATING_SCALE be a frozen array?",
+      "options": [
+        "Object.freeze the array",
+        "A plain array"
+      ],
+      "impact": "Internal; freezing prevents importers from mutating the shared scale.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "Should RATING_SCALE be a frozen array?",
+          "at": "2026-10-13T12:51:42.578Z"
+        }
+      ],
+      "answer": "Object.freeze RATING_SCALE",
+      "source": "pm: michael 2026-10-13 — Importers share the scale; freezing prevents accidental mutation without changing the contract."
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "repo",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node"
+        ],
+        "path": [
+          "."
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "verify": "npm test",
+        "notes": "Follows the unconfirmed draft. Code: src/ratings/notch.mjs, src/indicators/countryRating.mjs. Tests: test/ratings/, test/indicators/."
+      }
+    ]
+  }
+}

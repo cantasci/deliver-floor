@@ -1,0 +1,54 @@
+# gate: T-01  attempt: 1  2026-10-13T12:56:03Z
+ok    on job/JOB-20261013-1448-indicator-13-external-rating--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/externalRating.mjs","test/unit/indicators/externalRating.test.mjs"] (+ QA tests ["test/integration/indicators/externalRating.int.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/unit/indicators/externalRating.test.mjs
+TAP version 13
+# Subtest: 2-notch downgrade gives WL 1
+ok 1 - 2-notch downgrade gives WL 1
+  ---
+  duration_ms: 0.332584
+  ...
+# Subtest: 3+ notch downgrade gives WL 2
+ok 2 - 3+ notch downgrade gives WL 2
+  ---
+  duration_ms: 0.101583
+  ...
+# Subtest: 1-notch downgrade, unchanged and upgrades give WL 0
+ok 3 - 1-notch downgrade, unchanged and upgrades give WL 0
+  ---
+  duration_ms: 0.049875
+  ...
+# Subtest: argument order matters
+ok 4 - argument order matters
+  ---
+  duration_ms: 0.040416
+  ...
+# Subtest: whitespace and case are read as notchChange reads them
+ok 5 - whitespace and case are read as notchChange reads them
+  ---
+  duration_ms: 0.089292
+  ...
+# Subtest: unknown rating throws RangeError with notchChange message
+ok 6 - unknown rating throws RangeError with notchChange message
+  ---
+  duration_ms: 0.291167
+  ...
+# Subtest: off-scale and empty inputs throw the same error as notchChange
+ok 7 - off-scale and empty inputs throw the same error as notchChange
+  ---
+  duration_ms: 0.386834
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 62.672125
+ok    verify passed

@@ -1461,6 +1461,9 @@ n=$(cat "$HL_CNT" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$HL_CNT"
 case "$HL_MODE:$n" in
   limit:1) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'ve hit your session limit · resets 2:30pm (Europe/Berlin)"}' ;;
   credits:*) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'re out of usage credits. Switch to another model."}' ;;
+  new:*) case "$*" in *"Round tax"*) ;; *) echo "claude got: $*" >&2; exit 1 ;; esac   # Michael starts the request's job
+    mkdir -p "$HL_DIR/.work/JOB-y" && echo '{"phase":"done"}' > "$HL_DIR/.work/JOB-y/job.json" && echo JOB-y > "$HL_DIR/.work/ACTIVE"
+    echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
   *) jq '.phase = "done"' "$HL_JF" > "$HL_JF.t" && mv "$HL_JF.t" "$HL_JF"; echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
 esac
 FAKE
@@ -1475,6 +1478,12 @@ contains "…then the job goes on by itself, the wait neither a round nor 'no pr
 out="$(hl credits)"; rc=$?
 contains "out of credits it stops and says so: the human's call" "$out" "out of usage credits — add credits or switch the model"
 [[ ! -e $TMP/hl-sleep ]] && ok "…without waiting" || bad "waited on no credits"
+hlnew() { rm -f "$TMP/hl-n"; PATH="$HB:$PATH" HL_MODE=new HL_CNT="$TMP/hl-n" HL_DIR="$HL" "$HERE/scripts/run-headless.sh" "$HL" "Round tax to two decimals" 2>&1; }
+rm -f "$HL/.work/ACTIVE"
+contains "a request in a repo with no job starts one" "$(hlnew)" "✔ job JOB-y: done"
+echo JOB-x > "$HL/.work/ACTIVE"; echo '{"phase":"done"}' > "$HL/.work/JOB-x/job.json"
+contains "…and next to a finished one too (seen live: the second request resumed the first, done job)" "$(hlnew)" "✔ job JOB-y: done"
+rm -r "$HL/.work/JOB-y"; echo JOB-x > "$HL/.work/ACTIVE"
 echo "Ports by name: a frontend and a backend card's QA start the same stack side by side, not in turn (live: both on 5173 and 8101)"
 PT="$TMP/ports"; mkdir -p "$PT/frontend" && cd "$PT" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json
 echo "export default { webServer: { command: 'npm run dev', port: 5173 } }" > frontend/playwright.config.ts && git add -A && git commit -qm i
