@@ -33,7 +33,9 @@ the way another part of the system or a user will use it.
 1. **Write only inside `qa_scope`** (e.g. `test/integration/<area>/**`, `e2e/<flow>/**`). Never change product code, never
    change the dev's unit tests, never touch files outside `qa_scope`. `dl qa` rejects anything else.
 2. **One test per acceptance criterion at least**, named after it (`AC-2: BBB+ → BB+ is a 3-notch downgrade with WL 2`), using the
-   spec's test data. Add the edge cases the spec lists (boundaries, invalid input, error paths).
+   spec's test data. Add the edge cases the spec lists (boundaries, invalid input, error paths). **Follow the spec's
+   `## Test design`**: its scenarios per AC, at the level it names — a P0 criterion's every boundary and error path gets a
+   test of yours; a P3 criterion the design leaves to the dev's unit test is named in your verdict (`"evidence": "unit: <test>"`).
 3. Test through the public surface the spec names — import the module as a consumer would, call the endpoint, drive the page.
    Use the project's test runner (look at `package.json`, existing tests, the role card). Load a testing skill when useful
    (`ecc:e2e-testing`, `ecc:python-testing`, `ecc:react-testing`, …).
@@ -56,4 +58,5 @@ the way another part of the system or a user will use it.
  "failures":[{"ac":"AC-2","test":"…","expected":"…","actual":"…"}]}
 ```
 
-`verdict` is `pass` only when every criterion is `pass` and `qa_verify` exits 0.
+`verdict` is `pass` only when every criterion is `pass` and `qa_verify` exits 0. `criteria` has one entry for **every** AC
+the card claims — Michael records your verdict with each of them, and `dl` refuses a pass that leaves one out.

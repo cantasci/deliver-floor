@@ -100,12 +100,28 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    `.stack`, pick the stack reviewer, and set the full test command if the repo has none
    (`"$DL" jobset '.settings.verify_full="pytest -q"'`); `dl` refuses planning without a reviewer and `verify-all` without a
    test command.
+   **A repo with code has an architecture already** (`dl next`: CONTEXT): without `.deliver/knowledge/architecture.md`,
+   run `"$DL" context draft` — the components, stacks, paths and suites read from the repo's files, for the readiness review.
+   The human confirms it once; then `"$DL" context propose <the confirmed file>` and `dl ship` commits it with the PR. Later
+   jobs settle their architecture from it, quoted, instead of asking again (a new component is still asked).
+2b. **Triage: light or full** (`dl next`: TRIAGE). A small change inside existing code — one or two cards in components that
+   exist, with no new dependency, data, integration, UI or deployment decision, and a request that states the behaviour — goes
+   the **light path**: `"$DL" track light "<why it is small>" --quote "<the request's words that say so>"`. The readiness
+   review then answers only the items marked `light` (fewer questions), the BA plans and cuts the cards in one step
+   (MODE LIGHT — no Lead), and you write the closing report from the QA verdicts. Gates, QA, reviews and merges are the same.
+   Anything bigger stays full (the default). When the BA or the planning shows it is bigger, `"$DL" track full "<why>"` —
+   allowed until execution; from planning it goes back to readiness, the light decisions stay frozen, the skipped items are
+   answered and a Lead role joins.
 3. **Select the roles from the request** — read `roles.yaml` (the only catalog). For each role apply its `when` to what the request
    asks for and what the repo contains; `always: true` roles are always in (ba, qa). Pick the stack reviewer (once the stack is known) from `stack_reviewers`
    (most specific match) as role `reviewer` (a second one, e.g. for a React UI next to a Node API, as `reviewer-ui`).
    Write a one-line reason per role that quotes the part of the request it serves:
    `"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule"},…]'`
-   Keep it small: no role "just in case". A dev role needs its lead role.
+   Keep it small: no role "just in case". A dev role needs its lead role (on the light path no Lead: the BA cuts the cards).
+   **Blind review** (`settings.review.blind`, default `risk`): a card with a P0 or P1 acceptance criterion is also reviewed by
+   role `blind` (`ecc:code-reviewer`) from the diff alone — add `{"role":"blind","agent":"ecc:code-reviewer","why":"…"}` when
+   the request has anything that could fail at P0/P1 (money, data, security, the core flow); `dl validate` names the cards
+   that need it.
    **Models and CLIs per role** (when the request or the team asks for it): add `"provider"` (claude, codex, gemini, grok, kimi,
    qwen, opencode, crush, pi, copilot, cursor, antigravity) and `"model"` to a role, e.g.
    `{"role":"backend","agent":"backend-dev","provider":"codex","model":"gpt-5-codex"}`. Non-Claude roles run as Munder
@@ -137,6 +153,8 @@ REPO: <absolute repo root>   STACK: <stack>   ROLES: <job.roles>
 READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.mjs applicable <job dir>>
 STANDARDS (company + project — a standard settles an item only where it states it: source "standard: <file>", quote its
   words verbatim): <output of: "$DL" knowledge list>
+PROJECT ARCHITECTURE: <abs path to <repo>/.deliver/knowledge/architecture.md (a standard) | the draft .work/<job>/context.draft.md
+  (not confirmed: an option of ARC-style / ARC-components, never their answer) | none — a repo without code>
 ```
 
 2. **Verify the BA's work yourself, item by item** — you are the PM. Items marked `ask: human` in `readiness.yaml` (scope,
@@ -187,7 +205,15 @@ REPO: <absolute repo root>   STACK: <stack>
 Read the code as needed to make the plan realistic. Keep the request's requirement IDs on every AC.
 ```
 
-Write the result into `.work/<job>/plan.md` (keep the template's first heading).
+Write the result into `.work/<job>/plan.md` (keep the template's first heading). With `settings.test_design.risk` (the
+default) every AC line carries its priority `[P0]`…`[P3]` — what a failure costs — and every decided NFR-* readiness item is
+in `## Non-functional requirements` with its target and how it is checked; `dl validate` refuses a plan without them.
+
+**Light path** (`dl track light`): Phases 1 and 2 are one call — **Agent(business-analyst)** with `MODE: LIGHT`, the role
+card, the request, readiness.md, the repo, the dev roles and `MAX CARDS: <settings.light.max_cards>`. Split its answer on
+the `=== PLAN ===`, `=== CARDS ===` and `=== T-xx ===` lines into `plan.md`, `board.json` (as in Phase 2: ids, `agent`,
+`state`, `attempts`, `notes`, `reviewers`) and `specs/T-xx.md`, then `"$DL" validate`. `=== TOO BIG ===` → `"$DL" track
+full "<its reason>"`.
 If an open question changes scope and the request does not settle it, ask the user (interactive) — otherwise record the BA's
 assumption with `dl jobset '.assumptions += […]'`.
 
@@ -226,7 +252,9 @@ OUTPUT — only a JSON array:
 Then **you** merge the arrays into `.work/<job>/board.json` (`{"cards":[…]}`):
 
 - Ids `T-01`, `T-02`…; rewrite `depends_on` and `stack_after` from tmp ids to T-ids (link cross-area deps yourself).
-- Per card add `"agent"` (the role's agent from `roles.yaml`), `"state":"ready"`, `"attempts":0`, `"notes":[]`.
+- Per card add `"agent"` (the role's agent from `roles.yaml`), `"state":"ready"`, `"attempts":0`, `"notes":[]`, and
+  `"reviewers"`: the stack reviewer, the specialists its readiness decisions need, and `"blind"` when one of its ACs is P0 or
+  P1 (`settings.review.blind: risk`; `all`: every card).
 
 Then the **Business Analyst specs every card** — one call with all cards:
 
@@ -238,7 +266,9 @@ CARDS: <the cards JSON from board.json>
 REPO: <absolute repo root>
 ```
 
-Split the answer on the `=== T-xx ===` lines and write each part to `.work/<job>/specs/T-xx.md`. Replace each card's
+Split the answer on the `=== T-xx ===` lines and write each part to `.work/<job>/specs/T-xx.md`. Each spec has a
+`## Test design` — per AC its priority, level and scenarios (P0: every boundary and error path, unit and integration; P3: the
+dev's unit test) — which the dev and QA follow. Replace each card's
 `acceptance` with the spec's numbered criteria in one line each (keep the `AC-n` references) — now, while the board is still
 yours to write; after `dl phase executing` it is `dl`'s.
 
@@ -322,7 +352,9 @@ PLAN ACs referenced by the card: <the AC-n lines from plan.md, verbatim>
 Commit your tests in this repo's commit format (your role card, "Commits"), leave the worktree clean, return the JSON your agent definition specifies.
 ```
 
-   Record: `"$DL" qa T-xx pass|fail "<AC-1 pass: …; AC-2 fail: …>"` — `dl` checks that QA only wrote in `qa_scope`, that
+   Record: `"$DL" qa T-xx pass|fail "<AC-1 pass: …; AC-2 fail: …>"` — a pass names **every** AC of the card with the test
+   that shows it (a P3 one the test design left to the dev: `AC-4 unit: <test>`; `dl` refuses a pass that leaves one out) —
+   `dl` checks that QA only wrote in `qa_scope`, that
    there are QA tests, and runs `qa_verify` itself (a "pass" with failing QA tests is refused; not run twice when the gate
    already passed it on the same commit). A pass also runs the whole
    suite (`verify_full`) on the card's commit, with the dev's and QA's tests together: tests that pass alone can break it
@@ -344,6 +376,22 @@ OUTPUT — only JSON: {"verdict":"approve|changes","blocking":[{"file":"…","li
 Use "changes" only when there is at least one blocking item. A violated standard is a blocking item.
 ```
 
+   **The blind review** (`blind` in the card's reviewers) runs in the same message, with **nothing but the change** — no card,
+   no spec, no QA result, no standards:
+
+```text
+Role: blind reviewer. Review only; do not modify files.
+ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/blind.md>
+CHANGE: run `git -C <worktree> diff <job.branch>...HEAD` (and `--stat`); read any file of <worktree> you need.
+You are not told what the change is for — on purpose: judge what the code does.
+OUTPUT — only JSON: {"findings":[{"file":"…","line":0,"issue":"…","shows":"<an input or a sequence that shows it>","severity":"blocking|nit"}]}
+```
+
+   **You triage every blocking finding against the spec** (specs/T-xx.md, plan.md): `intended` — the spec asks for exactly
+   this behaviour; quote its words — or `defect`, which goes to the dev with the other reviewers' blocking items. Record:
+   `"$DL" review T-xx approve|changes "<one line>" --by blind --triage '[{"finding":"…","decision":"defect|intended","quote":"<the spec's words>"}]'`
+   (`[]` when it found nothing) — `dl` refuses an `intended` whose quote is not in the spec, an approval with a defect and a
+   `changes` without one.
    Record each verdict: `"$DL" review T-xx approve|changes "<one line>" --by <reviewer role> --standards '<the "standards"
    object>'` — `dl` refuses an approval that leaves a rule unanswered or violated (send the reviewer back for the missing
    answers; a violation means changes). Append them under `## Review` in the handoff. Any `changes` → re-dispatch the dev with all blocking items together (same retry rule).
@@ -398,7 +446,11 @@ For each AC: met / not met / partially, with the evidence (test name, QA result,
 OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
 ```
 
-2. Write `.work/<job>/report.md` from that + the board (it is the PR body): its Acceptance criteria table has a row for
+   **Light path:** no BA call — write the AC table yourself from the cards' QA verdicts (each names every AC with its test).
+2. Write `.work/<job>/report.md` from that + the board (it is the PR body): its Non-functional requirements table has a row
+   for every decided NFR-* item — `| NFR-x | PASS / CONCERNS / FAIL | evidence |`; anything but PASS is a fix card (Phase 3),
+   or your decision to ship it as it is: `"$DL" waive NFR-x "<why>"` (listed in the PR). `dl ship` refuses a missing row, a
+   row without evidence and an unwaived CONCERNS or FAIL. Its Acceptance criteria table has a row for
    **every** AC of plan.md, each with one status (✅ ❌ ⚠️) and its evidence — `dl ship` refuses one missing. An AC "not
    met" → fix card, back to Phase 3. `dl ship` adds every change to a card's tests and contract (`dl card … set`) and to
    `verify_full` to the PR, with its reason: change a check only when it was wrong, never to get a pass. It also commits the
@@ -410,7 +462,7 @@ OUTPUT: markdown table AC | Status | Evidence, then a "Follow-ups" list.
    Reuse a topic that `"$DL" knowledge topics` already lists. When `dl learn` says PROMOTE (a topic seen in three jobs, no
    standard yet), write the rule: `"$DL" knowledge promote <topic> "<one checkable rule>" --applies-to <kinds/roles>`.
    Lessons, promotions and follow-ups are recorded **before** `dl ship` — it writes them into the PR; afterwards `dl`
-   refuses them.
+   refuses them. So is the project architecture the human confirmed at readiness (`"$DL" context propose <file>`).
 4. `"$DL" ship` — per `settings.merge_mode`:
    - `human`: pushes `job/<id>`, opens the PR → phase `awaiting_pr_merge`. The human reviews and merges.
    - `semi`: same + auto-merge armed: GitHub merges once a human approves and checks pass.

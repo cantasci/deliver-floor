@@ -69,6 +69,18 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | F21 | a user's job: QA "takes very long" and the work did not look parallel — every test run of `dl` (gate, QA, the whole suite of 0.8.1) runs in Michael's turn | **Measured, open.** Running the whole suite in the background was built and measured live ([report](verification/13-background-suite/report.md)): no faster with two cards (5.3 vs 5.5 min executing), so it was not adopted (the owner's decision). Kept (0.9.2): each test run's duration on the card and in `dl timeline`, and `qa_verify` not run twice. **Next:** the user's own `dl timeline` from a real job, to see whether the gate, QA's run or the suite is the slow step |
 | F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
 
+## 0.16.0 — from the comparison with the BMAD Method
+
+Covered by `tests/run.sh` (the light path, the project architecture, the test design, the NFR gate, the blind review and its
+triage, each refused where it must be). **Not run live yet:**
+
+| # | What | Status |
+| --- | --- | --- |
+| B1 | A live job on the **light path**: does Michael triage a small request as light, does the BA's MODE LIGHT answer split cleanly into plan, cards and specs, and is the job cheaper than the full path for the same request | **Open** |
+| B2 | A live **brownfield** job on a real, larger existing repo (several components): `dl context draft` against it, the human confirming the draft once, the next job settling its architecture from the committed file | **Open** — the deterministic check runs on a fixture monorepo only |
+| B3 | Live **P0–P3 ratings and test designs** from the BA, and QA following them; a decided NFR item through to the report's PASS / CONCERNS / FAIL | **Open** |
+| B4 | A live **blind review**: what `ecc:code-reviewer` finds from the diff alone, how many findings Michael triages as intended vs defect, and what it costs per card | **Open** |
+
 ## Verified by the owner, not here
 
 | # | What | Why not here |

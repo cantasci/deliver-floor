@@ -160,7 +160,8 @@ function roleEntry(sel, cat) {
 
 export function renderRole(sel, job, cat) {
   const r = roleEntry(sel, cat);
-  const rules = [...(cat.rules?.all ?? []), ...(cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
+  // a blind reviewer judges the diff alone: the kind's rules ("judge the change against the card") are not its own
+  const rules = [...(cat.rules?.all ?? []), ...(r.blind ? [] : cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
   const md = [
     `# Role: ${sel.role} — ${KIND_TITLE[r.kind] ?? r.kind}${r.focus ? ` (${r.focus})` : ""}`,
     "",
@@ -181,7 +182,7 @@ export function renderRole(sel, job, cat) {
     ...projectFacts(job).map((x) => `- ${x}`),
     "",
     componentsSection(sel, r, job, cat),
-    job.repo ? knowledgeSection(job.repo, { kind: r.kind, role: sel.role, stack: job.stack ?? [], jobDir: job.dir }) : "",
+    job.repo ? knowledgeSection(job.repo, { kind: r.blind ? "blind" : r.kind, role: sel.role, stack: job.stack ?? [], jobDir: job.dir }) : "",
   ].join("\n");
   return { md, rules, entry: r };
 }

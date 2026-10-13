@@ -4,6 +4,40 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.16.0 — 2026-10-13
+
+**What a comparison with the BMAD Method showed us: a light path for small changes, the existing architecture as a
+standard, risk-based test design with a gate for non-functional requirements, and a blind review**
+- **The light path** (`dl track light "<why>" --quote "<the request's words>"`). Michael triages at intake: a small change
+  inside existing code takes the light path — the readiness review answers only the items marked `light` in
+  `readiness.yaml` (11 instead of 30+: goal, scope, acceptance, conflicts, contracts, errors, compatibility, stack, security,
+  privacy, tests), the BA plans and cuts at most `light.max_cards` (2) cards in one step (MODE LIGHT, no Lead), and Michael
+  writes the closing report from the QA verdicts. Gates, QA, reviews and merges are the same. Refused for a repo without
+  code and without the request's own words; a component it names must exist. Bigger after all: `dl track full "<why>"` —
+  from planning back to readiness, the light decisions stay as frozen (`readiness.light.json`, checked) and the skipped
+  items are answered. Both are decisions listed in the PR.
+- **A repo with code: its architecture is a project standard** (`.deliver/knowledge/architecture.md`). `dl context draft`
+  reads it from the repo's files — every project with a manifest of its own (package.json, pyproject.toml, go.mod, pom.xml,
+  build.gradle …) becomes a component with its stack, path and suite. The human confirms it once, at the readiness review,
+  `dl context propose` commits it with that job's PR, and from then on the BA settles ARC-style and ARC-components from it,
+  quoted (`standard: architecture.md`) — instead of asking every job. A new component is still asked. `dl context check`
+  finds a path that is gone (error) and a new project no component covers (warning); `dl next` says CONTEXT when it is
+  missing or out of date.
+- **Risk-based test design** (`settings.test_design.risk`, on). Every AC of the plan carries a priority by what its failure
+  costs — `[P0]` money, data, security or the core flow lost … `[P3]` cosmetic. Each card spec has a `## Test design`
+  (per AC: priority, level, scenarios — P0: every boundary and error path, unit and integration; P3: the dev's unit test).
+  `dl validate` refuses a plan without priorities and a spec without a test design for every AC of its card; `dl qa … pass`
+  refuses a verdict that leaves out an AC of the card.
+- **A gate for non-functional requirements.** Every decided NFR-* readiness item goes into the plan's
+  `## Non-functional requirements` with how it is checked, and into the report's table with PASS / CONCERNS / FAIL and its
+  evidence. `dl ship` refuses a missing row and anything but PASS unless Michael ships it knowingly — `dl waive NFR-x
+  "<why>"`, listed in the PR under its own heading.
+- **A blind review** (`settings.review.blind`: `risk` — cards with a P0 or P1 AC —, `all`, `off`). Role `blind`
+  (`ecc:code-reviewer`) reviews the diff alone — no card, no spec, no QA result — so the code is judged on what it does.
+  Michael triages each finding against the spec: `intended`, with the spec's words quoted (checked), or `defect` for the dev:
+  `dl review T-xx approve|changes … --by blind --triage '[…]'`. `dl validate` names the cards that need it.
+- A job started before 0.16.0 keeps its settings: none of the checks above applies to it.
+
 ## 0.15.0 — 2026-10-12
 
 **A frontend and a backend card's QA run side by side, not in turn** (seen live: both started the stack on 5173 and 8101,

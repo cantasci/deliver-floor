@@ -36,6 +36,10 @@ model's memory:
   own test runs.
 - **Code decides state.** `dl` owns the board, branches, gates, records and merges, and refuses anything out of order.
   Hooks keep every role in its lane: no push to main, no edits outside a card's scope, no AI attribution in your history.
+- **Depth where it matters, not everywhere.** A small change to existing code takes the light path (fewer readiness
+  questions, the BA cuts the cards, no Leads); every acceptance criterion is rated P0–P3 by what its failure costs, and that
+  decides how deeply it is tested and whether a blind reviewer — one who sees only the diff — looks at it too. A repo's
+  existing architecture is written down once, confirmed by you, and quoted by every later job instead of asked again.
 - **You see who did what.** On the floor every role is a person at a desk; the event log names the seat, the work order and
   the agent instructions behind every result.
 - **Any model, any CLI.** Choose a model per role (`opus` for the BA, `haiku` for a dev, …), or put a role on Codex, Gemini
@@ -216,7 +220,7 @@ added to your board — add it there, or map the stage to your own name with `tr
 
 Every claim above was run, live, with real Claude Code sessions and real agents — and recorded, failures included:
 
-- **495 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
+- **896 deterministic checks** (`tests/run.sh`): every guard, the state machine, the installer, the plugin packaging, the
   hooks on Windows paths, bash 3.2 (macOS) compatibility.
 - **40+ live runs** ([HISTORY](docs/verification/HISTORY.md), raw outputs in [docs/verification](docs/verification/)): headless,
   interactive (a person typing in the TUI), and the Munder Difflin app driven like a user, with screenshots of each person
@@ -224,7 +228,8 @@ Every claim above was run, live, with real Claude Code sessions and real agents 
   (Michael replaced it and reported why in the PR), every seat started on a broken model (seen within a minute, re-seated,
   delivered), models per role taken from the request, the terminal and the floor default — judged from the session
   transcripts.
-- **Not verified yet** — listed in [docs/OPEN.md](docs/OPEN.md): several projects on one floor at once, non-Claude CLIs per
+- **Not verified yet** — listed in [docs/OPEN.md](docs/OPEN.md): a live job on the light path, on a large existing repo, with
+  P0–P3 test design and a blind review (0.16.0 — covered by `tests/run.sh` only), several projects on one floor at once, non-Claude CLIs per
   role, a live Jira site (the connection check and the flow run against a stub of Jira's API), a gateway with another
   vendor's models, Bedrock/Vertex, and a run on real Windows and macOS machines (the code paths are covered by the
   deterministic checks).

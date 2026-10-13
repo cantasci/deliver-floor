@@ -29,6 +29,7 @@ while a card + its spec + the role card carry everything in one hop. One dispatc
 | **Devs** | build one card in its worktree, **unit tests first (TDD)**, commit, push their card branch | touch files outside `scope`, touch `qa_scope`, push anything else | gate (scope), write-guard (worktree), bash-guard (push) |
 | **QA/Test** | write and run **integration/e2e tests** per AC in `qa_scope`; verdict per AC | change product code or unit tests | `dl qa` refuses changes outside `qa_scope`, runs `qa_verify` itself |
 | **Reviewers** | judge the change: ACs, bugs, security, tests, scope; blocking items with file/line/fix | modify files | ECC reviewers are read-only; `dl review --by` |
+| **Blind reviewer** | judges the diff alone — no card, no spec, no QA result — and reports what the code does wrong; Michael triages each finding against the spec | see the spec, modify files | read-only agent; `dl review --by blind --triage` refuses an "intended" finding the spec does not state |
 
 ## Catalog (`kit/skills/deliver/roles.yaml`)
 
@@ -45,6 +46,7 @@ while a card + its spec + the role card carry everything in one hop. One dispatc
 | `a11y` | review | `ecc:a11y-architect` | readiness UX-a11y decided (an accessibility target) |
 | `performance` | review | `ecc:performance-optimizer` | readiness NFR-performance decided |
 | `quality` | review | `ecc:silent-failure-hunter` | error handling / failure paths are central |
+| `blind` | review | `ecc:code-reviewer` | a card with a P0 or P1 acceptance criterion (`settings.review.blind: risk`, the default), every card (`all`) — sees the diff alone; its role card leaves out the reviewers' "judge it against the card" |
 | `docs` | dev | `ecc:doc-updater` | readiness DEL-docs decided |
 | `qa-web` | qa | `ecc:e2e-runner` | a web user flow changes (job-level browser run) |
 | `qa-mobile` | qa | ARTEMIS (driven by Michael) | a mobile flow changes and a device is connected |

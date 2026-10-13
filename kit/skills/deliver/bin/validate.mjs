@@ -6,6 +6,7 @@ import { nodeTestDirArgs } from "./node-test-args.mjs";
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { globToRegExp } from "./scope.mjs";
+import { planACs as riskACs, cardRisk, needsBlind, testDesign, refsOf, nfrItems } from "./risk.mjs";
 
 const file = process.argv[2];
 if (!file) { console.error("usage: validate.mjs <board.json>"); process.exit(2); }
@@ -132,6 +133,39 @@ if (job) {
     if (!Array.isArray(c.reviewers) || !c.reviewers.length) { errors.push(`${c.id}: 'reviewers' must be a non-empty array of reviewer roles`); continue; }
     for (const r of c.reviewers) if (!kinds.has(r)) errors.push(`${c.id}: reviewer '${r}' is not a role on this job`);
   }
+}
+
+// Risk-based test design (settings.test_design.risk): every AC of the plan has a priority, every card's spec says how its
+// ACs are tested, and a card with a P0/P1 criterion gets a blind review (settings.review.blind). Every decided
+// non-functional requirement is in the plan with how it is checked.
+if (job?.settings?.test_design?.risk === true && plan) {
+  const acs = riskACs(plan);
+  const miss = acs.filter((a) => !a.priority).map((a) => a.ac);
+  if (miss.length) errors.push(`plan.md: ${miss.join(", ")} without a priority — each AC line carries [P0] … [P3] (P0: money, data, security or the core flow lost; P3: cosmetic)`);
+  const blind = job.settings?.review?.blind ?? "off";
+  for (const c of cards) {
+    if (c.state === "archived" || c.state === "merged") continue;
+    const { top } = cardRisk(c, acs);
+    if (needsBlind(blind, top) && !(c.reviewers ?? []).includes("blind"))
+      errors.push(`${c.id}: ${blind === "all" ? "every card" : `a ${top} criterion`} gets a blind review (settings.review.blind: ${blind}) — reviewers: [${[...(c.reviewers ?? ["reviewer"]), "blind"].map((r) => `"${r}"`).join(", ")}] and role blind on the job`);
+    const sp = join(dir, "specs", `${c.id}.md`);
+    if (!existsSync(sp)) continue;   // a missing spec is reported below
+    const td = testDesign(readFileSync(sp, "utf8"));
+    if (td === null) { errors.push(`${c.id}: specs/${c.id}.md has no "## Test design" — per AC: its priority, the level (unit by the dev / integration-e2e by QA) and the scenarios`); continue; }
+    const nm = refsOf(c).filter((a) => !new RegExp(`\\b${a}\\b`).test(td));
+    if (nm.length) errors.push(`${c.id}: the spec's Test design does not cover ${nm.join(", ")}`);
+  }
+  const nfrSec = plan.match(/^##\s+Non-functional requirements\b.*\n([\s\S]*?)(?=^##\s|(?![\s\S]))/m)?.[1] ?? "";
+  for (const it of nfrItems(dir))
+    if (!new RegExp(`\\b${it.id}\\b`).test(nfrSec)) errors.push(`plan.md: ${it.id} is decided ("${it.answer.slice(0, 60)}") — its "## Non-functional requirements" say how it is checked (a test, a measurement, a review)`);
+}
+
+// The light path (dl track light) takes a small change to existing code: at most light.max_cards planned cards. Cards added
+// during the job (a fix card, a split) do not count — they are the job's own repairs.
+if (job?.track === "light") {
+  const max = job.settings?.light?.max_cards ?? 2;
+  const planned = cards.filter((c) => c.state !== "archived" && !(c.history ?? []).some((h) => h.change === "added"));
+  if (planned.length > max) errors.push(`the light path takes at most ${max} card(s) (settings.light.max_cards), the plan has ${planned.length} — this job is not small: dl track full "<why>" (the full readiness review and the Leads' cards)`);
 }
 
 // The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.

@@ -14,6 +14,11 @@
 #                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
+#   dl track light|full "<why>" [--quote "<request words>"]   the light path for a small change to existing code (fewer
+#                                  readiness items, the BA cuts ≤ light.max_cards cards, no Leads) or the full one (default)
+#   dl context draft|check [file]|propose <file>   the existing architecture of a repo with code, as a project standard
+#                                  (.deliver/knowledge/architecture.md): drafted from the repo, confirmed once, then quoted
+#   dl waive <NFR-id> "<why>"      a non-functional requirement that is not PASS at closing ships knowingly (listed in the PR)
 #   dl clarify <id> "<answer>"     record the human's answer to an open business question (human only)
 #   dl decide <id> "<decision>" "<rationale>"   the PM closes an open implementation-detail item (owner pm)
 #   dl unfreeze "<reason>"         (human, terminal only) reopen the decisions frozen at planning
@@ -193,6 +198,8 @@ load_job() {
 # a false value is a value: `// empty` dropped it, and every "set it to false" (qa_early, qa_verify_full, record_job …) was ignored
 setting() { jq -r ".settings.$1 | if . == null then empty else . end" "$JOBJ"; }
 phase_now() { jq -r .phase "$JOBJ"; }
+light_max() { local m; m="$(setting light.max_cards)"; echo "${m:-2}"; }
+blind_mode() { local m; m="$(setting review.blind)"; echo "${m:-off}"; }
 
 card_exists() { jq -e --arg id "$1" '.cards[] | select(.id==$id)' "$BOARD" >/dev/null || die "no such card: $1"; }
 card_get() { jq -r --arg id "$1" ".cards[] | select(.id==\$id) | $2" "$BOARD"; }
@@ -541,8 +548,19 @@ cmd_next() {
     echo "CHECKPOINT dl checkpoint, then end your turn — the next round goes on in a fresh session (all state is in files; dl next tells it where)"
     return 0
   fi
+  # a repo with code: its architecture is a project standard (.deliver/knowledge/architecture.md) — drafted once from the repo,
+  # confirmed by the human at this readiness review, then quoted by every later job instead of asked again
+  if [[ $phase =~ ^(intake|readiness|awaiting_clarification)$ ]] && jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null; then
+    local cx crc=0; cx="$(node "$BIN_DIR/context.mjs" check "$ROOT" 2>&1)" || crc=$?
+    if [[ $crc -eq 2 && ! -f $JOB_DIR/context.draft.md ]]; then echo "CONTEXT dl context draft — this repo has code but no project architecture yet: drafted from its files for the readiness review (the human confirms it once; dl context propose commits it with this PR)"
+    elif [[ $crc -eq 1 && ! -f $JOB_DIR/context.md ]]; then echo "CONTEXT the project architecture is out of date ($(grep -m1 '^ERROR' <<<"$cx" | cut -c7-140)) — the readiness review confirms the change; dl context propose <updated file>"
+    fi
+  fi
   case $phase in
-    intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)" ;;
+    intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)"
+              [[ "$(jq -r '.track // "full"' "$JOBJ")" == full ]] && jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null \
+                && echo "TRIAGE  a small change inside existing code? dl track light \"<why>\" --quote \"<the request's words>\" (fewer readiness items, the BA cuts ≤ $(light_max) card(s), no Leads) — else the full path, as now"
+              true ;;
     readiness|awaiting_clarification)
       local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
       jq -r '(.items // .)[] | select(.status=="open" and .owner=="pm") | "DECIDE  (PM) \(.id) — \(.question)  (record: dl decide \(.id) \"<decision>\" \"<rationale>\")"' "$JOB_DIR/readiness.json" 2>/dev/null
@@ -555,7 +573,9 @@ cmd_next() {
       else echo "PHASE   dl phase planning  (readiness complete: $(jq '(.items // .) | length' "$JOB_DIR/readiness.json") items decided or n/a; planning freezes them)"; fi ;;
     planning)
       local nxt="dl phase executing  (no plan gate: the human is next at the PR)"; [[ $gates_plan == true ]] && nxt="dl phase awaiting_plan_approval"
-      echo "PLAN    BA plan → plan.md · Lead cards → board.json · BA card specs → specs/T-xx.md · dl validate, then: $nxt"
+      if [[ "$(jq -r '.track // "full"' "$JOBJ")" == light ]]; then echo "PLAN    (light) BA MODE LIGHT → plan.md + board.json (≤ $(light_max) card(s)) + specs/T-xx.md in one step, no Leads · dl validate, then: $nxt  (bigger than that: dl track full \"<why>\")"
+      else echo "PLAN    BA plan → plan.md · Lead cards → board.json · BA card specs → specs/T-xx.md · dl validate, then: $nxt"; fi
+      [[ "$(setting test_design.risk)" == true ]] && echo "RISK    every AC of plan.md carries [P0]…[P3]; each spec has a \"## Test design\"; decided NFR-* items are in the plan's \"## Non-functional requirements\"; a card with a P0/P1 AC lists \"blind\" in its reviewers ($(blind_mode))"
       ports_hint ;;
     awaiting_plan_approval)
       case "$(jq -r '.gates.plan.status // "pending"' "$JOBJ")" in
@@ -640,7 +660,7 @@ cmd_next() {
         echo "QA      job-level QA roles if selected (failure → fix card + dl phase executing), then: dl phase closing"
       fi ;;
     closing)
-      if cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md"; then echo "REPORT  BA closing check (every AC with evidence) → report.md"
+      if cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md"; then echo "REPORT  $([[ "$(jq -r '.track // "full"' "$JOBJ")" == light ]] && echo "(light) you write it from the cards' QA verdicts" || echo "BA closing check") (every AC with evidence$([[ "$(setting test_design.risk)" == true ]] && echo "; every decided NFR-* PASS / CONCERNS / FAIL — not PASS: a fix card or dl waive")) → report.md"
       else echo "SHIP    dl ship  (merge_mode=$(setting merge_mode))"; fi ;;
     awaiting_pr_merge)
       echo "WAIT    PR $(jq -r '.pr.url // "?"' "$JOBJ") is with the human (merge_mode=$(setting merge_mode)). Check: dl pr — then dl cleanup when done"
@@ -821,6 +841,98 @@ report_decisions() {
     if [[ $n -eq 0 ]]; then echo "None: every decision was taken with the human before planning."
     else jq -r '.pm_decisions[] | "- " + (if .card then "**\(.card)** — " else "" end) + "\(.what) — _\(.why)_ (\(.at))"' "$JOBJ"; fi
   } >> "$JOB_DIR/report.md"
+}
+
+# dl track light|full "<why>" [--quote "<request words>"] — how much of the flow the job needs; Michael triages at intake.
+#   light: a small change inside existing code — the readiness review asks only the items marked light in readiness.yaml,
+#          the BA plans and cuts the cards in one step (no Leads), at most light.max_cards cards, closed from the QA verdicts.
+#          Gates, QA, reviews and the merge rules are the same. Chosen with the request's own words quoted (a decision
+#          listed in the PR); a repo without code has no existing component to change, so it is never light.
+#   full:  the default. A light job the BA or the Leads find bigger goes back to the full path until work starts: from
+#          planning it returns to readiness, the light decisions stay as they were (readiness.light.json — dl checks them),
+#          and the items the light path skipped are answered.
+cmd_track() {
+  load_job
+  local to=${1:-} why=${2:-} quote=""; shift 2 2>/dev/null || shift $#
+  while [[ $# -gt 0 ]]; do case $1 in --quote) quote=${2:-}; shift 2 ;; *) die "unknown option: $1" ;; esac; done
+  [[ ($to == light || $to == full) && -n $why ]] || die 'usage: dl track light "<why it is a small change>" --quote "<the request words that say so>" | dl track full "<why>"'
+  local cur track; cur="$(phase_now)"; track="$(jq -r '.track // "full"' "$JOBJ")"
+  [[ $track == "$to" ]] && { echo "already on the $to path"; return 0; }
+  if [[ $to == light ]]; then
+    [[ $cur == intake || $cur == readiness ]] || refuse 1 "the light path is chosen at intake, before the readiness review (now: $cur)"
+    jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null || refuse 1 "this repo has no code yet (no stack): there is no existing component to change — the full path decides the architecture"
+    [[ -n $quote ]] || refuse 1 "quote the request's words that make it a small change to existing code: --quote \"<…>\""
+    node -e 'const n=(t)=>String(t).toLowerCase().replace(/[\u2018\u2019]/g,"\x27").replace(/[\u201c\u201d]/g,"\x22").replace(/\s+/g," ").trim(); const [r,q]=process.argv.slice(1); process.exit(q.split(/\s*(?:…|\.\.\.)\s*/).map(n).filter(Boolean).every((f)=>n(r).includes(f))?0:1)' "$(jq -r .request "$JOBJ")" "$quote" \
+      || refuse 1 "the quote is not in the request: \"${quote:0:80}\" — quote its exact words"
+  else
+    [[ " intake readiness awaiting_clarification planning " == *" $cur "* ]] || refuse 1 "work has started (phase $cur): the job stays on its path — more work is a card (dl card add), within the frozen decisions"
+  fi
+  if [[ $to == full && $cur == planning ]]; then   # back to the readiness review: the light decisions stay, the skipped items are answered
+    cp "$JOB_DIR/readiness.json" "$JOB_DIR/readiness.light.json"
+    jq_inplace "$JOBJ" '.unfreezes = ((.unfreezes // []) + [(.frozen + {"reason":"dl track full — the light path was too small","by":"michael"})]) | .frozen = null | .phase = "readiness"'
+    log_event phase "readiness (dl track full)"
+  fi
+  jq_inplace "$JOBJ" --arg to "$to" --arg w "$why" --arg q "$quote" --arg t "$(now)" '.track = $to | .tracks = ((.tracks // []) + [{to:$to, why:$w, at:$t} + (if $q != "" then {quote:$q} else {} end)])'
+  pm_decision "the $to path$([[ $to == light ]] && echo ": a small change to existing code (\"${quote:0:120}\")")" "$why"
+  reset_stop_guard; log_event track "$to — $why"
+  if [[ $to == light ]]; then
+    echo "light path: the readiness review answers $(node "$BIN_DIR/readiness.mjs" applicable "$JOB_DIR" | jq length) item(s) (light: true in readiness.yaml); the BA plans and cuts at most $(light_max) card(s) in one step (MODE LIGHT); no Lead role is needed"
+  else
+    echo "full path: the readiness review answers every item that applies (node readiness.mjs applicable), the Leads cut the cards — add a lead role (dl jobset) if the job has none$([[ $cur == planning ]] && echo "; back in readiness: the light decisions stay as frozen (readiness.light.json)")"
+  fi
+}
+
+# dl context draft | check [file] | propose <file> — the existing architecture of a repo with code, as a project standard
+# (.deliver/knowledge/architecture.md, bin/context.mjs). draft: read from the repo's files, into the job's folder, for the
+# readiness review — the human confirms it once (the ARC items), and the confirmed file is proposed with this job's PR
+# (propose; dl ship commits it). From then on the BA settles the architecture from it, quoted (source "standard: …").
+cmd_context() {
+  resolve_root
+  local sub=${1:-check}
+  case $sub in
+    draft)
+      if [[ -f $WORK/ACTIVE ]]; then
+        load_job; node "$BIN_DIR/context.mjs" draft "$ROOT" > "$JOB_DIR/context.draft.md"
+        log_event context "drafted from the repo: $JOB_DIR/context.draft.md"
+        echo "$JOB_DIR/context.draft.md — the existing architecture, read from the repo's files. Not confirmed yet: in the readiness review it is an option of the ARC items, never their answer; the human confirms it (dl clarify), then: dl context propose <the confirmed file>"
+        grep -E '^\| [a-z0-9]' "$JOB_DIR/context.draft.md" | sed 's/^/  /' || true
+      else node "$BIN_DIR/context.mjs" draft "$ROOT"; fi ;;
+    check) node "$BIN_DIR/context.mjs" check "$ROOT" ${2:+"$2"} ;;
+    propose)
+      load_job; not_shipped
+      local f=${2:-}; [[ -f $f ]] || die "usage: dl context propose <file> — the architecture as the human confirmed it (dl context draft writes the draft)"
+      [[ $(phase_now) =~ ^(readiness|awaiting_clarification|planning|awaiting_plan_approval|executing|integrating|closing)$ ]] || refuse 1 "propose it once the readiness review has confirmed it (now: $(phase_now))"
+      local out rc=0; out="$(node "$BIN_DIR/context.mjs" check "$ROOT" "$(cd "$(dirname "$f")" && pwd)/$(basename "$f")")" || rc=$?
+      [[ $rc -eq 0 ]] || refuse 1 "the architecture is not ready to commit —"$'\n'"$out"
+      [[ "$(realpath "$f" 2>/dev/null || echo "$f")" == "$(realpath "$JOB_DIR/context.md" 2>/dev/null || echo -)" ]] || cp "$f" "$JOB_DIR/context.md"
+      log_event context "proposed for .deliver/knowledge/architecture.md: $(tail -n 1 <<<"$out")"
+      echo "proposed — dl ship commits it as .deliver/knowledge/architecture.md with this job's PR; merging the PR confirms it for the next jobs"$'\n'"$out" ;;
+    *) die "usage: dl context draft | check [file] | propose <file>" ;;
+  esac
+}
+
+# dl waive <NFR-id> "<why>" — a decided non-functional requirement that is not PASS at closing (CONCERNS, FAIL) ships only
+# knowingly: Michael's decision, with its reason, under its own heading in the PR. The human sees it before the merge.
+cmd_waive() {
+  load_job; not_shipped
+  local id=${1:-} why=${2:-}; [[ -n $id && -n $why ]] || die 'usage: dl waive <NFR-id> "<why it may ship as it is>"'
+  [[ "$(phase_now)" =~ ^(integrating|closing)$ ]] || refuse 1 "a requirement is waived at the end, once its result is known (integrating / closing — now: $(phase_now))"
+  node "$BIN_DIR/risk.mjs" nfr "$JOB_DIR" | jq -e --arg i "$id" 'any(.[]; .id == $i)' >/dev/null \
+    || refuse 1 "$id is not a decided non-functional requirement of this job ($(node "$BIN_DIR/risk.mjs" nfr "$JOB_DIR" | jq -r 'map(.id) | join(", ") | if . == "" then "none" else . end'))"
+  jq_inplace "$JOBJ" --arg i "$id" --arg w "$why" --arg t "$(now)" '.waivers = ([(.waivers // [])[] | select(.id != $i)] + [{id:$i, why:$w, at:$t}])'
+  log_event waive "$id — $why"; reset_stop_guard; echo "$id waived — listed in the PR: $why"
+}
+report_context() {
+  grep -q '<!-- deliver:context -->' "$JOB_DIR/report.md" && return 0
+  [[ -f $JOB_DIR/context.md ]] || return 0
+  printf '\n<!-- deliver:context -->\n## Project architecture\n\nThis PR %s `.deliver/knowledge/architecture.md` — the architecture as confirmed at the start of this job. Merging it makes it a project standard: later jobs read their components from it instead of asking again; a new component is still asked.\n' \
+    "$([[ -f $ROOT/.deliver/knowledge/architecture.md ]] && echo updates || echo adds)" >> "$JOB_DIR/report.md"
+}
+report_waivers() {
+  grep -q '<!-- deliver:waivers -->' "$JOB_DIR/report.md" && return 0
+  [[ "$(jq '(.waivers // []) | length' "$JOBJ")" -gt 0 ]] || return 0
+  { printf '\n<!-- deliver:waivers -->\n## Non-functional requirements shipped without a PASS\n\nMichael let these ship as they are (dl waive); each was decided at the start, and the table above gives its result.\n\n'
+    jq -r '.waivers[] | "- **\(.id)** — _\(.why)_ (\(.at))"' "$JOBJ"; } >> "$JOB_DIR/report.md"
 }
 
 cmd_decide() {
@@ -1241,6 +1353,10 @@ cmd_qa() {
   [[ "$(card_get "$card" .state)" == review ]] || refuse 1 "$card is $(card_get "$card" .state); QA runs on cards in review"
   gate_holds "$card" "$head" || refuse 1 "$card has no passed gate for its current commit (the dev changed code after the gate?) — run: dl gate $card"
   [[ -d $wt && -z "$(git -C "$wt" status --porcelain)" ]] || refuse 1 "the QA role must commit its tests; the worktree has uncommitted changes ($wt)"
+  # risk-based test design: a pass accounts for every acceptance criterion of the card, each with the test that shows it
+  if [[ $verdict == pass && "$(setting test_design.risk)" == true ]]; then
+    local qmiss; qmiss="$(node "$BIN_DIR/risk.mjs" qa "$JOB_DIR" "$card" "$summary" 2>&1)" || refuse 1 "$card: the QA verdict is incomplete —"$'\n'"$qmiss"
+  fi
   if [[ $(jq length <<<"$qscope") -gt 0 ]]; then
     local stray; stray="$(outside "$g" "$head" "$qscope")"
     [[ -z $stray ]] || refuse 1 "since the gate, files outside qa_scope changed: $(tr '\n' ' ' <<<"$stray")— QA writes only integration/e2e tests"
@@ -1312,10 +1428,10 @@ cmd_qa_join() {
 
 cmd_review() {
   load_job
-  local card=${1:-} verdict=${2:-} summary=${3:-} by="" std=""
+  local card=${1:-} verdict=${2:-} summary=${3:-} by="" std="" tri="" tri_set=0
   shift 3 2>/dev/null || shift $#
-  while [[ $# -gt 0 ]]; do case $1 in --by) by=${2:-}; shift 2 ;; --standards) std=${2:-}; shift 2 ;; *) die "unknown option: $1" ;; esac; done
-  [[ -n $card && ( $verdict == approve || $verdict == changes ) ]] || die 'usage: dl review <card> approve|changes "<summary>" [--by <reviewer role>] [--standards '"'"'{"<rule id>":"ok|violated: …|n_a: …"}'"'"']'
+  while [[ $# -gt 0 ]]; do case $1 in --by) by=${2:-}; shift 2 ;; --standards) std=${2:-}; shift 2 ;; --triage) tri=${2:-}; tri_set=1; shift 2 ;; *) die "unknown option: $1" ;; esac; done
+  [[ -n $card && ( $verdict == approve || $verdict == changes ) ]] || die 'usage: dl review <card> approve|changes "<summary>" [--by <reviewer role>] [--standards '"'"'{"<rule id>":"ok|violated: …|n_a: …"}'"'"'] [--triage '"'"'[{"finding":"…","decision":"defect|intended","quote":"…"}]'"'"' — the blind review]'
   card_exists "$card"
   local head; head="$(branch_head "$(card_get "$card" .branch)")"
   gate_holds "$card" "$head" || refuse 1 "$card has no passed gate for its current commit — run: dl gate $card"
@@ -1327,20 +1443,30 @@ cmd_review() {
   [[ -n $by ]] || by="${required%% *}"; [[ -n $by ]] || by="reviewer"
   if [[ -n $required && " $required " != *" $by "* ]]; then refuse 1 "$by is not a reviewer of $card (reviewers: $required)"; fi
   jq -e --arg r "$by" '.roles[] | select(.role==$r)' "$JOBJ" >/dev/null || [[ -z $required && $by == reviewer ]] || refuse 1 "role '$by' is not on this job"
-  # The company's and the project's standards (brand visual identity …): the reviewer answers every Must rule that applies
-  # to it, one by one; an approval with a rule unanswered or violated is refused.
-  local kind judged rr=0; kind="$(node "$BIN_DIR/roles.mjs" kind "$by" 2>/dev/null)"; [[ -n $kind ]] || kind=review
-  judged="$(node "$BIN_DIR/knowledge.mjs" judge "$(jq -r '.repo // "."' "$JOBJ")" "$kind" "$by" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" "$std" "$verdict" 2>&1)" || rr=$?
-  [[ $rr -eq 0 ]] || refuse 1 "$card: the standards check of this review is not complete —"$'\n'"$judged"
+  # The blind review judged the change from the diff alone — no card, no spec. Michael triages each of its findings against
+  # the spec: intended (the spec's words quoted) or a defect for the dev. The standards are the other reviewers' to answer.
+  local judged rr=0 triaged="null"
+  if [[ $by == blind ]]; then
+    [[ $tri_set == 1 && -z $std ]] || refuse 1 "$card: the blind review is recorded with its triage — --triage '[{\"finding\":\"…\",\"decision\":\"defect|intended\",\"quote\":\"<the spec's words>\"}]' ([] when it found nothing); the standards are answered by the card's other reviewers"
+    triaged="$(node "$BIN_DIR/risk.mjs" triage "$JOB_DIR" "$card" "$verdict" "$tri" 2>&1)" || refuse 1 "$card: the blind review's triage is not complete —"$'\n'"$triaged"
+    judged="{}"
+  else
+    [[ $tri_set == 0 ]] || refuse 1 "--triage is for the blind review (--by blind), not $by"
+    # The company's and the project's standards (brand visual identity …): the reviewer answers every Must rule that applies
+    # to it, one by one; an approval with a rule unanswered or violated is refused.
+    local kind; kind="$(node "$BIN_DIR/roles.mjs" kind "$by" 2>/dev/null)"; [[ -n $kind ]] || kind=review
+    judged="$(node "$BIN_DIR/knowledge.mjs" judge "$(jq -r '.repo // "."' "$JOBJ")" "$kind" "$by" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" "$std" "$verdict" 2>&1)" || rr=$?
+    [[ $rr -eq 0 ]] || refuse 1 "$card: the standards check of this review is not complete —"$'\n'"$judged"
+  fi
   card_set "$card" '(.cards[] | select(.id==$id)) |= (
-      .reviews = ((.reviews // []) + [{"by":$by,"verdict":$v,"head":$h,"summary":$s,"at":$t} + (if $std == {} then {} else {"standards":$std} end)])
+      .reviews = ((.reviews // []) + [{"by":$by,"verdict":$v,"head":$h,"summary":$s,"at":$t} + (if $std == {} then {} else {"standards":$std} end) + (if $tri == null then {} else {"triage":$tri} end)])
       | ((.reviewers // [$by]) ) as $req
       | ([.reviews[] | select(.head==$h)] | group_by(.by) | map(last)) as $latest
       | ($req | map(. as $r | ($latest | map(select(.by==$r)) | first | .verdict) // "pending")) as $vs
       | .review = {"verdict": (if any($vs[]; .=="changes") then "changes" elif all($vs[]; .=="approve") then "approve" else "pending" end),
                    "head":$h, "summary": ([$latest[] | "\(.by): \(.verdict) — \(.summary)"] | join(" | ")),
                    "pending": [$req[] as $r | select(($vs[$req | index($r)]) == "pending") | $r], "at":$t})' \
-    --arg by "$by" --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)" --argjson std "${judged:-"{}"}"
+    --arg by "$by" --arg v "$verdict" --arg h "$head" --arg s "$summary" --arg t "$(now)" --argjson std "${judged:-"{}"}" --argjson tri "$triaged"
   reset_stop_guard; log_event review "$card $by $verdict${summary:+ — $summary}"
   tracker sync "$card"; tracker note "$card" "$by" "$verdict${summary:+ — $summary}"
   echo "review: $card $by $verdict  (card: $(card_get "$card" .review.verdict)$(card_get "$card" '.review.pending | if length>0 then ", waiting for " + join(", ") else "" end'))"
@@ -1389,6 +1515,11 @@ knowledge_publish() {
   [[ "$(jq -r '.knowledge_published // ""' "$JOBJ")" == "" ]] || return 0
   local files
   files="$(node "$BIN_DIR/knowledge.mjs" publish "$ROOT" "$JOB_DIR" "$IWT" project)" || die "could not write the job's lessons"
+  if [[ -f $JOB_DIR/context.md ]]; then   # the project's architecture, confirmed at this job's readiness review (dl context propose)
+    mkdir -p "$IWT/.deliver/knowledge" && cp "$JOB_DIR/context.md" "$IWT/.deliver/knowledge/architecture.md"
+    [[ -n $files ]] && files+=$'\n'
+    files+="$IWT/.deliver/knowledge/architecture.md"
+  fi
   if [[ -n $files ]]; then
     git -C "$IWT" add -- .deliver/knowledge
     dl_commit "$IWT" "docs(deliver): lessons learned in ${JOB%%-[a-z]*}" "Lessons learned in $JOB" \
@@ -1624,8 +1755,12 @@ cmd_ship() {
   ! cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md" || refuse 1 "report.md is still the template — the PM closing check writes it first (it is also the PR body)"
   local acerr; acerr="$(report_ac_errors)"
   [[ -z $acerr ]] || refuse 1 "report.md does not account for every acceptance criterion of plan.md: ${acerr% }— each AC has a row in the Acceptance criteria table with its status (✅ ❌ ⚠️) and its evidence (test name, log, file)"
+  if [[ "$(setting test_design.risk)" == true ]]; then
+    local nfrerr; nfrerr="$(node "$BIN_DIR/risk.mjs" report "$JOB_DIR" 2>&1)" \
+      || refuse 1 "report.md does not account for every decided non-functional requirement (readiness NFR-*) — its \"## Non-functional requirements\" table: | NFR-x | PASS / CONCERNS / FAIL | evidence |"$'\n'"$nfrerr"
+  fi
   knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
-  report_decisions; report_contract_changes; report_lessons; report_followups
+  report_decisions; report_waivers; report_contract_changes; report_context; report_lessons; report_followups
   job_record_publish; head="$(branch_head "$JOB_BRANCH")"
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
@@ -2375,6 +2510,9 @@ main() {
     validate) cmd_validate ;;
     roles) cmd_roles ;;
     readiness) cmd_readiness ;;
+    track) cmd_track "$@" ;;
+    context) cmd_context "$@" ;;
+    waive) cmd_waive "$@" ;;
     clarify) cmd_clarify "$@" ;;
     decide) cmd_decide "$@" ;;
     pm-decide) cmd_pm_decide "$@" ;;
