@@ -1,0 +1,136 @@
+# qa_verify: node --test test/integration/ratings/investmentGrade.int.test.mjs test/integration/ratings/notch.int.test.mjs
+TAP version 13
+# Subtest: AC-1: every one of the 19 RATING_SCALE entries — indices 0-9 true, 10-18 false, strict boolean
+ok 1 - AC-1: every one of the 19 RATING_SCALE entries — indices 0-9 true, 10-18 false, strict boolean
+  ---
+  duration_ms: 0.859584
+  ...
+# Subtest: AC-1: the named ratings split AAA..BBB- true and BB+..CCC- false
+ok 2 - AC-1: the named ratings split AAA..BBB- true and BB+..CCC- false
+  ---
+  duration_ms: 0.068083
+  ...
+# Subtest: AC-1: ends of the scale — AAA true, CCC- false
+ok 3 - AC-1: ends of the scale — AAA true, CCC- false
+  ---
+  duration_ms: 0.046459
+  ...
+# Subtest: AC-2: boundary — BBB- is investment grade, BB+ is not
+ok 4 - AC-2: boundary — BBB- is investment grade, BB+ is not
+  ---
+  duration_ms: 0.043375
+  ...
+# Subtest: AC-2: boundary neighbours — BBB true, BB false
+ok 5 - AC-2: boundary neighbours — BBB true, BB false
+  ---
+  duration_ms: 0.04975
+  ...
+# Subtest: AC-3: padded or other-case input is normalised
+ok 6 - AC-3: padded or other-case input is normalised
+  ---
+  duration_ms: 0.040333
+  ...
+# Subtest: AC-3: normalisation parity with notchChange (same private indexOf) over padded/lower-cased scale
+ok 7 - AC-3: normalisation parity with notchChange (same private indexOf) over padded/lower-cased scale
+  ---
+  duration_ms: 0.122667
+  ...
+# Subtest: AC-4: ZZZ → RangeError with the exact message, never false
+ok 8 - AC-4: ZZZ → RangeError with the exact message, never false
+  ---
+  duration_ms: 0.330834
+  ...
+# Subtest: AC-4: empty / blank / null / undefined / no argument → RangeError, not false
+ok 9 - AC-4: empty / blank / null / undefined / no argument → RangeError, not false
+  ---
+  duration_ms: 0.267167
+  ...
+# Subtest: AC-4: messages for the empty-ish rows are exactly as specified
+ok 10 - AC-4: messages for the empty-ish rows are exactly as specified
+  ---
+  duration_ms: 0.278292
+  ...
+# Subtest: AC-4: off-scale codes D, SD, NR, WD → RangeError
+ok 11 - AC-4: off-scale codes D, SD, NR, WD → RangeError
+  ---
+  duration_ms: 0.201833
+  ...
+# Subtest: AC-4: inner whitespace and suffixes → RangeError
+ok 12 - AC-4: inner whitespace and suffixes → RangeError
+  ---
+  duration_ms: 0.059333
+  ...
+# Subtest: AC-4: non-string 5 → RangeError 'unknown rating: 5'
+ok 13 - AC-4: non-string 5 → RangeError 'unknown rating: 5'
+  ---
+  duration_ms: 0.0505
+  ...
+# Subtest: AC-4: the thrown value is a RangeError instance
+ok 14 - AC-4: the thrown value is a RangeError instance
+  ---
+  duration_ms: 0.033584
+  ...
+# Subtest: AC-4: parity — notchChange throws the same message for the same bad input
+ok 15 - AC-4: parity — notchChange throws the same message for the same bad input
+  ---
+  duration_ms: 0.163625
+  ...
+# Subtest: AC-5: module exports exactly RATING_SCALE, isInvestmentGrade, notchCalculator, notchChange
+ok 16 - AC-5: module exports exactly RATING_SCALE, isInvestmentGrade, notchCalculator, notchChange
+  ---
+  duration_ms: 0.133792
+  ...
+# Subtest: AC-5: RATING_SCALE is unchanged — 19 entries and frozen
+ok 17 - AC-5: RATING_SCALE is unchanged — 19 entries and frozen
+  ---
+  duration_ms: 0.031125
+  ...
+# Subtest: AC-5: notchChange and notchCalculator behave as before
+ok 18 - AC-5: notchChange and notchCalculator behave as before
+  ---
+  duration_ms: 0.045958
+  ...
+# Subtest: AC-2: BBB+ → BB+ = {"notches":3,"direction":"downgrade","wl":2}
+ok 19 - AC-2: BBB+ → BB+ = {"notches":3,"direction":"downgrade","wl":2}
+  ---
+  duration_ms: 0.573625
+  ...
+# Subtest: AC-2: BBB+ → BBB- = {"notches":2,"direction":"downgrade","wl":1}
+ok 20 - AC-2: BBB+ → BBB- = {"notches":2,"direction":"downgrade","wl":1}
+  ---
+  duration_ms: 0.057542
+  ...
+# Subtest: AC-2: BBB+ → BBB = {"notches":1,"direction":"downgrade","wl":0}
+ok 21 - AC-2: BBB+ → BBB = {"notches":1,"direction":"downgrade","wl":0}
+  ---
+  duration_ms: 0.342708
+  ...
+# Subtest: AC-2: BB → BBB = {"notches":-3,"direction":"upgrade","wl":0}
+ok 22 - AC-2: BB → BBB = {"notches":-3,"direction":"upgrade","wl":0}
+  ---
+  duration_ms: 0.08625
+  ...
+# Subtest: AC-2: AA → AA = {"notches":0,"direction":"unchanged","wl":0}
+ok 23 - AC-2: AA → AA = {"notches":0,"direction":"unchanged","wl":0}
+  ---
+  duration_ms: 0.051416
+  ...
+# Subtest: AC-1: the module exports the contract
+ok 24 - AC-1: the module exports the contract
+  ---
+  duration_ms: 0.139083
+  ...
+# Subtest: AC-1: trimmed, case-insensitive; unknown → RangeError
+ok 25 - AC-1: trimmed, case-insensitive; unknown → RangeError
+  ---
+  duration_ms: 0.186959
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.876375

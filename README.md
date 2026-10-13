@@ -228,8 +228,8 @@ Every claim above was run, live, with real Claude Code sessions and real agents 
   (Michael replaced it and reported why in the PR), every seat started on a broken model (seen within a minute, re-seated,
   delivered), models per role taken from the request, the terminal and the floor default — judged from the session
   transcripts.
-- **Not verified yet** — listed in [docs/OPEN.md](docs/OPEN.md): a live job on the light path, on a large existing repo, with
-  P0–P3 test design and a blind review (0.16.0 — covered by `tests/run.sh` only), several projects on one floor at once, non-Claude CLIs per
+- **Not verified yet** — listed in [docs/OPEN.md](docs/OPEN.md): a large existing repo with several components (the light
+  path, P0–P3 test design, the NFR gate and the blind review ran live on 0.16.0 — runs 58–60), several projects on one floor at once, non-Claude CLIs per
   role, a live Jira site (the connection check and the flow run against a stub of Jira's API), a gateway with another
   vendor's models, Bedrock/Vertex, and a run on real Windows and macOS machines (the code paths are covered by the
   deterministic checks).

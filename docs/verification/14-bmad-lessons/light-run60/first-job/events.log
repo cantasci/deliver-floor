@@ -1,0 +1,56 @@
+2026-10-13T13:31:18Z	new	Indicator 13 external rating change
+2026-10-13T13:31:35Z	jobset	stack: .stack=["node"]
+2026-10-13T13:31:35Z	jobset	settings: .settings.verify_full="npm test"
+2026-10-13T13:31:36Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend","agent":"backend-dev","why":"REQ-03-13: externalRatingChangeWl in src/indicators/externalRating.mjs"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"Node ESM stack reviewer"}]
+2026-10-13T13:31:36Z	roles	ba backend qa reviewer
+2026-10-13T13:31:36Z	phase	readiness
+2026-10-13T13:31:42Z	pm-decision	the light path: a small change to existing code ("This change adds one function next to them and changes nothing that exists.") — one new function next to existing code, one card, no new dependency/data/integration/UI
+2026-10-13T13:31:42Z	track	light — one new function next to existing code, one card, no new dependency/data/integration/UI
+2026-10-13T13:31:46Z	checkpoint	readiness, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T13:32:03Z	context	drafted from the repo: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1531-indicator-13-external-rating-cha/context.draft.md
+2026-10-13T13:32:23Z	dispatch	business-analyst
+2026-10-13T13:34:02Z	agent	business-analyst a74fe28d3439ca0f5: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Indicator 13 of the Watchlist calculates itself from a corporate client's external rating chang
+2026-10-13T13:34:21Z	readiness	13 items: 10 decided, 1 n/a, 2 open
+2026-10-13T13:34:24Z	phase	awaiting_clarification
+2026-10-13T13:34:30Z	clarify	ARC-style: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T13:34:30Z	clarify	ARC-components: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T13:34:54Z	context	proposed for .deliver/knowledge/architecture.md: architecture: 1 component(s) — repo (.)
+2026-10-13T13:34:55Z	baseline	PASS (npm test)
+2026-10-13T13:34:55Z	freeze	readiness + architecture frozen (acce104b134d)
+2026-10-13T13:34:55Z	roles	ba backend qa reviewer
+2026-10-13T13:34:55Z	phase	planning
+2026-10-13T13:35:07Z	dispatch	business-analyst
+2026-10-13T13:36:58Z	agent	business-analyst ad1900c331c915c43: === PLAN === ## Goal Add Indicator 13 (external rating change, REQ-03-13). The new function turns the notch change between a client's previous and current exter
+2026-10-13T13:37:45Z	jobset	roles: .roles += [{"role":"blind","agent":"ecc:code-reviewer","why":"P1 ACs (REQ-03-13): WL thresholds decide the watchlist"}]
+2026-10-13T13:37:46Z	freeze	readiness + architecture frozen (acce104b134d)
+2026-10-13T13:37:46Z	roles	ba backend qa reviewer blind
+2026-10-13T13:37:46Z	phase	planning
+2026-10-13T13:37:51Z	phase	executing
+2026-10-13T13:37:54Z	checkpoint	executing, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T13:38:14Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-13T13:38:15Z	qa-start	T-01 → QA writes its tests in /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1531-indicator-13-external-rating-cha/wt/T-01-qa (branch job/JOB-20261013-1531-indicator-13-external-rating-cha--T-01-qa) while the dev builds
+2026-10-13T13:38:28Z	dispatch	backend-dev
+2026-10-13T13:38:34Z	dispatch	qa-tester
+2026-10-13T13:39:12Z	agent	backend-dev ae60f103ae1c17bbf: status: done (commit is local only; push was blocked) commit: 90a85b5 verify: passed (`node --test test/unit/indicators/externalRating.test.mjs` runs 7 tests, a
+2026-10-13T13:39:57Z	agent	qa-tester ae6ee19922b858e7b: The tests are written and committed (`662e1ca`, message `T-01 QA: integration tests for externalRatingChangeWl (Indicator 13)`), but the push failed. The worktr
+2026-10-13T13:40:02Z	gate	T-01 PASS
+2026-10-13T13:40:07Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-13T13:40:09Z	qa	T-01 pass (qa_verify PASS) — AC-1: all 17 two-notch pairs → 1; AC-2: all 136 pairs ≥3 notches → 2; AC-3: 208 pairs → 0 (18 one-notch, 19 unchanged, 171 upgrades); AC-4: normalisation tests (' bbb+ ','bb+'); AC-5: RangeError tests for invalid inputs; AC-6: neighbouring modules test + npm test; AC-7: export, single-import and number-type tests
+2026-10-13T13:40:20Z	dispatch	ecc:typescript-reviewer
+2026-10-13T13:40:23Z	dispatch	ecc:code-reviewer
+2026-10-13T13:40:29Z	agent	ecc:typescript-reviewer aa9bbc15a3b890021: {"verdict":"approve","blocking":[],"nits":["src/indicators/externalRating.mjs: the module is correct and matches src/indicators/countryRating.mjs in style. The 
+2026-10-13T13:40:35Z	agent	ecc:code-reviewer a085f25c67d83538a: ```json {"findings":[{"file":"src/indicators/externalRating.mjs","line":6,"issue":"The Indicator 13 threshold mapping (>=3 gives 2, ==2 gives 1, else 0) now exi
+2026-10-13T13:40:38Z	review	T-01 reviewer approve — correct, in scope, style matches; nits only
+2026-10-13T13:40:40Z	review	T-01 blind approve — no blocking findings (2 nits)
+2026-10-13T13:40:41Z	followup	T-01: Indicator 13 thresholds duplicate notchCalculator().wl in notch.mjs; consider delegating
+2026-10-13T13:40:42Z	integrate	T-01 merged
+2026-10-13T13:40:42Z	merge-check	T-01 PASS (repo suite)
+2026-10-13T13:40:46Z	checkpoint	executing, 1 card(s) merged — a fresh session goes on from here
+2026-10-13T13:41:02Z	phase	integrating
+2026-10-13T13:41:03Z	verify-all	PASS
+2026-10-13T13:41:07Z	checkpoint	integrating, 1 card(s) merged — a fresh session goes on from here
+2026-10-13T13:41:24Z	verify-all	PASS
+2026-10-13T13:41:28Z	phase	closing
+2026-10-13T13:41:41Z	knowledge	lessons/standards committed to job/JOB-20261013-1531-indicator-13-external-rating-cha: .deliver/knowledge/architecture.md 
+2026-10-13T13:41:42Z	record	the job's record committed to job/JOB-20261013-1531-indicator-13-external-rating-cha: .deliver/jobs/JOB-20261013-1531-indicator-13-external-rating-cha/
+2026-10-13T13:41:43Z	ship	local merge into main

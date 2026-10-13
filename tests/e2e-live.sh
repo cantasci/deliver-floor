@@ -237,7 +237,7 @@ if [[ "$(jq -r '.settings.test_design.risk // false' "$JJ")" == true ]]; then
   jq -r '.cards[] | select(.state=="merged") | "    - \(.id): \(.qa.summary // "-" | .[0:220])"' "$B" >> "$REP"
   nfr="$(node "$RISK" nfr "$J" 2>/dev/null)"; log "decided NFR items: $(jq -r 'map(.id) | join(", ") | if . == "" then "none" else . end' <<<"$nfr")"
   if [[ "$(jq length <<<"$nfr")" -gt 0 ]]; then
-    if rows="$(node "$RISK" report "$J" 2>&1)"; then ok "the report gives every decided NFR item a result: $(jq -r 'map("\(.id) \(.result)") | join(", ")' <<<"$rows" 2>/dev/null || echo "$rows")"
+    if rows="$(node "$RISK" report "$J" 2>&1)"; then ok "the report gives every decided NFR item a result: $(jq -r 'map("\(.id) \(.status)") | join(", ")' <<<"$rows" 2>/dev/null || echo "$rows")"
     else bad "NFR rows in the report: $rows"; fi
     grep -q '^## Non-functional requirements' "$J/plan.md" && ok "the plan says how each is checked (## Non-functional requirements)" || bad "the plan has no ## Non-functional requirements"
     [[ "$(jq '(.waivers // []) | length' "$JJ")" -gt 0 ]] && log "waived: $(jq -r '[.waivers[] | "\(.id) — \(.why)"] | join("; ")' "$JJ")"

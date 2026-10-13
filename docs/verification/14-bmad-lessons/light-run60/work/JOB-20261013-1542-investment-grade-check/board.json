@@ -1,0 +1,143 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "isInvestmentGrade(rating) in src/ratings/notch.mjs",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "repo",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "context": "Add one named export isInvestmentGrade(rating) to src/ratings/notch.mjs: return indexOf(rating) <= 9 (strict boolean) using the module's existing private indexOf, so normalisation (String(x ?? '').trim().toUpperCase()) and the RangeError 'unknown rating: ${JSON.stringify(rating)}' are identical to notchChange. Do not touch RATING_SCALE, indexOf, notchChange or notchCalculator. Plain Node ESM, no dependencies, pure function (CLAUDE.md). Dev unit tests go in a NEW file test/unit/ratings/investmentGrade.test.mjs (node:test + node:assert/strict); do not edit existing test files. Note: test/integration/ratings/notch.int.test.mjs line 17 (export list) will fail until QA updates it, which is expected and belongs to QA (readiness PRD-conflicts (a)).",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/unit/ratings/investmentGrade.test.mjs"
+      ],
+      "verify": "node --test test/unit/ratings/investmentGrade.test.mjs test/unit/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/integration/ratings/investmentGrade.int.test.mjs",
+        "test/integration/ratings/notch.int.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/ratings/investmentGrade.int.test.mjs test/integration/ratings/notch.int.test.mjs",
+      "acceptance": [
+        "AC-1: isInvestmentGrade returns true for AAA..BBB- (10 ratings) and false for BB+..CCC- (9 ratings), strictly boolean",
+        "AC-2: boundary BBB- -> true, BB+ -> false",
+        "AC-3: ' bbb- ' -> true, 'bb+' -> false, '\\tAaA\\n' -> true (notchChange's normalisation)",
+        "AC-4: ZZZ, '', '   ', null, undefined, 'D', 'NR', 'BBB -', 5 throw RangeError 'unknown rating: <JSON>' identical to notchChange",
+        "AC-5: exports sorted = [RATING_SCALE, isInvestmentGrade, notchCalculator, notchChange]; existing behaviour and suite unchanged except the export-list assertion"
+      ],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-13T13:48:32Z"
+        }
+      ],
+      "worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/wt/T-01",
+      "branch": "job/JOB-20261013-1542-investment-grade-check--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "a24a975ef1904eef34a5888b7ddc23bd4915d922",
+        "attempt": 1,
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/gates/T-01-a1-155015.log",
+        "at": "2026-10-13T13:50:16Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-13T13:50:16.849Z",
+          "author": "gate",
+          "text": "PASS — 19 checks ok, 0 failed (T-01-a1-155015.log)"
+        },
+        {
+          "at": "2026-10-13T13:50:23.854Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1: AC-1 all 19 ratings / named split / ends; AC-2: AC-2 boundary BBB-/BB+ and neighbours; AC-3: AC-3 padded/other-case + notchChange parity; AC-4: AC-4 RangeError rows + notchChange message parity; AC-5: AC-5 export list, RATING_SCALE frozen, notchChange/notchCalculator samples"
+        },
+        {
+          "at": "2026-10-13T13:50:53.233Z",
+          "author": "reviewer",
+          "text": "approve — approve; nits only (magic 9 per spec)"
+        },
+        {
+          "at": "2026-10-13T13:50:54.358Z",
+          "author": "blind",
+          "text": "approve — no blocking findings; two nits (index 9 literal as specified, String() coercion parity)"
+        },
+        {
+          "at": "2026-10-13T13:50:56.400Z",
+          "author": "integrate",
+          "text": "the repo suite on job/JOB-20261013-1542-investment-grade-check after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "cf3c09762b8f5738092e66e9e7af7e9d17d64c06",
+        "qa_branch": "cd24b22000014614802d64a465d355df37b69319",
+        "at": "2026-10-13T13:50:21Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "cf3c09762b8f5738092e66e9e7af7e9d17d64c06",
+        "gate_head": "a24a975ef1904eef34a5888b7ddc23bd4915d922",
+        "qa_verify": "PASS",
+        "seconds": 0,
+        "suite_seconds": 0,
+        "suite": "npm test",
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/gates/T-01-qa-a1-155022.log",
+        "summary": "AC-1: AC-1 all 19 ratings / named split / ends; AC-2: AC-2 boundary BBB-/BB+ and neighbours; AC-3: AC-3 padded/other-case + notchChange parity; AC-4: AC-4 RangeError rows + notchChange message parity; AC-5: AC-5 export list, RATING_SCALE frozen, notchChange/notchCalculator samples",
+        "at": "2026-10-13T13:50:23Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "cf3c09762b8f5738092e66e9e7af7e9d17d64c06",
+          "qa_verify": "PASS",
+          "summary": "AC-1: AC-1 all 19 ratings / named split / ends; AC-2: AC-2 boundary BBB-/BB+ and neighbours; AC-3: AC-3 padded/other-case + notchChange parity; AC-4: AC-4 RangeError rows + notchChange message parity; AC-5: AC-5 export list, RATING_SCALE frozen, notchChange/notchCalculator samples",
+          "at": "2026-10-13T13:50:23Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "cf3c09762b8f5738092e66e9e7af7e9d17d64c06",
+          "summary": "approve; nits only (magic 9 per spec)",
+          "at": "2026-10-13T13:50:52Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "cf3c09762b8f5738092e66e9e7af7e9d17d64c06",
+          "summary": "no blocking findings; two nits (index 9 literal as specified, String() coercion parity)",
+          "at": "2026-10-13T13:50:53Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "cf3c09762b8f5738092e66e9e7af7e9d17d64c06",
+        "summary": "blind: approve — no blocking findings; two nits (index 9 literal as specified, String() coercion parity) | reviewer: approve — approve; nits only (magic 9 per spec)",
+        "pending": [],
+        "at": "2026-10-13T13:50:53Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "repo",
+        "head": "837a1569b1dc2620a5115f6dee73afdaec9a34ca",
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/gates/T-01-merged-155055.log",
+        "n": 1,
+        "at": "2026-10-13T13:50:56Z"
+      }
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+
+━━ 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+✔ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+  ✔ ECC plugin installed (Version: 2.2.3)
+  ✔ kit installed (scripts/install.sh --user)
+  ✔ existing code in the repo: 8 files, its tests pass, no architecture.md
+  ✔ doctor: result: 27 ok, 6 warning(s), 0 problem(s)
+
+━━ 2 · run: the only input is examples/watchlist-poc/JOB-light.md
+    ▶ claude -p "/deliver /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-light.md"   (log: .work/runs/20261013-153104.jsonl)
+      result: success  turns=11  cost=$0.3100351
+    round 1 — JOB-20261013-1531-indicator-13-external-rating-cha (readiness)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-153150.jsonl)
+      result: success  turns=12  cost=$0.6742633
+    ⏸  the requirements have open questions: .work/JOB-20261013-1531-indicator-13-external-rating-cha/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+  ✔ Michael opened the job JOB-20261013-1531-indicator-13-external-rating-cha
+
+━━ 4.1 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the light request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✔ answered ARC-style — What is the architecture style of the repo? The draft leaves it unfilled.
+  ✔ answered ARC-components — Confirm the component list: the draft has one component, 'repo', a JavaScript library at '
+    round 1 — JOB-20261013-1531-indicator-13-external-rating-cha (awaiting_clarification)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-153430.jsonl)
+      result: success  turns=17  cost=$0.6641812
+    round 2 — JOB-20261013-1531-indicator-13-external-rating-cha (executing)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-153759.jsonl)
+      result: success  turns=15  cost=$0.8109886999999997
+    round 3 — JOB-20261013-1531-indicator-13-external-rating-cha (executing)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-154051.jsonl)
+      result: success  turns=5  cost=$0.043400900000000006
+    round 4 — JOB-20261013-1531-indicator-13-external-rating-cha (integrating)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-154111.jsonl)
+      result: success  turns=8  cost=$0.1085193
+    ✔ job JOB-20261013-1531-indicator-13-external-rating-cha: done
+wall time: 10 min
+
+━━ 5 · verify the whole flow on disk
+  ✔ job reached done
+  ✔ job shipped (local)
+roles: ba, backend, qa, reviewer, blind
+  ✔ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+  ✔ role cards generated for every role
+  ✔ readiness review complete (no open item) with an architecture
+readiness: 13 items — 12 decided, 1 n/a · architecture: library: repo [node]
+  ✔ readiness frozen at planning and unchanged since
+  ✔ the Leads cut 1 card(s)
+  ✔ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T-01 Indicator 13: externalRatingChangeWl(previous, current) on notchChange | repo | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+  ✔ every card (1): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged
+  ✔ QA's integration tests are on main (1 file(s) in the cards' qa_scope)
+  ✔ role really ran: business-analyst
+  ✔ role really ran: qa-tester
+  ✔ role really ran: a dev agent
+  ✔ role really ran: a stack reviewer
+  ✔ no tracker errors
+  ✔ kanban view rendered
+  ✔ report.md written by the closing check
+  ✔ no AI attribution in the delivered history (8 commits)
+  ✔ the whole test suite passes on main
+  ✔ hidden oracle passes (4 checks, light.oracle.test.mjs)
+  ✔ the job took 10.4 min (≤ 15; timeline.txt)
+
+━━ B3 · risk-based test design and the NFR gate
+  ✔ every AC of the plan has a priority: AC-1 P1, AC-2 P1, AC-3 P1, AC-4 P2, AC-5 P1, AC-6 P1, AC-7 P2
+  ✔ every card spec has a ## Test design
+
+Test design of T-01:
+QA verdicts (each must name every AC of its card — dl qa refuses otherwise):
+decided NFR items: NFR-security
+  ✔ the report gives every decided NFR item a result: NFR-security null
+  ✔ the plan says how each is checked (## Non-functional requirements)
+
+━━ B4 · the blind review
+settings.review.blind: risk
+  ✔ T-01 (top P1): reviewed blind 1 time(s) — findings 0: intended 0, defect 0
+blind agent runs: 1
+
+━━ B1 · the light path
+  ✔ Michael took the light path, with the request's words
+his reason: the light path: a small change to existing code ("This change adds one function next to them and changes nothing that exists.") — one new function next to existing code, one card, no new dependency/data/integration/UI
+  ✔ …and stayed on it (no dl track full)
+readiness: 13 items (the full path asks 29 for this repo)
+  ✔ no Lead role
+  ✔ at most 2 cards
+
+━━ B2 · the project's architecture, confirmed once and committed
+context events: drafted from the repo: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540- proposed for .deliver/knowledge/architecture.md: architecture: 1 component(s) — repo (.) 
+ARC answers: ARC-style: decided (human: e2e-human 2026-10-13); ARC-components: decided (human: e2e-human 2026-10-13)
+  ✔ architecture.md is on main
+  ✔ …and dl context check passes on it
+  ✔ the PR body says so (## Project architecture)
+
+━━ B2 · a second small change settles its architecture from the file (JOB-light2.md)
+    ▶ claude -p "/deliver /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-light2.md"   (log: .work/runs/20261013-154150.jsonl)
+      result: success  turns=9  cost=$0.2760088
+    round 1 — JOB-20261013-1542-investment-grade-check (readiness)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-154229.jsonl)
+      result: success  turns=12  cost=$0.5846039999999999
+    ⏸  the requirements have open questions: .work/JOB-20261013-1542-investment-grade-check/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.1 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the light request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-conflicts — a real person must answer: The request says 'nothing that exists changes' and that the existing exports stay as they are, but also asks to add an export to src/ratings/notch.mjs. The existing QA test 'AC-1: the module exports the contract' (test/integration/ratings/notch.int.test.mjs) requires the export list to be exactly [RATING_SCALE, notchCalculator, notchChange], so adding isInvestmentGrade makes it fail. May that one assertion be updated to include isInvestmentGrade?
+    ⏸  the requirements have open questions: .work/JOB-20261013-1542-investment-grade-check/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.2 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the light request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-conflicts — a real person must answer: The request says 'nothing that exists changes' and that the existing exports stay as they are, but also asks to add an export to src/ratings/notch.mjs. The existing QA test 'AC-1: the module exports the contract' (test/integration/ratings/notch.int.test.mjs) requires the export list to be exactly [RATING_SCALE, notchCalculator, notchChange], so adding isInvestmentGrade makes it fail. May that one assertion be updated to include isInvestmentGrade?
+    ⏸  the requirements have open questions: .work/JOB-20261013-1542-investment-grade-check/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.3 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the light request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-conflicts — a real person must answer: The request says 'nothing that exists changes' and that the existing exports stay as they are, but also asks to add an export to src/ratings/notch.mjs. The existing QA test 'AC-1: the module exports the contract' (test/integration/ratings/notch.int.test.mjs) requires the export list to be exactly [RATING_SCALE, notchCalculator, notchChange], so adding isInvestmentGrade makes it fail. May that one assertion be updated to include isInvestmentGrade?
+    ⏸  the requirements have open questions: .work/JOB-20261013-1542-investment-grade-check/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+  ✘ the second job reached done
+  ✔ …on the light path
+grep: invalid option -- P
+usage: grep [-abcdDEFGHhIiJLlMmnOopqRSsUVvwXxZz] [-A num] [-B num] [-C[num]]
+	[-e pattern] [-f file] [--binary-files=value] [--color=when]
+	[--context[=num]] [--directories=action] [--label] [--line-buffered]
+	[--null] [pattern] [file ...]
+  ✔ the human was not asked about the architecture again
+  ✔ its components are the file's (["repo"])
+  ✘ hidden oracle of the second change FAILED (oracle2.log)
+  ✔ …and the first change still passes its oracle
+
+━━ result
+cost: $3.47  ·  artifacts: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light
+**44 passed, 5 failed**
+  result: success  turns=13  cost=$0.4840222
+round 3 — JOB-20261013-1542-investment-grade-check (executing)
+▶ claude -p "/deliver resume"   (log: .work/runs/20261013-154815.jsonl)
+  result: success  turns=17  cost=$0.8810027
+✔ job JOB-20261013-1542-investment-grade-check: done
