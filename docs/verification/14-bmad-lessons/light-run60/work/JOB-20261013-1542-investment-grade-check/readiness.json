@@ -1,0 +1,114 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Add isInvestmentGrade(rating) to the existing rating code: true for AAA..BBB-, false for BB+..CCC-. Success: correct boolean for all 19 scale ratings; existing exports and behaviour unchanged.",
+      "source": "request: title + Requirement bullet 1",
+      "quote": "Investment grade check — a small addition to the existing rating code"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: one new named export isInvestmentGrade in src/ratings/notch.mjs plus its tests under test/. Out of scope: RATING_SCALE, notchChange, notchCalculator, src/indicators/*, codes not on the scale (D, SD, NR, WD), other scales, wiring the check into any indicator or WL calculation.",
+      "source": "request: intro + Requirement bullet 3",
+      "quote": "Add one function to that file; nothing that exists changes."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "true for AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-; false for BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-. Boundary BBB- true / BB+ false. ' bbb- ' → true, 'bb+' → false. ZZZ, '', '   ', null, undefined, 'D', 'NR' throw RangeError. Return value is strictly boolean.",
+      "source": "request: Requirement bullets 1–2; repo src/ratings/notch.mjs (RATING_SCALE)",
+      "quote": "`true` for AAA down to BBB- (the first 10 steps of `RATING_SCALE`)"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "owner": "business",
+      "answer": "(a): update only that assertion to [RATING_SCALE, isInvestmentGrade, notchCalculator, notchChange]; every other existing test stays as it is.",
+      "source": "human: e2e-human 2026-10-13",
+      "question": "The request says 'nothing that exists changes' and that the existing exports stay as they are, but also asks to add an export to src/ratings/notch.mjs. The existing QA test 'AC-1: the module exports the contract' (test/integration/ratings/notch.int.test.mjs) requires the export list to be exactly [RATING_SCALE, notchCalculator, notchChange], so adding isInvestmentGrade makes it fail. May that one assertion be updated to include isInvestmentGrade?",
+      "options": [
+        "(a) Recommended: update only that assertion to [RATING_SCALE, isInvestmentGrade, notchCalculator, notchChange]; every other existing test stays as it is.",
+        "(b) Leave the existing test untouched and put isInvestmentGrade in a new module (contradicts 'Add one function to that file').",
+        "(c) Weaken the assertion to 'contains at least these exports' (a later extra export would no longer be caught)."
+      ],
+      "history": [
+        {
+          "status": "open",
+          "answer": "",
+          "question": "The request says 'nothing that exists changes' and that the existing exports stay as they are, but also asks to add an export to src/ratings/notch.mjs. The existing QA test 'AC-1: the module exports the contract' (test/integration/ratings/notch.int.test.mjs) requires the export list to be exactly [RATING_SCALE, notchCalculator, notchChange], so adding isInvestmentGrade makes it fail. May that one assertion be updated to include isInvestmentGrade?",
+          "at": "2026-10-13T13:44:57.693Z"
+        }
+      ]
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "Named export isInvestmentGrade(rating) in src/ratings/notch.mjs; one argument; returns boolean true when the normalised rating's index in RATING_SCALE is 0–9, false for 10–18. Normalisation is notchChange's own (reuse the module's private indexOf helper).",
+      "source": "request: Requirement bullets 1–2; repo src/ratings/notch.mjs (indexOf)",
+      "quote": "The rating is read exactly as `notchChange` reads it (trimmed, case-insensitive)"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "Anything that does not normalise to a RATING_SCALE entry throws the same RangeError notchChange throws (message `unknown rating: ${JSON.stringify(rating)}`); never returns false as a fallback.",
+      "source": "request: Requirement bullet 2",
+      "quote": "anything else is rejected with the same RangeError"
+    },
+    {
+      "id": "CON-compat",
+      "status": "decided",
+      "answer": "Additive only: RATING_SCALE, notchChange, notchCalculator and src/indicators/* keep signatures and behaviour. No versioning (private POC). The only existing test touched is the export-list assertion — see PRD-conflicts.",
+      "source": "request: Requirement bullet 3",
+      "quote": "The existing exports and their behaviour stay as they are."
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Node.js 18+, plain ES modules (.mjs), no npm dependencies; node:test + node:assert/strict, run with `node --test`.",
+      "source": "request: closing line",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "Only input validation applies: pure function, no auth, secrets, I/O or logging; input checked against the closed RATING_SCALE, else RangeError. Checked by tests on invalid inputs.",
+      "source": "request: Requirement bullet 2",
+      "quote": "anything else is rejected with the same RangeError"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "No personal or sensitive data: the input is one rating code; pure function, no I/O, storage or logging.",
+      "source": "repo CLAUDE.md"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "node:test + node:assert/strict, `node --test`. Dev unit tests under test/unit/ratings/ (all 19 ratings, boundary, normalisation, RangeError cases); QA integration tests under test/integration/ratings/ on the real RATING_SCALE. New cases go in new files; the existing suite stays green, subject to PRD-conflicts.",
+      "source": "request: closing line",
+      "quote": "tests with `node --test` under `test/`, like the existing ones."
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "repo",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node"
+        ],
+        "path": [
+          "."
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "verify": "npm test",
+        "notes": "Project architecture: one plain Node ESM library at the repo root (src/, test/, node --test). The change touches src/ratings/notch.mjs and tests under test/unit/ratings/ and test/integration/ratings/."
+      }
+    ]
+  }
+}

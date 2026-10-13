@@ -1,0 +1,52 @@
+2026-10-13T12:48:17Z	new	Indicator 13 external rating
+2026-10-13T12:48:33Z	jobset	stack: .stack=["node"]
+2026-10-13T12:48:33Z	pm-decision	the light path: a small change to existing code ("This change adds one function next to them and changes nothing that exists.") — one new function next to existing code, no new dependency/data/integration/UI
+2026-10-13T12:48:33Z	track	light — one new function next to existing code, no new dependency/data/integration/UI
+2026-10-13T12:48:34Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"backend","agent":"backend-dev","why":"REQ-03-13: externalRatingChangeWl in src/indicators/externalRating.mjs"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"Plain Node ESM (.mjs) code"}]
+2026-10-13T12:48:34Z	roles	ba qa backend reviewer
+2026-10-13T12:48:34Z	phase	readiness
+2026-10-13T12:48:43Z	checkpoint	readiness, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T12:48:57Z	context	drafted from the repo: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/context.draft.md
+2026-10-13T12:49:10Z	dispatch	business-analyst
+2026-10-13T12:51:17Z	agent	business-analyst a8ec5703b44bffcce: ```json { "items": [ { "id": "PRD-goal", "status": "decided", "answer": "Indicator 13 (external rating change) calculates the client's Watchlist level automatic
+2026-10-13T12:51:43Z	readiness	14 items: 10 decided, 2 n/a, 2 open
+2026-10-13T12:51:47Z	jobset	assumptions: .assumptions += ["X-reuse (PM): externalRatingChangeWl applies the thresholds to notchChange directly, as the contract says (built on notchChange) and like countryRatingChangeWl; it does not depend on notchCalculator's return shape"]
+2026-10-13T12:51:48Z	phase	awaiting_clarification
+2026-10-13T12:51:54Z	clarify	ARC-style: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T12:51:54Z	clarify	ARC-components: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T12:52:11Z	baseline	PASS (node --test)
+2026-10-13T12:52:11Z	freeze	readiness + architecture frozen (ed04a19634d7)
+2026-10-13T12:52:11Z	roles	ba qa backend reviewer
+2026-10-13T12:52:11Z	phase	planning
+2026-10-13T12:52:14Z	checkpoint	planning, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T12:52:38Z	dispatch	business-analyst
+2026-10-13T12:53:57Z	agent	business-analyst a8234d58815b66ba8: === PLAN === # Plan — JOB-20261013-1448-indicator-13-external-rating: Indicator 13 (external rating change) ## Goal Calculate the Watchlist level (WL) for Indic
+2026-10-13T12:54:35Z	jobset	roles: .roles += [{"role":"blind","agent":"ecc:code-reviewer","why":"P0 ACs (AC-1, AC-2, AC-5): a wrong or silent WL misses a risky client"}]
+2026-10-13T12:54:36Z	freeze	readiness + architecture frozen (ed04a19634d7)
+2026-10-13T12:54:36Z	roles	ba qa backend reviewer blind
+2026-10-13T12:54:36Z	phase	planning
+2026-10-13T12:54:49Z	phase	executing
+2026-10-13T12:54:50Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-13T12:54:51Z	qa-start	T-01 → QA writes its tests in /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/wt/T-01-qa (branch job/JOB-20261013-1448-indicator-13-external-rating--T-01-qa) while the dev builds
+2026-10-13T12:55:02Z	dispatch	backend-dev
+2026-10-13T12:55:08Z	dispatch	qa-tester
+2026-10-13T12:55:47Z	agent	backend-dev a6830a67e92926d3e: status: done commit: 257f83e verify: passed (`node --test test/unit/indicators/externalRating.test.mjs`: 7 of 7 pass; full `node --test`: 20 of 20 pass) open is
+2026-10-13T12:56:00Z	agent	qa-tester a11f9b320e6530145: I committed the tests locally but could not push them. A sandbox hook (`deliver bash-guard`) blocked every `git push` attempt, even from inside the QA worktree 
+2026-10-13T12:56:04Z	gate	T-01 PASS
+2026-10-13T12:56:05Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-13T12:56:11Z	qa	T-01 pass (qa_verify PASS) — AC-1: AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; AC-2: AC-2: downgrades of 3, 4 and 18 notches return 2; AC-3: AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data); AC-4: AC-4: whitespace and mixed case are read as notchChange reads them; AC-5: AC-5: unknown rating in either position throws RangeError with the notchChange message; AC-6: AC-6: existing consumers unchanged (notchCalculator deep-equals, countryRatingChangeWl)
+2026-10-13T12:56:23Z	dispatch	ecc:typescript-reviewer
+2026-10-13T12:56:27Z	dispatch	ecc:code-reviewer
+2026-10-13T12:56:31Z	agent	ecc:typescript-reviewer adeadb1c19c7afc81: {"verdict":"approve","blocking":[],"nits":["src/indicators/externalRating.mjs:6: the nested ternary `notches >= 3 ? 2 : notches === 2 ? 1 : 0` could be named co
+2026-10-13T12:56:39Z	agent	ecc:code-reviewer af238cf4edabd5e2e: {"findings":[{"file":"src/indicators/externalRating.mjs","line":6,"issue":"The WL threshold logic (3 or more notches gives 2, 2 notches gives 1, otherwise 0) is
+2026-10-13T12:56:43Z	review	T-01 reviewer approve — no blocking items; nits only (readability, test style)
+2026-10-13T12:56:44Z	review	T-01 blind approve — no blocking findings; two nits (threshold duplication is the recorded X-reuse decision)
+2026-10-13T12:56:46Z	integrate	T-01 merged
+2026-10-13T12:56:46Z	merge-check	T-01 PASS (watchlist-poc suite)
+2026-10-13T12:56:50Z	phase	integrating
+2026-10-13T12:56:51Z	verify-all	PASS
+2026-10-13T12:56:52Z	phase	closing
+2026-10-13T12:57:00Z	followup	T-01: Callers of externalRatingChangeWl must treat RangeError for D/SD/CC/C/NR/WD as manual review, not no-signal (scale ends at CCC-)
+2026-10-13T12:57:01Z	followup	T-01: WL thresholds in externalRating.mjs duplicate notchCalculator's; consider sharing if thresholds change
+2026-10-13T12:57:11Z	record	the job's record committed to job/JOB-20261013-1448-indicator-13-external-rating: .deliver/jobs/JOB-20261013-1448-indicator-13-external-rating/
+2026-10-13T12:57:11Z	ship	local merge into main

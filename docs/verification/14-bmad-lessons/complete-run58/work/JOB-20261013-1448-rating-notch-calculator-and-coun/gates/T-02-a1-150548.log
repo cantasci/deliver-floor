@@ -1,0 +1,64 @@
+# gate: T-02  attempt: 1  2026-10-13T13:05:48Z
+ok    on job/JOB-20261013-1448-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/**","test/indicators/**"] (+ QA tests ["test/integration/indicators/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: is a function
+ok 1 - is a function
+  ---
+  duration_ms: 0.435792
+  ...
+# Subtest: downgrades: 1 notch gives 1, 2+ notches give 2
+ok 2 - downgrades: 1 notch gives 1, 2+ notches give 2
+  ---
+  duration_ms: 0.138375
+  ...
+# Subtest: BBB+ -> BBB gives 1 here and wl 0 in the calculator
+ok 3 - BBB+ -> BBB gives 1 here and wl 0 in the calculator
+  ---
+  duration_ms: 0.069
+  ...
+# Subtest: upgrade or unchanged gives +0
+ok 4 - upgrade or unchanged gives +0
+  ---
+  duration_ms: 0.082875
+  ...
+# Subtest: case and whitespace are tolerated in either position
+ok 5 - case and whitespace are tolerated in either position
+  ---
+  duration_ms: 0.098583
+  ...
+# Subtest: invalid input in either position throws RangeError, never TypeError
+ok 6 - invalid input in either position throws RangeError, never TypeError
+  ---
+  duration_ms: 0.404417
+  ...
+# Subtest: notchChange error is passed through unchanged
+ok 7 - notchChange error is passed through unchanged
+  ---
+  duration_ms: 0.096
+  ...
+# Subtest: all 361 pairs match the thresholds
+ok 8 - all 361 pairs match the thresholds
+  ---
+  duration_ms: 0.220541
+  ...
+# Subtest: source is built on notchChange: only import, no literals, no module state
+ok 9 - source is built on notchChange: only import, no literals, no module state
+  ---
+  duration_ms: 0.791875
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 69.080625
+ok    verify passed

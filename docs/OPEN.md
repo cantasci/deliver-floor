@@ -69,6 +69,18 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | F21 | a user's job: QA "takes very long" and the work did not look parallel — every test run of `dl` (gate, QA, the whole suite of 0.8.1) runs in Michael's turn | **Measured, open.** Running the whole suite in the background was built and measured live ([report](verification/13-background-suite/report.md)): no faster with two cards (5.3 vs 5.5 min executing), so it was not adopted (the owner's decision). Kept (0.9.2): each test run's duration on the card and in `dl timeline`, and `qa_verify` not run twice. **Next:** the user's own `dl timeline` from a real job, to see whether the gate, QA's run or the suite is the slow step |
 | F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
 
+## 0.16.0 — from the comparison with the BMAD Method
+
+Covered by `tests/run.sh` (the light path, the project architecture, the test design, the NFR gate, the blind review and its
+triage, each refused where it must be). Live: `tests/e2e-live.sh light` (B1, B2 — two small changes on a repo with code) and every scenario's B3/B4 step.
+
+| # | What | Status |
+| --- | --- | --- |
+| B1 | A live job on the **light path**: does Michael triage a small request as light, does the BA's MODE LIGHT answer split cleanly into plan, cards and specs, and is the job cheaper than the full path for the same request | **Verified live** (runs 59, 60) — triaged light by Michael with the request's words; 13–14 readiness items instead of 29; no Lead; one card; 9–10 min and about $2.40 a job. Not measured: the same request on the full path (run 58 is a different, two-requirement request: 20.5 min, $5.10) |
+| B2 | A live **brownfield** job on a real, larger existing repo (several components): `dl context draft` against it, the human confirming the draft once, the next job settling its architecture from the committed file | **Partly verified** (run 60) — on a one-component repo: drafted, confirmed by the human once, committed with the first job; the second job was not asked and took its component from the file. **Open:** a larger repo with several components |
+| B3 | Live **P0–P3 ratings and test designs** from the BA, and QA following them; a decided NFR item through to the report's PASS / CONCERNS / FAIL | **Verified live** (runs 58–60) — priorities on every AC, a test design per spec, QA naming every AC, NFR rows with evidence (all PASS). **Not exercised:** a CONCERNS / FAIL result and `dl waive` |
+| B4 | A live **blind review**: what `ecc:code-reviewer` finds from the diff alone, how many findings Michael triages as intended vs defect, and what it costs per card | **Verified live** (runs 58–60, 5 cards) — every P0/P1 card reviewed blind; nits only, no blocking finding, so the triage was `[]` each time. **Not exercised:** a blocking finding triaged `intended` or `defect`; the cost per card was not measured on its own |
+
 ## Verified by the owner, not here
 
 | # | What | Why not here |

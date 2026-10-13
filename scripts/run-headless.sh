@@ -58,9 +58,14 @@ wait_for_limit() {
 
 # The plugin's skill is /deliver:deliver; only a copy of the kit (this repo's .claude, or ~/.claude without the plugin) is /deliver.
 DCMD=/deliver:deliver; [[ -f .claude/skills/deliver/SKILL.md || -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/deliver/SKILL.md ]] && DCMD=/deliver
-if [[ -n $request && ! -f .work/ACTIVE ]]; then
+# a new request starts a job when none is active — a finished one (done, aborted) does not count: seen live, a second
+# request in the same repo resumed the first, finished job and stopped
+active_open() { [[ -f .work/ACTIVE ]] && ! jq -r .phase ".work/$(cat .work/ACTIVE)/job.json" 2>/dev/null | grep -qE '^(done|aborted)$'; }
+if [[ -n $request ]] && ! active_open; then
+  was="$(cat .work/ACTIVE 2>/dev/null || true)"
+  started() { [[ -f .work/ACTIVE && "$(cat .work/ACTIVE)" != "$was" ]]; }
   run "$DCMD $request"
-  while [[ ! -f .work/ACTIVE ]] && wait_for_limit "$LAST_LOG"; do run "$DCMD $request"; done
+  while ! started && wait_for_limit "$LAST_LOG"; do run "$DCMD $request"; done
 fi
 
 last=""

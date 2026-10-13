@@ -9,6 +9,9 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # resolved: macOS links /var and /tmp into /private
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
+# The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) — they run without them, as a
+# user who turned them off would; their own section runs with the kit's defaults. Removed before "install / uninstall".
+mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"}}' > "$DELIVER_HOME/config.json"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO HIVE_ROOT CLAUDE_PROJECT_DIR
 
@@ -778,7 +781,7 @@ contains "a repo without code: no test command and no language assumed" "$(det e
 mkdir -p "$DR/cfg/munder-difflin" && jq -n --arg r "$DR/pnpm" '{harnessHome:"/floors/pnpm", registeredRepos:[$r]}' > "$DR/cfg/munder-difflin/config.json"
 contains "the floor the repo is registered on becomes its munder.hive_root" "$(XDG_CONFIG_HOME="$DR/cfg" node "$DT" "$DR/pnpm" | jq -c '{h:.hive_root}')" '{"h":"/floors/pnpm"}'
 expect_ok "…valid against the shipped schema's keys" node -e 'const s=require(process.argv[1]),c=require(process.argv[2]);for(const k of Object.keys(c)) if(!(k in s.properties)) {console.error("unknown key "+k);process.exit(1)}' "$HERE/kit/skills/deliver/deliver.schema.json" "$PC/.deliver.json"
-contains "dl config shows what applies (kit defaults ⊕ .deliver.json)" "$(cd "$PC" && "$DL" config)" "kit defaults ⊕ $PC/.deliver.json"
+contains "dl config shows what applies (kit defaults ⊕ .deliver.json)" "$(cd "$PC" && DELIVER_HOME="$TMP/nohome" "$DL" config)" "kit defaults ⊕ $PC/.deliver.json"
 (cd "$PC" && AGENT_ID=god "$DL" phase aborted >/dev/null 2>&1; AGENT_ID=god "$DL" cleanup --all >/dev/null 2>&1; jq '.roles = {"backend":{"model":"haiku","count":2},"qa":{"model":"sonnet"}}' .deliver.json > x && mv x .deliver.json && AGENT_ID=god "$DL" new t2 r2 >/dev/null 2>&1)
 (cd "$PC" && AGENT_ID=god "$DL" jobset '.roles=[{"role":"backend","agent":"backend-dev","why":"x"},{"role":"qa","agent":"qa-tester","why":"y","model":"opus"}]' >/dev/null)
 PJ="$PC/.work/$(cat "$PC/.work/ACTIVE")/job.json"
@@ -1458,6 +1461,9 @@ n=$(cat "$HL_CNT" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$HL_CNT"
 case "$HL_MODE:$n" in
   limit:1) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'ve hit your session limit · resets 2:30pm (Europe/Berlin)"}' ;;
   credits:*) echo '{"type":"result","subtype":"success","is_error":true,"result":"You'"'"'re out of usage credits. Switch to another model."}' ;;
+  new:*) case "$*" in *"Round tax"*) ;; *) echo "claude got: $*" >&2; exit 1 ;; esac   # Michael starts the request's job
+    mkdir -p "$HL_DIR/.work/JOB-y" && echo '{"phase":"done"}' > "$HL_DIR/.work/JOB-y/job.json" && echo JOB-y > "$HL_DIR/.work/ACTIVE"
+    echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
   *) jq '.phase = "done"' "$HL_JF" > "$HL_JF.t" && mv "$HL_JF.t" "$HL_JF"; echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
 esac
 FAKE
@@ -1472,6 +1478,12 @@ contains "…then the job goes on by itself, the wait neither a round nor 'no pr
 out="$(hl credits)"; rc=$?
 contains "out of credits it stops and says so: the human's call" "$out" "out of usage credits — add credits or switch the model"
 [[ ! -e $TMP/hl-sleep ]] && ok "…without waiting" || bad "waited on no credits"
+hlnew() { rm -f "$TMP/hl-n"; PATH="$HB:$PATH" HL_MODE=new HL_CNT="$TMP/hl-n" HL_DIR="$HL" "$HERE/scripts/run-headless.sh" "$HL" "Round tax to two decimals" 2>&1; }
+rm -f "$HL/.work/ACTIVE"
+contains "a request in a repo with no job starts one" "$(hlnew)" "✔ job JOB-y: done"
+echo JOB-x > "$HL/.work/ACTIVE"; echo '{"phase":"done"}' > "$HL/.work/JOB-x/job.json"
+contains "…and next to a finished one too (seen live: the second request resumed the first, done job)" "$(hlnew)" "✔ job JOB-y: done"
+rm -r "$HL/.work/JOB-y"; echo JOB-x > "$HL/.work/ACTIVE"
 echo "Ports by name: a frontend and a backend card's QA start the same stack side by side, not in turn (live: both on 5173 and 8101)"
 PT="$TMP/ports"; mkdir -p "$PT/frontend" && cd "$PT" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json
 echo "export default { webServer: { command: 'npm run dev', port: 5173 } }" > frontend/playwright.config.ts && git add -A && git commit -qm i
@@ -1840,6 +1852,204 @@ q='Is any banking regulation or internal policy (e.g. model-risk validation of t
 node "$PA" "$HA" "$q" >/dev/null 2>&1; [[ $? == 2 ]] && ok "one shared word is no answer: the compliance question is not answered with the thresholds answer (seen live)" || bad "compliance question got: $(node "$PA" "$HA" "$q")"
 contains "a readiness item id names its answer" "$(node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
 
+echo "risk-based test design: a priority per acceptance criterion, a test design per card, every AC in the QA verdict, the NFR gate, the blind review"
+export DELIVER_KNOWLEDGE="$TMP/no-company-standards"   # the company standards earlier sections left in ~/.deliver are not this job's
+RISK="$HERE/kit/skills/deliver/bin/risk.mjs"
+[[ "$(jq -c '[.test_design.risk, .review.blind, .light.max_cards]' "$SDIR/config.json")" == '[true,"risk",2]' ]] \
+  && ok "the kit's defaults: risk-based test design on, a blind review for P0/P1 cards, the light path at most 2 cards" || bad "defaults: $(jq -c '[.test_design, .review, .light]' "$SDIR/config.json")"
+contains "a blind review: risk → a P0/P1 card, all → every card, off → none" "$(node --input-type=module -e "import {needsBlind as n} from '$RISK'; console.log([n('risk','P0'),n('risk','P1'),n('risk','P2'),n('risk',null),n('all','P3'),n('off','P0')].join())")" "true,true,false,false,true,false"
+RK="$TMP/risk"; mkdir -p "$RK/src" "$RK/test" && cd "$RK" && git init -q -b main
+echo 'export const pay = (a) => a;' > src/pay.mjs; printf 'import {test} from "node:test"; test("base", () => {});\n' > test/base.test.mjs
+echo '{"name":"risk","private":true}' > package.json
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"node --test", test_design:{risk:true}, review:{blind:"risk"}}' > .deliver.json
+git add -A && git commit -qm init
+"$DL" new "Refunds" "Refund a payment within 30 days of the purchase" >/dev/null; RKJ="$RK/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:typescript-reviewer"},{"role":"blind","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+grep -q "Do not look for the card, the spec, the plan or the QA result" "$RKJ/roles/blind.md" && ! grep -q "Judge the change against the card" "$RKJ/roles/blind.md" \
+  && ok "the blind reviewer's role card: the diff alone, without the reviewers' 'judge it against the card'" || bad "blind role card: $(grep -n 'card' "$RKJ/roles/blind.md" | head -3)"
+cat > "$RKJ/plan.md" <<'EOF'
+# Plan
+## Acceptance criteria
+- AC-1 (REQ-01): Given a purchase 30 days ago, when it is refunded, then the payment is paid back within 30 days
+- AC-2 (REQ-02): Given the refund page, when it opens, then the refund button has the brand colour
+EOF
+rcard() { # rcard <id> <scope dir> <ac> [reviewers json]
+  jq -n --arg id "$1" --arg d "$2" --arg ac "$3" --argjson rv "${4:-[\"reviewer\"]}" '{id:$id,title:("card "+$id),role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],
+    scope:["src/\($d)/**","test/unit/\($d)/**"],verify:"node --test test/unit/\($d)/*.test.mjs",qa_scope:["test/integration/\($id)/**"],qa_verify:"node --test test/integration/\($id)/*.test.mjs",
+    acceptance:[$ac],context:"c",attempts:0,notes:[],reviewers:$rv}'
+}
+jq -n --argjson a "$(rcard T-01 refund 'AC-1: a refund within 30 days is paid back')" --argjson b "$(rcard T-02 button 'AC-2: the brand colour')" '{cards:[$a,$b]}' > "$RKJ/board.json"
+for c in T-01 T-02; do printf '# %s\n## Acceptance criteria\n1. Given a purchase, when it is refunded within 30 days, then it is paid back\n' "$c" > "$RKJ/specs/$c.md"; done
+out="$("$DL" validate 2>&1)"; contains "a plan whose ACs carry no priority is refused" "$out" "plan.md: AC-1, AC-2 without a priority"
+sed -i.bak -e 's/^- AC-1 (REQ-01)/- AC-1 [P0] (REQ-01) — money paid twice/' -e 's/^- AC-2 (REQ-02)/- AC-2 [P3] (REQ-02)/' "$RKJ/plan.md"
+out="$("$DL" validate 2>&1)"
+contains "every decided non-functional requirement must be in the plan, with how it is checked" "$out" "plan.md: NFR-security is decided"
+contains "a card with a P0 criterion gets a blind review" "$out" "T-01: a P0 criterion gets a blind review"
+[[ $out != *"T-02: a P"* ]] && ok "…a card with only a P3 criterion does not" || bad "T-02 asked for a blind review: $out"
+contains "a spec without a test design is refused" "$out" 'T-01: specs/T-01.md has no "## Test design"'
+{ echo; echo "## Non-functional requirements"; node "$RISK" nfr "$RKJ" | jq -r '.[] | "- \(.id): \(.answer) — checked by the review"'; } >> "$RKJ/plan.md"
+bedit "$RKJ/board.json" '.cards[0].reviewers = ["reviewer","blind"]'
+printf '\n## Test design\n| AC | Priority | Level | Scenarios |\n| AC-9 | P0 | unit + integration | day 30, day 31 |\n' >> "$RKJ/specs/T-01.md"
+printf '\n## Test design\n| AC-2 | P3 | unit | the colour token |\n' >> "$RKJ/specs/T-02.md"
+contains "a test design that leaves out one of the card's ACs is refused" "$("$DL" validate 2>&1)" "T-01: the spec's Test design does not cover AC-1"
+sed -i.bak 's/| AC-9 |/| AC-1 |/' "$RKJ/specs/T-01.md"
+expect_ok "priorities, test designs, NFRs in the plan and the blind reviewer on the P0 card: the board is valid" "$DL" validate
+"$DL" phase executing >/dev/null
+dev_commit() { mkdir -p "$1/src/$2" "$1/test/unit/$2" && echo "export const v = ${4:-1};" > "$1/src/$2/$2.mjs" && printf 'import {test} from "node:test"; test("unit", () => {});\n' > "$1/test/unit/$2/$2.test.mjs" && git -C "$1" add -A && git -C "$1" commit -qm "$3: $2"; }
+W1="$("$DL" wt add T-01)"; W2="$("$DL" wt add T-02)"
+dev_commit "$W1" refund T-01; dev_commit "$W2" button T-02
+"$DL" gate T-01 >/dev/null 2>&1; "$DL" gate T-02 >/dev/null 2>&1; qa_tests "$W1" T-01; qa_tests "$W2" T-02
+contains "a QA pass that names no result for an AC of the card is refused" "$("$DL" qa T-01 pass "all good" 2>&1)" "AC-1 [P0] has no result in the QA verdict"
+contains "…named with its test, it is recorded" "$("$DL" qa T-01 pass "AC-1 pass: int.test.mjs" 2>&1)" "qa: T-01 pass"
+contains "a P3 criterion may be the dev's unit test" "$("$DL" qa T-02 pass "AC-2 unit: test/unit/button/button.test.mjs" 2>&1)" "qa: T-02 pass"
+contains "the stack reviewer approves as before; the card waits for the blind review" "$("$DL" review T-01 approve "ok" --by reviewer 2>&1)" "(card: pending, waiting for blind)"
+contains "the blind review is recorded only with its triage" "$("$DL" review T-01 approve "nothing" --by blind 2>&1)" "is recorded with its triage"
+contains "--triage is the blind review's only" "$("$DL" review T-02 approve "ok" --by reviewer --triage '[]' 2>&1)" "--triage is for the blind review"
+contains "an 'intended' finding needs the spec's words" "$("$DL" review T-01 approve "x" --by blind --triage '[{"finding":"day 31 is refused","decision":"intended"}]' 2>&1)" "intended needs \`quote\`"
+contains "…found in the spec, not invented" "$("$DL" review T-01 approve "x" --by blind --triage '[{"finding":"day 31 is refused","decision":"intended","quote":"refunds after 45 days"}]' 2>&1)" "quote not found in specs/T-01.md or plan.md"
+contains "an approval with a defect is refused" "$("$DL" review T-01 approve "x" --by blind --triage '[{"finding":"a negative amount is paid out","decision":"defect"}]' 2>&1)" "triaged as defect — the blind review asks for changes"
+contains "…and 'changes' without one" "$("$DL" review T-01 changes "x" --by blind --triage '[{"finding":"day 31 is refused","decision":"intended","quote":"within 30 days"}]' 2>&1)" "'changes' without a finding triaged as defect"
+contains "a defect the blind reviewer found sends the card back" "$("$DL" review T-01 changes "a negative amount is paid out" --by blind --triage '[{"finding":"a negative amount is paid out","decision":"defect"},{"finding":"day 31 is refused","decision":"intended","quote":"within 30 days"}]' 2>&1)" "(card: changes)"
+contains "…dl next re-dispatches the dev with it" "$("$DL" next)" "REDISPATCH T-01  (review asked for changes"
+"$DL" wt add T-01 >/dev/null; dev_commit "$W1" refund T-01 2; "$DL" gate T-01 >/dev/null 2>&1
+"$DL" qa T-01 pass "AC-1 pass: int.test.mjs" >/dev/null 2>&1; "$DL" review T-01 approve "fixed" --by reviewer >/dev/null
+contains "after the fix: the blind review approves, its intended finding quoted from the spec" "$("$DL" review T-01 approve "ok" --by blind --triage '[{"finding":"day 31 is refused","decision":"intended","quote":"within 30 days"}]' 2>&1)" "(card: approve)"
+[[ "$(jq -r '[.cards[0].reviews[] | select(.by=="blind")][-1].triage[0].quote' "$RKJ/board.json")" == "within 30 days" ]] && ok "…the triage is kept on the card" || bad "triage: $(jq -c '.cards[0].reviews' "$RKJ/board.json")"
+"$DL" review T-02 approve "ok" --by reviewer >/dev/null
+"$DL" integrate T-01 >/dev/null && "$DL" integrate T-02 >/dev/null && "$DL" phase integrating >/dev/null && "$DL" verify-all >/dev/null && "$DL" phase closing >/dev/null
+contains "the closing step asks for every decided NFR" "$("$DL" next)" "every decided NFR-* PASS / CONCERNS / FAIL"
+report_ok "$RKJ" report
+contains "ship refuses a report without the non-functional requirements" "$("$DL" ship 2>&1)" "NFR-security (decided:"
+{ echo; echo "## Non-functional requirements"; echo; echo "| Requirement | Result | Evidence |"; echo "| --- | --- | --- |"
+  node "$RISK" nfr "$RKJ" | jq -r '.[] | "| \(.id) | \(if .id == "NFR-observability" then "CONCERNS" else "PASS" end) | the reviewer verdict on T-01 |"'; } >> "$RKJ/report.md"
+contains "a requirement that is not PASS ships only knowingly" "$("$DL" ship 2>&1)" "NFR-observability is CONCERNS — fix it (a fix card), or ship it knowingly: dl waive NFR-observability"
+contains "only a decided requirement can be waived" "$("$DL" waive NFR-performance "not measured" 2>&1)" "NFR-performance is not a decided non-functional requirement"
+contains "agents cannot waive a requirement" "$(printf '%s' '{"tool_input":{"command":"dl waive NFR-observability x"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+expect_ok "Michael waives it with its reason" "$DL" waive NFR-observability "no metrics stack in this repo yet; a follow-up adds it"
+printf -- '---\ntitle: Project architecture\n---\n# Project architecture\n\n## Style\n\nlibrary\n\n## Components\n\n| Component | Kind | Stack | Path | Suite | Found in |\n| --- | --- | --- | --- | --- | --- |\n| app | library | javascript | `.` | `node --test` | package.json |\n' > "$TMP/arch-risk.md"
+contains "the confirmed project architecture is proposed with the job" "$("$DL" context propose "$TMP/arch-risk.md" 2>&1)" "dl ship commits it as .deliver/knowledge/architecture.md"
+expect_ok "ship once every requirement is accounted for" "$DL" ship
+RKR="$RK/.deliver/jobs/$(basename "$RKJ")/report.md"
+grep -q "## Non-functional requirements shipped without a PASS" "$RKR" && grep -q "NFR-observability.*no metrics stack" "$RKR" \
+  && ok "the PR lists the waived requirement with its reason" || bad "waiver not in the report: $(grep -n 'NFR-observability' "$RKR")"
+[[ -f $RK/.deliver/knowledge/architecture.md ]] && grep -q "## Project architecture" "$RKR" && grep -q "adds \`.deliver/knowledge/architecture.md\`" "$RKR" \
+  && ok "the confirmed architecture is committed with the job and the PR says so" || bad "architecture not shipped: $(ls "$RK/.deliver/knowledge" 2>&1)"
+cd "$R"
+
+echo "the light path: a small change to existing code — the light readiness items, at most 2 cards from the BA, no Leads"
+LT="$TMP/light"; mkdir -p "$LT/src/price" "$LT/test" && cd "$LT" && git init -q -b main
+echo 'export const price = (x) => x;' > src/price/price.mjs; printf 'import {test} from "node:test"; test("base", () => {});\n' > test/base.test.mjs
+echo '{"name":"light","private":true}' > package.json
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"node --test"}' > .deliver.json
+git add -A && git commit -qm init
+"$DL" new "Round prices" "Round every price to two decimals in src/price/price.mjs" >/dev/null; LJ="$LT/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:typescript-reviewer"}]' >/dev/null
+[[ "$("$DL" next)" != *TRIAGE* ]] && ok "no triage before the repo's stack is known" || bad "triage without a stack"
+contains "a repo without code (no stack) is never light" "$("$DL" track light "small" --quote "Round every price" 2>&1)" "no existing component to change"
+"$DL" jobset '.stack=["javascript"]' >/dev/null
+contains "dl next offers the light path once the stack is known" "$("$DL" next)" "TRIAGE  a small change inside existing code?"
+contains "…and drafting the project's architecture (a repo with code, no architecture.md)" "$("$DL" next)" "CONTEXT dl context draft"
+contains "the light path is chosen with the request's words" "$("$DL" track light "one function changes" 2>&1)" "quote the request's words"
+contains "…its exact words" "$("$DL" track light "one function changes" --quote "Round all prices" 2>&1)" "the quote is not in the request"
+FULLN="$(node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq length)"
+contains "dl track light: the light readiness, the BA's cards, no Lead" "$("$DL" track light "one function in one file changes" --quote "Round every price to two decimals" 2>&1)" "light path: the readiness review answers"
+LIGHTN="$(node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq length)"
+(( LIGHTN < FULLN )) && node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq -e 'map(.id) | (index("ARC-data") | not) and (index("DEL-deploy") | not) and index("CON-compat") and index("PRD-acceptance")' >/dev/null \
+  && ok "…$LIGHTN readiness items instead of $FULLN: no data or deployment questions; contracts and acceptance stay" || bad "light items: $LIGHTN of $FULLN"
+node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq -e 'map(.id) | index("ARC-style") and index("ARC-components")' >/dev/null \
+  && ok "…a repo without architecture.md: the light path still asks the human to confirm the drafted architecture once" || bad "light path without architecture.md skips ARC-style/ARC-components"
+mkdir -p .deliver/knowledge && echo "# Architecture" > .deliver/knowledge/architecture.md
+node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq -e 'map(.id) | (index("ARC-style") | not) and (index("ARC-components") | not)' >/dev/null \
+  && ok "…with architecture.md in the repo it does not ask them again" || bad "light path asks ARC-style again despite architecture.md"
+rm -rf .deliver
+jq -e '.track == "light" and any(.pm_decisions[]; .what | test("the light path"))' "$LJ/job.json" >/dev/null && ok "…a decision listed in the PR" || bad "track not recorded"
+contains "agents cannot change the path" "$(printf '%s' '{"tool_input":{"command":"dl track full x"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+expect_ok "no Lead on the light path: the roles are valid" "$DL" phase readiness
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/nope/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
+contains "the light path changes existing components only" "$("$DL" readiness 2>&1)" "none of its paths exists in the repo — the light path changes existing components only"
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
+# seen live: the human confirmed the drafted architecture and Michael planned without writing it down
+"$DL" context draft >/dev/null
+jq '(.items[] | select(.id=="ARC-components")) |= (.source = "human: e2e-human 2026-10-13" | del(.quote))' "$LJ/readiness.json" > "$LJ/r.t" && mv "$LJ/r.t" "$LJ/readiness.json"
+contains "dl next: the human confirmed the architecture → propose it" "$("$DL" next)" "CONTEXT the human confirmed the architecture"
+contains "planning waits until the confirmed architecture is written down" "$("$DL" phase planning 2>&1)" "dl context propose <the confirmed file>"
+sed 's/^{{.*}}$/library: one price module/' "$LJ/context.draft.md" > "$TMP/light-arch.md"
+contains "…proposed" "$("$DL" context propose "$TMP/light-arch.md" 2>&1)" "proposed"
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all   # the fixture's answers again (the later steps re-answer them)
+expect_ok "light readiness complete → planning" "$DL" phase planning
+contains "dl next: the BA plans and cuts the cards in one step" "$("$DL" next)" "(light) BA MODE LIGHT"
+printf '# Plan\n## Acceptance criteria\n- AC-1: rounded\n' > "$LJ/plan.md"
+lcard() { jq -n --arg id "$1" '{id:$id,title:$id,role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/price/\($id).mjs"],verify:"node --test",
+  qa_scope:["test/\($id)/**"],qa_verify:"node --test test/\($id)/*.test.mjs",acceptance:["AC-1: rounded"],context:"c",attempts:0,notes:[]}'; }
+jq -n --argjson a "$(lcard T-01)" --argjson b "$(lcard T-02)" --argjson c "$(lcard T-03)" '{cards:[$a,$b,$c]}' > "$LJ/board.json"
+for c in T-01 T-02 T-03; do printf '# %s\n## Acceptance criteria\n1. Given 1.005, when rounded, then 1.01\n' "$c" > "$LJ/specs/$c.md"; done
+contains "more cards than the light path takes is refused" "$("$DL" validate 2>&1)" "the light path takes at most 2 card(s) (settings.light.max_cards), the plan has 3"
+jq '.cards |= .[0:2]' "$LJ/board.json" > "$LJ/b.t" && mv "$LJ/b.t" "$LJ/board.json"
+expect_ok "two cards fit" "$DL" validate
+contains "the light path is not chosen once planning started" "$("$DL" track light "x" --quote "Round every price" 2>&1)" "already on the light path"
+contains "too big after all: back to the full path from planning" "$("$DL" track full "the BA found a schema change" 2>&1)" "back in readiness"
+[[ "$(jq -r '.phase + " " + (.frozen | tostring) + " " + .track' "$LJ/job.json")" == "readiness null full" && -f $LJ/readiness.light.json ]] \
+  && ok "…phase readiness, the freeze lifted, the light decisions kept aside" || bad "track full: $(jq -c '{phase,frozen,track}' "$LJ/job.json")"
+contains "…the items the light path skipped are now asked" "$("$DL" readiness 2>&1)" "ARC-data ("
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
+jq '(.items[] | select(.id=="PRD-goal")).answer = "something else"' "$LJ/readiness.json" > "$LJ/r.t" && mv "$LJ/r.t" "$LJ/readiness.json"
+contains "…but a decision frozen on the light path does not change" "$("$DL" readiness 2>&1)" "PRD-goal was frozen on the light path (decided: \"test decision\") and changed"
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
+expect_ok "the full readiness on top of the light one → planning (frozen again)" "$DL" phase planning
+jq -e '.frozen.readiness_sha256 and (.tracks | length == 2)' "$LJ/job.json" >/dev/null && ok "…both paths in the job's record" || bad "tracks: $(jq -c .tracks "$LJ/job.json")"
+contains "an unfinished job blocks a new request" "$("$DL" new "Tax" "Round every tax to two decimals" 2>&1)" "is still active"
+jq '.phase = "done" | .shipped = true' "$LJ/job.json" > "$LJ/j.t" && mv "$LJ/j.t" "$LJ/job.json"
+"$DL" new "Tax" "Round every tax to two decimals" >/dev/null 2>&1; [[ "$(cat .work/ACTIVE)" == *-tax ]] \
+  && ok "a finished one does not (seen live: the second request in a repo resumed the first, done job)" || bad "after a done job: $(cat .work/ACTIVE)"
+cd "$R"
+
+echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"
+CTX="$HERE/kit/skills/deliver/bin/context.mjs"
+CX="$TMP/ctx"; mkdir -p "$CX/web/src" "$CX/api/app" && cd "$CX" && git init -q -b main
+echo '{"name":"mono","private":true,"workspaces":["web"]}' > package.json
+echo '{"name":"web","scripts":{"test":"vitest run"},"dependencies":{"react":"18.3.1"},"devDependencies":{"typescript":"5.5.0"}}' > web/package.json; echo '{}' > web/tsconfig.json
+printf '[project]\nname = "api"\ndependencies = ["fastapi"]\n\n[tool.pytest.ini_options]\n' > api/pyproject.toml
+echo 'x = 1' > api/app/main.py; echo 'export {}' > web/src/main.ts
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"true"}' > .deliver.json
+git add -A && git commit -qm init
+d="$(node "$CTX" draft "$CX")"
+contains "the draft finds the web app: stack, path and suite from its package.json" "$d" '| web | web | typescript, react | `web/` | `cd web && npm test` | web/package.json |'
+contains "…and the API from its pyproject.toml" "$d" '| api | service | python, fastapi | `api/` | `cd api && pytest -q` | api/pyproject.toml |'
+contains "…the workspace root is not a component of its own" "$(grep -c '^| mono ' <<<"$d" || true)" "0"
+contains "…the style is left to the team" "$d" "{{monorepo of 2 components"
+printf '%s\n' "$d" > "$TMP/arch.md"
+contains "an unconfirmed draft is not a standard (its {{…}} are not filled in)" "$(node "$CTX" check "$CX" "$TMP/arch.md"; echo "rc=$?")" "rc=1"
+sed -i.bak 's/^{{monorepo of 2 components.*}}$/modular-monolith: a React web app and a FastAPI service/' "$TMP/arch.md"
+contains "the confirmed file checks out against the repo" "$(node "$CTX" check "$CX" "$TMP/arch.md"; echo "rc=$?")" "architecture: 2 component(s) — api (api/), web (web/)"
+mkdir -p worker && echo 'module worker' > worker/go.mod
+contains "a new project in the repo that the file misses is reported" "$(node "$CTX" check "$CX" "$TMP/arch.md")" "WARN  worker/ has its own go.mod and is in no component"
+rm -rf worker api
+contains "a component whose path is gone makes the file out of date" "$(node "$CTX" check "$CX" "$TMP/arch.md"; echo "rc=$?")" "path api/ is not in the repo any more"
+git checkout -q -- api
+"$DL" new "Search" "Search products by name in the web app" >/dev/null; CJ="$CX/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.stack=["typescript","python"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"frontend-lead","agent":"ecc:architect"},{"role":"frontend","agent":"frontend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:react-reviewer"}]' >/dev/null
+contains "dl next: a repo with code and no project architecture → draft it" "$("$DL" next)" "CONTEXT dl context draft"
+contains "dl context draft writes the draft into the job, for the readiness review" "$("$DL" context draft 2>&1)" "Not confirmed yet"
+[[ -f $CJ/context.draft.md && "$("$DL" next)" != *CONTEXT* ]] && ok "…drafted once: dl next no longer asks" || bad "draft: $(ls "$CJ")"
+"$DL" phase readiness >/dev/null
+contains "an unconfirmed draft is not proposed for the repo" "$("$DL" context propose "$CJ/context.draft.md" 2>&1)" "the architecture is not ready to commit"
+contains "the confirmed one is" "$("$DL" context propose "$TMP/arch.md" 2>&1)" "proposed"
+[[ -f $CJ/context.md ]] && ok "…kept with the job until dl ship commits it" || bad "context.md missing"
+contains "agents cannot propose it" "$(printf '%s' '{"tool_input":{"command":"dl context propose x.md"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+contains "…but may check it" "$(printf '%s' '{"tool_input":{"command":"dl context check"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=0"
+# once merged it is a project standard: the next job's readiness settles the architecture from it, quoted
+mkdir -p .deliver/knowledge && cp "$TMP/arch.md" .deliver/knowledge/architecture.md
+"$DL" roles >/dev/null; grep -q "Project architecture (project:" "$CJ/roles/frontend.md" && ok "every role card points to the project architecture" || bad "role card: $(grep -n '###' "$CJ/roles/frontend.md")"
+ready_all
+jq '(.items[] | select(.id=="ARC-style")) |= (.source = "standard: architecture.md" | .quote = "modular-monolith: a React web app and a FastAPI service")' "$CJ/readiness.json" > "$CJ/r.t" && mv "$CJ/r.t" "$CJ/readiness.json"
+[[ "$("$DL" readiness 2>&1)" != *"ARC-style"* ]] && ok "the readiness review settles the architecture from it, quoted — no question for the human" || bad "ARC-style: $("$DL" readiness 2>&1 | grep ARC-style)"
+jq '(.items[] | select(.id=="ARC-style")).quote = "microservices: one per team"' "$CJ/readiness.json" > "$CJ/r.t" && mv "$CJ/r.t" "$CJ/readiness.json"
+contains "…only with what it states" "$("$DL" readiness 2>&1)" "ARC-style: quote not found in standard 'architecture.md'"
+[[ "$("$DL" next)" != *CONTEXT* ]] && ok "an architecture that matches the repo: dl next has nothing to ask" || bad "CONTEXT with a valid file"
+cd "$R"
+
+unset DELIVER_KNOWLEDGE; rm -f "$DELIVER_HOME/config.json"   # the install tests check what the installer writes there
 echo "install / uninstall"
 INST="$HERE/scripts/install.sh"
 expect_ok "install --user" "$INST" --user

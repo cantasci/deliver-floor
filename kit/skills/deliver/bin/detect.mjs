@@ -62,7 +62,7 @@ const simple = [
   ["pubspec.yaml", () => "flutter test", "pubspec.yaml"],
 ];
 
-function stack(dir, where = "") {
+export function stack(dir, where = "") {
   const ev = [];
   const r = node(dir, ev, where) ?? python(dir, ev, where);
   if (r) return { ...r, ev };

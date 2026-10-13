@@ -51,7 +51,8 @@ J="$SB/.work/$JOB"; B="$J/board.json"
   {"role":"backend-lead","agent":"ecc:architect","why":"pure domain modules (ratings, indicators)"},
   {"role":"backend","agent":"backend-dev","why":"backend-lead selected"},
   {"role":"qa","agent":"qa-tester","why":"always: tests every card against its ACs"},
-  {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack: javascript"}]'
+  {"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack: javascript"},
+  {"role":"blind","agent":"ecc:code-reviewer","why":"a wrong WL is P0: reviewed from the diff alone too"}]'
 jq -r '.roles[] | "    \(.role) → \(.agent)  (\(.why))"' "$J/job.json"
 
 step "1 · ROLES — the project's role cards are generated (rules + company standards + project facts)"
@@ -60,23 +61,36 @@ cat "$J/ROLES.md" | sed 's/^/    /'
 echo "    --- excerpt of roles/qa.md:"; sed -n '/## Rules/,/## This project/p' "$J/roles/qa.md" | sed 's/^/    /'
 
 step "1 · READINESS — the BA checks every requirement and decision before anything is planned"
+# what shapes the product and the request does not state (UI, layer, dependencies, data, integrations, deployment) is the
+# human's to answer — the BA raises it as an open business item, never settles it from a repo convention
 jq '(.items[] | select(.id=="CON-interface")) |= {id, status:"open", owner:"business",
      question:"Is notchCalculator().notches signed like notchChange (upgrade negative) or an absolute count?",
-     options:["signed, like notchChange","absolute count + direction"], impact:"changes the contract other POC modules import"}' \
+     options:["signed, like notchChange","absolute count + direction"], impact:"changes the contract other POC modules import"}
+   | (.items[] | select(.id | IN("ARC-layer","ARC-data","ARC-integration","DEL-deploy"))) |= {id, status:"open", owner:"business",
+     question:("The request does not say — " + .id + "?"), options:["as the repo does it today (CLAUDE.md)","something else"]}
+   | .items += [{id:"ARC-ui",status:"open",owner:"business",question:"Is there a user interface in this slice?",options:["none — a library","a screen"]},
+                {id:"ARC-deps",status:"open",owner:"business",question:"May the slice add dependencies?",options:["none — plain Node ESM","yes"]}]' \
    "$EX/reference/readiness.json" > "$J/readiness.json"
-say "  business-analyst:" "27 items + the architecture — 1 open (the request does not say whether notches is signed)"
+say "  business-analyst:" "29 items + the architecture — 7 open: whether notches is signed, and what the request does not state about the product (UI, layer, dependencies, data, integrations, deployment)"
 dl readiness || true
 dl next
 dl phase planning || true
 dl phase awaiting_clarification
-say "you:" "signed, like notchChange (downgrade positive, upgrade negative)"
+say "you:" "signed, like notchChange (downgrade positive, upgrade negative) — and the slice is a library: no UI, no new dependency, no store, no integration, no deployment of its own"
 dl clarify CON-interface "signed, like notchChange (downgrade positive, upgrade negative)"
+dl clarify ARC-ui "none — a library the POC's later screens use"
+dl clarify ARC-deps "none — plain Node ESM, no npm dependencies"
+dl clarify ARC-layer "the core domain library: src/ratings and src/indicators; no API in this slice"
+dl clarify ARC-data "no store in this slice: pure functions"
+dl clarify ARC-integration "none in this slice: fetching ratings is out of scope (C4)"
+dl clarify DEL-deploy "consumed as a library by the POC; nothing is deployed on its own"
 dl readiness
 grep -E "CON-interface|PRD-conflicts|ARC-layer|NFR-privacy" "$J/readiness.md" | cut -c1-200 | sed 's/^/    /'
 dl phase planning
 
 step "1 · BUSINESS ANALYST (business-analyst) turns the requirements into a traceable plan"
-cp "$EX/reference/plan.md" "$J/plan.md"; grep '^- AC-' "$J/plan.md" | sed 's/^/    /'
+cp "$EX/reference/plan.md" "$J/plan.md"; grep '^- AC-' "$J/plan.md" | cut -c1-110 | sed 's/^/    /'
+say "  business-analyst:" "every AC rated by what its failure costs — [P0] a wrong WL; NFR-security planned with how it is checked"
 
 step "2 · LEAD (ecc:architect) turns the plan into cards"
 cp "$EX/reference/board.json" "$B"
@@ -109,7 +123,10 @@ dl next
 qa T-01 "$W1"
 dl qa T-01 pass "AC-1 pass, AC-2 pass (test/integration/ratings)"
 say "  ecc:typescript-reviewer:" '{"verdict":"approve","blocking":[],"nits":[]}'
-dl review T-01 approve "AC-1, AC-2 covered by tests"
+dl review T-01 approve "AC-1, AC-2 covered by tests" --by reviewer
+say "  ecc:code-reviewer (blind — the diff alone):" '{"findings":[{"file":"src/ratings/notch.mjs","issue":"an upgrade of any size gives WL 0","severity":"blocking"}]}'
+say "Michael:" "triage against the spec — intended: T-01 says so in so many words"
+dl review T-01 approve "its one finding is intended by the spec" --by blind --triage '[{"finding":"an upgrade of any size gives WL 0","decision":"intended","quote":"Given an upgrade or an unchanged rating, when `notchCalculator` runs, then `wl` is 0"}]'
 dl integrate T-01
 
 step "3 · EXECUTE — wave 2 (T-02 branches from the job branch, so it sees T-01)"
@@ -120,7 +137,9 @@ dl gate T-02
 qa T-02 "$W2"
 dl qa T-02 pass "AC-3 pass (test/integration/indicators)"
 say "  ecc:typescript-reviewer:" '{"verdict":"approve","blocking":[],"nits":["name the thresholds"]}'
-dl review T-02 approve "AC-3 covered"
+dl review T-02 approve "AC-3 covered" --by reviewer
+say "  ecc:code-reviewer (blind — the diff alone):" '{"findings":[]}'
+dl review T-02 approve "no findings" --by blind --triage '[]'
 dl integrate T-02
 
 step "5 · INTEGRATE — full verify on the job branch"
@@ -132,7 +151,9 @@ dl phase closing
 step "6 · CLOSE — BA checks every AC against the evidence, writes report.md (also the PR body)"
 { echo "# Delivery report"; echo; echo "| AC | Status | Evidence |"; echo "| --- | --- | --- |"
   echo "| AC-1 | ✅ | QA T-01: notchChange checks; gate log |"; echo "| AC-2 | ✅ | QA T-01: notchCalculator BBB+→BB+ = 3/WL2 |"
-  echo "| AC-3 | ✅ | QA T-02: Ind. 12 thresholds |"; } > "$J/report.md"
+  echo "| AC-3 | ✅ | QA T-02: Ind. 12 thresholds |"
+  echo; echo "## Non-functional requirements"; echo; echo "| Requirement | Result | Evidence |"; echo "| --- | --- | --- |"
+  echo "| NFR-security | PASS | QA T-01 and T-02: unknown ratings throw RangeError; reviewer and blind review: no input path left open |"; } > "$J/report.md"
 sed 's/^/    /' "$J/report.md"
 dl next
 

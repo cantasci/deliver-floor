@@ -1,0 +1,221 @@
+# baseline: node --test on job/JOB-20261013-1542-investment-grade-check at 1fb56150423d, before any card
+TAP version 13
+# Subtest: AC-3: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0 (every adjacent pair of the scale)
+ok 1 - AC-3: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0 (every adjacent pair of the scale)
+  ---
+  duration_ms: 0.630583
+  ...
+# Subtest: AC-3: unknown ratings propagate RangeError
+ok 2 - AC-3: unknown ratings propagate RangeError
+  ---
+  duration_ms: 0.226
+  ...
+# Subtest: AC-7: exports the named function externalRatingChangeWl(previous, current)
+ok 3 - AC-7: exports the named function externalRatingChangeWl(previous, current)
+  ---
+  duration_ms: 0.496833
+  ...
+# Subtest: AC-7: module source imports only notchChange from ../ratings/notch.mjs, no scale copy or rating literals
+ok 4 - AC-7: module source imports only notchChange from ../ratings/notch.mjs, no scale copy or rating literals
+  ---
+  duration_ms: 1.325542
+  ...
+# Subtest: AC-1: spec examples with exactly 2 notches → 1
+ok 5 - AC-1: spec examples with exactly 2 notches → 1
+  ---
+  duration_ms: 0.256792
+  ...
+# Subtest: AC-1: every 2-notch downgrade on the real scale (17 pairs) → 1
+ok 6 - AC-1: every 2-notch downgrade on the real scale (17 pairs) → 1
+  ---
+  duration_ms: 0.089083
+  ...
+# Subtest: AC-1: boundaries — 1 notch (BBB+ → BBB) → 0 and 3 notches (BBB+ → BB+) → 2
+ok 7 - AC-1: boundaries — 1 notch (BBB+ → BBB) → 0 and 3 notches (BBB+ → BB+) → 2
+  ---
+  duration_ms: 0.12425
+  ...
+# Subtest: AC-2: spec examples with 3 or more notches → 2
+ok 8 - AC-2: spec examples with 3 or more notches → 2
+  ---
+  duration_ms: 0.064667
+  ...
+# Subtest: AC-2: all pairs with >= 3 notches (136) → 2
+ok 9 - AC-2: all pairs with >= 3 notches (136) → 2
+  ---
+  duration_ms: 0.143
+  ...
+# Subtest: AC-2: edge cases — top 3-notch (AAA → AA-), bottom 3-notch (B- → CCC-), maximum span
+ok 10 - AC-2: edge cases — top 3-notch (AAA → AA-), bottom 3-notch (B- → CCC-), maximum span
+  ---
+  duration_ms: 0.048792
+  ...
+# Subtest: AC-3: spec examples (1-notch downgrade, unchanged, upgrades) → 0
+ok 11 - AC-3: spec examples (1-notch downgrade, unchanged, upgrades) → 0
+  ---
+  duration_ms: 0.242834
+  ...
+# Subtest: AC-3: every adjacent 1-notch downgrade (18) → 0
+ok 12 - AC-3: every adjacent 1-notch downgrade (18) → 0
+  ---
+  duration_ms: 0.28025
+  ...
+# Subtest: AC-3: every unchanged pair (19), including AAA/AAA and CCC-/CCC- → 0
+ok 13 - AC-3: every unchanged pair (19), including AAA/AAA and CCC-/CCC- → 0
+  ---
+  duration_ms: 0.749625
+  ...
+# Subtest: AC-3: every upgrade (171) → 0
+ok 14 - AC-3: every upgrade (171) → 0
+  ---
+  duration_ms: 0.109583
+  ...
+# Subtest: AC-1/2/3: all 361 ordered pairs equal d>=3?2:d===2?1:0; counts WL1=17, WL2=136, WL0=208
+ok 15 - AC-1/2/3: all 361 ordered pairs equal d>=3?2:d===2?1:0; counts WL1=17, WL2=136, WL0=208
+  ---
+  duration_ms: 0.517666
+  ...
+# Subtest: AC-7: every result of the 361-pair loop is typeof number and strictly 0, 1 or 2
+ok 16 - AC-7: every result of the 361-pair loop is typeof number and strictly 0, 1 or 2
+  ---
+  duration_ms: 0.236458
+  ...
+# Subtest: AC-4: surrounding whitespace and lower/mixed case are read as trimmed upper-case code
+ok 17 - AC-4: surrounding whitespace and lower/mixed case are read as trimmed upper-case code
+  ---
+  duration_ms: 0.035625
+  ...
+# Subtest: AC-4: normalised input gives the same result as the canonical codes on the full scale
+ok 18 - AC-4: normalised input gives the same result as the canonical codes on the full scale
+  ---
+  duration_ms: 0.276916
+  ...
+# Subtest: AC-5: unknown ratings throw RangeError (spec test data)
+ok 19 - AC-5: unknown ratings throw RangeError (spec test data)
+  ---
+  duration_ms: 0.223459
+  ...
+# Subtest: AC-5: empty, whitespace-only, null, undefined (either position, missing argument) throw RangeError
+ok 20 - AC-5: empty, whitespace-only, null, undefined (either position, missing argument) throw RangeError
+  ---
+  duration_ms: 0.185875
+  ...
+# Subtest: AC-5: off-scale codes, inner whitespace and a non-string number throw RangeError
+ok 21 - AC-5: off-scale codes, inner whitespace and a non-string number throw RangeError
+  ---
+  duration_ms: 0.165459
+  ...
+# Subtest: AC-5: both arguments invalid still throws RangeError, and nothing is returned
+ok 22 - AC-5: both arguments invalid still throws RangeError, and nothing is returned
+  ---
+  duration_ms: 0.044541
+  ...
+# Subtest: AC-5: the thrown error is the one notchChange throws (not wrapped or replaced)
+ok 23 - AC-5: the thrown error is the one notchChange throws (not wrapped or replaced)
+  ---
+  duration_ms: 0.118542
+  ...
+# Subtest: AC-6: existing modules keep working next to the new one (notchChange, countryRatingChangeWl)
+ok 24 - AC-6: existing modules keep working next to the new one (notchChange, countryRatingChangeWl)
+  ---
+  duration_ms: 5.329417
+  ...
+# Subtest: AC-2: BBB+ → BB+ = {"notches":3,"direction":"downgrade","wl":2}
+ok 25 - AC-2: BBB+ → BB+ = {"notches":3,"direction":"downgrade","wl":2}
+  ---
+  duration_ms: 0.59275
+  ...
+# Subtest: AC-2: BBB+ → BBB- = {"notches":2,"direction":"downgrade","wl":1}
+ok 26 - AC-2: BBB+ → BBB- = {"notches":2,"direction":"downgrade","wl":1}
+  ---
+  duration_ms: 0.056542
+  ...
+# Subtest: AC-2: BBB+ → BBB = {"notches":1,"direction":"downgrade","wl":0}
+ok 27 - AC-2: BBB+ → BBB = {"notches":1,"direction":"downgrade","wl":0}
+  ---
+  duration_ms: 0.520625
+  ...
+# Subtest: AC-2: BB → BBB = {"notches":-3,"direction":"upgrade","wl":0}
+ok 28 - AC-2: BB → BBB = {"notches":-3,"direction":"upgrade","wl":0}
+  ---
+  duration_ms: 0.120375
+  ...
+# Subtest: AC-2: AA → AA = {"notches":0,"direction":"unchanged","wl":0}
+ok 29 - AC-2: AA → AA = {"notches":0,"direction":"unchanged","wl":0}
+  ---
+  duration_ms: 0.053833
+  ...
+# Subtest: AC-1: the module exports the contract
+ok 30 - AC-1: the module exports the contract
+  ---
+  duration_ms: 0.156542
+  ...
+# Subtest: AC-1: trimmed, case-insensitive; unknown → RangeError
+ok 31 - AC-1: trimmed, case-insensitive; unknown → RangeError
+  ---
+  duration_ms: 0.197583
+  ...
+# Subtest: Ind. 12 thresholds
+ok 32 - Ind. 12 thresholds
+  ---
+  duration_ms: 0.334209
+  ...
+# Subtest: Ind. 13: 2-notch downgrade -> WL 1
+ok 33 - Ind. 13: 2-notch downgrade -> WL 1
+  ---
+  duration_ms: 0.360833
+  ...
+# Subtest: Ind. 13: 3+ notch downgrade -> WL 2
+ok 34 - Ind. 13: 3+ notch downgrade -> WL 2
+  ---
+  duration_ms: 0.105375
+  ...
+# Subtest: Ind. 13: 1-notch downgrade, unchanged or upgrade -> WL 0
+ok 35 - Ind. 13: 1-notch downgrade, unchanged or upgrade -> WL 0
+  ---
+  duration_ms: 0.054625
+  ...
+# Subtest: Ind. 13: full scale, 361 pairs
+ok 36 - Ind. 13: full scale, 361 pairs
+  ---
+  duration_ms: 0.433125
+  ...
+# Subtest: Ind. 13: input is trimmed and case-insensitive
+ok 37 - Ind. 13: input is trimmed and case-insensitive
+  ---
+  duration_ms: 0.052417
+  ...
+# Subtest: Ind. 13: unknown ratings throw RangeError
+ok 38 - Ind. 13: unknown ratings throw RangeError
+  ---
+  duration_ms: 0.28975
+  ...
+# Subtest: Ind. 13: result is a number
+ok 39 - Ind. 13: result is a number
+  ---
+  duration_ms: 0.041792
+  ...
+# Subtest: scale
+ok 40 - scale
+  ---
+  duration_ms: 0.328916
+  ...
+# Subtest: notch change
+ok 41 - notch change
+  ---
+  duration_ms: 0.190666
+  ...
+# Subtest: calculator
+ok 42 - calculator
+  ---
+  duration_ms: 0.3455
+  ...
+1..42
+# tests 42
+# suites 0
+# pass 42
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 92.354584

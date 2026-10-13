@@ -96,6 +96,20 @@ intake → readiness ⇄ awaiting_clarification → planning → [awaiting_plan_
 cards open, verify-all not passed on the current commit, …). `dl ship` sets `awaiting_pr_merge` / `done`; `dl pr` syncs a PR's
 state. The Stop hook only holds Michael in `executing` and `integrating`.
 
+## Light or full, and how deep each AC is tested
+
+- **The light path** (`dl track light "<why>" --quote "<the request's words>"`, Michael's call at intake): a small change
+  inside existing code. The readiness review answers only the items marked `light` in `readiness.yaml` (11: goal, scope,
+  acceptance, conflicts, contracts, errors, compatibility, stack, security, privacy, tests), the BA plans and cuts at most
+  `light.max_cards` cards in one step (MODE LIGHT, no Lead), and Michael writes the report from the QA verdicts. Gates, QA,
+  reviews and merges are the same. Bigger after all → `dl track full "<why>"` until execution; the light decisions stay.
+- **Risk-based test design** (`test_design.risk`): every AC carries `[P0]`…`[P3]` by what its failure costs; each spec's
+  `## Test design` says how each AC is tested (P0: every boundary and error path, unit and integration; P3: the dev's unit
+  test); a QA pass names every AC of its card; each decided NFR-* item is planned and gets PASS / CONCERNS / FAIL at closing
+  (anything else: a fix card, or `dl waive` with its reason in the PR).
+- **The blind review** (`review.blind`): a card with a P0/P1 AC is also reviewed from the diff alone (role `blind`); Michael
+  triages each finding against the spec — intended (quoted) or a defect for the dev.
+
 ## Card lifecycle
 
 ```text

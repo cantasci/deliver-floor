@@ -13,25 +13,32 @@
 #   clarify). Any other repo file, a convention or silence is never enough: when neither the request nor a standard says
 #   it, the BA marks the item open, owner business, and the repo's conventions are at most one of the options. The BA
 #   never asks the human; it raises the item to Michael.
+# light: true — answered on the light path too (dl track light: a small change inside existing code). The others shape a
+#   product or a new part of one — new dependencies, data, integrations, UI, deployment, performance targets …; a light job
+#   that needs one of them is not light (dl track full).
 # Format: the same small YAML subset as roles.yaml.
 
 items:
   # ---- product & scope ------------------------------------------------------------------------------------------
   - id: PRD-goal
     area: always
+    light: true
     q: "What business outcome does this deliver, and how is success measured?"
   - id: PRD-users
     area: always
     q: "Who uses it (roles/personas), and what may each role see or do?"
   - id: PRD-scope
     area: always
+    light: true
     ask: human
     q: "What is explicitly in scope and out of scope for this delivery?"
   - id: PRD-acceptance
     area: always
+    light: true
     q: "Does every requirement have testable acceptance criteria with concrete examples?"
   - id: PRD-conflicts
     area: always
+    light: true
     q: "Do any requirements, examples or clarifications contradict each other? How is each resolved?"
   - id: PRD-priority
     area: always
@@ -40,12 +47,15 @@ items:
   # ---- contracts ----------------------------------------------------------------------------------------------------
   - id: CON-interface
     area: always
+    light: true
     q: "Are all public interfaces fully specified — names, inputs, outputs, types, units, signs, ranges, null/empty handling?"
   - id: CON-errors
     area: always
+    light: true
     q: "What happens on invalid input and on failure (error types, codes, messages, fallbacks)?"
   - id: CON-compat
     area: always
+    light: true
     q: "Must existing behaviour, APIs or data stay backward compatible? Is there versioning?"
 
   # ---- architecture -------------------------------------------------------------------------------------------------
@@ -67,6 +77,7 @@ items:
     q: "Which layer owns the logic: BFF/API gateway or other middleware, core/domain service, shared library, client? Is there an API, and for whom?"
   - id: ARC-stack
     area: always
+    light: true
     q: "Languages, frameworks and runtime versions From the repo's code or the request (quoted). A repo without code and a request that names no language → the best fit for the requirements, never a default: open, owner pm, with the evidence the request gives (the libraries, tools, platforms and data sources it names) and the alternatives — Michael decides it with that evidence quoted."
   - id: ARC-deps
     area: always
@@ -120,11 +131,13 @@ items:
     q: "Availability/resilience expectations, degradation when a dependency is down?"
   - id: NFR-security
     area: always
+    light: true
     q: "Authentication, authorisation, input validation, secrets handling — what applies here?"
     suggests_role: security
 
   - id: NFR-privacy
     area: always
+    light: true
     q: "Personal or sensitive data involved (KVKK/GDPR)? Retention, masking, logging rules?"
   - id: NFR-audit
     area: always
@@ -139,6 +152,7 @@ items:
   # ---- quality & delivery -------------------------------------------------------------------------------------------
   - id: TST-strategy
     area: always
+    light: true
     q: "Test expectations: unit (dev, TDD), integration/e2e (QA), coverage, test data, test environments?"
   - id: DEL-ci
     area: always

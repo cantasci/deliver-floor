@@ -41,7 +41,16 @@ export function areasOf(job) {
   if (has("mobile", "mobile-lead", "qa-mobile")) a.add("mobile").add("ui");
   return a;
 }
-export const applicable = (job) => catalog().filter((i) => areasOf(job).has(i.area));
+// The light path (dl track light: a small change to existing code) answers only the items marked `light: true`; the rest
+// shape a product or a new part of one, which a light job does not touch — needing one sends it to the full path. Until the
+// repo has its architecture (.deliver/knowledge/architecture.md), a light job asks the human to confirm the drafted one
+// once too (ARC-style, ARC-components): otherwise a repo that only ever gets small changes would never have one.
+const CONFIRM_ARCH = new Set(["ARC-style", "ARC-components"]);
+const hasArchitecture = (job) => existsSync(join(job.repo ?? ".", ".deliver", "knowledge", "architecture.md"));
+export const applicable = (job) => {
+  const confirm = job.track === "light" && !hasArchitecture(job);
+  return catalog().filter((i) => areasOf(job).has(i.area) && (job.track !== "light" || i.light === true || (confirm && CONFIRM_ARCH.has(i.id))));
+};
 
 export const KINDS = ["service", "bff", "app", "web", "mobile", "library", "worker", "db", "infra", "docs"];
 export function readReadiness(jobDir) {
@@ -72,6 +81,9 @@ export function checkArchitecture(job, arch) {
     const rev = roles.get(c.reviewer);
     if (!c.reviewer || !rev || !String(c.reviewer).startsWith("reviewer")) errors.push(`component '${id}': reviewer must name a reviewer role on this job (e.g. "reviewer-${(c.stack ?? ["x"])[0]}")`);
     else if (want.length && !want.includes(rev.agent)) errors.push(`component '${id}': reviewer ${c.reviewer} (${rev.agent}) does not match its stack — use one of ${[...new Set(want)].join(", ")}`);
+    // the light path changes existing code: every component it names is already in the repo
+    if (job.track === "light" && job.repo && !ps.some((x) => typeof x === "string" && existsSync(join(job.repo, x))))
+      errors.push(`component '${id}': none of its paths exists in the repo — the light path changes existing components only (a new one: dl track full "<why>")`);
     if (c.verify !== undefined && (typeof c.verify !== "string" || !c.verify.trim() || /^\s*(true|:|echo\b|exit 0)/.test(c.verify)))
       errors.push(`component '${id}': verify must be the command that runs this component's whole test suite from the repo root (e.g. "cd services/orders && ./gradlew test"), or be left out`);
   }
@@ -162,6 +174,18 @@ export function check(jobDir) {
     if (!/\b(over|instead of|rather than|vs\.?|versus|alternative|considered)\b/i.test(why)) errors.push("ARC-stack decided by the PM must name the alternatives it weighed (\"… over Node.js because …\")");
   }
   errors.push(...checkArchitecture(job, architecture).map((e) => `architecture: ${e}`));
+  // Back from the light path (dl track full in planning): what was frozen there stays as it was; only the skipped items are new.
+  const light = join(jobDir, "readiness.light.json");
+  if (existsSync(light)) {
+    try {
+      const was = JSON.parse(readFileSync(light, "utf8"));
+      for (const w of (Array.isArray(was) ? was : was.items ?? [])) {
+        const i = byId.get(w.id);
+        if (!i || i.status !== w.status || (i.answer ?? "") !== (w.answer ?? "") || (i.source ?? "") !== (w.source ?? ""))
+          errors.push(`${w.id} was frozen on the light path (${w.status}: "${String(w.answer ?? "").slice(0, 60)}") and changed — the full path adds the items the light one skipped; frozen decisions stay`);
+      }
+    } catch (e) { errors.push(`readiness.light.json: ${e.message}`); }
+  }
   // A decided item that needs a specialist brings that ECC role onto the job (e.g. an a11y target → ecc:a11y-architect).
   const onJob = new Set((job.roles ?? []).map((r) => r.role)), cat = catalog();
   const warnings = [];

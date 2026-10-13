@@ -17,9 +17,13 @@ Analysts can compute rating notch changes and the Indicator 12 Watchlist level w
 
 ## Acceptance criteria
 
-- AC-1: `notchChange` counts steps on the 19-step scale; downgrade positive, upgrade negative; unknown ratings throw RangeError; input trimmed/case-insensitive.
-- AC-2: `notchCalculator("BBB+","BB+")` → `{notches:3, direction:"downgrade", wl:2}`; 2 notches → WL1; upgrades/unchanged → WL0.
-- AC-3: `countryRatingChangeWl`: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0.
+- AC-1 [P1] — a wrong count misstates a rating move: `notchChange` counts steps on the 19-step scale; downgrade positive, upgrade negative; unknown ratings throw RangeError; input trimmed/case-insensitive.
+- AC-2 [P0] — a wrong WL puts a client on the wrong watchlist level: `notchCalculator("BBB+","BB+")` → `{notches:3, direction:"downgrade", wl:2}`; 2 notches → WL1; upgrades/unchanged → WL0.
+- AC-3 [P1] — a wrong Indicator 12 WL: `countryRatingChangeWl`: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0.
+
+## Non-functional requirements
+
+- NFR-security: input is validated — an unknown rating throws RangeError; no auth, no secrets — checked by QA's RangeError tests (AC-1, T-02 criterion 4) and the review.
 
 ## Risks and assumptions
 

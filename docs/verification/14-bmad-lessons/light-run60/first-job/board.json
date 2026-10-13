@@ -1,0 +1,146 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Indicator 13: externalRatingChangeWl(previous, current) on notchChange",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "repo",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "context": "REQ-03-13. Add src/indicators/externalRating.mjs with the named export externalRatingChangeWl(previous, current) → 0 | 1 | 2. Import notchChange from ../ratings/notch.mjs (positive = downgrade) and copy no scale. Thresholds: notches >= 3 → 2, notches === 2 → 1, else 0. These are NOT the Indicator 12 thresholds in countryRating.mjs. A RangeError from notchChange propagates unchanged with no fallback. Pure function, no I/O, no deps (CLAUDE.md). Change no existing file (notch.mjs, countryRating.mjs, existing tests). Follow the style of src/indicators/countryRating.mjs: header comment with REQ id, named function export. Unit tests use node:test + node:assert/strict like test/unit/indicators/countryRating.test.mjs.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/externalRating.mjs",
+        "test/unit/indicators/externalRating.test.mjs"
+      ],
+      "verify": "node --test test/unit/indicators/externalRating.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/externalRating.int.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/externalRating.int.test.mjs",
+      "acceptance": [
+        "AC-7: named export externalRatingChangeWl from src/indicators/externalRating.mjs; imports only notchChange from ../ratings/notch.mjs, no copy of the scale",
+        "AC-1: exactly 2-notch downgrade → 1 (BBB+→BBB- = 1; AAA→AA = 1; CCC+→CCC- = 1)",
+        "AC-2: 3+ notch downgrade → 2 (BBB+→BB+ = 2; B-→CCC- = 2; AAA→CCC- = 2)",
+        "AC-3: 1-notch downgrade, unchanged, upgrade → 0 (BBB+→BBB = 0; AA→AA = 0; BB→BBB = 0; CCC-→AAA = 0)",
+        "AC-1/2/3: all 361 ordered pairs equal d>=3?2:d===2?1:0; counts WL1=17, WL2=136, WL0=208",
+        "AC-4: trimmed, case-insensitive (' bbb+ ','bb+' = 2; 'bbb+','Bbb-' = 1; 'aa','AA' = 0)",
+        "AC-5: any rating not on the scale throws RangeError, no WL ('X','A'; 'A','X'; '','A'; null,'A'; 'BBB' alone; 'BBB','D'; 'NR','BBB'; 'Baa1','BBB'; 5,'A')",
+        "AC-7: result is a number in {0,1,2}, never string/boolean/object",
+        "AC-6: only the three new files change; npm test passes with all existing tests unchanged"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-13T13:38:13Z"
+        }
+      ],
+      "worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1531-indicator-13-external-rating-cha/wt/T-01",
+      "branch": "job/JOB-20261013-1531-indicator-13-external-rating-cha--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "90a85b5b59adca6e8751f60921770c3c220aa647",
+        "attempt": 1,
+        "seconds": 0,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1531-indicator-13-external-rating-cha/gates/T-01-a1-154001.log",
+        "at": "2026-10-13T13:40:01Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-13T13:40:02.040Z",
+          "author": "gate",
+          "text": "PASS — 14 checks ok, 0 failed (T-01-a1-154001.log)"
+        },
+        {
+          "at": "2026-10-13T13:40:09.666Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1: all 17 two-notch pairs → 1; AC-2: all 136 pairs ≥3 notches → 2; AC-3: 208 pairs → 0 (18 one-notch, 19 unchanged, 171 upgrades); AC-4: normalisation tests (' bbb+ ','bb+'); AC-5: RangeError tests for invalid inputs; AC-6: neighbouring modules test + npm test; AC-7: export, single-import and number-type tests"
+        },
+        {
+          "at": "2026-10-13T13:40:39.435Z",
+          "author": "reviewer",
+          "text": "approve — correct, in scope, style matches; nits only"
+        },
+        {
+          "at": "2026-10-13T13:40:40.724Z",
+          "author": "blind",
+          "text": "approve — no blocking findings (2 nits)"
+        },
+        {
+          "at": "2026-10-13T13:40:42.908Z",
+          "author": "integrate",
+          "text": "the repo suite on job/JOB-20261013-1531-indicator-13-external-rating-cha after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "2ccdaace2ce351f37c1b5218c683ec6b824ad49e",
+        "qa_branch": "662e1ca5d9e0b5d07a0cb69f6b1dd8563372df93",
+        "at": "2026-10-13T13:40:07Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "2ccdaace2ce351f37c1b5218c683ec6b824ad49e",
+        "gate_head": "90a85b5b59adca6e8751f60921770c3c220aa647",
+        "qa_verify": "PASS",
+        "seconds": 0,
+        "suite_seconds": 1,
+        "suite": "npm test",
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1531-indicator-13-external-rating-cha/gates/T-01-qa-a1-154008.log",
+        "summary": "AC-1: all 17 two-notch pairs → 1; AC-2: all 136 pairs ≥3 notches → 2; AC-3: 208 pairs → 0 (18 one-notch, 19 unchanged, 171 upgrades); AC-4: normalisation tests (' bbb+ ','bb+'); AC-5: RangeError tests for invalid inputs; AC-6: neighbouring modules test + npm test; AC-7: export, single-import and number-type tests",
+        "at": "2026-10-13T13:40:09Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "2ccdaace2ce351f37c1b5218c683ec6b824ad49e",
+          "qa_verify": "PASS",
+          "summary": "AC-1: all 17 two-notch pairs → 1; AC-2: all 136 pairs ≥3 notches → 2; AC-3: 208 pairs → 0 (18 one-notch, 19 unchanged, 171 upgrades); AC-4: normalisation tests (' bbb+ ','bb+'); AC-5: RangeError tests for invalid inputs; AC-6: neighbouring modules test + npm test; AC-7: export, single-import and number-type tests",
+          "at": "2026-10-13T13:40:09Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "2ccdaace2ce351f37c1b5218c683ec6b824ad49e",
+          "summary": "correct, in scope, style matches; nits only",
+          "at": "2026-10-13T13:40:38Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "2ccdaace2ce351f37c1b5218c683ec6b824ad49e",
+          "summary": "no blocking findings (2 nits)",
+          "at": "2026-10-13T13:40:40Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "2ccdaace2ce351f37c1b5218c683ec6b824ad49e",
+        "summary": "blind: approve — no blocking findings (2 nits) | reviewer: approve — correct, in scope, style matches; nits only",
+        "pending": [],
+        "at": "2026-10-13T13:40:40Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "repo",
+        "head": "799cbdc555cfa05fa8cf59a69eafb7c33916db35",
+        "seconds": 0,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1531-indicator-13-external-rating-cha/gates/T-01-merged-154042.log",
+        "n": 1,
+        "at": "2026-10-13T13:40:42Z"
+      }
+    }
+  ]
+}

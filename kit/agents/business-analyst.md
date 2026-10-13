@@ -59,6 +59,14 @@ behaviour and examples especially carefully: an example that does not match the 
 request itself already resolves it explicitly).
 Add items the catalog lacks but this request needs, with ids starting `X-`.
 
+**A repo with code has an architecture already.** When the prompt gives a PROJECT ARCHITECTURE:
+- `.deliver/knowledge/architecture.md` (a project standard, confirmed by the team): settle ARC-style and ARC-components from
+  it — source `standard: architecture.md`, its words in `quote` — and copy its components (id, kind, stack, path, suite) into
+  your architecture. A component the request needs that the file does not list is new: that is still `open`, owner
+  `"business"`. A file that no longer matches the repo (a path gone, a project it does not list) — say so under the item.
+- a draft (`context.draft.md` — read from the repo, not confirmed yet): it is the first option of ARC-style and
+  ARC-components (`open`, owner `"business"`, option "as in the draft (<path>)"), never their answer — the human confirms it once.
+
 Also describe the **architecture** the request implies, component by component — every service, BFF, app, library, worker
 and database, each with its stack (e.g. `["java","spring-boot"]`, `["go"]`, `["postgres"]`), its repo path(s) — every directory its code AND its
 tests live in, e.g. `["src/ratings/", "test/unit/ratings/", "test/integration/ratings/"]`, or `"."` for a single-component repo — the dev role that
@@ -80,10 +88,18 @@ Return only this markdown, headings exactly as given:
 ## Goal
 ## Scope
 ## Out of scope
-## Acceptance criteria        (AC-1, AC-2 … each: "AC-n (REQ-xx-yy): Given …, when …, then …" + concrete example values)
+## Acceptance criteria        (AC-1, AC-2 … each: "AC-n [P0..P3] (REQ-xx-yy): Given …, when …, then …" + concrete example values)
+## Non-functional requirements (every decided NFR-* item of readiness.md: "NFR-x: <the target> — checked by <a test | a measurement | a review>")
 ## Risks and assumptions
 ## Open questions             (only questions whose answer changes scope)
 ```
+**Priority — what a failure of this criterion costs**, on every AC line:
+- `[P0]` money or data lost, security, privacy or compliance broken, or the core flow stopped — no workaround
+- `[P1]` the core feature is wrong, but there is a workaround or few users are hit
+- `[P2]` secondary behaviour, the edges of normal use
+- `[P3]` cosmetic or rare
+For P0 and P1 add the cost in a few words (`AC-2 [P0] (REQ-04) — a wrong WL sends a client to the wrong desk: Given …`).
+The priority decides how deeply the AC is tested and whether its cards get a blind review — rate the cost, not the effort.
 
 ### CARD SPECS — one spec per card
 For every card you are given, return a section that starts with the line `=== T-xx ===` followed by:
@@ -94,10 +110,31 @@ For every card you are given, return a section that starts with the line `=== T-
 ## Acceptance criteria   numbered; Given/When/Then; concrete values; the exact public names (functions, routes, fields)
 ## Edge cases            what must happen at boundaries / invalid input / errors
 ## Test data             a small table of inputs → expected outputs the dev and QA both use
+## Test design           one row per AC the card claims: AC | priority | level | scenarios
 ## Out of scope for this card
 ```
 The card's acceptance criteria must together cover every AC the card claims, and nothing outside its scope.
+**Test design by priority** (the AC's priority from the plan):
+- P0 — the main path, every boundary and every error path: the dev's unit tests **and** QA's integration/e2e tests
+- P1 — the main path and the key edges at the integration/e2e level (QA)
+- P2 — the main path at the integration/e2e level (QA)
+- P3 — the dev's unit test is enough; name the behaviour it checks (QA may leave it there)
+
+### LIGHT — a small change to existing code, planned in one step (the light path: no Leads)
+You get the request, readiness.md, the repo and the dev roles. Return three parts, in this order, each starting with its line:
+```
+=== PLAN ===           the PLAN markdown above (priorities and NFR section included)
+=== CARDS ===          a JSON array of at most <max> cards, the Lead's format: [{"tmp_id":"B1","title":"…","role":"…",
+                       "component":"…","context":"…","depends_on":[],"scope":["…"],"verify":"…","qa_scope":["…"],
+                       "qa_verify":"…","acceptance":["AC-1: …"]}] — narrow scopes, verify runs this card's unit tests
+=== T-01 ===           the CARD SPECS section for each card, numbered in the order of the array
+```
+The change lives in components that exist (readiness.md's architecture). If doing it right takes more cards than allowed, a
+new component, a new dependency, data or integration changes, or anything the light readiness did not settle — do not
+squeeze it in: return only `=== TOO BIG ===` and why. Michael moves the job to the full path.
 
 ### CLOSING — check the delivered work
-Return a markdown table `AC | Status (met / not met / partial) | Evidence` (evidence = test name, QA result, log file), then a
-"Follow-ups" list.
+Return a markdown table `AC | Status (met / not met / partial) | Evidence` (evidence = test name, QA result, log file), then —
+for every non-functional requirement of the plan — a table `Requirement | Result (PASS / CONCERNS / FAIL) | Evidence`: PASS
+only with evidence that meets the target (a test, a measurement, a reviewer's verdict); CONCERNS when the evidence is
+partial or the target was not measured; FAIL when it is missed. Then a "Follow-ups" list.

@@ -1,0 +1,143 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Indicator 13: externalRatingChangeWl(previous, current) on notchChange",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "watchlist-poc",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "context": "Add src/indicators/externalRating.mjs with the named export externalRatingChangeWl(previous, current) -> 0|1|2. Import notchChange from ../ratings/notch.mjs; n = notchChange(previous, current); return n >= 3 ? 2 : n === 2 ? 1 : 0. Do not catch or wrap the RangeError notchChange throws. Pure, no I/O, no new dependencies, plain Node ESM (.mjs). Model it on src/indicators/countryRating.mjs, but note the thresholds differ (Indicator 12: 1->1, 2+->2; Indicator 13: 2->1, 3+->2). Change no existing file. Unit tests with node:test + node:assert/strict in test/unit/indicators/externalRating.test.mjs (TDD).",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/externalRating.mjs",
+        "test/unit/indicators/externalRating.test.mjs"
+      ],
+      "verify": "node --test test/unit/indicators/externalRating.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/externalRating.int.test.mjs"
+      ],
+      "qa_verify": "node --test test/integration/indicators/externalRating.int.test.mjs",
+      "acceptance": [
+        "AC-1: externalRatingChangeWl(\"BBB+\", \"BBB-\") === 1 (2-notch downgrade); (\"A\", \"BBB+\") === 1",
+        "AC-2: 3+ notch downgrade -> 2: (\"BBB+\", \"BB+\"), (\"BBB+\", \"BB\"), (\"AAA\", \"CCC-\") all === 2",
+        "AC-3: 1-notch downgrade, unchanged, upgrade -> 0: (\"BBB\", \"BBB-\"), (\"A\", \"A\"), (\"BBB\", \"BBB+\"), (\"BB+\", \"BBB+\"), (\"CCC-\", \"AAA\") all === 0",
+        "AC-4: trimmed, case-insensitive: (\" bbb+ \", \"bb+\") === 2, (\"bbb+\", \"Bbb-\") === 1, (\"\\tA\\n\", \"a\") === 0",
+        "AC-5: off-scale input in either position (\"nope\", \"D\", \"CC\", \"NR\", \"Baa1\", \"\", \"   \", null, undefined, \"BBB +\") throws the RangeError notchChange throws",
+        "AC-6: no existing file changed; node --test passes in full; notchCalculator(\"BBB+\", \"BB+\") still deep-equals { notches: 3, direction: \"downgrade\", wl: 2 }"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-13T12:54:50Z"
+        }
+      ],
+      "worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/wt/T-01",
+      "branch": "job/JOB-20261013-1448-indicator-13-external-rating--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "257f83ee8619c09e4a628c7611329a525343192b",
+        "attempt": 1,
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/gates/T-01-a1-145603.log",
+        "at": "2026-10-13T12:56:04Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-13T12:56:04.627Z",
+          "author": "gate",
+          "text": "PASS — 14 checks ok, 0 failed (T-01-a1-145603.log)"
+        },
+        {
+          "at": "2026-10-13T12:56:11.766Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1: AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; AC-2: AC-2: downgrades of 3, 4 and 18 notches return 2; AC-3: AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data); AC-4: AC-4: whitespace and mixed case are read as notchChange reads them; AC-5: AC-5: unknown rating in either position throws RangeError with the notchChange message; AC-6: AC-6: existing consumers unchanged (notchCalculator deep-equals, countryRatingChangeWl)"
+        },
+        {
+          "at": "2026-10-13T12:56:44.111Z",
+          "author": "reviewer",
+          "text": "approve — no blocking items; nits only (readability, test style)"
+        },
+        {
+          "at": "2026-10-13T12:56:45.146Z",
+          "author": "blind",
+          "text": "approve — no blocking findings; two nits (threshold duplication is the recorded X-reuse decision)"
+        },
+        {
+          "at": "2026-10-13T12:56:46.942Z",
+          "author": "integrate",
+          "text": "the watchlist-poc suite on job/JOB-20261013-1448-indicator-13-external-rating after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "d92a895313de82860d8662fd5853b5e47eedc4ba",
+        "qa_branch": "f01daf631d861c5b0ff2886c598f57bb87aea31c",
+        "at": "2026-10-13T12:56:05Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "d92a895313de82860d8662fd5853b5e47eedc4ba",
+        "gate_head": "257f83ee8619c09e4a628c7611329a525343192b",
+        "qa_verify": "PASS",
+        "seconds": 1,
+        "suite_seconds": 0,
+        "suite": "node --test",
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/gates/T-01-qa-a1-145610.log",
+        "summary": "AC-1: AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; AC-2: AC-2: downgrades of 3, 4 and 18 notches return 2; AC-3: AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data); AC-4: AC-4: whitespace and mixed case are read as notchChange reads them; AC-5: AC-5: unknown rating in either position throws RangeError with the notchChange message; AC-6: AC-6: existing consumers unchanged (notchCalculator deep-equals, countryRatingChangeWl)",
+        "at": "2026-10-13T12:56:11Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "d92a895313de82860d8662fd5853b5e47eedc4ba",
+          "qa_verify": "PASS",
+          "summary": "AC-1: AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; AC-2: AC-2: downgrades of 3, 4 and 18 notches return 2; AC-3: AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data); AC-4: AC-4: whitespace and mixed case are read as notchChange reads them; AC-5: AC-5: unknown rating in either position throws RangeError with the notchChange message; AC-6: AC-6: existing consumers unchanged (notchCalculator deep-equals, countryRatingChangeWl)",
+          "at": "2026-10-13T12:56:11Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "d92a895313de82860d8662fd5853b5e47eedc4ba",
+          "summary": "no blocking items; nits only (readability, test style)",
+          "at": "2026-10-13T12:56:43Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "d92a895313de82860d8662fd5853b5e47eedc4ba",
+          "summary": "no blocking findings; two nits (threshold duplication is the recorded X-reuse decision)",
+          "at": "2026-10-13T12:56:44Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "d92a895313de82860d8662fd5853b5e47eedc4ba",
+        "summary": "blind: approve — no blocking findings; two nits (threshold duplication is the recorded X-reuse decision) | reviewer: approve — no blocking items; nits only (readability, test style)",
+        "pending": [],
+        "at": "2026-10-13T12:56:44Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "watchlist-poc",
+        "head": "08da5ca551d2cfa11adae13249bd86d2ac278102",
+        "seconds": 0,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/light/repo/.work/JOB-20261013-1448-indicator-13-external-rating/gates/T-01-merged-145646.log",
+        "n": 1,
+        "at": "2026-10-13T12:56:46Z"
+      }
+    }
+  ]
+}

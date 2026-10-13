@@ -1,0 +1,177 @@
+{
+  "id": "JOB-20261013-1542-investment-grade-check",
+  "title": "Investment grade check",
+  "request": "Requirements: /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-light2.md\nInvestment grade check — a small addition to the existing rating code\n\nThe rating scale lives in `src/ratings/notch.mjs`. Add one function to that file; nothing that exists changes.\n\n## Requirement\n\n- `isInvestmentGrade(rating)` → `true` for AAA down to BBB- (the first 10 steps of `RATING_SCALE`), `false` for BB+ down\n  to CCC-.\n- The rating is read exactly as `notchChange` reads it (trimmed, case-insensitive); anything else is rejected with the\n  same RangeError.\n- The existing exports and their behaviour stay as they are.\n\nPlain Node ESM, no dependencies; tests with `node --test` under `test/`, like the existing ones.",
+  "created": "2026-10-13T13:42:06Z",
+  "repo": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo",
+  "phase": "done",
+  "stack": [
+    "node"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "why": "Add one function to src/ratings/notch.mjs"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "Node ESM stack reviewer"
+    },
+    {
+      "role": "blind",
+      "agent": "ecc:code-reviewer",
+      "why": "isInvestmentGrade boundary BBB-/BB+ decides a classification (P1)"
+    }
+  ],
+  "assumptions": [],
+  "base_branch": "main",
+  "branch": "job/JOB-20261013-1542-investment-grade-check",
+  "integration_worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "837a1569b1dc2620a5115f6dee73afdaec9a34ca",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/gates/verify-all-155100.log",
+    "at": "2026-10-13T13:51:01Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 2,
+    "qa_early": true,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "qa_verify_full": true,
+    "test_design": {
+      "risk": true
+    },
+    "review": {
+      "blind": "risk"
+    },
+    "light": {
+      "max_cards": 2
+    },
+    "merge_verify": true,
+    "keep_awake": true,
+    "checkpoints": true,
+    "ports": {},
+    "record_job": true,
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false,
+      "convention_source": "the history: 0 of the last 6 commits are Conventional Commits — no convention"
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "06528d46a739dd2db0864311a0ad8e89dff7aca4",
+    "at": "2026-10-13T13:51:14Z"
+  },
+  "track": "light",
+  "tracks": [
+    {
+      "to": "light",
+      "why": "one function added to an existing file, no new dependency/data/UI/deployment decision, behaviour stated",
+      "at": "2026-10-13T13:42:16Z",
+      "quote": "Add one function to that file; nothing that exists changes."
+    }
+  ],
+  "pm_decisions": [
+    {
+      "at": "2026-10-13T13:42:16Z",
+      "what": "the light path: a small change to existing code (\"Add one function to that file; nothing that exists changes.\")",
+      "why": "one function added to an existing file, no new dependency/data/UI/deployment decision, behaviour stated"
+    }
+  ],
+  "checkpoint": {
+    "phase": "executing",
+    "merged": 0,
+    "events": 22,
+    "at": "2026-10-13T13:48:10Z"
+  },
+  "baseline": {
+    "result": "PASS",
+    "head": "1fb56150423d1a004bec53d06782c43bdef29329",
+    "command": "node --test",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/gates/baseline-154533.log",
+    "at": "2026-10-13T13:45:34Z"
+  },
+  "frozen": {
+    "readiness_sha256": "6eb8f00775f36393e6d0a122cd961b26f118ff618e7f3a5afaf4995ec2903350",
+    "at": "2026-10-13T13:45:34Z"
+  },
+  "followups": [
+    {
+      "text": "specs/T-01.md AC-3 parity hint notchChange(x,'AAA') <= 9 is always true; correct form is notchChange('AAA', x) <= 9",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-13T13:51:13Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "837a1569b1dc2620a5115f6dee73afdaec9a34ca",
+    "shared_pr": ""
+  },
+  "record_published": {
+    "head": "a5bd06e7bec1b7fb993e1b61b1edcfe20b7b9e9a",
+    "path": ".deliver/jobs/JOB-20261013-1542-investment-grade-check"
+  }
+}

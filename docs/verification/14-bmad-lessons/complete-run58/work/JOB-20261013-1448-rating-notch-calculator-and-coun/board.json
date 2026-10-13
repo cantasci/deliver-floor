@@ -1,0 +1,291 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Rating scale and notch calculator (src/ratings/notch.mjs)",
+      "role": "backend",
+      "component": "repo",
+      "context": "REQ-06-02. Create src/ratings/notch.mjs and test/ratings/notch.test.mjs. Plain Node 18+ ESM (.mjs), no npm deps (package.json untouched), pure functions, no I/O, no console.*, no module-level mutable state. Read CLAUDE.md first. node:test + node:assert/strict, TDD. Commit format 'T-xx: <what changed>'. The BA spec in specs/ holds all examples and the test design.\nExports: RATING_SCALE = Object.freeze of the 19 C1 ratings AAA,AA+,AA,AA-,A+,A,A-,BBB+,BBB,BBB-,BB+,BB,BB-,B+,B,B-,CCC+,CCC,CCC- (best first; no CC/C/D/SD/NR). notchChange(previous,current) = idx(current)-idx(previous) (downgrade positive; never -0, no Math.sign/negation). notchCalculator(previous,current) -> exactly {notches, direction:'downgrade'|'upgrade'|'unchanged', wl}; notches===notchChange; wl = n>=3?2 : n===2?1 : 0 (1-notch downgrade, upgrades, unchanged all 0). No shared threshold helper (Indicator 12 in T-02 differs). BBB+->BB+ is 3 notches/WL 2 (the POC text's 2/WL1 is wrong). Input rule: only primitive strings are candidates; x.trim().toUpperCase() then exact RATING_SCALE membership; anything else (null, undefined, numbers, objects, arrays, String objects, '', 'D', 'BBB +') throws RangeError, never TypeError; previous validated before current; message names the argument and the value (rendered safely).",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/**",
+        "test/ratings/**"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/integration/ratings/**"
+      ],
+      "qa_verify": "node --test test/integration/ratings/*.test.mjs",
+      "acceptance": [
+        "AC-1: RATING_SCALE deep-equals the 19 C1 ratings, frozen list → exact",
+        "AC-2: isFrozen true; push/index-set/reverse throw TypeError; scale unchanged",
+        "AC-3: notchChange = idx(current)-idx(previous), integer, never -0 → examples exact",
+        "AC-4: case and trim() whitespace accepted in either position → treated as scale value",
+        "AC-5: any non-scale/non-string input as previous or current → RangeError, never TypeError",
+        "AC-5: notchChange('X','Y') RangeError message contains 'previous' and 'X'",
+        "AC-6: notchCalculator downgrades → {notches,direction:'downgrade',wl 0/1/2 for 1/2/3+}; BBB+→BB+ = 3/WL2",
+        "AC-7: upgrades/unchanged → wl 0, notches signed, no -0",
+        "AC-10: all 361 pairs match the formula; antisymmetry; diagonal 0",
+        "AC-11: exports typeof ok; no output, no I/O import, no console, package.json unchanged"
+      ],
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-13T12:59:48Z"
+        }
+      ],
+      "worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/wt/T-01",
+      "branch": "job/JOB-20261013-1448-rating-notch-calculator-and-coun--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "fd177d1610abb15019de9400721a2648bfdb2cac",
+        "attempt": 1,
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/T-01-a1-150216.log",
+        "at": "2026-10-13T13:02:17Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-13T13:02:17.515Z",
+          "author": "gate",
+          "text": "PASS — 11 checks ok, 0 failed (T-01-a1-150216.log)"
+        },
+        {
+          "at": "2026-10-13T13:02:29.651Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1: AC-1 RATING_SCALE deep-equals the 19 C1 ratings; AC-2: AC-2 frozen, mutations throw TypeError; AC-3: AC-3 nine spec examples; AC-4: AC-4 case and trim whitespace tests; AC-5: AC-5 invalid values RangeError + X-error-message test; AC-6: AC-6 named examples incl. BBB+ to BB+ 3/WL2; AC-7: AC-7 upgrades and unchanged; AC-10: AC-10 all 361 pairs; AC-11: AC-11 purity tests (notch.purity.int.test.mjs)"
+        },
+        {
+          "at": "2026-10-13T13:03:06.701Z",
+          "author": "reviewer",
+          "text": "approve — no blocking items; nits only"
+        },
+        {
+          "at": "2026-10-13T13:03:07.644Z",
+          "author": "blind",
+          "text": "approve — 3 nits only, no blocking findings (trim/upper-case, WL cap, D/SD rejection are spec-mandated)"
+        },
+        {
+          "at": "2026-10-13T13:03:09.481Z",
+          "author": "integrate",
+          "text": "the repo suite on job/JOB-20261013-1448-rating-notch-calculator-and-coun after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "a3a7fd58eacc09f2de3244fec2cd460e65a65a59",
+        "qa_branch": "4f931e7f7f6b781a7e89179f90eddc571f80b876",
+        "at": "2026-10-13T13:02:22Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "a3a7fd58eacc09f2de3244fec2cd460e65a65a59",
+        "gate_head": "fd177d1610abb15019de9400721a2648bfdb2cac",
+        "qa_verify": "PASS",
+        "seconds": 0,
+        "suite_seconds": 1,
+        "suite": "npm test",
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/T-01-qa-a1-150228.log",
+        "summary": "AC-1: AC-1 RATING_SCALE deep-equals the 19 C1 ratings; AC-2: AC-2 frozen, mutations throw TypeError; AC-3: AC-3 nine spec examples; AC-4: AC-4 case and trim whitespace tests; AC-5: AC-5 invalid values RangeError + X-error-message test; AC-6: AC-6 named examples incl. BBB+ to BB+ 3/WL2; AC-7: AC-7 upgrades and unchanged; AC-10: AC-10 all 361 pairs; AC-11: AC-11 purity tests (notch.purity.int.test.mjs)",
+        "at": "2026-10-13T13:02:29Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "a3a7fd58eacc09f2de3244fec2cd460e65a65a59",
+          "qa_verify": "PASS",
+          "summary": "AC-1: AC-1 RATING_SCALE deep-equals the 19 C1 ratings; AC-2: AC-2 frozen, mutations throw TypeError; AC-3: AC-3 nine spec examples; AC-4: AC-4 case and trim whitespace tests; AC-5: AC-5 invalid values RangeError + X-error-message test; AC-6: AC-6 named examples incl. BBB+ to BB+ 3/WL2; AC-7: AC-7 upgrades and unchanged; AC-10: AC-10 all 361 pairs; AC-11: AC-11 purity tests (notch.purity.int.test.mjs)",
+          "at": "2026-10-13T13:02:29Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "a3a7fd58eacc09f2de3244fec2cd460e65a65a59",
+          "summary": "no blocking items; nits only",
+          "at": "2026-10-13T13:03:06Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "a3a7fd58eacc09f2de3244fec2cd460e65a65a59",
+          "summary": "3 nits only, no blocking findings (trim/upper-case, WL cap, D/SD rejection are spec-mandated)",
+          "at": "2026-10-13T13:03:07Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "a3a7fd58eacc09f2de3244fec2cd460e65a65a59",
+        "summary": "blind: approve — 3 nits only, no blocking findings (trim/upper-case, WL cap, D/SD rejection are spec-mandated) | reviewer: approve — no blocking items; nits only",
+        "pending": [],
+        "at": "2026-10-13T13:03:07Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "repo",
+        "head": "1324471bed6daa5da83bbf895db00679944e231c",
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/T-01-merged-150308.log",
+        "n": 1,
+        "at": "2026-10-13T13:03:09Z"
+      }
+    },
+    {
+      "id": "T-02",
+      "title": "Indicator 12 country rating change WL (src/indicators/countryRating.mjs)",
+      "role": "backend",
+      "component": "repo",
+      "context": "REQ-03-12. Create src/indicators/countryRating.mjs and test/indicators/countryRating.test.mjs. Depends on T-01 (notchChange validates and normalises both arguments). Plain Node 18+ ESM (.mjs), no npm deps (package.json untouched), pure functions, no I/O, no console.*, no module-level mutable state. Read CLAUDE.md first. node:test + node:assert/strict, TDD. Commit format 'T-xx: <what changed>'. The BA spec in specs/ holds all examples and the test design.\nExport countryRatingChangeWl(previous,current) -> primitive 0|1|2: import {notchChange} from '../ratings/notch.mjs'; n=notchChange(previous,current); return n>=2?2 : n===1?1 : 0. No copy of the scale, no own validation, let RangeError propagate, no try/catch; do not edit src/ratings/**. Thresholds differ from the calculator: BBB+->BBB gives 1 here, 0 in the calculator. Never -0.",
+      "depends_on": [
+        "T-01"
+      ],
+      "scope": [
+        "src/indicators/**",
+        "test/indicators/**"
+      ],
+      "verify": "node --test test/indicators/countryRating.test.mjs",
+      "qa_scope": [
+        "test/integration/indicators/**"
+      ],
+      "qa_verify": "node --test test/integration/indicators/*.test.mjs",
+      "acceptance": [
+        "AC-8: countryRatingChangeWl downgrades → 1 for 1 notch, 2 for 2+ (BBB+→BBB = 1)",
+        "AC-8: BBB+→BBB gives 1 here and calculator wl 0",
+        "AC-9: upgrade/unchanged → 0, never -0",
+        "AC-4: case and trim() whitespace accepted in either position",
+        "AC-5: any invalid input → RangeError from notchChange, never TypeError",
+        "AC-5: ('X','Y') message contains 'previous' and 'X', passed through unwrapped",
+        "AC-10: all 361 pairs match n>=2?2:n===1?1:0",
+        "AC-10: imports notchChange from ../ratings/notch.mjs, no scale copy, no own validation",
+        "AC-11: export is a function; no output, only import is notch.mjs, diff only in indicators, full suite passes"
+      ],
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-13T13:03:32Z"
+        }
+      ],
+      "worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/wt/T-02",
+      "branch": "job/JOB-20261013-1448-rating-notch-calculator-and-coun--T-02",
+      "gate": {
+        "result": "PASS",
+        "head": "df3dac23c1894ef93c94d9c6534a10cde331a021",
+        "attempt": 1,
+        "seconds": 0,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/T-02-a1-150548.log",
+        "at": "2026-10-13T13:05:48Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-13T13:05:49.304Z",
+          "author": "gate",
+          "text": "PASS — 16 checks ok, 0 failed (T-02-a1-150548.log)"
+        },
+        {
+          "at": "2026-10-13T13:05:57.020Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-8: countryRating.int.test.mjs spec examples + n=1..18 + C6 contrast; AC-9: countryRating.int.test.mjs Object.is +0 upgrade/unchanged; AC-4: countryRating.int.test.mjs case/whitespace kinds; AC-5: countryRating.int.test.mjs 32 invalid values RangeError + X message; AC-10: countryRating.int.test.mjs all 361 pairs, purity test source checks; AC-11: countryRating.purity.int.test.mjs child-process silence, only import notch.mjs"
+        },
+        {
+          "at": "2026-10-13T13:06:30.587Z",
+          "author": "reviewer",
+          "text": "approve — no blocking items; nits only (QA files are in qa_scope)"
+        },
+        {
+          "at": "2026-10-13T13:06:31.555Z",
+          "author": "blind",
+          "text": "approve — 3 nits only, no blocking findings"
+        },
+        {
+          "at": "2026-10-13T13:06:33.446Z",
+          "author": "integrate",
+          "text": "the repo suite on job/JOB-20261013-1448-rating-notch-calculator-and-coun after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "4b90e83cfa717a3527ffbbe8731695ad65cc5320",
+        "qa_branch": "335328baef2ece6ae22a57ba5b3e0a9525b097f2",
+        "at": "2026-10-13T13:05:55Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "4b90e83cfa717a3527ffbbe8731695ad65cc5320",
+        "gate_head": "df3dac23c1894ef93c94d9c6534a10cde331a021",
+        "qa_verify": "PASS",
+        "seconds": 1,
+        "suite_seconds": 0,
+        "suite": "npm test",
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/T-02-qa-a1-150555.log",
+        "summary": "AC-8: countryRating.int.test.mjs spec examples + n=1..18 + C6 contrast; AC-9: countryRating.int.test.mjs Object.is +0 upgrade/unchanged; AC-4: countryRating.int.test.mjs case/whitespace kinds; AC-5: countryRating.int.test.mjs 32 invalid values RangeError + X message; AC-10: countryRating.int.test.mjs all 361 pairs, purity test source checks; AC-11: countryRating.purity.int.test.mjs child-process silence, only import notch.mjs",
+        "at": "2026-10-13T13:05:56Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "4b90e83cfa717a3527ffbbe8731695ad65cc5320",
+          "qa_verify": "PASS",
+          "summary": "AC-8: countryRating.int.test.mjs spec examples + n=1..18 + C6 contrast; AC-9: countryRating.int.test.mjs Object.is +0 upgrade/unchanged; AC-4: countryRating.int.test.mjs case/whitespace kinds; AC-5: countryRating.int.test.mjs 32 invalid values RangeError + X message; AC-10: countryRating.int.test.mjs all 361 pairs, purity test source checks; AC-11: countryRating.purity.int.test.mjs child-process silence, only import notch.mjs",
+          "at": "2026-10-13T13:05:56Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "4b90e83cfa717a3527ffbbe8731695ad65cc5320",
+          "summary": "no blocking items; nits only (QA files are in qa_scope)",
+          "at": "2026-10-13T13:06:30Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "4b90e83cfa717a3527ffbbe8731695ad65cc5320",
+          "summary": "3 nits only, no blocking findings",
+          "at": "2026-10-13T13:06:31Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "4b90e83cfa717a3527ffbbe8731695ad65cc5320",
+        "summary": "blind: approve — 3 nits only, no blocking findings | reviewer: approve — no blocking items; nits only (QA files are in qa_scope)",
+        "pending": [],
+        "at": "2026-10-13T13:06:31Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "repo",
+        "head": "113c8db875e52a0b2436cfe5b994fe9de8edbd66",
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live/complete/repo/.work/JOB-20261013-1448-rating-notch-calculator-and-coun/gates/T-02-merged-150632.log",
+        "n": 2,
+        "at": "2026-10-13T13:06:33Z"
+      }
+    }
+  ]
+}

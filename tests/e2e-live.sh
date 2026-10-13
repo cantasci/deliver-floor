@@ -12,6 +12,10 @@
 #                 delivered, oracle passes. A question no prepared answer matches fails the scenario: a real person must answer.
 #     parallel    two independent requirements, "two backend developers in parallel" → two seats work at the same time
 #     models      one task; the request's Staffing says "the backend developer works on haiku" → judged from the transcripts
+#     light       a repo with the watchlist slice already delivered (no architecture.md); a small change (JOB-light.md) →
+#                 Michael takes the light path (no Lead, ≤ 2 cards), the human confirms the drafted architecture once and
+#                 it is committed; then a second small change (JOB-light2.md) settles its architecture from that file (B1, B2)
+#   Every scenario on 0.16.0 settings also judges the risk-based test design, the NFR gate and the blind review (B3, B4).
 #   Each writes <work dir>/<scenario>/report.md (the scenario, step by step) and keeps every artifact.
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
 #   E2E_MISMATCH=<readiness id>  the human first answers that item with an unrelated answer: Michael must not build on it,
@@ -22,13 +26,14 @@ set -uo pipefail
 # grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
 gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SC="${1:?usage: e2e-live.sh complete|incomplete|parallel|models [work dir]}"
+SC="${1:?usage: e2e-live.sh complete|incomplete|parallel|models|light [work dir]}"
 EXN=watchlist-poc; EX="$HERE/examples/$EXN"
 case $SC in
   complete)   REQ="$EX/JOB.md";            ORACLE=watchlist.oracle.test.mjs ;;
   incomplete) REQ="$EX/JOB-incomplete.md"; ORACLE=watchlist.oracle.test.mjs ;;
   parallel)   REQ="$EX/JOB-parallel.md";   ORACLE=parallel.oracle.test.mjs ;;
   models)     REQ="$EX/JOB-models.md";     ORACLE=models.oracle.test.mjs ;;
+  light)      REQ="$EX/JOB-light.md";      ORACLE=light.oracle.test.mjs ;;
   *) echo "unknown scenario: $SC" >&2; exit 2 ;;
 esac
 W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; W="$(cd "$W/$SC" && pwd)"
@@ -61,6 +66,11 @@ if [[ -n ${E2E_FRESH_REPO:-} ]]; then
   mkdir -p "$ISO_HOME/.deliver" && echo '{"dispatch":"subagent"}' > "$ISO_HOME/.deliver/config.json"
   [[ ! -f $SB/.deliver.json ]] && ok "fresh repo: no .deliver.json; ~/.deliver/config.json says dispatch subagent" || bad "sandbox wrote a .deliver.json"
 else iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null; fi
+if [[ $SC == light ]]; then   # an existing codebase: the slice JOB.md delivers, with its unit and QA tests
+  for d in T-01 T-02 QA-T-01 QA-T-02; do cp -R "$EX/reference/$d/." "$SB/"; done
+  git -C "$SB" add -A && git -C "$SB" commit -qm "watchlist: notch calculator and Indicator 12 (REQ-06-02, REQ-03-12)"
+  (cd "$SB" && node --test >/dev/null 2>&1) && ok "existing code in the repo: $(git -C "$SB" ls-files src test | grep -c .) files, its tests pass, no architecture.md" || bad "the seeded code's tests fail"
+fi
 if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
   git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"
@@ -88,6 +98,7 @@ fi
 # The human: whenever Michael stops with questions (in any scenario), each one is answered from HUMAN_ANSWERS.json —
 # matched by topic, recorded with dl clarify as a person in a terminal would — and the run resumes. A question no
 # prepared answer matches fails the scenario: a real person would have to answer it.
+human_rounds() { local J=$1 JJ=$1/job.json round
 for round in 1 2 3; do
   [[ "$(jq -r .phase "$JJ")" == awaiting_clarification ]] || break
   step "4.$round · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
@@ -104,6 +115,8 @@ for round in 1 2 3; do
   done < <(jq -r '(.items // .)[] | select(.status=="open" and .owner != "pm") | [.id, .question] | @tsv' "$J/readiness.json")
   run_rounds | sed 's/^/    /'
 done
+}
+human_rounds "$J"
 log "wall time: $(( ($(date +%s) - start) / 60 )) min"
 
 step "5 · verify the whole flow on disk"
@@ -144,7 +157,7 @@ for c in $(jq -r '.cards[] | select(.state=="merged") | .id' "$B"); do
   total="$(git -C "$SB" ls-files | wc -l)"; [[ $((total - n)) -gt 0 ]] && qa_files=$((qa_files + total - n))
 done
 [[ $qa_files -gt 0 ]] && ok "QA's integration tests are on main ($qa_files file(s) in the cards' qa_scope)" || bad "no QA test files on main"
-for a in business-analyst ecc:architect qa-tester; do grep -q $'\tagent\t'"$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
+for a in business-analyst $([[ $SC == light ]] || echo ecc:architect) qa-tester; do grep -q $'\tagent\t'"$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
 grep -qE $'\tagent\t(backend|frontend|mobile|database)-dev' "$J/events.log" && ok "role really ran: a dev agent" || bad "no dev agent run"
 grep -qE $'\tagent\tecc:[a-z-]*reviewer' "$J/events.log" && ok "role really ran: a stack reviewer" || bad "no reviewer run"
 ! grep -q $'\ttracker-error\t' "$J/events.log" && ok "no tracker errors" || bad "tracker errors in events.log"
@@ -210,6 +223,75 @@ if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
       && ok "the PR body lists his decisions" || bad "the PR body does not list the decisions"
     log "note: a dropped card leaves its requirement undelivered — the oracle result above shows the effect"
   fi
+fi
+# B3, B4 — 0.16.0: risk-based test design, the NFR gate, the blind review (a job on older settings has none of them)
+if [[ "$(jq -r '.settings.test_design.risk // false' "$JJ")" == true ]]; then
+  step "B3 · risk-based test design and the NFR gate"
+  RISK="$ISO_HOME/.claude/skills/deliver/bin/risk.mjs"
+  if pri="$(node "$RISK" plan "$J" 2>&1)"; then ok "every AC of the plan has a priority: $(jq -r 'map("\(.ac) \(.priority)") | join(", ")' <<<"$pri")"
+  else bad "plan priorities: $pri"; fi
+  chk "every card spec has a ## Test design" bash -c "for c in \$(jq -r '.cards[] | select(.state != \"archived\") | .id' '$B'); do grep -q '^## Test design' '$J/specs/'\$c.md || exit 1; done"
+  log ""; log "Test design of $(jq -r '[.cards[] | select(.state != "archived")][0].id' "$B"):"
+  sed -n '/^## Test design/,/^## /p' "$J/specs/$(jq -r '[.cards[] | select(.state != "archived")][0].id' "$B").md" | sed '$d' | sed 's/^/    /' >> "$REP"
+  log "QA verdicts (each must name every AC of its card — dl qa refuses otherwise):"
+  jq -r '.cards[] | select(.state=="merged") | "    - \(.id): \(.qa.summary // "-" | .[0:220])"' "$B" >> "$REP"
+  nfr="$(node "$RISK" nfr "$J" 2>/dev/null)"; log "decided NFR items: $(jq -r 'map(.id) | join(", ") | if . == "" then "none" else . end' <<<"$nfr")"
+  if [[ "$(jq length <<<"$nfr")" -gt 0 ]]; then
+    if rows="$(node "$RISK" report "$J" 2>&1)"; then ok "the report gives every decided NFR item a result: $(jq -r 'map("\(.id) \(.status)") | join(", ")' <<<"$rows" 2>/dev/null || echo "$rows")"
+    else bad "NFR rows in the report: $rows"; fi
+    grep -q '^## Non-functional requirements' "$J/plan.md" && ok "the plan says how each is checked (## Non-functional requirements)" || bad "the plan has no ## Non-functional requirements"
+    [[ "$(jq '(.waivers // []) | length' "$JJ")" -gt 0 ]] && log "waived: $(jq -r '[.waivers[] | "\(.id) — \(.why)"] | join("; ")' "$JJ")"
+  else log "NOT EXERCISED: no NFR item was decided in this job (all n/a)"; fi
+  step "B4 · the blind review"
+  mode="$(jq -r '.settings.review.blind // "off"' "$JJ")"; log "settings.review.blind: $mode"
+  for c in $(jq -r '.cards[] | select(.state=="merged") | .id' "$B"); do
+    top="$(node "$RISK" card "$J" "$c" 2>/dev/null | jq -r '.top // "-"')"
+    needs=no; [[ $mode == all || ( $mode == risk && ( $top == P0 || $top == P1 ) ) ]] && needs=yes
+    br="$(jq -c --arg c "$c" '[.cards[] | select(.id==$c) | .reviews[]? | select(.by=="blind")]' "$B")"
+    n="$(jq length <<<"$br")"
+    if [[ $needs == yes ]]; then
+      [[ $n -ge 1 ]] && ok "$c (top $top): reviewed blind $n time(s) — findings $(jq '[.[].triage[]?] | length' <<<"$br"): intended $(jq '[.[].triage[]? | select(.decision=="intended")] | length' <<<"$br"), defect $(jq '[.[].triage[]? | select(.decision=="defect")] | length' <<<"$br")" \
+        || bad "$c (top $top) needed a blind review and has none"
+      jq -r '.[].triage[]? | "    - [\(.decision)] \(.finding | .[0:140])" + (if .quote then " — quote: \(.quote | .[0:80])" else "" end)' <<<"$br" >> "$REP"
+    else log "$c (top $top): no blind review needed"; fi
+  done
+  grep -q $'\tagent\tecc:code-reviewer' "$J/events.log" && log "blind agent runs: $(grep -c $'\tagent\tecc:code-reviewer' "$J/events.log")"
+fi
+
+if [[ $SC == light ]]; then
+  step "B1 · the light path"
+  chk "Michael took the light path, with the request's words" jq -e '.tracks[0].to == "light" and any(.pm_decisions[]; .what | test("light path"))' "$JJ"
+  log "his reason: $(jq -r '[.pm_decisions[] | select(.what | test("light path"))][0] | "\(.what) — \(.why // "")" | .[0:240]' "$JJ")"
+  chk "…and stayed on it (no dl track full)" jq -e '.track == "light"' "$JJ"
+  log "readiness: $(jq '(.items // .) | length' "$J/readiness.json") items (the full path asks $(jq -n --slurpfile j "$JJ" '$j[0] | .track = "full"' > "$W/full-job.json" && mkdir -p "$W/fulljob" && cp "$W/full-job.json" "$W/fulljob/job.json" && node "$ISO_HOME/.claude/skills/deliver/bin/readiness.mjs" applicable "$W/fulljob" | jq length) for this repo)"
+  chk "no Lead role" jq -e '[.roles[].role] | all(test("lead") | not)' "$JJ"
+  chk "at most $(jq -r '.settings.light.max_cards' "$JJ") cards" bash -c "[[ \$(jq '[.cards[] | select(.state != \"archived\")] | length' '$B') -le \$(jq -r .settings.light.max_cards '$JJ') ]]"
+  step "B2 · the project's architecture, confirmed once and committed"
+  grep -q $'\tcontext\t' "$J/events.log" && log "context events: $(grep $'\tcontext\t' "$J/events.log" | cut -f3 | cut -c1-120 | tr '\n' ' ')"
+  log "ARC answers: $(jq -r '[(.items // .)[] | select(.id=="ARC-style" or .id=="ARC-components") | "\(.id): \(.status) (\(.source // "-"))"] | join("; ")' "$J/readiness.json")"
+  chk "architecture.md is on main" git -C "$SB" cat-file -e main:.deliver/knowledge/architecture.md
+  git -C "$SB" show main:.deliver/knowledge/architecture.md > "$W/architecture.md" 2>/dev/null
+  chk "…and dl context check passes on it" iso_env node "$ISO_HOME/.claude/skills/deliver/bin/context.mjs" check "$SB"
+  chk "the PR body says so (## Project architecture)" grep -q '## Project architecture' "$J/report.md"
+
+  step "B2 · a second small change settles its architecture from the file (JOB-light2.md)"
+  git -C "$SB" checkout -q main 2>/dev/null
+  run_rounds "$EX/JOB-light2.md" | sed 's/^/    /'
+  J2="$(ls -td "$SB"/.work/JOB-* | grep -v "^$J\$" | head -1)"
+  if [[ -n $J2 && $J2 != "$J" ]]; then
+    human_rounds "$J2"
+    JJ2="$J2/job.json"
+    chk "the second job reached done" test "$(jq -r .phase "$JJ2")" == done
+    chk "…on the light path" jq -e '.track == "light"' "$JJ2"
+    ! grep -qP "\tclarify\tARC-(style|components):" "$J2/events.log" && ok "the human was not asked about the architecture again" || bad "the human was asked about the architecture again"
+    fid="$(node "$ISO_HOME/.claude/skills/deliver/bin/context.mjs" components "$SB" 2>/dev/null | jq -c '[.[].id] | sort')"
+    rid="$(jq -c '[.architecture.components[].id] | sort' "$J2/readiness.json")"
+    [[ -n $fid && $(jq -n --argjson f "$fid" --argjson r "$rid" '$r - $f | length') == 0 ]] && ok "its components are the file's ($rid)" || bad "components $rid, the file has $fid"
+    if "$HERE/scripts/check-oracle.sh" "$SB" main "$EXN" light2.oracle.test.mjs > "$W/oracle2.log" 2>&1; then ok "hidden oracle of the second change passes ($(grep -c '✔' "$W/oracle2.log") checks)"
+    else bad "hidden oracle of the second change FAILED (oracle2.log)"; fi
+    "$HERE/scripts/check-oracle.sh" "$SB" main "$EXN" light.oracle.test.mjs > /dev/null 2>&1 && ok "…and the first change still passes its oracle" || bad "the second change broke the first"
+    cp "$J2/readiness.md" "$W/readiness2.md" 2>/dev/null; cp "$J2/report.md" "$W/job-report2.md" 2>/dev/null; cp "$J2/events.log" "$W/events2.log" 2>/dev/null
+  else bad "no second job was created"; fi
 fi
 cost="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | jq -s '[.[] | select(.type=="result") | .total_cost_usd // 0] | add // 0')"
 step "result"

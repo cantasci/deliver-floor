@@ -61,6 +61,25 @@ the request or the human settles — from a standard, where the standard states 
 document as the job sees it (shared ⊕ company ⊕ project). A standard that does not state it settles nothing: the item stays
 open and Michael asks the human.
 
+### The project's architecture is a standard too
+
+A repo with code already has an architecture; asking the human for it on every job (ARC-style and ARC-components shape the
+product) is waste, and guessing it from the code is what the readiness review forbids. So it is written down once, as a
+project standard: `.deliver/knowledge/architecture.md`.
+
+```text
+dl context draft      the components read from the repo's files — every folder with a manifest of its own (package.json,
+                      pyproject.toml, go.mod, pom.xml, build.gradle …) with its stack, path and suite; the style is left
+                      {{to fill in}}, so a draft is never a standard by mistake
+→ readiness review    the draft is an option of the ARC items, never their answer: the human confirms it (once)
+dl context propose    the confirmed file goes with this job's PR (dl ship commits it); merging it is the confirmation
+→ later jobs          the BA settles ARC-style / ARC-components from it: source "standard: architecture.md", quoted
+dl context check      a component whose path is gone → error (out of date); a project no component covers → warning
+```
+
+A component the request needs that the file does not list is new: still the human's to decide. The file holds facts the
+repo shows — components, commands, conventions — and nothing about how the code works: the agents read the code itself.
+
 ## 1a. Brand DNA: the visual identity
 
 ```bash

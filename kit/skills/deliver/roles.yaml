@@ -12,6 +12,7 @@
 # when:     selection rule (Michael decides at intake from the request + the repo)
 # always:   selected for every job
 # floor:    Munder Difflin look (character + accent) when the role runs on the office floor
+# blind:    a reviewer that sees the diff alone — its role card leaves out the kind's rules (no card, no spec to judge by)
 
 rules:
   all:
@@ -28,6 +29,9 @@ rules:
     - "Write Out of scope explicitly. Ask only open questions whose answer changes the scope."
     - "When the request contradicts itself, name the contradiction and the resolution you assume."
     - "A card spec covers every AC the card claims and nothing outside the card's scope."
+    - "Every AC carries a priority on its line, [P0] … [P3], by what its failure costs: P0 money or data lost, security, privacy or compliance broken, the core flow stopped, no workaround; P1 the core feature wrong, with a workaround or few users hit; P2 secondary behaviour, the edges of normal use; P3 cosmetic or rare. Name the cost in a few words for P0 and P1."
+    - "A card spec's \"## Test design\" lists every AC it claims with its priority, its level and its scenarios: P0 — the main path, every boundary and every error path, at the unit level (dev) and the integration/e2e level (QA); P1 — the main path and the key edges at the integration/e2e level; P2 — the main path at the integration/e2e level; P3 — the dev's unit test is enough (name it)."
+    - "Every decided non-functional requirement (readiness NFR-*: performance, security, availability, privacy, audit, observability …) goes into the plan's \"## Non-functional requirements\" with its target and how it is checked — a test, a measurement, a review."
     - "Scope, architecture (style, components, UI, API/middleware), new dependencies, data store, integrations and deployment are the product owner's: decide them only from the request's own words. When the request does not state one, mark it open, owner business, with options — a repo convention (CLAUDE.md, README, existing code) is at most one option, never the answer. You never ask the human: Michael is the single point of contact and asks them."
   lead:
     - "Do not write code or modify files. Produce cards only."
@@ -64,6 +68,7 @@ rules:
     - "If a criterion fails, keep the failing test committed as evidence and report it — do not fix the code."
     - "Change a test of yours only when it contradicts the spec — never to make the code pass — and report that change; it is recorded as a QA round before anyone else touches the card."
     - "Every AC gets a verdict, pass or fail, with the test that shows it."
+    - "Follow the spec's Test design: the scenarios it lists for each AC, at the level it names — a P0 criterion's boundaries and error paths each get a test; a P3 one may be covered by the dev's unit test (name it in your verdict)."
     - "Tests never depend on the state of the git working tree or of other cards' work (uncommitted files, git status, git log of the card): they test the product, the same in every worktree and on the job branch."
     - "Test the commit the gate passed (DEV'S COMMIT in your order); never search the history for it."
     - "Cards are tested in parallel on one machine: a server or port your tests start comes from DELIVER_PORT_BASE (its first of 50 ports; the usual port only when it is unset), never a fixed port — use the project's names for them (settings.ports, e.g. WEB_PORT, API_PORT) when it has them; DELIVER_RUN_ID names temporary data. For your own runs: eval \"$(dl env <card>)\" in the card worktree, eval \"$(dl env <card> --qa)\" in your QA worktree."
@@ -187,6 +192,19 @@ roles:
     floor:
       character: creed
       accent: slate
+
+  blind:
+    kind: review
+    blind: true
+    agent: ecc:code-reviewer
+    writes: false
+    when: "settings.review.blind: a card with a P0 or P1 acceptance criterion (risk — the default), every card (all), or none (off)"
+    does: "Reviews the change from the diff alone — no card, no spec, no QA result — so the code is judged on what it does, not on what it was meant to do. Michael checks each finding against the spec."
+    rules:
+      - "You get the diff and the worktree, nothing else — on purpose. Do not look for the card, the spec, the plan or the QA result (.work/, .deliver/jobs/): judge what the code does."
+      - "Report every defect you can show from the code: a wrong result, an input or error path not handled, a race, a leak, a security hole, a test that cannot fail. Each finding names file, line, what goes wrong and an input or a sequence that shows it."
+      - "Behaviour that looks deliberate but surprising is a finding too: say why it surprises. Michael checks it against the spec — intended or a defect."
+      - "No style, no naming, no taste: what the code does, and only that."
 
   qa:
     kind: qa

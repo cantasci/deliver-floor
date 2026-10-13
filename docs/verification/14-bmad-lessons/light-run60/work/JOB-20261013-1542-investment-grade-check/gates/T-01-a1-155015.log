@@ -1,0 +1,79 @@
+# gate: T-01  attempt: 1  2026-10-13T13:50:15Z
+ok    on job/JOB-20261013-1542-investment-grade-check--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/unit/ratings/investmentGrade.test.mjs"] (+ QA tests ["test/integration/ratings/investmentGrade.int.test.mjs","test/integration/ratings/notch.int.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/unit/ratings/investmentGrade.test.mjs test/unit/ratings/notch.test.mjs
+TAP version 13
+# Subtest: AC-1: investment-grade ratings return true
+ok 1 - AC-1: investment-grade ratings return true
+  ---
+  duration_ms: 0.429167
+  ...
+# Subtest: AC-1: speculative ratings return false
+ok 2 - AC-1: speculative ratings return false
+  ---
+  duration_ms: 0.102583
+  ...
+# Subtest: AC-1: all 19 canonical ratings covered, results are strict booleans
+ok 3 - AC-1: all 19 canonical ratings covered, results are strict booleans
+  ---
+  duration_ms: 0.770042
+  ...
+# Subtest: AC-2: boundary BBB- / BB+ and neighbours
+ok 4 - AC-2: boundary BBB- / BB+ and neighbours
+  ---
+  duration_ms: 0.0465
+  ...
+# Subtest: AC-3: padded and mixed-case input is normalised
+ok 5 - AC-3: padded and mixed-case input is normalised
+  ---
+  duration_ms: 0.04975
+  ...
+# Subtest: AC-3: parity with notchChange normalisation
+ok 6 - AC-3: parity with notchChange normalisation
+  ---
+  duration_ms: 0.056959
+  ...
+# Subtest: AC-4: unknown input throws RangeError with exact message, never false
+ok 7 - AC-4: unknown input throws RangeError with exact message, never false
+  ---
+  duration_ms: 0.427958
+  ...
+# Subtest: AC-4: no argument throws RangeError
+ok 8 - AC-4: no argument throws RangeError
+  ---
+  duration_ms: 0.05325
+  ...
+# Subtest: AC-4: error parity with notchChange
+ok 9 - AC-4: error parity with notchChange
+  ---
+  duration_ms: 0.320833
+  ...
+# Subtest: scale
+ok 10 - scale
+  ---
+  duration_ms: 0.396166
+  ...
+# Subtest: notch change
+ok 11 - notch change
+  ---
+  duration_ms: 0.189791
+  ...
+# Subtest: calculator
+ok 12 - calculator
+  ---
+  duration_ms: 0.334667
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.861167
+ok    verify passed

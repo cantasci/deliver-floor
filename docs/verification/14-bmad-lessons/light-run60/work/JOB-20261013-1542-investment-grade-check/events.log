@@ -1,0 +1,45 @@
+2026-10-13T13:42:06Z	new	Investment grade check
+2026-10-13T13:42:16Z	jobset	stack: .stack=["node"]
+2026-10-13T13:42:16Z	pm-decision	the light path: a small change to existing code ("Add one function to that file; nothing that exists changes.") — one function added to an existing file, no new dependency/data/UI/deployment decision, behaviour stated
+2026-10-13T13:42:17Z	track	light — one function added to an existing file, no new dependency/data/UI/deployment decision, behaviour stated
+2026-10-13T13:42:17Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend","agent":"backend-dev","why":"Add one function to src/ratings/notch.mjs"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"Node ESM stack reviewer"},{"role":"blind","agent":"ecc:code-reviewer","why":"isInvestmentGrade boundary BBB-/BB+ decides a classification (P1)"}]
+2026-10-13T13:42:18Z	roles	ba backend qa reviewer blind
+2026-10-13T13:42:18Z	phase	readiness
+2026-10-13T13:42:24Z	checkpoint	readiness, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T13:42:52Z	dispatch	business-analyst
+2026-10-13T13:43:52Z	agent	business-analyst aabcc64d06959b281: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"The change adds a check, isInvestmentGrade(rating), to the existing rating code. It says whethe
+2026-10-13T13:44:23Z	readiness	11 items: 9 decided, 1 n/a, 1 open
+2026-10-13T13:44:26Z	phase	awaiting_clarification
+2026-10-13T13:44:57Z	clarify	PRD-conflicts: (a): update only that assertion to [RATING_SCALE, isInvestmentGrade, notchCalculator, notchChange]; every other existing test stays as it is.
+2026-10-13T13:45:34Z	baseline	PASS (node --test)
+2026-10-13T13:45:34Z	freeze	readiness + architecture frozen (6eb8f00775f3)
+2026-10-13T13:45:34Z	roles	ba backend qa reviewer blind
+2026-10-13T13:45:34Z	phase	planning
+2026-10-13T13:45:38Z	checkpoint	planning, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T13:46:15Z	dispatch	business-analyst
+2026-10-13T13:47:26Z	agent	business-analyst a864dfc5e4c1272df: === PLAN === ## Goal Add one pure function, `isInvestmentGrade(rating)`, to `src/ratings/notch.mjs`. It says whether a rating on the existing 19-step `RATING_SC
+2026-10-13T13:48:06Z	phase	executing
+2026-10-13T13:48:10Z	checkpoint	executing, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T13:48:33Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-13T13:48:38Z	qa-start	T-01 → QA writes its tests in /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live3/light/repo/.work/JOB-20261013-1542-investment-grade-check/wt/T-01-qa (branch job/JOB-20261013-1542-investment-grade-check--T-01-qa) while the dev builds
+2026-10-13T13:48:48Z	dispatch	backend-dev
+2026-10-13T13:48:54Z	dispatch	qa-tester
+2026-10-13T13:49:30Z	agent	backend-dev a52fef92049c345cb: The card is implemented and committed, but I couldn't push it: the repo has no `origin` remote configured. The commit is local on the card branch and I left the
+2026-10-13T13:50:12Z	agent	qa-tester a8515f1fc93911685: QA-WRITE for T-01 is done: the tests are written and committed, but I could not push the branch. The `deliver bash-guard` hook refuses every `git push` from the
+2026-10-13T13:50:17Z	gate	T-01 PASS
+2026-10-13T13:50:22Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-13T13:50:23Z	qa	T-01 pass (qa_verify PASS) — AC-1: AC-1 all 19 ratings / named split / ends; AC-2: AC-2 boundary BBB-/BB+ and neighbours; AC-3: AC-3 padded/other-case + notchChange parity; AC-4: AC-4 RangeError rows + notchChange message parity; AC-5: AC-5 export list, RATING_SCALE frozen, notchChange/notchCalculator samples
+2026-10-13T13:50:34Z	dispatch	ecc:typescript-reviewer
+2026-10-13T13:50:38Z	dispatch	ecc:code-reviewer
+2026-10-13T13:50:44Z	agent	ecc:typescript-reviewer a86cb2461560739e5: ```json {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: the `9` in `indexOf(rating) <= 9` is a magic number. A named constant such as `LAST_I
+2026-10-13T13:50:48Z	agent	ecc:code-reviewer ac2f8a0843051b04b: {"findings":[{"file":"src/ratings/notch.mjs","line":18,"issue":"The boundary is the literal index 9. It is not derived from RATING_SCALE.indexOf('BBB-'). If a n
+2026-10-13T13:50:52Z	review	T-01 reviewer approve — approve; nits only (magic 9 per spec)
+2026-10-13T13:50:54Z	review	T-01 blind approve — no blocking findings; two nits (index 9 literal as specified, String() coercion parity)
+2026-10-13T13:50:55Z	integrate	T-01 merged
+2026-10-13T13:50:56Z	merge-check	T-01 PASS (repo suite)
+2026-10-13T13:51:00Z	phase	integrating
+2026-10-13T13:51:01Z	verify-all	PASS
+2026-10-13T13:51:01Z	phase	closing
+2026-10-13T13:51:13Z	followup	T-01: specs/T-01.md AC-3 parity hint notchChange(x,'AAA') <= 9 is always true; correct form is notchChange('AAA', x) <= 9
+2026-10-13T13:51:14Z	record	the job's record committed to job/JOB-20261013-1542-investment-grade-check: .deliver/jobs/JOB-20261013-1542-investment-grade-check/
+2026-10-13T13:51:15Z	ship	local merge into main

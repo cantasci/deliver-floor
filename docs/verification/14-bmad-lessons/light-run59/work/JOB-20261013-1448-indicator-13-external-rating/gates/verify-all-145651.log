@@ -1,0 +1,190 @@
+TAP version 13
+# Subtest: AC-3: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0 (every adjacent pair of the scale)
+ok 1 - AC-3: 1 notch → 1, 2+ → 2, upgrade/unchanged → 0 (every adjacent pair of the scale)
+  ---
+  duration_ms: 0.403208
+  ...
+# Subtest: AC-3: unknown ratings propagate RangeError
+ok 2 - AC-3: unknown ratings propagate RangeError
+  ---
+  duration_ms: 0.20425
+  ...
+# Subtest: AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; A → BBB+ returns 1
+ok 3 - AC-1: BBB+ → BBB- (+2 notches) returns exactly the number 1; A → BBB+ returns 1
+  ---
+  duration_ms: 0.482583
+  ...
+# Subtest: AC-1: boundaries — +1 notch gives 0 (not 1) and +3 gives 2 (not 1)
+ok 4 - AC-1: boundaries — +1 notch gives 0 (not 1) and +3 gives 2 (not 1)
+  ---
+  duration_ms: 0.059041
+  ...
+# Subtest: AC-1: every pair of RATING_SCALE with notchChange === 2 gives exactly 1
+ok 5 - AC-1: every pair of RATING_SCALE with notchChange === 2 gives exactly 1
+  ---
+  duration_ms: 0.157625
+  ...
+# Subtest: AC-2: downgrades of 3, 4 and 18 notches return 2 (BBB+→BB+, BBB+→BB, AAA→CCC-)
+ok 6 - AC-2: downgrades of 3, 4 and 18 notches return 2 (BBB+→BB+, BBB+→BB, AAA→CCC-)
+  ---
+  duration_ms: 0.045708
+  ...
+# Subtest: AC-2: every pair of RATING_SCALE with notchChange >= 3 gives the number 2
+ok 7 - AC-2: every pair of RATING_SCALE with notchChange >= 3 gives the number 2
+  ---
+  duration_ms: 0.971458
+  ...
+# Subtest: AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data)
+ok 8 - AC-3: 1-notch downgrade, no change and upgrades return 0 (spec data)
+  ---
+  duration_ms: 0.154833
+  ...
+# Subtest: AC-3: argument order matters — (BBB-, BBB+) is 0 while (BBB+, BBB-) is 1
+ok 9 - AC-3: argument order matters — (BBB-, BBB+) is 0 while (BBB+, BBB-) is 1
+  ---
+  duration_ms: 0.19675
+  ...
+# Subtest: AC-3: every pair of RATING_SCALE with notchChange <= 1 gives 0 (never a negative WL)
+ok 10 - AC-3: every pair of RATING_SCALE with notchChange <= 1 gives 0 (never a negative WL)
+  ---
+  duration_ms: 0.449709
+  ...
+# Subtest: AC-3: Indicator 13 differs from Indicator 12 exactly on the 1-notch downgrade
+ok 11 - AC-3: Indicator 13 differs from Indicator 12 exactly on the 1-notch downgrade
+  ---
+  duration_ms: 0.374083
+  ...
+# Subtest: AC-4: whitespace and mixed case are read as notchChange reads them
+ok 12 - AC-4: whitespace and mixed case are read as notchChange reads them
+  ---
+  duration_ms: 0.301
+  ...
+# Subtest: AC-4: inner whitespace is not trimmed — "BBB +" throws RangeError
+ok 13 - AC-4: inner whitespace is not trimmed — "BBB +" throws RangeError
+  ---
+  duration_ms: 0.258959
+  ...
+# Subtest: AC-5: unknown rating in either position throws RangeError with the notchChange message
+ok 14 - AC-5: unknown rating in either position throws RangeError with the notchChange message
+  ---
+  duration_ms: 0.072416
+  ...
+# Subtest: AC-5: off-scale and empty inputs throw RangeError in both positions, message equal to notchChange's
+ok 15 - AC-5: off-scale and empty inputs throw RangeError in both positions, message equal to notchChange's
+  ---
+  duration_ms: 0.470208
+  ...
+# Subtest: AC-5: Moody's notation (Baa1 → BBB) throws RangeError, no fallback value
+ok 16 - AC-5: Moody's notation (Baa1 → BBB) throws RangeError, no fallback value
+  ---
+  duration_ms: 0.038833
+  ...
+# Subtest: AC-6: Indicator 13 module imports only notchChange from ../ratings/notch.mjs
+ok 17 - AC-6: Indicator 13 module imports only notchChange from ../ratings/notch.mjs
+  ---
+  duration_ms: 1.100958
+  ...
+# Subtest: AC-6: existing consumers are unchanged — notchCalculator and countryRatingChangeWl still behave as before
+ok 18 - AC-6: existing consumers are unchanged — notchCalculator and countryRatingChangeWl still behave as before
+  ---
+  duration_ms: 0.360375
+  ...
+# Subtest: AC-2: BBB+ → BB+ = {"notches":3,"direction":"downgrade","wl":2}
+ok 19 - AC-2: BBB+ → BB+ = {"notches":3,"direction":"downgrade","wl":2}
+  ---
+  duration_ms: 0.588416
+  ...
+# Subtest: AC-2: BBB+ → BBB- = {"notches":2,"direction":"downgrade","wl":1}
+ok 20 - AC-2: BBB+ → BBB- = {"notches":2,"direction":"downgrade","wl":1}
+  ---
+  duration_ms: 0.055459
+  ...
+# Subtest: AC-2: BBB+ → BBB = {"notches":1,"direction":"downgrade","wl":0}
+ok 21 - AC-2: BBB+ → BBB = {"notches":1,"direction":"downgrade","wl":0}
+  ---
+  duration_ms: 0.514834
+  ...
+# Subtest: AC-2: BB → BBB = {"notches":-3,"direction":"upgrade","wl":0}
+ok 22 - AC-2: BB → BBB = {"notches":-3,"direction":"upgrade","wl":0}
+  ---
+  duration_ms: 0.234708
+  ...
+# Subtest: AC-2: AA → AA = {"notches":0,"direction":"unchanged","wl":0}
+ok 23 - AC-2: AA → AA = {"notches":0,"direction":"unchanged","wl":0}
+  ---
+  duration_ms: 0.069041
+  ...
+# Subtest: AC-1: the module exports the contract
+ok 24 - AC-1: the module exports the contract
+  ---
+  duration_ms: 0.184667
+  ...
+# Subtest: AC-1: trimmed, case-insensitive; unknown → RangeError
+ok 25 - AC-1: trimmed, case-insensitive; unknown → RangeError
+  ---
+  duration_ms: 0.20125
+  ...
+# Subtest: Ind. 12 thresholds
+ok 26 - Ind. 12 thresholds
+  ---
+  duration_ms: 0.332625
+  ...
+# Subtest: 2-notch downgrade gives WL 1
+ok 27 - 2-notch downgrade gives WL 1
+  ---
+  duration_ms: 0.360666
+  ...
+# Subtest: 3+ notch downgrade gives WL 2
+ok 28 - 3+ notch downgrade gives WL 2
+  ---
+  duration_ms: 0.176666
+  ...
+# Subtest: 1-notch downgrade, unchanged and upgrades give WL 0
+ok 29 - 1-notch downgrade, unchanged and upgrades give WL 0
+  ---
+  duration_ms: 0.062875
+  ...
+# Subtest: argument order matters
+ok 30 - argument order matters
+  ---
+  duration_ms: 0.045541
+  ...
+# Subtest: whitespace and case are read as notchChange reads them
+ok 31 - whitespace and case are read as notchChange reads them
+  ---
+  duration_ms: 0.102625
+  ...
+# Subtest: unknown rating throws RangeError with notchChange message
+ok 32 - unknown rating throws RangeError with notchChange message
+  ---
+  duration_ms: 0.35275
+  ...
+# Subtest: off-scale and empty inputs throw the same error as notchChange
+ok 33 - off-scale and empty inputs throw the same error as notchChange
+  ---
+  duration_ms: 0.904917
+  ...
+# Subtest: scale
+ok 34 - scale
+  ---
+  duration_ms: 0.378
+  ...
+# Subtest: notch change
+ok 35 - notch change
+  ---
+  duration_ms: 0.194
+  ...
+# Subtest: calculator
+ok 36 - calculator
+  ---
+  duration_ms: 0.342208
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 84.518792
