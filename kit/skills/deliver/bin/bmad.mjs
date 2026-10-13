@@ -234,7 +234,14 @@ export function finish(jobDir, rc, seconds) {
       status: kind === "conflict" ? "noted" : "open", ...extra });
   };
   const bad = (why) => { run.status = "invalid"; run.error = why; };
-  if (!json) bad(Number(rc) ? `the session failed (rc ${rc}) — see ${rel(jobDir, logPath)}.err` : "no JSON at the end of BMad's answer");
+  // Seen live: Claude Code does not hand its own sign-in (CLAUDE_CODE_OAUTH_TOKEN) to the commands it runs — the BMad session
+  // said "Not logged in" in two seconds. Say what it is, not "no JSON".
+  const said = String(raw?.result ?? "");
+  if (raw?.is_error && /not logged in|\/login|invalid api key|authentication/i.test(said))
+    bad(`the BMad session is not signed in to Claude ("${said.slice(0, 80)}") — a /login of this machine's Claude Code is enough; signed in with a token in the environment (CI, headless), point DELIVER_CLAUDE_TOKEN_FILE at a file holding it: Claude Code does not pass its own token to the commands it runs`);
+  else if (raw?.is_error && said) bad(`the BMad session ended with an error: ${said.slice(0, 160)}`);
+  else if (!json) bad(Number(rc) ? `the session failed (rc ${rc}) — see ${rel(jobDir, logPath)}.err` : "no JSON at the end of BMad's answer");
+  else if (run.status === "invalid") { /* judged above */ }
   else if (r.step === "help") {
     const seq = (json.sequence ?? []).filter((x) => /^bmad-[a-z-]+$/.test(x?.skill ?? ""));
     const mine = seq.filter((x) => !OURS.test(x.skill));

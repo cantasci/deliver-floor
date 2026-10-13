@@ -1016,8 +1016,11 @@ shape_run() {
   # Its own session, not a subagent of Michael's: BMad's skills run their reviewers as subagents, which a subagent cannot start.
   # The hooks know it by DELIVER_SHAPING: it writes only its output folder, runs no dl and does not commit. Detached, so a long
   # run outlives this tool call; dl shape wait picks it up.
-  nohup bash -c 'cd "$1" && DELIVER_SHAPING="$2" claude -p "$(cat "$3")" --permission-mode "$4" --output-format json ${5:+--model "$5"} < /dev/null > "$6" 2> "$7"; echo $? > "$8"' \
-    _ "$ROOT" "$JOB" "$prompt" "$mode" "$model" "$log" "${log%.json}.err" "${log%.json}.rc" > /dev/null 2>&1 &
+  # Claude Code does not pass its own token to the commands it runs: signed in by a token in the environment, the BMad session
+  # gets it from DELIVER_CLAUDE_TOKEN_FILE (a /login of this machine needs nothing)
+  local tokf=${DELIVER_CLAUDE_TOKEN_FILE:-}; [[ -z $tokf || -r $tokf ]] || refuse 1 "DELIVER_CLAUDE_TOKEN_FILE ($tokf) is not readable"
+  nohup bash -c 'cd "$1" && { [[ -z $9 ]] || export CLAUDE_CODE_OAUTH_TOKEN="$(tr -d "[:space:]" < "$9")"; } && DELIVER_SHAPING="$2" claude -p "$(cat "$3")" --permission-mode "$4" --output-format json ${5:+--model "$5"} < /dev/null > "$6" 2> "$7"; echo $? > "$8"' \
+    _ "$ROOT" "$JOB" "$prompt" "$mode" "$model" "$log" "${log%.json}.err" "${log%.json}.rc" "$tokf" > /dev/null 2>&1 &
   echo $! > "$JOB_DIR/bmad/runs/.pid"; date +%s > "$JOB_DIR/bmad/runs/.started"
   log_event shape "run $name started"
   echo "BMad: $name — started in its own session"

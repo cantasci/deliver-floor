@@ -45,6 +45,12 @@ W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; 
 export ISO_HOME="$W/home"; mkdir -p "$ISO_HOME"
 . "$HERE/tests/lib-isolated-claude.sh"
 export PERMISSION_MODE="${PERMISSION_MODE:-bypassPermissions}" IS_SANDBOX=1
+# Claude Code does not hand its token to the commands it runs: the BMad sessions dl shape run starts get it from a file
+if [[ -n ${CLAUDE_CODE_OAUTH_TOKEN:-} && -z ${DELIVER_CLAUDE_TOKEN_FILE:-} ]]; then
+  DELIVER_CLAUDE_TOKEN_FILE="$(mktemp "${TMPDIR:-/tmp}/deliver-e2e-token.XXXXXX")"; chmod 600 "$DELIVER_CLAUDE_TOKEN_FILE"
+  printf '%s' "$CLAUDE_CODE_OAUTH_TOKEN" > "$DELIVER_CLAUDE_TOKEN_FILE"; export DELIVER_CLAUDE_TOKEN_FILE
+  trap 'rm -f "$DELIVER_CLAUDE_TOKEN_FILE"' EXIT
+fi
 export GIT_AUTHOR_NAME=e2e GIT_AUTHOR_EMAIL=e2e@example.com GIT_COMMITTER_NAME=e2e GIT_COMMITTER_EMAIL=e2e@example.com
 REP="$W/report.md"; : > "$REP"
 log()  { printf '%s\n' "$*" | tee -a "$REP"; }

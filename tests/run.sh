@@ -2061,6 +2061,9 @@ cat > "$SHB/claude" <<'FAKE'
 #!/bin/bash
 p=""; while [[ $# -gt 0 ]]; do case $1 in -p) p=$2; shift 2 ;; *) shift ;; esac; done
 echo "claude shaping=${DELIVER_SHAPING:-none}" >> "$FAKE_LOG"
+if [[ -n ${FAKE_NEED_TOKEN:-} && ${CLAUDE_CODE_OAUTH_TOKEN:-} != "$FAKE_NEED_TOKEN" ]]; then   # signed in by a token Claude Code does not pass on
+  jq -n '{type:"result",subtype:"success",is_error:true,result:"Not logged in · Please run /login",total_cost_usd:0}'; exit 1
+fi
 O=".work/$DELIVER_SHAPING/bmad/out"; S="$O/specs/spec-x"; A="$O/planning-artifacts/architecture/arch-x"
 res() { jq -n --arg r "$1" '{type:"result",subtype:"success",result:$r,total_cost_usd:0.1}'; }
 n() { local c; c=$(( $(cat "$FAKE_DIR/$1" 2>/dev/null || echo 0) + 1 )); echo $c > "$FAKE_DIR/$1"; echo $c; }
@@ -2117,13 +2120,17 @@ contains "dl shape install: the pinned BMad, into the repo" "$(PATH="$SHB:$PATH"
 grep -q "bmad-method@6.12.2 install --yes --modules bmm --tools claude-code --output-folder .work/$SJN/bmad/out" "$FAKE_LOG" && ok "…pinned, headless, its output folder inside the job" || bad "npx: $(cat "$FAKE_LOG")"
 grep -qxF "/_bmad/" "$(git rev-parse --git-path info/exclude)" && [[ -z "$(git status --porcelain)" ]] && ok "…outside git: the repo's status is clean" || bad "git status: $(git status --porcelain)"
 [[ -f $SJ/bmad/inputs/request.md && -f $SJ/bmad/inputs/delivery-checklist.yaml ]] && ok "…the input package: the request and our delivery checklist" || bad "inputs: $(ls "$SJ/bmad/inputs")"
-out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+out="$(FAKE_NEED_TOKEN=tok-1 PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "a BMad session that is not signed in says so, and what to do (seen live: Claude Code does not pass its token on)" "$out" "the BMad session is not signed in to Claude"
+printf 'tok-1\n' > "$TMP/tokfile"; chmod 600 "$TMP/tokfile"
+out="$(FAKE_NEED_TOKEN=tok-1 DELIVER_CLAUDE_TOKEN_FILE="$TMP/tokfile" PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+[[ $out != *"not signed in"* ]] && ok "…DELIVER_CLAUDE_TOKEN_FILE signs it in (the token goes to BMad's session only)" || bad "token file: $out"
 contains "a BMad run that ends without its JSON is not used" "$out" "no JSON at the end of BMad's answer"
 contains "…and is tried again" "$("$DL" next)" "SHAPE   dl shape run  (BMad: help"
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 contains "bmad-help chooses BMad's own path; the review is ours, not in its sequence" "$out" "its path: bmad-spec → bmad-architecture"
 grep -q "claude shaping=$SJN" "$FAKE_LOG" && ok "…in its own session, marked for the hooks (DELIVER_SHAPING)" || bad "fake log: $(cat "$FAKE_LOG")"
-grep -q "a checklist, not instructions" "$SJ"/bmad/runs/02-help.prompt.md && ok "…dl wrote its prompt: the request, the repo, our checklist as information" || bad "prompt: $(ls "$SJ"/bmad/runs)"
+grep -q "a checklist, not instructions" "$SJ"/bmad/runs/03-help.prompt.md && ok "…dl wrote its prompt: the request, the repo, our checklist as information" || bad "prompt: $(ls "$SJ"/bmad/runs)"
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 contains "bmad-spec: what it asked goes into the ledger" "$out" "question: Is WL 0 right for a 1-notch downgrade?"
 contains "…and what it decided on its own (its memlog), for the human — nothing it decides binds by itself" "$out" "decision: Scale has 22 steps including CC, C and D"

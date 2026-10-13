@@ -226,6 +226,9 @@ if [[ -n $repo ]]; then
     vge "$(node -p process.versions.node 2>/dev/null || echo 0)" 20.12.0 && pass "shaping with BMad $bv: Node $(node -p process.versions.node) (20.12+ needed)" \
       || fail "shaping with BMad $bv needs Node 20.12 or later (this: $(node -p process.versions.node 2>/dev/null || echo none))"
     have npx && pass "npx installs it (dl shape install, needs the npm registry)" || fail "npx is not on PATH — dl shape install runs npx bmad-method@$bv"
+    if [[ -n ${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-} && -z ${DELIVER_CLAUDE_TOKEN_FILE:-} ]]; then
+      note "Claude Code is signed in by a token in the environment, which it does not pass to the commands it runs: BMad's sessions would not be signed in — set DELIVER_CLAUDE_TOKEN_FILE to a file holding the token (docs/12-shaping.md)"
+    fi
     have uv && pass "uv runs its skills' scripts" || note "uv is not installed — some BMad skills run their scripts with it (https://docs.astral.sh/uv/)"
     git -C "$repo" ls-files --error-unmatch _bmad >/dev/null 2>&1 && fail "this repo keeps its own BMad install in git (_bmad/) — shaping does not support that yet (docs/OPEN.md)"
   fi

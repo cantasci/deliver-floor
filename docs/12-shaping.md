@@ -61,6 +61,11 @@ what the business had decided (a 22-step rating scale, "unavailable" instead of 
 
 Needs Node 20.12+, `npx` (the npm registry) and, for some BMad skills, `uv`; `scripts/doctor.sh <repo>` checks them.
 
+**Signing in.** BMad's sessions are Claude Code sessions of their own. A `/login` of this machine is enough. Signed in by a
+token in the environment instead (CI, a headless runner: `CLAUDE_CODE_OAUTH_TOKEN`), they are not: Claude Code does not pass
+its own token to the commands it runs (seen live: "Not logged in" in two seconds). Point `DELIVER_CLAUDE_TOKEN_FILE` at a file
+that holds the token (`chmod 600`); `dl shape run` hands it to BMad's session only.
+
 ## Limits
 
 - A repo that keeps its own BMad install in git (`_bmad/`) is refused for now: shaping installs a pinned one outside git.
