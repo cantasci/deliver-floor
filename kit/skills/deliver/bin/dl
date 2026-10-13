@@ -416,7 +416,7 @@ cmd_new() {
   command -v node >/dev/null || die "node is required"
   if [[ -f "$WORK/ACTIVE" ]]; then
     local cur; cur="$(cat "$WORK/ACTIVE")"
-    [[ -f "$WORK/$cur/job.json" ]] && refuse 1 "job $cur is still active (phase $(jq -r .phase "$WORK/$cur/job.json")). Finish it, or the human stops it with /deliver:abort <why>"
+    [[ -f "$WORK/$cur/job.json" && ! "$(jq -r .phase "$WORK/$cur/job.json")" =~ ^(done|aborted)$ ]] && refuse 1 "job $cur is still active (phase $(jq -r .phase "$WORK/$cur/job.json")). Finish it, or the human stops it with /deliver:abort <why>"
   fi
   local slug id base
   slug="$(node -e 'const s=process.argv[1].replace(/ı/g,"i").replace(/İ/g,"i").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,32).replace(/-$/,"");console.log(s||"job")' "$title")"
@@ -553,6 +553,7 @@ cmd_next() {
   if [[ $phase =~ ^(intake|readiness|awaiting_clarification)$ ]] && jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null; then
     local cx crc=0; cx="$(node "$BIN_DIR/context.mjs" check "$ROOT" 2>&1)" || crc=$?
     if [[ $crc -eq 2 && ! -f $JOB_DIR/context.draft.md ]]; then echo "CONTEXT dl context draft — this repo has code but no project architecture yet: drafted from its files for the readiness review (the human confirms it once; dl context propose commits it with this PR)"
+    elif context_unproposed; then echo "CONTEXT the human confirmed the architecture: dl context propose <the confirmed file> ($JOB_DIR/context.draft.md with their answers) — before planning"
     elif [[ $crc -eq 1 && ! -f $JOB_DIR/context.md ]]; then echo "CONTEXT the project architecture is out of date ($(grep -m1 '^ERROR' <<<"$cx" | cut -c7-140)) — the readiness review confirms the change; dl context propose <updated file>"
     fi
   fi
@@ -693,6 +694,8 @@ cmd_phase() {
         [[ $rr -eq 3 ]] && why="open questions for the human remain (QUESTIONS.md) — ask, record with dl clarify"
         [[ $rr -eq 4 ]] && why="implementation details are open — decide them as PM: dl decide <id> \"<decision>\" \"<rationale>\""
         [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $why"
+        # seen live: the human confirmed the architecture and it was never written down — the next job would ask again
+        ! context_unproposed || refuse 1 "the human confirmed the project's architecture — write it down first: dl context propose <the confirmed file> ($JOB_DIR/context.draft.md with their answers); dl ship commits it with this PR"
         baseline_holds ;;
       awaiting_plan_approval)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
@@ -886,6 +889,11 @@ cmd_track() {
 # (.deliver/knowledge/architecture.md, bin/context.mjs). draft: read from the repo's files, into the job's folder, for the
 # readiness review — the human confirms it once (the ARC items), and the confirmed file is proposed with this job's PR
 # (propose; dl ship commits it). From then on the BA settles the architecture from it, quoted (source "standard: …").
+# the human confirmed the drafted architecture (ARC-style / ARC-components answered by them) and it is not proposed yet
+context_unproposed() {
+  [[ -f $JOB_DIR/context.draft.md && ! -f $JOB_DIR/context.md && ! -f $ROOT/.deliver/knowledge/architecture.md && -f $JOB_DIR/readiness.json ]] || return 1
+  jq -e '[(.items // .)[] | select((.id == "ARC-style" or .id == "ARC-components") and ((.source // "") | startswith("human")))] | length > 0' "$JOB_DIR/readiness.json" >/dev/null
+}
 cmd_context() {
   resolve_root
   local sub=${1:-check}

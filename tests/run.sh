@@ -1960,6 +1960,14 @@ expect_ok "no Lead on the light path: the roles are valid" "$DL" phase readiness
 ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/nope/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
 contains "the light path changes existing components only" "$("$DL" readiness 2>&1)" "none of its paths exists in the repo — the light path changes existing components only"
 ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
+# seen live: the human confirmed the drafted architecture and Michael planned without writing it down
+"$DL" context draft >/dev/null
+jq '(.items[] | select(.id=="ARC-components")) |= (.source = "human: e2e-human 2026-10-13" | del(.quote))' "$LJ/readiness.json" > "$LJ/r.t" && mv "$LJ/r.t" "$LJ/readiness.json"
+contains "dl next: the human confirmed the architecture → propose it" "$("$DL" next)" "CONTEXT the human confirmed the architecture"
+contains "planning waits until the confirmed architecture is written down" "$("$DL" phase planning 2>&1)" "dl context propose <the confirmed file>"
+sed 's/^{{.*}}$/library: one price module/' "$LJ/context.draft.md" > "$TMP/light-arch.md"
+contains "…proposed" "$("$DL" context propose "$TMP/light-arch.md" 2>&1)" "proposed"
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all   # the fixture's answers again (the later steps re-answer them)
 expect_ok "light readiness complete → planning" "$DL" phase planning
 contains "dl next: the BA plans and cuts the cards in one step" "$("$DL" next)" "(light) BA MODE LIGHT"
 printf '# Plan\n## Acceptance criteria\n- AC-1: rounded\n' > "$LJ/plan.md"
@@ -1981,6 +1989,10 @@ contains "…but a decision frozen on the light path does not change" "$("$DL" r
 ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
 expect_ok "the full readiness on top of the light one → planning (frozen again)" "$DL" phase planning
 jq -e '.frozen.readiness_sha256 and (.tracks | length == 2)' "$LJ/job.json" >/dev/null && ok "…both paths in the job's record" || bad "tracks: $(jq -c .tracks "$LJ/job.json")"
+contains "an unfinished job blocks a new request" "$("$DL" new "Tax" "Round every tax to two decimals" 2>&1)" "is still active"
+jq '.phase = "done" | .shipped = true' "$LJ/job.json" > "$LJ/j.t" && mv "$LJ/j.t" "$LJ/job.json"
+"$DL" new "Tax" "Round every tax to two decimals" >/dev/null 2>&1; [[ "$(cat .work/ACTIVE)" == *-tax ]] \
+  && ok "a finished one does not (seen live: the second request in a repo resumed the first, done job)" || bad "after a done job: $(cat .work/ACTIVE)"
 cd "$R"
 
 echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"

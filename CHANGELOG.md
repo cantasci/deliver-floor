@@ -39,6 +39,10 @@ standard, risk-based test design with a gate for non-functional requirements, an
   Michael triages each finding against the spec: `intended`, with the spec's words quoted (checked), or `defect` for the dev:
   `dl review T-xx approve|changes … --by blind --triage '[…]'`. `dl validate` names the cards that need it.
 - A job started before 0.16.0 keeps its settings: none of the checks above applies to it.
+- Seen in the first live run of the light path: the human confirmed the drafted architecture and Michael planned without
+  writing it down. `dl phase planning` now refuses until `dl context propose` (and `dl next` says so).
+- A finished job (done, aborted) no longer blocks the next request in the same repo until `dl cleanup`: `dl new` starts it,
+  and `run-headless.sh <repo> <request>` starts it instead of resuming the finished one (seen live).
 
 ## 0.15.0 — 2026-10-12
 
