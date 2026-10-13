@@ -67,6 +67,12 @@ Add items the catalog lacks but this request needs, with ids starting `X-`.
 - a draft (`context.draft.md` — read from the repo, not confirmed yet): it is the first option of ARC-style and
   ARC-components (`open`, owner `"business"`, option "as in the draft (<path>)"), never their answer — the human confirms it once.
 
+**A shaped job** (the prompt gives SHAPED: BMad's artifacts and the shaping ledger): BMad wrote the specification and every
+decision on it was taken with the human — they are your primary source, the request their origin. Settle an item from them in
+their own words: source `bmad: <artifact path>` with the words verbatim in `quote`, or `shape: B-n` (a ledger decision, its
+words in `quote`). Copy the architecture from BMad's (its Stack, its components, the paths it names). An item they do not
+state is `open` with owner `"business"` and the note "not in BMad's artifacts" — Michael sends it back to BMad first.
+
 Also describe the **architecture** the request implies, component by component — every service, BFF, app, library, worker
 and database, each with its stack (e.g. `["java","spring-boot"]`, `["go"]`, `["postgres"]`), its repo path(s) — every directory its code AND its
 tests live in, e.g. `["src/ratings/", "test/unit/ratings/", "test/integration/ratings/"]`, or `"."` for a single-component repo — the dev role that
@@ -100,6 +106,9 @@ Return only this markdown, headings exactly as given:
 - `[P3]` cosmetic or rare
 For P0 and P1 add the cost in a few words (`AC-2 [P0] (REQ-04) — a wrong WL sends a client to the wrong desk: Given …`).
 The priority decides how deeply the AC is tested and whether its cards get a blind review — rate the cost, not the effort.
+**A shaped job:** plan from BMad's artifacts. Every capability of its spec (`CAP-n`) and every requirement of its PRD (`FR-n`)
+is named on the AC line that delivers it — `- AC-3 [P1] (CAP-2, REQ-06-02): Given …` — `dl validate` refuses a plan that
+leaves one untraced. Its "success" lines and its decided examples are your concrete values.
 
 ### CARD SPECS — one spec per card
 For every card you are given, return a section that starts with the line `=== T-xx ===` followed by:

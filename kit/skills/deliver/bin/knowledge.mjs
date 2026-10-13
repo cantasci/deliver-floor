@@ -110,8 +110,9 @@ function readDir(dir, origin) {
 
 export function collect(repo, jobDir) {
   const byName = new Map();
+  // the job's own standards (.work/<job>/standards/ — the architecture rules shaped with the business) bind this job only
   for (const d of [...(sharedDir() ? readDir(join(sharedDir(), "standards"), "shared") : []), ...readDir(orgDir(), "company"),
-    ...readDir(join(repo, ".deliver", "knowledge"), "project")]) byName.set(d.name, d);
+    ...readDir(join(repo, ".deliver", "knowledge"), "project"), ...(jobDir ? readDir(join(jobDir, "standards"), "job") : [])]) byName.set(d.name, d);
   const docs = [...byName.values()];
   const graph = existsSync(join(repo, "graphify-out", "GRAPH_REPORT.md")) ? join(repo, "graphify-out", "GRAPH_REPORT.md") : null;
   return { docs, lessons: allLessons(repo, jobDir), lessonsFile: projectLessons(repo), graph };
@@ -224,12 +225,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log(JSON.stringify(applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean) }), null, 2));
   } else if (cmd === "must") { // the Must rules a role answers to — a reviewer says ok | violated | n_a for each (dl review)
     const [kind, role, stack] = rest;
-    const a = applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean) });
+    const a = applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean), jobDir: process.env.DELIVER_JOB_DIR });
     console.log(JSON.stringify(a.docs.flatMap((d) => d.rules.map((r) => ({ id: r.id, text: r.text, doc: d.name, origin: d.origin })))));
   } else if (cmd === "orgdir") { console.log(orgDir());   // the company's standards on this machine (~/.deliver/knowledge)
   } else if (cmd === "judge") { // a reviewer's answer per Must rule: {"<id>": "ok" | "violated: <what>" | "n_a: <why>"}
     const [kind, role, stack, json = "", verdict = "approve"] = rest;
-    const rules = applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean) }).docs.flatMap((d) => d.rules.map((r) => ({ ...r, doc: d.name })));
+    const rules = applicable(repo, { kind, role, stack: (stack ?? "").split(",").filter(Boolean), jobDir: process.env.DELIVER_JOB_DIR }).docs.flatMap((d) => d.rules.map((r) => ({ ...r, doc: d.name })));
     const errs = [], out = {};
     let given = {};
     if (json.trim()) { try { given = JSON.parse(json); } catch (e) { errs.push(`--standards is not JSON: ${e.message}`); } }

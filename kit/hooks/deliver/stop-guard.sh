@@ -8,6 +8,8 @@
 # Any progress (dl phase/card/wt/gate/review/integrate/approve) resets the counter.
 set -uo pipefail
 input="$(cat)"
+# a BMad session started by dl shape run (shaping) is not Michael: it ends when its skill is done, with its own reviewers
+[[ -n ${DELIVER_SHAPING:-} ]] && exit 0
 command -v jq >/dev/null || exit 0
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 

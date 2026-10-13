@@ -40,6 +40,9 @@ model's memory:
   questions, the BA cuts the cards, no Leads); every acceptance criterion is rated P0–P3 by what its failure costs, and that
   decides how deeply it is tested and whether a blind reviewer — one who sees only the diff — looks at it too. A repo's
   existing architecture is written down once, confirmed by you, and quoted by every later job instead of asked again.
+- **A request becomes a specification first — if you want.** With `upstream.engine: "bmad"` the BMad Method shapes it:
+  it picks its own path, writes the spec and reviews it; whatever it decided on its own comes to you with Michael's
+  proposal, goes back to BMad, and is frozen before a card is cut ([12-shaping](docs/12-shaping.md)).
 - **You see who did what.** On the floor every role is a person at a desk; the event log names the seat, the work order and
   the agent instructions behind every result.
 - **Any model, any CLI.** Choose a model per role (`opus` for the BA, `haiku` for a dev, …), or put a role on Codex, Gemini
@@ -250,6 +253,7 @@ Every claim above was run, live, with real Claude Code sessions and real agents 
 | [09-testing](docs/09-testing.md) | the test layers and how to run them |
 | [10-trackers](docs/10-trackers.md) | local kanban, Jira, Asana, Linear, GitHub Projects, adding a tracker |
 | [11-multiple-projects](docs/11-multiple-projects.md) | several projects on one floor — what works, what is still open |
+| [12-shaping](docs/12-shaping.md) | shaping a request with the BMad Method before the readiness review |
 | [OPEN](docs/OPEN.md) | everything not done or not verified yet — the one list |
 
 ## What's in this repo

@@ -74,7 +74,13 @@ grep -q 'DELIVER_HUMAN_CMD' <<<"$cmd" && deny "DELIVER_HUMAN_CMD is set only by 
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 # dl as a word, a path (…/bin/dl) or the variable the playbook uses ("$DL", ${DL})
 dl_re='(^|[;&|[:space:](/"'"'"'])(dl|\$\{?DL\}?)"?[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'
-if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|stack-test|checkpoint|track|waive|context[[:space:]]+(draft|propose)|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|md-wait|cleanup)([[:space:]]|$)" <<<"$cmd"; then
+# A BMad session (dl shape run) reports in its answer; the flow's state is not its to touch
+if [[ -n ${DELIVER_SHAPING:-} ]]; then
+  grep -Eq "${dl_re}[a-z]" <<<"$cmd" && deny "a BMad session does not run dl — end with the JSON your headless contract defines; dl reads it."
+  grep -Eq '(^|[^[:alnum:]_-])git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?(commit|push|merge|rebase|reset|checkout|switch)([[:space:]]|$)' <<<"$cmd" \
+    && deny "a BMad session writes its artifacts only; it does not change the repo's history."
+fi
+if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|stack-test|checkpoint|track|waive|context[[:space:]]+(draft|propose)|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|md-wait|cleanup|shape)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
 if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then
@@ -90,13 +96,17 @@ grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [
 # --- the flow's state files: written by dl only, once work has started -----------------------------------------
 # job.json and board.json are sealed (sha256); a write by any other tool stops the flow until a human reseals. Refuse
 # such a write up front, with the command to use instead, so the session corrects itself.
+# The shaping ledger (what BMad said and what was decided on it) and BMad's artifacts: dl and BMad only
+if grep -Eq 'shaping\.json|/bmad/(out|inputs|runs)/' <<<"$cmd" && grep -Eq '(writeFileSync|>[[:space:]]*[^[:space:]|&;]*(shaping\.json|/bmad/)|sed[[:space:]]+(-[a-zA-Z]*i|--in-place)|tee[[:space:]]|(mv|cp|rm)[[:space:]][^|&;]*(shaping\.json|/bmad/))' <<<"$cmd" && [[ -z ${DELIVER_SHAPING:-} ]]; then
+  deny "the shaping ledger and BMad's artifacts are written by dl and by BMad only: dl shape propose | decide | gap, the human's dl clarify."
+fi
 if grep -Eq '(job|board)\.json' <<<"$cmd" && grep -Eq '(writeFileSync|>[[:space:]]*[^[:space:]|&;]*(job|board)\.json|sed[[:space:]]+(-[a-zA-Z]*i|--in-place)|tee[[:space:]][^|&;]*(job|board)\.json|(mv|cp)[[:space:]][^|&;]*(job|board)\.json[[:space:]]*($|[;&|])|open\([^)]*(job|board)\.json[^)]*["'"'"'][wa])' <<<"$cmd"; then
   if owned="$(owned_job || active_jobs | awk 'NR==1')" && [[ -n $owned ]]; then
     IFS=$'\t' read -r job root <<<"$owned"
     phase="$(jq -r .phase "$root/.work/$job/job.json" 2>/dev/null)"
     grep -Eq '(^|[^[:alnum:]_])job\.json' <<<"$cmd" \
       && deny "job.json is written by dl only (sealed). Use: dl jobset '<jq expr>' (logged) — or ask the human."
-    case $phase in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) ;;
+    case $phase in intake|shaping|readiness|awaiting_clarification|planning|awaiting_plan_approval) ;;
       *) deny "board.json is written by dl only once work has started (phase $phase; sealed). Change a ready/blocked card with: dl card <id> set <field> <json> \"<reason>\" · add one with: dl card add <card.json> \"<reason>\" · a running card's contract does not change — put extra detail in the dispatch prompt." ;;
     esac
   fi

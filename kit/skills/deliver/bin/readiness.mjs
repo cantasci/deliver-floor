@@ -28,6 +28,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseYaml, loadCatalog } from "./roles.mjs";
 import { collect } from "./knowledge.mjs";
+import { loadShaping, status as shapingStatus, dirs as bmadDirs } from "./bmad.mjs";
 
 const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const catalog = () => parseYaml(readFileSync(join(SKILL_DIR, "readiness.yaml"), "utf8"), "readiness.yaml").items ?? [];
@@ -111,8 +112,36 @@ function standardError(i, job) {
   const miss = fr.filter((f) => !d.text.includes(f));
   return miss.length ? `quote not found in standard '${d.name}': "${miss[0].slice(0, 80)}" — a standard settles only what it states; else the item is open` : null;
 }
+// Shaped with BMad (settings.upstream.engine: bmad): what BMad wrote binds once shaping is finished — every decision, assumption,
+// question and finding of it decided with the human — and only in its own words: source "bmad: <artifact>" + the quote, found
+// verbatim in that artifact, or "shape: B-n", a decision of the shaping ledger.
+const normMd = (t) => norm(String(t).replace(/[`*_]/g, ""));   // BMad's artifacts are markdown: **intent:** reads as intent:
+function shapingError(i, job) {
+  const src = String(i.source ?? "");
+  const b = src.match(/^\s*bmad:\s*(\S+)/i), l = src.match(/^\s*shape:\s*(B-\d+)/i);
+  if (!b && !l) return undefined;
+  const s = loadShaping(job.dir);
+  if (!s) return "this job was not shaped with BMad (no shaping.json) — quote the request, a standard, or ask the human";
+  const rounds = job.settings?.upstream?.review_rounds ?? 2;
+  if (shapingStatus(job.dir, rounds).next !== "done") return "shaping is not finished: BMad's artifacts bind once every ledger item is decided and its review is done (dl next)";
+  if (l) {
+    const it = s.ledger.find((x) => x.id === l[1]);
+    if (!it || it.status !== "decided") return `${l[1]} is not a decision of the shaping ledger (dl shape ledger)`;
+    const hay = normMd(`${it.text} ${it.decision?.text ?? ""}`);
+    const miss = String(i.quote ?? "").split(/\s*(?:…|\.\.\.)\s*/).map(norm).filter(Boolean).filter((f) => !hay.includes(f));
+    return miss.length ? `quote not found in ${l[1]} (what BMad said and what was decided): "${miss[0].slice(0, 80)}"` : null;
+  }
+  const out = bmadDirs(job.dir).out, repo = job.repo ?? ".";
+  const p = [join(repo, b[1]), join(out, b[1])].find((x) => x.startsWith(out) && existsSync(x));
+  if (!p) return `${b[1]} is not one of BMad's artifacts for this job (under ${out.replace(repo + "/", "")})`;
+  if (!String(i.quote ?? "").trim()) return `decided from BMad's ${b[1]} needs \`quote\`: its words that state this decision, verbatim`;
+  const hay = normMd(readFileSync(p, "utf8"));
+  const miss = String(i.quote).split(/\s*(?:…|\.\.\.)\s*/).map(norm).filter(Boolean).filter((f) => !hay.includes(f));
+  return miss.length ? `quote not found in BMad's ${b[1]}: "${miss[0].slice(0, 80)}" — it settles only what it states; else send the gap back (dl shape gap)` : null;
+}
 function quoteError(i, job) {
   const src = String(i.source);
+  const sh = shapingError(i, job); if (sh !== undefined) return sh;
   if (/^\s*(human|pm):/i.test(src)) return null;                 // answered by the business / decided by Michael (dl clarify / dl decide)
   const se = standardError(i, job); if (se !== undefined) return se;
   if (!i.quote || !String(i.quote).trim()) return 'decided from a source needs `quote`: the words of the request (or repo file) that state this decision, verbatim. If the source only uses the term without stating the decision, the item is open (owner "business")';
@@ -133,6 +162,7 @@ function humanError(i, job) {
   const src = String(i.source ?? "");
   if (/^\s*human:/i.test(src)) return null;
   if (/^\s*pm:/i.test(src)) return `decided by the PM, but it ${ASK_HUMAN}`;
+  const sh = shapingError(i, job); if (sh !== undefined) return sh;   // BMad's words, decided with the human
   if (standardDoc(src, job)) return standardError(i, job);   // the company's or project's own standard, quoted (brand DNA …)
   const fr = String(i.quote ?? "").split(/\s*(?:…|\.\.\.)\s*/).map(norm).filter(Boolean);
   const req = norm(job.request ?? "");
@@ -142,6 +172,7 @@ function humanError(i, job) {
 
 export function check(jobDir) {
   const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
+  job.dir = jobDir;
   const file = join(jobDir, "readiness.json");
   const errors = [];
   if (!existsSync(file)) return { errors: ["readiness.json is missing — the Business Analyst's READINESS review writes it"], open: [], items: [] };

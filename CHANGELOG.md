@@ -4,6 +4,31 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.17.0 — 2026-10-13
+
+**Shaping with the BMad Method: BMad writes the specification, Michael decides what it said with you, and it is frozen
+before a card is cut** (`settings.upstream.engine: "bmad"`, off by default — [docs/12-shaping](docs/12-shaping.md))
+- **A new phase, `shaping`**, between intake and the readiness review (full path only). `dl shape install` puts the pinned
+  BMad (`upstream.bmad_version`, 6.12.2) into the repo outside git; `dl shape run` starts one BMad step in its own headless
+  session. **BMad is fed, not steered:** `bin/bmad.mjs` writes every prompt — the request, the repo, the standards, the
+  project's architecture and our readiness catalog as information. bmad-help chooses BMad's own path (in the spike: spec →
+  architecture, a PRD skipped as a restatement of the request).
+- **The shaping ledger.** What BMad decided, assumed, asked or found is read from its own `.memlog.md` tags and JSON — not
+  from its status (the spike's "complete" spec held ten decisions of its own, three against the business). Michael proposes
+  a decision for each, quoting a BMad artifact (`dl shape propose`; the request is refused as a source); the human decides
+  (`dl clarify B-n`, or `dl clarify proposals`) — asked only once every item has a proposal, never by an unattended session.
+  Michael alone decides only a finding that changes nothing built (`dl shape decide`).
+- **BMad verifies its own work:** the decisions go back to it (an update on every artifact it made, its conflicts with its
+  earlier decisions listed for the PR), then `bmad-review` reviews (`upstream.review_rounds`, 2); new findings come back to
+  the ledger.
+- **Into the flow:** the readiness review settles items from BMad's words (`bmad: <artifact>` + quote, `shape: B-n`), an item
+  BMad is silent on goes back to it (`dl shape gap`); planning freezes BMad's artifacts and the ledger with `readiness.json`
+  (a change stops every step); `dl validate` refuses a plan that leaves a `CAP-n` / `FR-n` untraced; the architecture's
+  `AD-n` rules become this job's standard, answered by id in every review; the PR gets "Shaped with the BMad Method" (path,
+  reviews, every decision and who took it) and `.deliver/jobs/<job>/bmad/` keeps the inputs and the artifacts.
+- **Hooks:** a BMad session writes only in its output folder, runs no `dl` and changes no history; nobody but `dl` edits
+  the ledger; agents cannot run `dl shape`. `scripts/doctor.sh` checks Node 20.12+, npx and uv when shaping is on.
+
 ## 0.16.0 — 2026-10-13
 
 **What a comparison with the BMAD Method showed us: a light path for small changes, the existing architecture as a
