@@ -42,8 +42,15 @@ export function areasOf(job) {
   return a;
 }
 // The light path (dl track light: a small change to existing code) answers only the items marked `light: true`; the rest
-// shape a product or a new part of one, which a light job does not touch — needing one sends it to the full path.
-export const applicable = (job) => catalog().filter((i) => areasOf(job).has(i.area) && (job.track !== "light" || i.light === true));
+// shape a product or a new part of one, which a light job does not touch — needing one sends it to the full path. Until the
+// repo has its architecture (.deliver/knowledge/architecture.md), a light job asks the human to confirm the drafted one
+// once too (ARC-style, ARC-components): otherwise a repo that only ever gets small changes would never have one.
+const CONFIRM_ARCH = new Set(["ARC-style", "ARC-components"]);
+const hasArchitecture = (job) => existsSync(join(job.repo ?? ".", ".deliver", "knowledge", "architecture.md"));
+export const applicable = (job) => {
+  const confirm = job.track === "light" && !hasArchitecture(job);
+  return catalog().filter((i) => areasOf(job).has(i.area) && (job.track !== "light" || i.light === true || (confirm && CONFIRM_ARCH.has(i.id))));
+};
 
 export const KINDS = ["service", "bff", "app", "web", "mobile", "library", "worker", "db", "infra", "docs"];
 export function readReadiness(jobDir) {

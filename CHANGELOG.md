@@ -16,6 +16,8 @@ standard, risk-based test design with a gate for non-functional requirements, an
   code and without the request's own words; a component it names must exist. Bigger after all: `dl track full "<why>"` —
   from planning back to readiness, the light decisions stay as frozen (`readiness.light.json`, checked) and the skipped
   items are answered. Both are decisions listed in the PR.
+  Until the repo has its `architecture.md`, a light job also asks ARC-style and ARC-components — the human confirms the
+  drafted architecture once — or a repo that only ever gets small changes would never have one.
 - **A repo with code: its architecture is a project standard** (`.deliver/knowledge/architecture.md`). `dl context draft`
   reads it from the repo's files — every project with a manifest of its own (package.json, pyproject.toml, go.mod, pom.xml,
   build.gradle …) becomes a component with its stack, path and suite. The human confirms it once, at the readiness review,

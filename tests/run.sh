@@ -1946,8 +1946,14 @@ contains "…its exact words" "$("$DL" track light "one function changes" --quot
 FULLN="$(node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq length)"
 contains "dl track light: the light readiness, the BA's cards, no Lead" "$("$DL" track light "one function in one file changes" --quote "Round every price to two decimals" 2>&1)" "light path: the readiness review answers"
 LIGHTN="$(node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq length)"
-(( LIGHTN < FULLN )) && node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq -e 'map(.id) | (index("ARC-style") | not) and (index("ARC-data") | not) and index("CON-compat") and index("PRD-acceptance")' >/dev/null \
-  && ok "…$LIGHTN readiness items instead of $FULLN: no architecture, data or deployment questions; contracts and acceptance stay" || bad "light items: $LIGHTN of $FULLN"
+(( LIGHTN < FULLN )) && node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq -e 'map(.id) | (index("ARC-data") | not) and (index("DEL-deploy") | not) and index("CON-compat") and index("PRD-acceptance")' >/dev/null \
+  && ok "…$LIGHTN readiness items instead of $FULLN: no data or deployment questions; contracts and acceptance stay" || bad "light items: $LIGHTN of $FULLN"
+node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq -e 'map(.id) | index("ARC-style") and index("ARC-components")' >/dev/null \
+  && ok "…a repo without architecture.md: the light path still asks the human to confirm the drafted architecture once" || bad "light path without architecture.md skips ARC-style/ARC-components"
+mkdir -p .deliver/knowledge && echo "# Architecture" > .deliver/knowledge/architecture.md
+node "$SDIR/bin/readiness.mjs" applicable "$LJ" | jq -e 'map(.id) | (index("ARC-style") | not) and (index("ARC-components") | not)' >/dev/null \
+  && ok "…with architecture.md in the repo it does not ask them again" || bad "light path asks ARC-style again despite architecture.md"
+rm -rf .deliver
 jq -e '.track == "light" and any(.pm_decisions[]; .what | test("the light path"))' "$LJ/job.json" >/dev/null && ok "…a decision listed in the PR" || bad "track not recorded"
 contains "agents cannot change the path" "$(printf '%s' '{"tool_input":{"command":"dl track full x"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 expect_ok "no Lead on the light path: the roles are valid" "$DL" phase readiness
@@ -1968,7 +1974,7 @@ contains "the light path is not chosen once planning started" "$("$DL" track lig
 contains "too big after all: back to the full path from planning" "$("$DL" track full "the BA found a schema change" 2>&1)" "back in readiness"
 [[ "$(jq -r '.phase + " " + (.frozen | tostring) + " " + .track' "$LJ/job.json")" == "readiness null full" && -f $LJ/readiness.light.json ]] \
   && ok "…phase readiness, the freeze lifted, the light decisions kept aside" || bad "track full: $(jq -c '{phase,frozen,track}' "$LJ/job.json")"
-contains "…the items the light path skipped are now asked" "$("$DL" readiness 2>&1)" "ARC-style ("
+contains "…the items the light path skipped are now asked" "$("$DL" readiness 2>&1)" "ARC-data ("
 ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["javascript"],"path":["src/price/","test/"],"owner":"backend","reviewer":"reviewer"}]}' ready_all
 jq '(.items[] | select(.id=="PRD-goal")).answer = "something else"' "$LJ/readiness.json" > "$LJ/r.t" && mv "$LJ/r.t" "$LJ/readiness.json"
 contains "…but a decision frozen on the light path does not change" "$("$DL" readiness 2>&1)" "PRD-goal was frozen on the light path (decided: \"test decision\") and changed"

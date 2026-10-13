@@ -72,7 +72,8 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 ## 0.16.0 — from the comparison with the BMAD Method
 
 Covered by `tests/run.sh` (the light path, the project architecture, the test design, the NFR gate, the blind review and its
-triage, each refused where it must be). **Not run live yet:**
+triage, each refused where it must be). Live: `tests/e2e-live.sh light` (B1, B2 — two small changes on a repo with code) and every scenario's B3/B4 step.
+**Not run live yet:**
 
 | # | What | Status |
 | --- | --- | --- |
