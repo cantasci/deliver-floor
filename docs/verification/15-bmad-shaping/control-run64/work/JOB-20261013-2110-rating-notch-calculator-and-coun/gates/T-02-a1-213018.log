@@ -1,0 +1,417 @@
+# gate: T-02  attempt: 1  2026-10-13T19:30:18Z
+ok    on job/JOB-20261013-2110-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/indicators/countryRating.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: AC-9 Ind. 12 examples
+    # Subtest: (BBB, BBB-) -> 1
+    ok 1 - (BBB, BBB-) -> 1
+      ---
+      duration_ms: 0.728208
+      ...
+    # Subtest: (BBB-, BB+) -> 1
+    ok 2 - (BBB-, BB+) -> 1
+      ---
+      duration_ms: 0.042083
+      ...
+    # Subtest: (BBB, BB+) -> 2
+    ok 3 - (BBB, BB+) -> 2
+      ---
+      duration_ms: 0.084458
+      ...
+    # Subtest: (BBB+, BB+) -> 2
+    ok 4 - (BBB+, BB+) -> 2
+      ---
+      duration_ms: 0.035791
+      ...
+    # Subtest: (AAA, CCC-) -> 2
+    ok 5 - (AAA, CCC-) -> 2
+      ---
+      duration_ms: 0.033959
+      ...
+    # Subtest: (AA, AA) -> 0
+    ok 6 - (AA, AA) -> 0
+      ---
+      duration_ms: 0.030625
+      ...
+    # Subtest: (BB+, BBB-) -> 0
+    ok 7 - (BB+, BBB-) -> 0
+      ---
+      duration_ms: 0.027042
+      ...
+    # Subtest: (BB, BBB) -> 0
+    ok 8 - (BB, BBB) -> 0
+      ---
+      duration_ms: 0.102209
+      ...
+    # Subtest: (CCC-, AAA) -> 0
+    ok 9 - (CCC-, AAA) -> 0
+      ---
+      duration_ms: 0.145875
+      ...
+    # Subtest: (A, A) -> 0
+    ok 10 - (A, A) -> 0
+      ---
+      duration_ms: 0.2385
+      ...
+    # Subtest: (BB+, BBB-) -> 0
+    ok 11 - (BB+, BBB-) -> 0
+      ---
+      duration_ms: 0.036625
+      ...
+    # Subtest: (AAA, AA+) -> 1
+    ok 12 - (AAA, AA+) -> 1
+      ---
+      duration_ms: 0.026584
+      ...
+    # Subtest: (CCC, CCC-) -> 1
+    ok 13 - (CCC, CCC-) -> 1
+      ---
+      duration_ms: 0.023375
+      ...
+    # Subtest: (AAA, AAA) -> 0
+    ok 14 - (AAA, AAA) -> 0
+      ---
+      duration_ms: 0.022916
+      ...
+    # Subtest: (CCC-, CCC-) -> 0
+    ok 15 - (CCC-, CCC-) -> 0
+      ---
+      duration_ms: 0.022375
+      ...
+    # Subtest: (AA+, AAA) -> 0
+    ok 16 - (AA+, AAA) -> 0
+      ---
+      duration_ms: 0.019375
+      ...
+    # Subtest: returns number primitive, +0 for unchanged and upgrade
+    ok 17 - returns number primitive, +0 for unchanged and upgrade
+      ---
+      duration_ms: 0.054334
+      ...
+    # Subtest: differs from notchCalculator wl on purpose
+    ok 18 - differs from notchCalculator wl on purpose
+      ---
+      duration_ms: 0.047792
+      ...
+    1..18
+ok 1 - AC-9 Ind. 12 examples
+  ---
+  duration_ms: 2.4015
+  type: 'suite'
+  ...
+# Subtest: AC-10 all 361 ordered pairs
+    # Subtest: matches the rule applied to notchChange
+    ok 1 - matches the rule applied to notchChange
+      ---
+      duration_ms: 0.418792
+      ...
+    1..1
+ok 2 - AC-10 all 361 ordered pairs
+  ---
+  duration_ms: 0.45625
+  type: 'suite'
+  ...
+# Subtest: AC-11 invalid input throws RangeError
+    # Subtest: as previous: "bbb+"
+    ok 1 - as previous: "bbb+"
+      ---
+      duration_ms: 0.579625
+      ...
+    # Subtest: as current: "bbb+"
+    ok 2 - as current: "bbb+"
+      ---
+      duration_ms: 0.037041
+      ...
+    # Subtest: as previous: " BBB+"
+    ok 3 - as previous: " BBB+"
+      ---
+      duration_ms: 0.030833
+      ...
+    # Subtest: as current: " BBB+"
+    ok 4 - as current: " BBB+"
+      ---
+      duration_ms: 0.028667
+      ...
+    # Subtest: as previous: "BBB+ "
+    ok 5 - as previous: "BBB+ "
+      ---
+      duration_ms: 0.023791
+      ...
+    # Subtest: as current: "BBB+ "
+    ok 6 - as current: "BBB+ "
+      ---
+      duration_ms: 0.022209
+      ...
+    # Subtest: as previous: "BBB−"
+    ok 7 - as previous: "BBB−"
+      ---
+      duration_ms: 0.022084
+      ...
+    # Subtest: as current: "BBB−"
+    ok 8 - as current: "BBB−"
+      ---
+      duration_ms: 0.021833
+      ...
+    # Subtest: as previous: ""
+    ok 9 - as previous: ""
+      ---
+      duration_ms: 0.026709
+      ...
+    # Subtest: as current: ""
+    ok 10 - as current: ""
+      ---
+      duration_ms: 0.026458
+      ...
+    # Subtest: as previous: "CC"
+    ok 11 - as previous: "CC"
+      ---
+      duration_ms: 0.096333
+      ...
+    # Subtest: as current: "CC"
+    ok 12 - as current: "CC"
+      ---
+      duration_ms: 0.02675
+      ...
+    # Subtest: as previous: "C"
+    ok 13 - as previous: "C"
+      ---
+      duration_ms: 0.022417
+      ...
+    # Subtest: as current: "C"
+    ok 14 - as current: "C"
+      ---
+      duration_ms: 0.02825
+      ...
+    # Subtest: as previous: "D"
+    ok 15 - as previous: "D"
+      ---
+      duration_ms: 0.073791
+      ...
+    # Subtest: as current: "D"
+    ok 16 - as current: "D"
+      ---
+      duration_ms: 0.023041
+      ...
+    # Subtest: as previous: "NR"
+    ok 17 - as previous: "NR"
+      ---
+      duration_ms: 0.021917
+      ...
+    # Subtest: as current: "NR"
+    ok 18 - as current: "NR"
+      ---
+      duration_ms: 0.021875
+      ...
+    # Subtest: as previous: "WD"
+    ok 19 - as previous: "WD"
+      ---
+      duration_ms: 0.022625
+      ...
+    # Subtest: as current: "WD"
+    ok 20 - as current: "WD"
+      ---
+      duration_ms: 0.022208
+      ...
+    # Subtest: as previous: "Baa1"
+    ok 21 - as previous: "Baa1"
+      ---
+      duration_ms: 0.034375
+      ...
+    # Subtest: as current: "Baa1"
+    ok 22 - as current: "Baa1"
+      ---
+      duration_ms: 0.022083
+      ...
+    # Subtest: as previous: null
+    ok 23 - as previous: null
+      ---
+      duration_ms: 0.022042
+      ...
+    # Subtest: as current: null
+    ok 24 - as current: null
+      ---
+      duration_ms: 0.021459
+      ...
+    # Subtest: as previous: undefined
+    ok 25 - as previous: undefined
+      ---
+      duration_ms: 0.021959
+      ...
+    # Subtest: as current: undefined
+    ok 26 - as current: undefined
+      ---
+      duration_ms: 0.02825
+      ...
+    # Subtest: as previous: 42
+    ok 27 - as previous: 42
+      ---
+      duration_ms: 0.021166
+      ...
+    # Subtest: as current: 42
+    ok 28 - as current: 42
+      ---
+      duration_ms: 0.0215
+      ...
+    # Subtest: as previous: {}
+    ok 29 - as previous: {}
+      ---
+      duration_ms: 0.024083
+      ...
+    # Subtest: as current: {}
+    ok 30 - as current: {}
+      ---
+      duration_ms: 0.021208
+      ...
+    # Subtest: as previous: "BBB"
+    ok 31 - as previous: "BBB"
+      ---
+      duration_ms: 0.022208
+      ...
+    # Subtest: as current: "BBB"
+    ok 32 - as current: "BBB"
+      ---
+      duration_ms: 0.020917
+      ...
+    # Subtest: as previous: ["BBB"]
+    ok 33 - as previous: ["BBB"]
+      ---
+      duration_ms: 0.02075
+      ...
+    # Subtest: as current: ["BBB"]
+    ok 34 - as current: ["BBB"]
+      ---
+      duration_ms: 0.020875
+      ...
+    # Subtest: as previous: "toString"
+    ok 35 - as previous: "toString"
+      ---
+      duration_ms: 0.02075
+      ...
+    # Subtest: as current: "toString"
+    ok 36 - as current: "toString"
+      ---
+      duration_ms: 0.020916
+      ...
+    # Subtest: as previous: "__proto__"
+    ok 37 - as previous: "__proto__"
+      ---
+      duration_ms: 0.021208
+      ...
+    # Subtest: as current: "__proto__"
+    ok 38 - as current: "__proto__"
+      ---
+      duration_ms: 0.022708
+      ...
+    # Subtest: as previous: 0
+    ok 39 - as previous: 0
+      ---
+      duration_ms: 0.022125
+      ...
+    # Subtest: as current: 0
+    ok 40 - as current: 0
+      ---
+      duration_ms: 0.027083
+      ...
+    # Subtest: as previous: null
+    ok 41 - as previous: null
+      ---
+      duration_ms: 0.028
+      ...
+    # Subtest: as current: null
+    ok 42 - as current: null
+      ---
+      duration_ms: 0.0275
+      ...
+    # Subtest: as previous: true
+    ok 43 - as previous: true
+      ---
+      duration_ms: 0.024041
+      ...
+    # Subtest: as current: true
+    ok 44 - as current: true
+      ---
+      duration_ms: 0.027791
+      ...
+    # Subtest: as previous: bigint
+    ok 45 - as previous: bigint
+      ---
+      duration_ms: 0.0225
+      ...
+    # Subtest: as current: bigint
+    ok 46 - as current: bigint
+      ---
+      duration_ms: 0.022417
+      ...
+    # Subtest: as previous: symbol
+    ok 47 - as previous: symbol
+      ---
+      duration_ms: 0.025708
+      ...
+    # Subtest: as current: symbol
+    ok 48 - as current: symbol
+      ---
+      duration_ms: 0.023084
+      ...
+    # Subtest: as previous: {}
+    ok 49 - as previous: {}
+      ---
+      duration_ms: 0.022625
+      ...
+    # Subtest: as current: {}
+    ok 50 - as current: {}
+      ---
+      duration_ms: 0.023
+      ...
+    # Subtest: no arguments
+    ok 51 - no arguments
+      ---
+      duration_ms: 0.035292
+      ...
+    # Subtest: one argument
+    ok 52 - one argument
+      ---
+      duration_ms: 0.035042
+      ...
+    1..52
+ok 3 - AC-11 invalid input throws RangeError
+  ---
+  duration_ms: 2.301417
+  type: 'suite'
+  ...
+# Subtest: AC-12 no state, no override
+    # Subtest: edit sequence in order
+    ok 1 - edit sequence in order
+      ---
+      duration_ms: 0.043167
+      ...
+    # Subtest: declares exactly two parameters
+    ok 2 - declares exactly two parameters
+      ---
+      duration_ms: 0.02925
+      ...
+    # Subtest: a third argument is ignored
+    ok 3 - a third argument is ignored
+      ---
+      duration_ms: 0.029917
+      ...
+    1..3
+ok 4 - AC-12 no state, no override
+  ---
+  duration_ms: 0.144208
+  type: 'suite'
+  ...
+1..4
+# tests 74
+# suites 4
+# pass 74
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 83.913334
+ok    verify passed

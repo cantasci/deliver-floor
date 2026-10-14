@@ -4,6 +4,65 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.17.0 — 2026-10-13
+
+**Shaping with the BMad Method: BMad writes the specification, Michael decides what it said with you, and it is frozen
+before a card is cut** — by default only for a request that is not a specification yet (`settings.upstream.engine: "auto"`;
+[docs/12-shaping](docs/12-shaping.md))
+- **`auto`, the default.** A request that states fewer than two of requirement ids, acceptance criteria and a contract is
+  shaped; one that states them goes straight to the readiness review. Code decides by those signals (`bmad.mjs needs`); `dl
+  next`, the event log and the PR say which and why. `"bmad"` shapes every full-path job, `"off"` none. Why: measured live,
+  shaping a specified request gave the same product for 30 % more; on a one-paragraph idea BMad caught the product decisions
+  the readiness review did not ask about (input normalisation, the calculator's thresholds, its signature). doctor reports
+  BMad's prerequisites as notes under auto, as failures under bmad.
+- **A new phase, `shaping`**, between intake and the readiness review (full path only). `dl shape install` puts the pinned
+  BMad (`upstream.bmad_version`, 6.12.2) into the repo outside git; `dl shape run` starts one BMad step in its own headless
+  session. **BMad is fed, not steered:** `bin/bmad.mjs` writes every prompt — the request, the repo, the standards, the
+  project's architecture and our readiness catalog as information. bmad-help chooses BMad's own path (in the spike: spec →
+  architecture, a PRD skipped as a restatement of the request).
+- **The shaping ledger.** What BMad decided, assumed, asked or found is read from its own `.memlog.md` tags and JSON — not
+  from its status (the spike's "complete" spec held ten decisions of its own, three against the business). Michael proposes
+  a decision for each, quoting a BMad artifact (`dl shape propose`; the request is refused as a source); the human decides
+  (`dl clarify B-n`, or `dl clarify proposals`) — asked only once every item has a proposal, never by an unattended session.
+  Michael alone decides only a finding that changes nothing built (`dl shape decide`).
+- **BMad verifies its own work:** the decisions go back to it (an update on every artifact it made, its conflicts with its
+  earlier decisions listed for the PR), then `bmad-review` reviews (`upstream.review_rounds`, 2); new findings come back to
+  the ledger.
+- **Into the flow:** the readiness review settles items from BMad's words (`bmad: <artifact>` + quote, `shape: B-n`), an item
+  BMad is silent on goes back to it (`dl shape gap`); planning freezes BMad's artifacts and the ledger with `readiness.json`
+  (a change stops every step); `dl validate` refuses a plan that leaves a `CAP-n` / `FR-n` untraced; the architecture's
+  `AD-n` rules become this job's standard, answered by id in every review; the PR gets "Shaped with the BMad Method" (path,
+  reviews, every decision and who took it) and `.deliver/jobs/<job>/bmad/` keeps the inputs and the artifacts.
+- **Hooks:** a BMad session writes only in its output folder, runs no `dl` and changes no history; nobody but `dl` edits
+  the ledger; agents cannot run `dl shape`. `scripts/doctor.sh` checks Node 20.12+, npx and uv when shaping is on.
+- **Signed in by a token?** Claude Code does not pass its own token to the commands it runs (live run 61: every BMad session
+  "Not logged in"). A `/login` needs nothing; with a token in the environment, `DELIVER_CLAUDE_TOKEN_FILE` names a file
+  holding it and `dl` gives it to BMad's session only.
+- **A usage-limit wait reads the clock** (`run-headless.sh`): macOS does not count a sleeping machine in `sleep`, so a closed
+  lid stretched a 194-minute wait by an hour (live run 62). It now naps at most five minutes and looks at the time.
+- **BMad's session survives the call that started it.** Live (run 66, again): `dl shape run` outlasted Claude Code's 10-minute
+  tool limit — its wait counted loops, not time — and the timeout's signal took BMad's session along (`nohup` is not enough).
+  BMad now runs in a process session of its own (`setsid`), and a call waits at most seven minutes by the clock;
+  `dl shape wait` picks the run up in the same session or the next.
+- **The human decides what shapes the product, Michael the rest.** Live on an idea (run 68), sending every item to the human
+  meant 69 decisions for one small job. Now BMad's questions, its own product decisions, a step it could not run and a high
+  or critical finding go to the human; its assumptions and the lesser findings are Michael's (`dl shape decide`, with his
+  reason and BMad's words) — listed in QUESTIONS.md and the PR, and the human overrules any before the freeze
+  (`dl clarify B-n`; the new decision goes back to BMad). Michael not sure of one (`--confidence low`): it goes to the human.
+- **Michael warns, the human decides.** Live, most wrong decisions were proposals accepted as they stood, all at once — one
+  against the human's own earlier ruling. A proposal now carries its confidence (`dl shape propose … --confidence high|low`,
+  a low one with `--concern`: what could make it wrong, the alternative); a question BMad asks again needs that concern too.
+  A low proposal, a question asked again and a high or critical finding are flagged: `QUESTIONS.md` and `dl next` put them
+  first, with the earlier decision, and `dl clarify proposals` does not accept them — the human decides each on its own.
+  The PR marks them ⚠.
+- **Shaping ends.** On an idea (live run 66) every BMad update raised a question about the decisions it had just applied — the
+  same one four times — and shaping never finished. A question about something already decided now shows the human their
+  earlier answer ("asked before as B-n"); the decisions go back to the same artifacts at most `upstream.reask_rounds` (2)
+  times before BMad makes something new or reviews, then bind through the ledger, listed in the PR.
+- Measured live against the same request unshaped ([the comparison](docs/verification/15-bmad-shaping/COMPARISON.md)): the
+  same product, every open point with a proposal on BMad's words, a traced specification and architecture — for +30 % cost
+  and about twice the time. `tests/e2e-live.sh shaped` with `E2E_SHAPING=off` is that control.
+
 ## 0.16.0 — 2026-10-13
 
 **What a comparison with the BMAD Method showed us: a light path for small changes, the existing architecture as a

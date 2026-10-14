@@ -1,0 +1,855 @@
+TAP version 13
+# Subtest: AC-1: countryRatingChangeWl is exported from src/indicators/countryRating.mjs as a function
+ok 1 - AC-1: countryRatingChangeWl is exported from src/indicators/countryRating.mjs as a function
+  ---
+  duration_ms: 0.498792
+  ...
+# Subtest: AC-5: 1-notch downgrade returns the number 1
+ok 2 - AC-5: 1-notch downgrade returns the number 1
+  ---
+  duration_ms: 0.129459
+  ...
+# Subtest: AC-5: downgrade of 2 or more notches returns 2
+ok 3 - AC-5: downgrade of 2 or more notches returns 2
+  ---
+  duration_ms: 0.047625
+  ...
+# Subtest: AC-5: no change or any upgrade returns 0 (Object.is +0)
+ok 4 - AC-5: no change or any upgrade returns 0 (Object.is +0)
+  ---
+  duration_ms: 0.086041
+  ...
+# Subtest: AC-5: X-window: only the net change of the end points counts (BBB -> BBB- is 1)
+ok 5 - AC-5: X-window: only the net change of the end points counts (BBB -> BBB- is 1)
+  ---
+  duration_ms: 0.105458
+  ...
+# Subtest: AC-5: IG/HY crossing (BBB- -> BB+) is 1 notch, no extra weight
+ok 6 - AC-5: IG/HY crossing (BBB- -> BB+) is 1 notch, no extra weight
+  ---
+  duration_ms: 0.041
+  ...
+# Subtest: AC-5: threshold boundaries by notch count -18, -1, 0, 1, 2, 18
+ok 7 - AC-5: threshold boundaries by notch count -18, -1, 0, 1, 2, 18
+  ---
+  duration_ms: 0.097792
+  ...
+# Subtest: AC-5: result is a number in {0,1,2} for every one of the 361 ordered pairs and matches the formula
+ok 8 - AC-5: result is a number in {0,1,2} for every one of the 361 ordered pairs and matches the formula
+  ---
+  duration_ms: 0.699208
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (case / whitespace)
+ok 9 - AC-4: invalid rating as previous throws RangeError (case / whitespace)
+  ---
+  duration_ms: 0.301458
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (case / whitespace)
+ok 10 - AC-4: invalid rating as current throws RangeError (case / whitespace)
+  ---
+  duration_ms: 0.295625
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (other scales / below CCC-)
+ok 11 - AC-4: invalid rating as previous throws RangeError (other scales / below CCC-)
+  ---
+  duration_ms: 0.12625
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (other scales / below CCC-)
+ok 12 - AC-4: invalid rating as current throws RangeError (other scales / below CCC-)
+  ---
+  duration_ms: 0.069458
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (outlook / unknown)
+ok 13 - AC-4: invalid rating as previous throws RangeError (outlook / unknown)
+  ---
+  duration_ms: 0.032583
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (outlook / unknown)
+ok 14 - AC-4: invalid rating as current throws RangeError (outlook / unknown)
+  ---
+  duration_ms: 0.063875
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (prototype names)
+ok 15 - AC-4: invalid rating as previous throws RangeError (prototype names)
+  ---
+  duration_ms: 0.03925
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (prototype names)
+ok 16 - AC-4: invalid rating as current throws RangeError (prototype names)
+  ---
+  duration_ms: 0.036459
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (non-strings)
+ok 17 - AC-4: invalid rating as previous throws RangeError (non-strings)
+  ---
+  duration_ms: 0.064583
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (non-strings)
+ok 18 - AC-4: invalid rating as current throws RangeError (non-strings)
+  ---
+  duration_ms: 0.060708
+  ...
+# Subtest: AC-4: both arguments invalid throws RangeError
+ok 19 - AC-4: both arguments invalid throws RangeError
+  ---
+  duration_ms: 0.05525
+  ...
+# Subtest: AC-4: plan examples (null,'AAA') and ('BBB+','Baa1') throw RangeError
+ok 20 - AC-4: plan examples (null,'AAA') and ('BBB+','Baa1') throw RangeError
+  ---
+  duration_ms: 0.042333
+  ...
+# Subtest: AC-4: missing arguments throw RangeError
+ok 21 - AC-4: missing arguments throw RangeError
+  ---
+  duration_ms: 0.039375
+  ...
+# Subtest: AC-4: RangeError reaches the caller unchanged: same class as notchChange's, never turned into 0
+ok 22 - AC-4: RangeError reaches the caller unchanged: same class as notchChange's, never turned into 0
+  ---
+  duration_ms: 0.214416
+  ...
+# Subtest: AC-4: no invalid input ever returns a value (0 included), over a wider sweep
+ok 23 - AC-4: no invalid input ever returns a value (0 included), over a wider sweep
+  ---
+  duration_ms: 0.574542
+  ...
+# Subtest: AC-8: QA's typed list deep-strict-equals the imported RATING_SCALE
+ok 24 - AC-8: QA's typed list deep-strict-equals the imported RATING_SCALE
+  ---
+  duration_ms: 0.254875
+  ...
+# Subtest: AC-8: cross-check with notchChange and notchCalculator over all 361 ordered pairs
+ok 25 - AC-8: cross-check with notchChange and notchCalculator over all 361 ordered pairs
+  ---
+  duration_ms: 0.609792
+  ...
+# Subtest: AC-9: result is not a Promise and repeated calls return strictly equal results
+ok 26 - AC-9: result is not a Promise and repeated calls return strictly equal results
+  ---
+  duration_ms: 0.050375
+  ...
+# Subtest: AC-9: RATING_SCALE is unchanged (and still frozen) after calling countryRatingChangeWl
+ok 27 - AC-9: RATING_SCALE is unchanged (and still frozen) after calling countryRatingChangeWl
+  ---
+  duration_ms: 0.10725
+  ...
+# Subtest: AC-9: source's only import is from ../ratings/notch.mjs; no node:, require(, import(, eval(, new Function
+ok 28 - AC-9: source's only import is from ../ratings/notch.mjs; no node:, require(, import(, eval(, new Function
+  ---
+  duration_ms: 0.791958
+  ...
+# Subtest: AC-9: package.json has no dependencies key
+ok 29 - AC-9: package.json has no dependencies key
+  ---
+  duration_ms: 0.928875
+  ...
+# Subtest: exports countryRatingChangeWl as a function
+ok 30 - exports countryRatingChangeWl as a function
+  ---
+  duration_ms: 0.463125
+  ...
+# Subtest: 1-notch downgrade gives WL 1
+ok 31 - 1-notch downgrade gives WL 1
+  ---
+  duration_ms: 0.071083
+  ...
+# Subtest: downgrade of 2 or more notches gives WL 2
+ok 32 - downgrade of 2 or more notches gives WL 2
+  ---
+  duration_ms: 0.08225
+  ...
+# Subtest: no change or upgrade gives +0
+ok 33 - no change or upgrade gives +0
+  ---
+  duration_ms: 0.079917
+  ...
+# Subtest: only the net change counts (BBB -> BBB-)
+ok 34 - only the net change counts (BBB -> BBB-)
+  ---
+  duration_ms: 0.044083
+  ...
+# Subtest: notch boundaries -18, -1, 0, 1, 2, 18
+ok 35 - notch boundaries -18, -1, 0, 1, 2, 18
+  ---
+  duration_ms: 0.047125
+  ...
+# Subtest: all 361 pairs return 0|1|2 following the notch mapping
+ok 36 - all 361 pairs return 0|1|2 following the notch mapping
+  ---
+  duration_ms: 0.231833
+  ...
+# Subtest: invalid rating as previous or current throws RangeError, never TypeError
+ok 37 - invalid rating as previous or current throws RangeError, never TypeError
+  ---
+  duration_ms: 0.40225
+  ...
+# Subtest: missing arguments throw RangeError
+ok 38 - missing arguments throw RangeError
+  ---
+  duration_ms: 0.228833
+  ...
+# Subtest: results are synchronous and repeatable
+ok 39 - results are synchronous and repeatable
+  ---
+  duration_ms: 0.567291
+  ...
+# Subtest: source has only the notch.mjs import and no forbidden constructs
+ok 40 - source has only the notch.mjs import and no forbidden constructs
+  ---
+  duration_ms: 0.264
+  ...
+# Subtest: countryRatingChangeWl has a JSDoc block with @param, @returns, @throws
+ok 41 - countryRatingChangeWl has a JSDoc block with @param, @returns, @throws
+  ---
+  duration_ms: 0.121667
+  ...
+# Subtest: AC-1: RATING_SCALE is the exact 19-rating list, best first [spec AC-1]
+ok 42 - AC-1: RATING_SCALE is the exact 19-rating list, best first [spec AC-1]
+  ---
+  duration_ms: 0.879167
+  ...
+# Subtest: AC-2: RATING_SCALE is frozen, push throws TypeError, and CC is still rejected after [spec AC-1, PM detail]
+ok 43 - AC-2: RATING_SCALE is frozen, push throws TypeError, and CC is still rejected after [spec AC-1, PM detail]
+  ---
+  duration_ms: 0.2075
+  ...
+# Subtest: AC-3: notchChange and notchCalculator are exported functions [spec AC-1]
+ok 44 - AC-3: notchChange and notchCalculator are exported functions [spec AC-1]
+  ---
+  duration_ms: 0.043708
+  ...
+# Subtest: AC-4: downgrades return the positive integer step count (7 table rows) [spec AC-2]
+ok 45 - AC-4: downgrades return the positive integer step count (7 table rows) [spec AC-2]
+  ---
+  duration_ms: 0.063959
+  ...
+# Subtest: AC-4: smallest (1) and largest (18) downgrade, scale ends as either argument, IG/HY crossing is a plain 1-notch step [spec AC-2]
+ok 46 - AC-4: smallest (1) and largest (18) downgrade, scale ends as either argument, IG/HY crossing is a plain 1-notch step [spec AC-2]
+  ---
+  duration_ms: 0.052833
+  ...
+# Subtest: AC-4: all 171 downgrade pairs equal idx(current) - idx(previous) on the typed scale [spec AC-2]
+ok 47 - AC-4: all 171 downgrade pairs equal idx(current) - idx(previous) on the typed scale [spec AC-2]
+  ---
+  duration_ms: 0.196584
+  ...
+# Subtest: AC-5: upgrades return the negative step count [spec AC-3]
+ok 48 - AC-5: upgrades return the negative step count [spec AC-3]
+  ---
+  duration_ms: 0.0395
+  ...
+# Subtest: AC-5: all 171 upgrade pairs equal idx(current) - idx(previous) [spec AC-3]
+ok 49 - AC-5: all 171 upgrade pairs equal idx(current) - idx(previous) [spec AC-3]
+  ---
+  duration_ms: 0.649833
+  ...
+# Subtest: AC-6: equal ratings give exactly +0, never -0 [spec AC-3]
+ok 50 - AC-6: equal ratings give exactly +0, never -0 [spec AC-3]
+  ---
+  duration_ms: 0.276417
+  ...
+# Subtest: AC-7: notchChange(a,b) === -notchChange(b,a) for all 361 ordered pairs [spec AC-3]
+ok 51 - AC-7: notchChange(a,b) === -notchChange(b,a) for all 361 ordered pairs [spec AC-3]
+  ---
+  duration_ms: 0.473083
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid empty string as previous and as current [spec AC-4]
+ok 52 - AC-8: notchChange throws RangeError (not TypeError) for invalid empty string as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.14775
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid lower case as previous and as current [spec AC-4]
+ok 53 - AC-8: notchChange throws RangeError (not TypeError) for invalid lower case as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.047458
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid leading space as previous and as current [spec AC-4]
+ok 54 - AC-8: notchChange throws RangeError (not TypeError) for invalid leading space as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.111125
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid trailing space as previous and as current [spec AC-4]
+ok 55 - AC-8: notchChange throws RangeError (not TypeError) for invalid trailing space as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.03675
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid Moody's Baa1 as previous and as current [spec AC-4]
+ok 56 - AC-8: notchChange throws RangeError (not TypeError) for invalid Moody's Baa1 as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.03425
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid CC as previous and as current [spec AC-4]
+ok 57 - AC-8: notchChange throws RangeError (not TypeError) for invalid CC as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.033333
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid C as previous and as current [spec AC-4]
+ok 58 - AC-8: notchChange throws RangeError (not TypeError) for invalid C as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.033042
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid D as previous and as current [spec AC-4]
+ok 59 - AC-8: notchChange throws RangeError (not TypeError) for invalid D as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.03275
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid SD as previous and as current [spec AC-4]
+ok 60 - AC-8: notchChange throws RangeError (not TypeError) for invalid SD as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.0365
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid RD as previous and as current [spec AC-4]
+ok 61 - AC-8: notchChange throws RangeError (not TypeError) for invalid RD as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.033833
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid NR as previous and as current [spec AC-4]
+ok 62 - AC-8: notchChange throws RangeError (not TypeError) for invalid NR as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.032916
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid WD as previous and as current [spec AC-4]
+ok 63 - AC-8: notchChange throws RangeError (not TypeError) for invalid WD as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.033166
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid outlook text as previous and as current [spec AC-4]
+ok 64 - AC-8: notchChange throws RangeError (not TypeError) for invalid outlook text as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.032875
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid BBB* as previous and as current [spec AC-4]
+ok 65 - AC-8: notchChange throws RangeError (not TypeError) for invalid BBB* as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.032917
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid constructor as previous and as current [spec AC-4]
+ok 66 - AC-8: notchChange throws RangeError (not TypeError) for invalid constructor as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.032875
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid toString as previous and as current [spec AC-4]
+ok 67 - AC-8: notchChange throws RangeError (not TypeError) for invalid toString as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.035209
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid __proto__ as previous and as current [spec AC-4]
+ok 68 - AC-8: notchChange throws RangeError (not TypeError) for invalid __proto__ as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.03325
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid hasOwnProperty as previous and as current [spec AC-4]
+ok 69 - AC-8: notchChange throws RangeError (not TypeError) for invalid hasOwnProperty as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.032584
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid valueOf as previous and as current [spec AC-4]
+ok 70 - AC-8: notchChange throws RangeError (not TypeError) for invalid valueOf as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.033791
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid null as previous and as current [spec AC-4]
+ok 71 - AC-8: notchChange throws RangeError (not TypeError) for invalid null as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.049333
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid undefined as previous and as current [spec AC-4]
+ok 72 - AC-8: notchChange throws RangeError (not TypeError) for invalid undefined as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.036542
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid number 42 as previous and as current [spec AC-4]
+ok 73 - AC-8: notchChange throws RangeError (not TypeError) for invalid number 42 as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.039417
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid empty object as previous and as current [spec AC-4]
+ok 74 - AC-8: notchChange throws RangeError (not TypeError) for invalid empty object as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.03425
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid array [BBB+] as previous and as current [spec AC-4]
+ok 75 - AC-8: notchChange throws RangeError (not TypeError) for invalid array [BBB+] as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.04725
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid Symbol as previous and as current [spec AC-4]
+ok 76 - AC-8: notchChange throws RangeError (not TypeError) for invalid Symbol as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.03575
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid null-prototype object as previous and as current [spec AC-4]
+ok 77 - AC-8: notchChange throws RangeError (not TypeError) for invalid null-prototype object as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.036291
+  ...
+# Subtest: AC-8: notchChange throws RangeError (not TypeError) for invalid String object as previous and as current [spec AC-4]
+ok 78 - AC-8: notchChange throws RangeError (not TypeError) for invalid String object as previous and as current [spec AC-4]
+  ---
+  duration_ms: 0.034833
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid empty string as previous and as current, with default and explicit indicator [spec AC-4]
+ok 79 - AC-9: notchCalculator throws RangeError for invalid empty string as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.09
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid lower case as previous and as current, with default and explicit indicator [spec AC-4]
+ok 80 - AC-9: notchCalculator throws RangeError for invalid lower case as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.049375
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid leading space as previous and as current, with default and explicit indicator [spec AC-4]
+ok 81 - AC-9: notchCalculator throws RangeError for invalid leading space as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.107917
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid trailing space as previous and as current, with default and explicit indicator [spec AC-4]
+ok 82 - AC-9: notchCalculator throws RangeError for invalid trailing space as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.05275
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid Moody's Baa1 as previous and as current, with default and explicit indicator [spec AC-4]
+ok 83 - AC-9: notchCalculator throws RangeError for invalid Moody's Baa1 as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.056833
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid CC as previous and as current, with default and explicit indicator [spec AC-4]
+ok 84 - AC-9: notchCalculator throws RangeError for invalid CC as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.053583
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid C as previous and as current, with default and explicit indicator [spec AC-4]
+ok 85 - AC-9: notchCalculator throws RangeError for invalid C as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.050917
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid D as previous and as current, with default and explicit indicator [spec AC-4]
+ok 86 - AC-9: notchCalculator throws RangeError for invalid D as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.050375
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid SD as previous and as current, with default and explicit indicator [spec AC-4]
+ok 87 - AC-9: notchCalculator throws RangeError for invalid SD as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.048333
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid RD as previous and as current, with default and explicit indicator [spec AC-4]
+ok 88 - AC-9: notchCalculator throws RangeError for invalid RD as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.048625
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid NR as previous and as current, with default and explicit indicator [spec AC-4]
+ok 89 - AC-9: notchCalculator throws RangeError for invalid NR as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.048666
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid WD as previous and as current, with default and explicit indicator [spec AC-4]
+ok 90 - AC-9: notchCalculator throws RangeError for invalid WD as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.048458
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid outlook text as previous and as current, with default and explicit indicator [spec AC-4]
+ok 91 - AC-9: notchCalculator throws RangeError for invalid outlook text as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.0505
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid BBB* as previous and as current, with default and explicit indicator [spec AC-4]
+ok 92 - AC-9: notchCalculator throws RangeError for invalid BBB* as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.0505
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid constructor as previous and as current, with default and explicit indicator [spec AC-4]
+ok 93 - AC-9: notchCalculator throws RangeError for invalid constructor as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.052875
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid toString as previous and as current, with default and explicit indicator [spec AC-4]
+ok 94 - AC-9: notchCalculator throws RangeError for invalid toString as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.051125
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid __proto__ as previous and as current, with default and explicit indicator [spec AC-4]
+ok 95 - AC-9: notchCalculator throws RangeError for invalid __proto__ as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.049209
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid hasOwnProperty as previous and as current, with default and explicit indicator [spec AC-4]
+ok 96 - AC-9: notchCalculator throws RangeError for invalid hasOwnProperty as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.049792
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid valueOf as previous and as current, with default and explicit indicator [spec AC-4]
+ok 97 - AC-9: notchCalculator throws RangeError for invalid valueOf as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.0485
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid null as previous and as current, with default and explicit indicator [spec AC-4]
+ok 98 - AC-9: notchCalculator throws RangeError for invalid null as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.054292
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid undefined as previous and as current, with default and explicit indicator [spec AC-4]
+ok 99 - AC-9: notchCalculator throws RangeError for invalid undefined as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.049542
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid number 42 as previous and as current, with default and explicit indicator [spec AC-4]
+ok 100 - AC-9: notchCalculator throws RangeError for invalid number 42 as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.052166
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid empty object as previous and as current, with default and explicit indicator [spec AC-4]
+ok 101 - AC-9: notchCalculator throws RangeError for invalid empty object as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.052542
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid array [BBB+] as previous and as current, with default and explicit indicator [spec AC-4]
+ok 102 - AC-9: notchCalculator throws RangeError for invalid array [BBB+] as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.048833
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid Symbol as previous and as current, with default and explicit indicator [spec AC-4]
+ok 103 - AC-9: notchCalculator throws RangeError for invalid Symbol as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.048625
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid null-prototype object as previous and as current, with default and explicit indicator [spec AC-4]
+ok 104 - AC-9: notchCalculator throws RangeError for invalid null-prototype object as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.04825
+  ...
+# Subtest: AC-9: notchCalculator throws RangeError for invalid String object as previous and as current, with default and explicit indicator [spec AC-4]
+ok 105 - AC-9: notchCalculator throws RangeError for invalid String object as previous and as current, with default and explicit indicator [spec AC-4]
+  ---
+  duration_ms: 0.38575
+  ...
+# Subtest: AC-9: spec examples notchCalculator(BBB+, Baa1) and notchCalculator(__proto__, AAA, 11) throw RangeError [spec AC-4]
+ok 106 - AC-9: spec examples notchCalculator(BBB+, Baa1) and notchCalculator(__proto__, AAA, 11) throw RangeError [spec AC-4]
+  ---
+  duration_ms: 0.076792
+  ...
+# Subtest: AC-10: missing arguments throw RangeError [spec AC-4]
+ok 107 - AC-10: missing arguments throw RangeError [spec AC-4]
+  ---
+  duration_ms: 0.068917
+  ...
+# Subtest: AC-8: an invalid rating never returns a value (no NaN or undefined leaking out) [spec AC-4]
+ok 108 - AC-8: an invalid rating never returns a value (no NaN or undefined leaking out) [spec AC-4]
+  ---
+  duration_ms: 0.18675
+  ...
+# Subtest: AC-11: default call returns a plain object with exactly notches/direction/wl, consistent with notchChange and the Ind. 12 mapping [spec AC-6]
+ok 109 - AC-11: default call returns a plain object with exactly notches/direction/wl, consistent with notchChange and the Ind. 12 mapping [spec AC-6]
+  ---
+  duration_ms: 0.683042
+  ...
+# Subtest: AC-11: direction is downgrade for 1, upgrade for -1, unchanged for 0 [spec AC-6]
+ok 110 - AC-11: direction is downgrade for 1, upgrade for -1, unchanged for 0 [spec AC-6]
+  ---
+  duration_ms: 0.032917
+  ...
+# Subtest: AC-11: Ind. 12 thresholds at -1, 0, 1, 2, 18 [spec AC-6]
+ok 111 - AC-11: Ind. 12 thresholds at -1, 0, 1, 2, 18 [spec AC-6]
+  ---
+  duration_ms: 0.040917
+  ...
+# Subtest: AC-12: the four plan examples deep-strict-equal [spec AC-6]
+ok 112 - AC-12: the four plan examples deep-strict-equal [spec AC-6]
+  ---
+  duration_ms: 0.043625
+  ...
+# Subtest: AC-12: every row of the test-data table matches (notchChange, direction, wl 12) [spec AC-6]
+ok 113 - AC-12: every row of the test-data table matches (notchChange, direction, wl 12) [spec AC-6]
+  ---
+  duration_ms: 0.067708
+  ...
+# Subtest: AC-12: notches is +0 (never -0) for no-change pairs in the calculator [spec AC-6 edge case]
+ok 114 - AC-12: notches is +0 (never -0) for no-change pairs in the calculator [spec AC-6 edge case]
+  ---
+  duration_ms: 0.070667
+  ...
+# Subtest: AC-13: indicator 11 maps WL 0 for <=1, 1 for exactly 2, 2 for >=3 across all 361 pairs [spec AC-7]
+ok 115 - AC-13: indicator 11 maps WL 0 for <=1, 1 for exactly 2, 2 for >=3 across all 361 pairs [spec AC-7]
+  ---
+  duration_ms: 0.885208
+  ...
+# Subtest: AC-13: indicator 11 thresholds at -1, 0, 1, 2, 3, 18 [spec AC-7]
+ok 116 - AC-13: indicator 11 thresholds at -1, 0, 1, 2, 3, 18 [spec AC-7]
+  ---
+  duration_ms: 0.053125
+  ...
+# Subtest: AC-13: indicator 11 reproduces the wl (11 or 13) column of the test-data table [spec AC-7]
+ok 117 - AC-13: indicator 11 reproduces the wl (11 or 13) column of the test-data table [spec AC-7]
+  ---
+  duration_ms: 0.128083
+  ...
+# Subtest: AC-13: indicator 13 maps WL 0 for <=1, 1 for exactly 2, 2 for >=3 across all 361 pairs [spec AC-7]
+ok 118 - AC-13: indicator 13 maps WL 0 for <=1, 1 for exactly 2, 2 for >=3 across all 361 pairs [spec AC-7]
+  ---
+  duration_ms: 0.5495
+  ...
+# Subtest: AC-13: indicator 13 thresholds at -1, 0, 1, 2, 3, 18 [spec AC-7]
+ok 119 - AC-13: indicator 13 thresholds at -1, 0, 1, 2, 3, 18 [spec AC-7]
+  ---
+  duration_ms: 0.021625
+  ...
+# Subtest: AC-13: indicator 13 reproduces the wl (11 or 13) column of the test-data table [spec AC-7]
+ok 120 - AC-13: indicator 13 reproduces the wl (11 or 13) column of the test-data table [spec AC-7]
+  ---
+  duration_ms: 0.031916
+  ...
+# Subtest: AC-14: the five plan examples for indicators 11 and 13 [spec AC-7]
+ok 121 - AC-14: the five plan examples for indicators 11 and 13 [spec AC-7]
+  ---
+  duration_ms: 0.039791
+  ...
+# Subtest: AC-15: indicator 12, undefined and omitted give deep-strict-equal results over all 361 pairs [spec AC-7]
+ok 122 - AC-15: indicator 12, undefined and omitted give deep-strict-equal results over all 361 pairs [spec AC-7]
+  ---
+  duration_ms: 0.639584
+  ...
+# Subtest: AC-16: indicator 10 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+ok 123 - AC-16: indicator 10 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+  ---
+  duration_ms: 0.065375
+  ...
+# Subtest: AC-16: indicator 14 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+ok 124 - AC-16: indicator 14 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+  ---
+  duration_ms: 0.048917
+  ...
+# Subtest: AC-16: indicator 0 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+ok 125 - AC-16: indicator 0 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+  ---
+  duration_ms: 0.033709
+  ...
+# Subtest: AC-16: indicator "12" throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+ok 126 - AC-16: indicator "12" throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+  ---
+  duration_ms: 0.033083
+  ...
+# Subtest: AC-16: indicator null throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+ok 127 - AC-16: indicator null throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+  ---
+  duration_ms: 0.034917
+  ...
+# Subtest: AC-16: indicator NaN throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+ok 128 - AC-16: indicator NaN throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+  ---
+  duration_ms: 0.032542
+  ...
+# Subtest: AC-16: indicator 12.5 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+ok 129 - AC-16: indicator 12.5 throws RangeError, with a downgrade pair and with the no-change pair [spec AC-7]
+  ---
+  duration_ms: 0.187125
+  ...
+# Subtest: AC-16: valid indicators 11, 12, 13, undefined and omitted do not throw [spec AC-7]
+ok 130 - AC-16: valid indicators 11, 12, 13, undefined and omitted do not throw [spec AC-7]
+  ---
+  duration_ms: 0.100083
+  ...
+# Subtest: AC-16: an invalid rating together with an invalid indicator still throws RangeError [spec edge case]
+ok 131 - AC-16: an invalid rating together with an invalid indicator still throws RangeError [spec edge case]
+  ---
+  duration_ms: 0.047958
+  ...
+# Subtest: AC-17: results are synchronous (not a Promise) and repeat calls are deep-strict-equal [spec AC-9]
+ok 132 - AC-17: results are synchronous (not a Promise) and repeat calls are deep-strict-equal [spec AC-9]
+  ---
+  duration_ms: 0.136083
+  ...
+# Subtest: AC-17: mutating a returned object does not change later results [spec AC-9]
+ok 133 - AC-17: mutating a returned object does not change later results [spec AC-9]
+  ---
+  duration_ms: 0.037333
+  ...
+# Subtest: AC-18: RATING_SCALE is unchanged after all the calls of this suite [spec AC-9]
+ok 134 - AC-18: RATING_SCALE is unchanged after all the calls of this suite [spec AC-9]
+  ---
+  duration_ms: 0.544625
+  ...
+# Subtest: AC-19: notch.mjs has no import, dynamic import(, require(, eval( or new Function; package.json has no dependencies [spec AC-9, NFR-security]
+ok 135 - AC-19: notch.mjs has no import, dynamic import(, require(, eval( or new Function; package.json has no dependencies [spec AC-9, NFR-security]
+  ---
+  duration_ms: 1.225833
+  ...
+# Subtest: RATING_SCALE
+    # Subtest: is the 19-step scale, best first
+    ok 1 - is the 19-step scale, best first
+      ---
+      duration_ms: 0.549667
+      ...
+    # Subtest: is frozen and cannot be extended
+    ok 2 - is frozen and cannot be extended
+      ---
+      duration_ms: 0.273792
+      ...
+    # Subtest: exports are functions
+    ok 3 - exports are functions
+      ---
+      duration_ms: 0.051375
+      ...
+    1..3
+ok 136 - RATING_SCALE
+  ---
+  duration_ms: 1.264667
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: downgrades are positive integers
+    ok 1 - downgrades are positive integers
+      ---
+      duration_ms: 0.164
+      ...
+    # Subtest: upgrades are negative
+    ok 2 - upgrades are negative
+      ---
+      duration_ms: 0.042416
+      ...
+    # Subtest: equal ratings give +0, never -0
+    ok 3 - equal ratings give +0, never -0
+      ---
+      duration_ms: 0.05275
+      ...
+    # Subtest: is antisymmetric over all pairs
+    ok 4 - is antisymmetric over all pairs
+      ---
+      duration_ms: 0.595167
+      ...
+    # Subtest: rejects invalid ratings in either position with RangeError
+    ok 5 - rejects invalid ratings in either position with RangeError
+      ---
+      duration_ms: 0.421083
+      ...
+    # Subtest: rejects missing arguments with RangeError
+    ok 6 - rejects missing arguments with RangeError
+      ---
+      duration_ms: 0.142208
+      ...
+    # Subtest: does not call user-defined coercion on invalid input
+    ok 7 - does not call user-defined coercion on invalid input
+      ---
+      duration_ms: 0.176917
+      ...
+    1..7
+ok 137 - notchChange
+  ---
+  duration_ms: 1.827625
+  type: 'suite'
+  ...
+# Subtest: notchCalculator
+    # Subtest: default indicator (12) examples
+    ok 1 - default indicator (12) examples
+      ---
+      duration_ms: 0.100916
+      ...
+    # Subtest: returns a plain object with exactly three keys
+    ok 2 - returns a plain object with exactly three keys
+      ---
+      duration_ms: 0.046083
+      ...
+    # Subtest: notches is never -0
+    ok 3 - notches is never -0
+      ---
+      duration_ms: 0.084
+      ...
+    # Subtest: Ind. 12 thresholds
+    ok 4 - Ind. 12 thresholds
+      ---
+      duration_ms: 0.039208
+      ...
+    # Subtest: Ind. 11 and 13 thresholds
+    ok 5 - Ind. 11 and 13 thresholds
+      ---
+      duration_ms: 0.055542
+      ...
+    # Subtest: Ind. 11/13 examples
+    ok 6 - Ind. 11/13 examples
+      ---
+      duration_ms: 0.121584
+      ...
+    # Subtest: indicator 12, undefined and omitted are equivalent
+    ok 7 - indicator 12, undefined and omitted are equivalent
+      ---
+      duration_ms: 0.87875
+      ...
+    # Subtest: rejects invalid indicators even when WL would be 0
+    ok 8 - rejects invalid indicators even when WL would be 0
+      ---
+      duration_ms: 0.15525
+      ...
+    # Subtest: rejects invalid ratings with every valid indicator
+    ok 9 - rejects invalid ratings with every valid indicator
+      ---
+      duration_ms: 0.927333
+      ...
+    # Subtest: rejects missing arguments with RangeError
+    ok 10 - rejects missing arguments with RangeError
+      ---
+      duration_ms: 0.041792
+      ...
+    # Subtest: invalid rating together with invalid indicator still RangeError
+    ok 11 - invalid rating together with invalid indicator still RangeError
+      ---
+      duration_ms: 0.033375
+      ...
+    1..11
+ok 138 - notchCalculator
+  ---
+  duration_ms: 2.605875
+  type: 'suite'
+  ...
+# Subtest: purity
+    # Subtest: results are synchronous and repeatable
+    ok 1 - results are synchronous and repeatable
+      ---
+      duration_ms: 0.075042
+      ...
+    # Subtest: RATING_SCALE is unchanged after all calls
+    ok 2 - RATING_SCALE is unchanged after all calls
+      ---
+      duration_ms: 0.032125
+      ...
+    # Subtest: source has no imports, require, eval or new Function
+    ok 3 - source has no imports, require, eval or new Function
+      ---
+      duration_ms: 0.501958
+      ...
+    1..3
+ok 139 - purity
+  ---
+  duration_ms: 0.655042
+  type: 'suite'
+  ...
+# Subtest: JSDoc (AC-10)
+    # Subtest: notchChange has @param, @returns, @throws {RangeError}
+    ok 1 - notchChange has @param, @returns, @throws {RangeError}
+      ---
+      duration_ms: 0.202166
+      ...
+    # Subtest: notchCalculator documents optional indicator 11|12|13 default 12
+    ok 2 - notchCalculator documents optional indicator 11|12|13 default 12
+      ---
+      duration_ms: 0.100209
+      ...
+    # Subtest: RATING_SCALE block states type, order and accepted symbols
+    ok 3 - RATING_SCALE block states type, order and accepted symbols
+      ---
+      duration_ms: 0.337875
+      ...
+    1..3
+ok 140 - JSDoc (AC-10)
+  ---
+  duration_ms: 0.683833
+  type: 'suite'
+  ...
+1..140
+# tests 162
+# suites 5
+# pass 162
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 99.2195

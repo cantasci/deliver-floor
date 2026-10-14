@@ -108,7 +108,7 @@ export function checkJobRoles(job, cat) {
   if (!devs.length) errors.push("no dev role selected — nobody could build the cards");
   // The stack reviewer follows the language. In a repo without code the language is decided at readiness (ARC-stack — the
   // request or the human, never a default), so until then the job may have no reviewer yet; from planning on it must.
-  const stackOpen = !(job.stack ?? []).length && ["intake", "readiness", "awaiting_clarification"].includes(job.phase);
+  const stackOpen = !(job.stack ?? []).length && ["intake", "shaping", "readiness", "awaiting_clarification"].includes(job.phase);
   if (!stackOpen && !(job.roles ?? []).some((r) => r.role?.startsWith("reviewer"))) errors.push("no stack reviewer selected (role 'reviewer')");
   const PROVIDERS = ["claude", "codex", "gemini", "grok", "kimi", "qwen", "opencode", "crush", "pi", "copilot", "cursor", "antigravity"];
   for (const r of job.roles ?? []) if (r.provider && !PROVIDERS.includes(r.provider)) errors.push(`role '${r.role}': provider '${r.provider}' is not one of ${PROVIDERS.join(", ")}`);

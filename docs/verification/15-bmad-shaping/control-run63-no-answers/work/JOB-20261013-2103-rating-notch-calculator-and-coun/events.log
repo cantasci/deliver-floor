@@ -1,0 +1,31 @@
+2026-10-13T19:03:15Z	new	Rating notch calculator and country indicator
+2026-10-13T19:03:31Z	jobset	stack: .stack=["node"]
+2026-10-13T19:03:31Z	jobset	roles: .roles=[
+{"role":"ba","agent":"business-analyst","why":"always"},
+{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator rule / domain logic in src/ratings and src/indicators"},
+{"role":"backend","agent":"backend-dev","why":"Contract: src/ratings/notch.mjs and src/indicators/countryRating.mjs"},
+{"role":"qa","agent":"qa-tester","why":"always"},
+{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"Plain Node ESM (.mjs) code"},
+{"role":"blind","agent":"ecc:code-reviewer","why":"REQ-06-02/REQ-03-12: wrong WL thresholds or notch sign mislead credit monitoring (P0/P1)"}]
+2026-10-13T19:03:32Z	jobset	assumptions: .assumptions += ["Stack: Plain Node ESM named by the request; no dependencies"]
+2026-10-13T19:03:33Z	roles	ba backend-lead backend qa reviewer blind
+2026-10-13T19:03:33Z	phase	readiness
+2026-10-13T19:03:37Z	checkpoint	readiness, 0 card(s) merged — a fresh session goes on from here
+2026-10-13T19:03:55Z	context	drafted from the repo: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2103-rating-notch-calculator-and-coun/context.draft.md
+2026-10-13T19:04:11Z	dispatch	business-analyst
+2026-10-13T19:07:29Z	agent	business-analyst a10ead6428c50caa2: I did not write `.work/JOB-20261013-2103-rating-notch-calculator-and-coun/readiness.draft.json`, because my role is read-only. The JSON is below for you to stor
+2026-10-13T19:08:06Z	decide	DEL-docs: JSDoc on the four exports stating the sign convention and thresholds — internal-only documentation; no README change needed for a library slice others import
+2026-10-13T19:08:16Z	jobset	roles: .roles += [{"role":"docs","agent":"ecc:doc-updater","why":"DEL-docs: JSDoc on the four exports stating sign convention and thresholds"}]
+2026-10-13T19:08:16Z	roles-defaults	qa: 2 seats — one per developer seat
+2026-10-13T19:08:16Z	roles	ba backend-lead backend qa reviewer blind docs
+2026-10-13T19:08:16Z	phase	readiness
+2026-10-13T19:08:17Z	readiness	35 items: 14 decided, 5 n/a, 16 open
+2026-10-13T19:08:17Z	phase	awaiting_clarification
+2026-10-13T19:08:28Z	clarify	PRD-scope: The caller passes the rating the analyst confirmed or edited. No override parameter, no persistence, no audit trail in this slice.
+2026-10-13T19:08:28Z	clarify	PRD-conflicts: C2 stands: the POC example miscounts. BBB+ → BB+ is 3 notches → calculator WL 2; the 2-notch example is BBB+ → BBB- → WL 1.
+2026-10-13T19:08:29Z	clarify	CON-interface: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-13T19:08:29Z	clarify	CON-errors: RangeError for every invalid input, strings and non-strings alike (null, undefined, 42, {} included).
+2026-10-13T19:08:30Z	clarify	ARC-style: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T19:08:30Z	clarify	ARC-components: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-13T19:08:30Z	clarify	ARC-ui: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-13T19:08:31Z	clarify	X-notches-sign: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.

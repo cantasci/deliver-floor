@@ -1,0 +1,825 @@
+# gate: T-01  attempt: 1  2026-10-13T19:27:51Z
+ok    on job/JOB-20261013-2110-rating-notch-calculator-and-coun--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/ratings/notch.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE (AC-1)
+    # Subtest: deep-equals the 19 grades, best first
+    ok 1 - deep-equals the 19 grades, best first
+      ---
+      duration_ms: 0.44925
+      ...
+    # Subtest: has 19 distinct entries with the right ends
+    ok 2 - has 19 distinct entries with the right ends
+      ---
+      duration_ms: 0.054625
+      ...
+    # Subtest: uses only ASCII minus
+    ok 3 - uses only ASCII minus
+      ---
+      duration_ms: 0.113583
+      ...
+    1..3
+ok 1 - RATING_SCALE (AC-1)
+  ---
+  duration_ms: 0.970167
+  type: 'suite'
+  ...
+# Subtest: notchChange downgrades (AC-2)
+    # Subtest: BBB -> BBB- = 1
+    ok 1 - BBB -> BBB- = 1
+      ---
+      duration_ms: 0.081083
+      ...
+    # Subtest: BBB- -> BB+ = 1
+    ok 2 - BBB- -> BB+ = 1
+      ---
+      duration_ms: 0.029958
+      ...
+    # Subtest: BBB -> BB+ = 2
+    ok 3 - BBB -> BB+ = 2
+      ---
+      duration_ms: 0.02825
+      ...
+    # Subtest: BBB+ -> BB+ = 3
+    ok 4 - BBB+ -> BB+ = 3
+      ---
+      duration_ms: 0.113333
+      ...
+    # Subtest: AAA -> CCC- = 18
+    ok 5 - AAA -> CCC- = 18
+      ---
+      duration_ms: 0.154834
+      ...
+    # Subtest: AAA -> AA+ = 1
+    ok 6 - AAA -> AA+ = 1
+      ---
+      duration_ms: 0.113333
+      ...
+    # Subtest: CCC -> CCC- = 1
+    ok 7 - CCC -> CCC- = 1
+      ---
+      duration_ms: 0.118625
+      ...
+    # Subtest: A- -> BBB+ = 1
+    ok 8 - A- -> BBB+ = 1
+      ---
+      duration_ms: 0.02875
+      ...
+    # Subtest: B- -> CCC+ = 1
+    ok 9 - B- -> CCC+ = 1
+      ---
+      duration_ms: 0.020917
+      ...
+    1..9
+ok 2 - notchChange downgrades (AC-2)
+  ---
+  duration_ms: 0.898583
+  type: 'suite'
+  ...
+# Subtest: notchChange unchanged and upgrades (AC-3)
+    # Subtest: A -> A = 0
+    ok 1 - A -> A = 0
+      ---
+      duration_ms: 0.051375
+      ...
+    # Subtest: CCC- -> CCC- = 0
+    ok 2 - CCC- -> CCC- = 0
+      ---
+      duration_ms: 0.01725
+      ...
+    # Subtest: AAA -> AAA = 0
+    ok 3 - AAA -> AAA = 0
+      ---
+      duration_ms: 0.293416
+      ...
+    # Subtest: BB+ -> BBB- = -1
+    ok 4 - BB+ -> BBB- = -1
+      ---
+      duration_ms: 0.025125
+      ...
+    # Subtest: BB -> BBB = -3
+    ok 5 - BB -> BBB = -3
+      ---
+      duration_ms: 0.020375
+      ...
+    # Subtest: CCC- -> AAA = -18
+    ok 6 - CCC- -> AAA = -18
+      ---
+      duration_ms: 0.018708
+      ...
+    # Subtest: AA+ -> AAA = -1
+    ok 7 - AA+ -> AAA = -1
+      ---
+      duration_ms: 0.018459
+      ...
+    # Subtest: CCC- -> CCC = -1
+    ok 8 - CCC- -> CCC = -1
+      ---
+      duration_ms: 0.017875
+      ...
+    # Subtest: unchanged is +0, never -0
+    ok 9 - unchanged is +0, never -0
+      ---
+      duration_ms: 0.0725
+      ...
+    1..9
+ok 3 - notchChange unchanged and upgrades (AC-3)
+  ---
+  duration_ms: 0.619625
+  type: 'suite'
+  ...
+# Subtest: notchChange invalid input (AC-4)
+    # Subtest: rejects [object String]:"bbb+" as previous
+    ok 1 - rejects [object String]:"bbb+" as previous
+      ---
+      duration_ms: 0.261792
+      ...
+    # Subtest: rejects [object String]:"bbb+" as current
+    ok 2 - rejects [object String]:"bbb+" as current
+      ---
+      duration_ms: 0.032042
+      ...
+    # Subtest: rejects [object String]:" BBB+" as previous
+    ok 3 - rejects [object String]:" BBB+" as previous
+      ---
+      duration_ms: 0.022
+      ...
+    # Subtest: rejects [object String]:" BBB+" as current
+    ok 4 - rejects [object String]:" BBB+" as current
+      ---
+      duration_ms: 0.021208
+      ...
+    # Subtest: rejects [object String]:"BBB+ " as previous
+    ok 5 - rejects [object String]:"BBB+ " as previous
+      ---
+      duration_ms: 0.029833
+      ...
+    # Subtest: rejects [object String]:"BBB+ " as current
+    ok 6 - rejects [object String]:"BBB+ " as current
+      ---
+      duration_ms: 0.021333
+      ...
+    # Subtest: rejects [object String]:"BBB−" as previous
+    ok 7 - rejects [object String]:"BBB−" as previous
+      ---
+      duration_ms: 0.023417
+      ...
+    # Subtest: rejects [object String]:"BBB−" as current
+    ok 8 - rejects [object String]:"BBB−" as current
+      ---
+      duration_ms: 0.027458
+      ...
+    # Subtest: rejects [object String]:"" as previous
+    ok 9 - rejects [object String]:"" as previous
+      ---
+      duration_ms: 0.077791
+      ...
+    # Subtest: rejects [object String]:"" as current
+    ok 10 - rejects [object String]:"" as current
+      ---
+      duration_ms: 0.030833
+      ...
+    # Subtest: rejects [object String]:"CC" as previous
+    ok 11 - rejects [object String]:"CC" as previous
+      ---
+      duration_ms: 0.021542
+      ...
+    # Subtest: rejects [object String]:"CC" as current
+    ok 12 - rejects [object String]:"CC" as current
+      ---
+      duration_ms: 0.020583
+      ...
+    # Subtest: rejects [object String]:"C" as previous
+    ok 13 - rejects [object String]:"C" as previous
+      ---
+      duration_ms: 0.020417
+      ...
+    # Subtest: rejects [object String]:"C" as current
+    ok 14 - rejects [object String]:"C" as current
+      ---
+      duration_ms: 0.020459
+      ...
+    # Subtest: rejects [object String]:"D" as previous
+    ok 15 - rejects [object String]:"D" as previous
+      ---
+      duration_ms: 0.064833
+      ...
+    # Subtest: rejects [object String]:"D" as current
+    ok 16 - rejects [object String]:"D" as current
+      ---
+      duration_ms: 0.022
+      ...
+    # Subtest: rejects [object String]:"NR" as previous
+    ok 17 - rejects [object String]:"NR" as previous
+      ---
+      duration_ms: 0.0205
+      ...
+    # Subtest: rejects [object String]:"NR" as current
+    ok 18 - rejects [object String]:"NR" as current
+      ---
+      duration_ms: 0.020125
+      ...
+    # Subtest: rejects [object String]:"WD" as previous
+    ok 19 - rejects [object String]:"WD" as previous
+      ---
+      duration_ms: 0.020917
+      ...
+    # Subtest: rejects [object String]:"WD" as current
+    ok 20 - rejects [object String]:"WD" as current
+      ---
+      duration_ms: 0.021375
+      ...
+    # Subtest: rejects [object String]:"Baa1" as previous
+    ok 21 - rejects [object String]:"Baa1" as previous
+      ---
+      duration_ms: 0.021333
+      ...
+    # Subtest: rejects [object String]:"Baa1" as current
+    ok 22 - rejects [object String]:"Baa1" as current
+      ---
+      duration_ms: 0.020292
+      ...
+    # Subtest: rejects [object Null]:obj as previous
+    ok 23 - rejects [object Null]:obj as previous
+      ---
+      duration_ms: 0.022625
+      ...
+    # Subtest: rejects [object Null]:obj as current
+    ok 24 - rejects [object Null]:obj as current
+      ---
+      duration_ms: 0.021459
+      ...
+    # Subtest: rejects [object Undefined]:undefined as previous
+    ok 25 - rejects [object Undefined]:undefined as previous
+      ---
+      duration_ms: 0.021042
+      ...
+    # Subtest: rejects [object Undefined]:undefined as current
+    ok 26 - rejects [object Undefined]:undefined as current
+      ---
+      duration_ms: 0.021958
+      ...
+    # Subtest: rejects [object Number]:42 as previous
+    ok 27 - rejects [object Number]:42 as previous
+      ---
+      duration_ms: 0.021084
+      ...
+    # Subtest: rejects [object Number]:42 as current
+    ok 28 - rejects [object Number]:42 as current
+      ---
+      duration_ms: 0.021167
+      ...
+    # Subtest: rejects [object Object]:obj as previous
+    ok 29 - rejects [object Object]:obj as previous
+      ---
+      duration_ms: 0.021542
+      ...
+    # Subtest: rejects [object Object]:obj as current
+    ok 30 - rejects [object Object]:obj as current
+      ---
+      duration_ms: 0.021291
+      ...
+    # Subtest: rejects [object String]:obj as previous
+    ok 31 - rejects [object String]:obj as previous
+      ---
+      duration_ms: 0.021167
+      ...
+    # Subtest: rejects [object String]:obj as current
+    ok 32 - rejects [object String]:obj as current
+      ---
+      duration_ms: 0.020084
+      ...
+    # Subtest: rejects [object Array]:obj as previous
+    ok 33 - rejects [object Array]:obj as previous
+      ---
+      duration_ms: 0.021416
+      ...
+    # Subtest: rejects [object Array]:obj as current
+    ok 34 - rejects [object Array]:obj as current
+      ---
+      duration_ms: 0.022209
+      ...
+    # Subtest: rejects [object String]:"toString" as previous
+    ok 35 - rejects [object String]:"toString" as previous
+      ---
+      duration_ms: 0.021167
+      ...
+    # Subtest: rejects [object String]:"toString" as current
+    ok 36 - rejects [object String]:"toString" as current
+      ---
+      duration_ms: 0.021042
+      ...
+    # Subtest: rejects [object String]:"constructor" as previous
+    ok 37 - rejects [object String]:"constructor" as previous
+      ---
+      duration_ms: 0.021583
+      ...
+    # Subtest: rejects [object String]:"constructor" as current
+    ok 38 - rejects [object String]:"constructor" as current
+      ---
+      duration_ms: 0.046167
+      ...
+    # Subtest: rejects [object String]:"__proto__" as previous
+    ok 39 - rejects [object String]:"__proto__" as previous
+      ---
+      duration_ms: 0.021208
+      ...
+    # Subtest: rejects [object String]:"__proto__" as current
+    ok 40 - rejects [object String]:"__proto__" as current
+      ---
+      duration_ms: 0.021708
+      ...
+    # Subtest: rejects [object String]:"length" as previous
+    ok 41 - rejects [object String]:"length" as previous
+      ---
+      duration_ms: 0.021584
+      ...
+    # Subtest: rejects [object String]:"length" as current
+    ok 42 - rejects [object String]:"length" as current
+      ---
+      duration_ms: 0.021542
+      ...
+    # Subtest: rejects [object Number]:0 as previous
+    ok 43 - rejects [object Number]:0 as previous
+      ---
+      duration_ms: 0.02125
+      ...
+    # Subtest: rejects [object Number]:0 as current
+    ok 44 - rejects [object Number]:0 as current
+      ---
+      duration_ms: 0.022208
+      ...
+    # Subtest: rejects [object Number]:null as previous
+    ok 45 - rejects [object Number]:null as previous
+      ---
+      duration_ms: 0.021042
+      ...
+    # Subtest: rejects [object Number]:null as current
+    ok 46 - rejects [object Number]:null as current
+      ---
+      duration_ms: 0.020834
+      ...
+    # Subtest: rejects [object Boolean]:true as previous
+    ok 47 - rejects [object Boolean]:true as previous
+      ---
+      duration_ms: 0.030792
+      ...
+    # Subtest: rejects [object Boolean]:true as current
+    ok 48 - rejects [object Boolean]:true as current
+      ---
+      duration_ms: 0.021709
+      ...
+    # Subtest: rejects bigint as previous
+    ok 49 - rejects bigint as previous
+      ---
+      duration_ms: 0.020417
+      ...
+    # Subtest: rejects bigint as current
+    ok 50 - rejects bigint as current
+      ---
+      duration_ms: 0.032042
+      ...
+    # Subtest: rejects Symbol as previous
+    ok 51 - rejects Symbol as previous
+      ---
+      duration_ms: 0.021541
+      ...
+    # Subtest: rejects Symbol as current
+    ok 52 - rejects Symbol as current
+      ---
+      duration_ms: 0.021625
+      ...
+    # Subtest: rejects [object Object]:obj as previous
+    ok 53 - rejects [object Object]:obj as previous
+      ---
+      duration_ms: 0.025209
+      ...
+    # Subtest: rejects [object Object]:obj as current
+    ok 54 - rejects [object Object]:obj as current
+      ---
+      duration_ms: 0.023667
+      ...
+    # Subtest: missing arguments throw RangeError
+    ok 55 - missing arguments throw RangeError
+      ---
+      duration_ms: 0.052375
+      ...
+    # Subtest: invalid current never yields an index arithmetic result
+    ok 56 - invalid current never yields an index arithmetic result
+      ---
+      duration_ms: 0.035209
+      ...
+    1..56
+ok 4 - notchChange invalid input (AC-4)
+  ---
+  duration_ms: 1.9925
+  type: 'suite'
+  ...
+# Subtest: notchCalculator downgrades (AC-5)
+    # Subtest: BBB -> BBB-
+    ok 1 - BBB -> BBB-
+      ---
+      duration_ms: 0.09175
+      ...
+    # Subtest: BBB -> BB+
+    ok 2 - BBB -> BB+
+      ---
+      duration_ms: 0.029875
+      ...
+    # Subtest: BBB+ -> BB+
+    ok 3 - BBB+ -> BB+
+      ---
+      duration_ms: 0.024667
+      ...
+    # Subtest: AAA -> CCC-
+    ok 4 - AAA -> CCC-
+      ---
+      duration_ms: 0.022292
+      ...
+    # Subtest: AA -> A+
+    ok 5 - AA -> A+
+      ---
+      duration_ms: 0.022167
+      ...
+    # Subtest: BBB- -> BB
+    ok 6 - BBB- -> BB
+      ---
+      duration_ms: 0.021916
+      ...
+    # Subtest: BBB -> BB
+    ok 7 - BBB -> BB
+      ---
+      duration_ms: 0.022542
+      ...
+    # Subtest: CCC+ -> CCC-
+    ok 8 - CCC+ -> CCC-
+      ---
+      duration_ms: 0.382708
+      ...
+    # Subtest: AAA -> AA+
+    ok 9 - AAA -> AA+
+      ---
+      duration_ms: 0.11875
+      ...
+    # Subtest: CCC -> CCC-
+    ok 10 - CCC -> CCC-
+      ---
+      duration_ms: 0.027792
+      ...
+    1..10
+ok 5 - notchCalculator downgrades (AC-5)
+  ---
+  duration_ms: 0.855875
+  type: 'suite'
+  ...
+# Subtest: notchCalculator unchanged and upgrades (AC-6)
+    # Subtest: A -> A
+    ok 1 - A -> A
+      ---
+      duration_ms: 0.052916
+      ...
+    # Subtest: CCC- -> CCC-
+    ok 2 - CCC- -> CCC-
+      ---
+      duration_ms: 0.020833
+      ...
+    # Subtest: BB+ -> BBB-
+    ok 3 - BB+ -> BBB-
+      ---
+      duration_ms: 0.018792
+      ...
+    # Subtest: BB -> BBB
+    ok 4 - BB -> BBB
+      ---
+      duration_ms: 0.031667
+      ...
+    # Subtest: CCC- -> AAA
+    ok 5 - CCC- -> AAA
+      ---
+      duration_ms: 0.017166
+      ...
+    # Subtest: unchanged notches is +0
+    ok 6 - unchanged notches is +0
+      ---
+      duration_ms: 0.02375
+      ...
+    1..6
+ok 6 - notchCalculator unchanged and upgrades (AC-6)
+  ---
+  duration_ms: 0.219584
+  type: 'suite'
+  ...
+# Subtest: notchCalculator over all 361 pairs (AC-7)
+    # Subtest: keys, notches, direction and wl follow the rules
+    ok 1 - keys, notches, direction and wl follow the rules
+      ---
+      duration_ms: 0.503708
+      ...
+    # Subtest: results are independent objects
+    ok 2 - results are independent objects
+      ---
+      duration_ms: 0.091667
+      ...
+    1..2
+ok 7 - notchCalculator over all 361 pairs (AC-7)
+  ---
+  duration_ms: 0.624
+  type: 'suite'
+  ...
+# Subtest: notchCalculator invalid input (AC-8)
+    # Subtest: rejects [object String]:"bbb+" as previous
+    ok 1 - rejects [object String]:"bbb+" as previous
+      ---
+      duration_ms: 0.15475
+      ...
+    # Subtest: rejects [object String]:"bbb+" as current
+    ok 2 - rejects [object String]:"bbb+" as current
+      ---
+      duration_ms: 0.040458
+      ...
+    # Subtest: rejects [object String]:" BBB+" as previous
+    ok 3 - rejects [object String]:" BBB+" as previous
+      ---
+      duration_ms: 0.020833
+      ...
+    # Subtest: rejects [object String]:" BBB+" as current
+    ok 4 - rejects [object String]:" BBB+" as current
+      ---
+      duration_ms: 0.020625
+      ...
+    # Subtest: rejects [object String]:"BBB+ " as previous
+    ok 5 - rejects [object String]:"BBB+ " as previous
+      ---
+      duration_ms: 0.018834
+      ...
+    # Subtest: rejects [object String]:"BBB+ " as current
+    ok 6 - rejects [object String]:"BBB+ " as current
+      ---
+      duration_ms: 0.020042
+      ...
+    # Subtest: rejects [object String]:"BBB−" as previous
+    ok 7 - rejects [object String]:"BBB−" as previous
+      ---
+      duration_ms: 0.037125
+      ...
+    # Subtest: rejects [object String]:"BBB−" as current
+    ok 8 - rejects [object String]:"BBB−" as current
+      ---
+      duration_ms: 0.020791
+      ...
+    # Subtest: rejects [object String]:"" as previous
+    ok 9 - rejects [object String]:"" as previous
+      ---
+      duration_ms: 0.019666
+      ...
+    # Subtest: rejects [object String]:"" as current
+    ok 10 - rejects [object String]:"" as current
+      ---
+      duration_ms: 0.020334
+      ...
+    # Subtest: rejects [object String]:"CC" as previous
+    ok 11 - rejects [object String]:"CC" as previous
+      ---
+      duration_ms: 0.020208
+      ...
+    # Subtest: rejects [object String]:"CC" as current
+    ok 12 - rejects [object String]:"CC" as current
+      ---
+      duration_ms: 0.020334
+      ...
+    # Subtest: rejects [object String]:"C" as previous
+    ok 13 - rejects [object String]:"C" as previous
+      ---
+      duration_ms: 0.021667
+      ...
+    # Subtest: rejects [object String]:"C" as current
+    ok 14 - rejects [object String]:"C" as current
+      ---
+      duration_ms: 0.019917
+      ...
+    # Subtest: rejects [object String]:"D" as previous
+    ok 15 - rejects [object String]:"D" as previous
+      ---
+      duration_ms: 0.020042
+      ...
+    # Subtest: rejects [object String]:"D" as current
+    ok 16 - rejects [object String]:"D" as current
+      ---
+      duration_ms: 0.019416
+      ...
+    # Subtest: rejects [object String]:"NR" as previous
+    ok 17 - rejects [object String]:"NR" as previous
+      ---
+      duration_ms: 0.049709
+      ...
+    # Subtest: rejects [object String]:"NR" as current
+    ok 18 - rejects [object String]:"NR" as current
+      ---
+      duration_ms: 0.020542
+      ...
+    # Subtest: rejects [object String]:"WD" as previous
+    ok 19 - rejects [object String]:"WD" as previous
+      ---
+      duration_ms: 0.022375
+      ...
+    # Subtest: rejects [object String]:"WD" as current
+    ok 20 - rejects [object String]:"WD" as current
+      ---
+      duration_ms: 0.020708
+      ...
+    # Subtest: rejects [object String]:"Baa1" as previous
+    ok 21 - rejects [object String]:"Baa1" as previous
+      ---
+      duration_ms: 0.020167
+      ...
+    # Subtest: rejects [object String]:"Baa1" as current
+    ok 22 - rejects [object String]:"Baa1" as current
+      ---
+      duration_ms: 0.020208
+      ...
+    # Subtest: rejects [object Null]:obj as previous
+    ok 23 - rejects [object Null]:obj as previous
+      ---
+      duration_ms: 0.020875
+      ...
+    # Subtest: rejects [object Null]:obj as current
+    ok 24 - rejects [object Null]:obj as current
+      ---
+      duration_ms: 0.01975
+      ...
+    # Subtest: rejects [object Undefined]:undefined as previous
+    ok 25 - rejects [object Undefined]:undefined as previous
+      ---
+      duration_ms: 0.018875
+      ...
+    # Subtest: rejects [object Undefined]:undefined as current
+    ok 26 - rejects [object Undefined]:undefined as current
+      ---
+      duration_ms: 0.020083
+      ...
+    # Subtest: rejects [object Number]:42 as previous
+    ok 27 - rejects [object Number]:42 as previous
+      ---
+      duration_ms: 0.021209
+      ...
+    # Subtest: rejects [object Number]:42 as current
+    ok 28 - rejects [object Number]:42 as current
+      ---
+      duration_ms: 0.020041
+      ...
+    # Subtest: rejects [object Object]:obj as previous
+    ok 29 - rejects [object Object]:obj as previous
+      ---
+      duration_ms: 0.019583
+      ...
+    # Subtest: rejects [object Object]:obj as current
+    ok 30 - rejects [object Object]:obj as current
+      ---
+      duration_ms: 0.019667
+      ...
+    # Subtest: rejects [object String]:obj as previous
+    ok 31 - rejects [object String]:obj as previous
+      ---
+      duration_ms: 0.019334
+      ...
+    # Subtest: rejects [object String]:obj as current
+    ok 32 - rejects [object String]:obj as current
+      ---
+      duration_ms: 0.018542
+      ...
+    # Subtest: rejects [object Array]:obj as previous
+    ok 33 - rejects [object Array]:obj as previous
+      ---
+      duration_ms: 0.019584
+      ...
+    # Subtest: rejects [object Array]:obj as current
+    ok 34 - rejects [object Array]:obj as current
+      ---
+      duration_ms: 0.019667
+      ...
+    # Subtest: rejects [object String]:"toString" as previous
+    ok 35 - rejects [object String]:"toString" as previous
+      ---
+      duration_ms: 0.019667
+      ...
+    # Subtest: rejects [object String]:"toString" as current
+    ok 36 - rejects [object String]:"toString" as current
+      ---
+      duration_ms: 0.01825
+      ...
+    # Subtest: rejects [object String]:"constructor" as previous
+    ok 37 - rejects [object String]:"constructor" as previous
+      ---
+      duration_ms: 0.020291
+      ...
+    # Subtest: rejects [object String]:"constructor" as current
+    ok 38 - rejects [object String]:"constructor" as current
+      ---
+      duration_ms: 0.373875
+      ...
+    # Subtest: rejects [object String]:"__proto__" as previous
+    ok 39 - rejects [object String]:"__proto__" as previous
+      ---
+      duration_ms: 0.035167
+      ...
+    # Subtest: rejects [object String]:"__proto__" as current
+    ok 40 - rejects [object String]:"__proto__" as current
+      ---
+      duration_ms: 0.024375
+      ...
+    # Subtest: rejects [object String]:"length" as previous
+    ok 41 - rejects [object String]:"length" as previous
+      ---
+      duration_ms: 0.020875
+      ...
+    # Subtest: rejects [object String]:"length" as current
+    ok 42 - rejects [object String]:"length" as current
+      ---
+      duration_ms: 0.01925
+      ...
+    # Subtest: rejects [object Number]:0 as previous
+    ok 43 - rejects [object Number]:0 as previous
+      ---
+      duration_ms: 0.018666
+      ...
+    # Subtest: rejects [object Number]:0 as current
+    ok 44 - rejects [object Number]:0 as current
+      ---
+      duration_ms: 0.018375
+      ...
+    # Subtest: rejects [object Number]:null as previous
+    ok 45 - rejects [object Number]:null as previous
+      ---
+      duration_ms: 0.017958
+      ...
+    # Subtest: rejects [object Number]:null as current
+    ok 46 - rejects [object Number]:null as current
+      ---
+      duration_ms: 0.017459
+      ...
+    # Subtest: rejects [object Boolean]:true as previous
+    ok 47 - rejects [object Boolean]:true as previous
+      ---
+      duration_ms: 0.017167
+      ...
+    # Subtest: rejects [object Boolean]:true as current
+    ok 48 - rejects [object Boolean]:true as current
+      ---
+      duration_ms: 0.017292
+      ...
+    # Subtest: rejects bigint as previous
+    ok 49 - rejects bigint as previous
+      ---
+      duration_ms: 0.017833
+      ...
+    # Subtest: rejects bigint as current
+    ok 50 - rejects bigint as current
+      ---
+      duration_ms: 0.017333
+      ...
+    # Subtest: rejects Symbol as previous
+    ok 51 - rejects Symbol as previous
+      ---
+      duration_ms: 0.0175
+      ...
+    # Subtest: rejects Symbol as current
+    ok 52 - rejects Symbol as current
+      ---
+      duration_ms: 0.017542
+      ...
+    # Subtest: rejects [object Object]:obj as previous
+    ok 53 - rejects [object Object]:obj as previous
+      ---
+      duration_ms: 0.017333
+      ...
+    # Subtest: rejects [object Object]:obj as current
+    ok 54 - rejects [object Object]:obj as current
+      ---
+      duration_ms: 0.017375
+      ...
+    # Subtest: missing arguments throw RangeError
+    ok 55 - missing arguments throw RangeError
+      ---
+      duration_ms: 0.052708
+      ...
+    1..55
+ok 8 - notchCalculator invalid input (AC-8)
+  ---
+  duration_ms: 2.037208
+  type: 'suite'
+  ...
+1..8
+# tests 150
+# suites 8
+# pass 150
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 91.839875
+ok    verify passed

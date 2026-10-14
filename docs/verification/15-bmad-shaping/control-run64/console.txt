@@ -1,0 +1,128 @@
+
+━━ 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+✔ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+  ✔ ECC plugin installed (Version: 2.2.3)
+  ✔ kit installed (scripts/install.sh --user)
+upstream.engine = bmad; docs/POC_Requirements_v0.2_EN.md in the repo
+  ✔ doctor: result: 27 ok, 6 warning(s), 0 problem(s)
+
+━━ 2 · run: the only input is examples/watchlist-poc/JOB-shaped.md
+    ▶ claude -p "/deliver /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-shaped.md"   (log: .work/runs/20261013-211004.jsonl)
+      result: success  turns=9  cost=$0.29006730000000003
+    round 1 — JOB-20261013-2110-rating-notch-calculator-and-coun (readiness)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-211043.jsonl)
+      result: success  turns=14  cost=$1.3867502999999997
+    ⏸  the requirements have open questions: .work/JOB-20261013-2110-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+  ✔ Michael opened the job JOB-20261013-2110-rating-notch-calculator-and-coun
+
+━━ 4.1 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✔ answered PRD-scope — REQ-03-12 also says 'Pre-filled from public source' and 'auto-filled value editable', and 
+    no prepared answer fits PRD-acceptance — took the BA's recommended option: (a) Confirm the BA's table once X-example-notches, X-calc-wl-rule, X-upgrade-wl are answered
+  ✔ answered PRD-acceptance — Confirm worked examples QA will use verbatim, e.g. countryRatingChangeWl: AAA→AA+ = 1; BBB
+    no prepared answer fits PRD-conflicts — took the BA's recommended option: Resolve each X- item
+  ✔ answered PRD-conflicts — See X-example-notches, X-calc-wl-rule, X-upgrade-wl.
+  ✔ answered CON-interface — (1) Is notchCalculator's notches signed or magnitude? (2) range of wl? (3) RATING_SCALE ty
+  ✔ answered CON-errors — What must the functions do with an unknown/invalid rating?
+  ✔ answered ARC-style — Architecture style of the repo?
+  ✔ answered ARC-components — Confirm the component list.
+    no prepared answer fits ARC-ui — took the BA's recommended option: (a, BA recommendation) None
+  ✔ answered ARC-ui — Is any user interface delivered in this job?
+    no prepared answer fits ARC-data — took the BA's recommended option: (a, BA recommendation) No store — pure functions
+  ✔ answered ARC-data — Is anything persisted in this delivery?
+    no prepared answer fits ARC-integration — took the BA's recommended option: (a, BA recommendation) None — fetch is REQ-02-02, a separate job
+  ✔ answered ARC-integration — Is any external source called in this delivery?
+    no prepared answer fits X-example-notches — took the BA's recommended option: (a) Standard counting: 3-notch downgrade; example count is a typo, WL follows X-calc-wl-rule
+  ✔ answered X-example-notches — Which part of the example is right?
+    no prepared answer fits X-calc-wl-rule — took the BA's recommended option: (a) Ind. 13 rule: 0-1 down → 0; 2 → 1; 3+ → 2
+  ✔ answered X-calc-wl-rule — Which threshold rule gives notchCalculator's wl?
+    no prepared answer fits X-upgrade-wl — took the BA's recommended option: (a, BA recommendation) WL=0 for unchanged and any upgrade
+  ✔ answered X-upgrade-wl — What WL do unchanged and upgrade give?
+    no prepared answer fits X-rating-scale — took the BA's recommended option: (a, BA recommendation) the 19 grades AAA…CCC-; anything else invalid
+  ✔ answered X-rating-scale — What is in RATING_SCALE?
+    no prepared answer fits X-input-format — took the BA's recommended option: (a) Exact match only
+  ✔ answered X-input-format — Are 'bbb+', ' BBB+ ', 'BBB−' accepted?
+    round 1 — JOB-20261013-2110-rating-notch-calculator-and-coun (awaiting_clarification)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-211653.jsonl)
+      result: success  turns=10  cost=$0.13485439999999999
+    round 2 — JOB-20261013-2110-rating-notch-calculator-and-coun (planning)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-211737.jsonl)
+      result: success  turns=15  cost=$1.6342209
+    round 3 — JOB-20261013-2110-rating-notch-calculator-and-coun (executing)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-212543.jsonl)
+      result: success  turns=16  cost=$0.9798833999999998
+    round 4 — JOB-20261013-2110-rating-notch-calculator-and-coun (executing)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-212841.jsonl)
+      result: success  turns=14  cost=$0.7286276000000002
+    round 5 — JOB-20261013-2110-rating-notch-calculator-and-coun (integrating)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-213110.jsonl)
+      result: success  turns=4  cost=$0.034511400000000005
+    round 6 — JOB-20261013-2110-rating-notch-calculator-and-coun (integrating)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-213124.jsonl)
+      result: success  turns=7  cost=$0.5811514
+    ⏸  usage limit: You've hit your session limit · resets 1:30am (Europe/Berlin) — waiting 238 min, then the job goes on (wait 1 of 30)
+    round 6 — JOB-20261013-2110-rating-notch-calculator-and-coun (closing)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261014-013100.jsonl)
+      result: success  turns=5  cost=$0.22046640000000003
+    round 7 — JOB-20261013-2110-rating-notch-calculator-and-coun (closing)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261014-013121.jsonl)
+      result: success  turns=9  cost=$0.22159020000000001
+    ✔ job JOB-20261013-2110-rating-notch-calculator-and-coun: done
+wall time: 261 min
+
+━━ 5 · verify the whole flow on disk
+  ✔ job reached done
+  ✔ job shipped (local)
+roles: ba, qa, backend-lead, backend, reviewer, blind
+  ✔ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+  ✔ role cards generated for every role
+PM decisions: 2 (implementation details, recorded with rationale)
+  ✔ readiness review complete (no open item) with an architecture
+readiness: 35 items — 28 decided, 7 n/a · architecture: library: watchlist-poc [javascript+node]
+  ✔ readiness frozen at planning and unchanged since
+  ✔ the Leads cut 2 card(s)
+  ✔ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T-01 Rating scale, notchChange and notchCalculator (src/ratings/notch.mjs) | watchlist-poc | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+| T-02 Indicator 12 country rating change WL (src/indicators/countryRating.mjs) | watchlist-poc | backend#1 | 1 | PASS | pass (qa_verify PASS) | approve | merged |
+  ✔ every card (2): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged
+  ✔ QA's integration tests are on main (2 file(s) in the cards' qa_scope)
+  ✔ role really ran: business-analyst
+  ✔ role really ran: ecc:architect
+  ✔ role really ran: qa-tester
+  ✔ role really ran: a dev agent
+  ✔ role really ran: a stack reviewer
+  ✔ no tracker errors
+  ✔ kanban view rendered
+  ✔ report.md written by the closing check
+  ✔ no AI attribution in the delivered history (12 commits)
+  ✔ the whole test suite passes on main
+  ✘ hidden oracle FAILED (oracle.log)
+✖ C1: input is trimmed and case-insensitive; unknown ratings throw RangeError (0.059208ms)
+✖ failing tests:
+✖ C1: input is trimmed and case-insensitive; unknown ratings throw RangeError (0.059208ms)
+  ✘ the job took 261.6 min (> 45) — where it went: intake 0.3, readiness 6.1, awaiting_clarification 0.8, planning 8.2, executing 5.5, integrating 0.6, closing 240.2; busiest: business-analyst 10.6 min (timeline.txt)
+
+━━ B3 · risk-based test design and the NFR gate
+  ✔ every AC of the plan has a priority: AC-1 P0, AC-2 P0, AC-3 P0, AC-4 P0, AC-5 P1, AC-6 P1, AC-7 P1, AC-8 P1, AC-9 P0, AC-10 P0, AC-11 P0, AC-12 P1
+  ✔ every card spec has a ## Test design
+
+Test design of T-01:
+QA verdicts (each must name every AC of its card — dl qa refuses otherwise):
+decided NFR items: NFR-security, NFR-compliance
+  ✔ the report gives every decided NFR item a result: NFR-security PASS, NFR-compliance PASS
+  ✔ the plan says how each is checked (## Non-functional requirements)
+
+━━ B4 · the blind review
+settings.review.blind: risk
+  ✔ T-01 (top P0): reviewed blind 1 time(s) — findings 0: intended 0, defect 0
+  ✔ T-02 (top P0): reviewed blind 1 time(s) — findings 0: intended 0, defect 0
+blind agent runs: 2
+
+━━ result
+cost: $6.21  ·  artifacts: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped
+**45 passed, 2 failed**

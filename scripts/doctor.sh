@@ -220,6 +220,21 @@ if [[ -n $repo ]]; then
       rm -f "$tf"
     fi
   fi
+  # shaping with the BMad Method: npx installs the pinned release into the repo (outside git); its skills need Node 20.12+ and uv
+  eng="$(jq -r '.upstream.engine // "auto"' <<<"$eff")"
+  if [[ $eng == bmad || $eng == auto ]]; then
+    bv="$(jq -r '.upstream.bmad_version // "6.12.2"' <<<"$eff")"
+    # auto shapes only a request that is not a specification yet: a missing prerequisite is a note until such a request comes
+    need() { if [[ $eng == bmad ]]; then fail "$1"; else note "$1 (upstream.engine auto: needed when a request is not a specification yet)"; fi; }
+    vge "$(node -p process.versions.node 2>/dev/null || echo 0)" 20.12.0 && pass "shaping with BMad $bv ($eng): Node $(node -p process.versions.node) (20.12+ needed)" \
+      || need "shaping with BMad $bv needs Node 20.12 or later (this: $(node -p process.versions.node 2>/dev/null || echo none))"
+    have npx && pass "npx installs it (dl shape install, needs the npm registry)" || need "npx is not on PATH — dl shape install runs npx bmad-method@$bv"
+    if [[ -n ${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-} && -z ${DELIVER_CLAUDE_TOKEN_FILE:-} ]]; then
+      note "Claude Code is signed in by a token in the environment, which it does not pass to the commands it runs: BMad's sessions would not be signed in — set DELIVER_CLAUDE_TOKEN_FILE to a file holding the token (docs/12-shaping.md)"
+    fi
+    have uv && pass "uv runs its skills' scripts" || note "uv is not installed — some BMad skills run their scripts with it (https://docs.astral.sh/uv/)"
+    git -C "$repo" ls-files --error-unmatch _bmad >/dev/null 2>&1 && need "this repo keeps its own BMad install in git (_bmad/) — shaping does not support that yet (docs/OPEN.md)"
+  fi
   [[ -f $repo/.work/ACTIVE ]] && note "active job: $(cat "$repo/.work/ACTIVE")"
 fi
 

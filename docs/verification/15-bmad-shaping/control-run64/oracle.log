@@ -1,0 +1,40 @@
+oracle: watchlist-poc/watchlist.oracle.test.mjs against main (293eb1a)
+✔ C1: the rating scale has 19 steps, AAA best, CCC- worst (0.295708ms)
+✔ notchChange: downgrade positive, upgrade negative, unchanged zero (0.095208ms)
+✖ C1: input is trimmed and case-insensitive; unknown ratings throw RangeError (0.059208ms)
+  RangeError [Error]: previous must be one of the 19 rating codes
+      at indexOfGrade (file:///private/var/folders/w5/8znsy1yj36bbmqwyk5nlcc4m0000gp/T/tmp.48ZppFmYbZ/wt/src/ratings/notch.mjs:23:11)
+      at notchChange (file:///private/var/folders/w5/8znsy1yj36bbmqwyk5nlcc4m0000gp/T/tmp.48ZppFmYbZ/wt/src/ratings/notch.mjs:30:16)
+      at TestContext.<anonymous> (file:///private/var/folders/w5/8znsy1yj36bbmqwyk5nlcc4m0000gp/T/tmp.48ZppFmYbZ/wt/oracle/watchlist.oracle.test.mjs:24:16)
+      at Test.runInAsyncScope (node:async_hooks:211:14)
+      at Test.run (node:internal/test_runner/test:934:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+      at Test.postRun (node:internal/test_runner/test:1045:19)
+      at Test.run (node:internal/test_runner/test:973:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+
+✔ REQ-06-02 + C2: calculator reports notches, direction and WL (Indicator 13 thresholds) (0.585458ms)
+✔ REQ-03-12: country rating change — 1 notch → WL1, 2+ → WL2, upgrade/unchanged → WL0 (0.143125ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 54.351792
+
+✖ failing tests:
+
+test at oracle/watchlist.oracle.test.mjs:23:1
+✖ C1: input is trimmed and case-insensitive; unknown ratings throw RangeError (0.059208ms)
+  RangeError [Error]: previous must be one of the 19 rating codes
+      at indexOfGrade (file:///private/var/folders/w5/8znsy1yj36bbmqwyk5nlcc4m0000gp/T/tmp.48ZppFmYbZ/wt/src/ratings/notch.mjs:23:11)
+      at notchChange (file:///private/var/folders/w5/8znsy1yj36bbmqwyk5nlcc4m0000gp/T/tmp.48ZppFmYbZ/wt/src/ratings/notch.mjs:30:16)
+      at TestContext.<anonymous> (file:///private/var/folders/w5/8znsy1yj36bbmqwyk5nlcc4m0000gp/T/tmp.48ZppFmYbZ/wt/oracle/watchlist.oracle.test.mjs:24:16)
+      at Test.runInAsyncScope (node:async_hooks:211:14)
+      at Test.run (node:internal/test_runner/test:934:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:633:18)
+      at Test.postRun (node:internal/test_runner/test:1045:19)
+      at Test.run (node:internal/test_runner/test:973:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:633:7)

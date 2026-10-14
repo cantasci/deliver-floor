@@ -1,0 +1,86 @@
+# Live E2E — scenario `shaped`
+
+Request: `examples/watchlist-poc/JOB-shaped.md`  ·  started 2026-10-13T14:59:58Z
+
+## 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+
+✔ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+- ✅ ECC plugin installed (Version: 2.2.3)
+- ✅ kit installed (scripts/install.sh --user)
+upstream.engine = bmad; docs/POC_Requirements_v0.2_EN.md in the repo
+- ✅ doctor: result: 30 ok, 6 warning(s), 0 problem(s)
+
+## 2 · run: the only input is examples/watchlist-poc/JOB-shaped.md
+
+- ✅ Michael opened the job JOB-20261013-1701-rating-notch-calculator-and-coun
+wall time: 1 min
+
+## 5 · verify the whole flow on disk
+
+- ❌ job reached done
+- ❌ job shipped (local)
+roles: 
+- ❌ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+- ❌ role cards generated for every role
+- ❌ readiness review complete (no open item) with an architecture
+readiness:  · architecture: 
+- ❌ readiness frozen at planning and unchanged since
+- ❌ no cards on the board
+- ✅ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+- ❌ no QA test files on main
+- ❌ no business-analyst run in events.log
+- ❌ no ecc:architect run in events.log
+- ❌ no qa-tester run in events.log
+- ❌ no dev agent run
+- ❌ no reviewer run
+- ✅ no tracker errors
+- ❌ kanban view rendered
+- ❌ report.md is the template
+- ✅ no AI attribution in the delivered history (1 commits)
+- ✅ the whole test suite passes on main
+- ❌ hidden oracle FAILED (oracle.log)
+✖ oracle/watchlist.oracle.test.mjs (49.385375ms)
+✖ failing tests:
+✖ oracle/watchlist.oracle.test.mjs (49.385375ms)
+- ✅ the job took 0.8 min (≤ 45; timeline.txt)
+
+## B3 · risk-based test design and the NFR gate
+
+- ✅ every AC of the plan has a priority: AC-1 P1
+- ✅ every card spec has a ## Test design
+
+Test design of null:
+QA verdicts (each must name every AC of its card — dl qa refuses otherwise):
+decided NFR items: none
+NOT EXERCISED: no NFR item was decided in this job (all n/a)
+
+## B4 · the blind review
+
+settings.review.blind: risk
+
+## S1 · shaped with the BMad Method
+
+- ✅ the job was shaped (shaping.json)
+BMad's path (bmad-help):  · skipped: 
+runs: 01-help invalid 2s $0 · 02-help invalid 3s $0 · 03-help invalid 2s $0
+shaping: 3 runs, 0 min, $0
+ledger:  · decided by the human 0, by Michael 0, Michael's proposal accepted without a prepared answer 0
+- ✅ every ledger item decided (or noted)
+BMad's reviews: 
+- ❌ BMad reviewed its own work at least once
+- ❌ frozen with readiness at planning (frozen.shaping_sha256)
+- ❌ no readiness item quotes BMad's artifacts or the ledger
+traced ids: none (dl validate refuses a plan that leaves one out)
+no architecture spine: no AD rules
+- ❌ the PR body says how it was shaped
+- ❌ the record keeps BMad's inputs and artifacts on main
+- ✅ BMad's install stayed outside git
+
+## result
+
+cost: $0.56  ·  artifacts: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-shaped/shaped
+**14 passed, 21 failed**

@@ -69,6 +69,20 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 | F21 | a user's job: QA "takes very long" and the work did not look parallel — every test run of `dl` (gate, QA, the whole suite of 0.8.1) runs in Michael's turn | **Measured, open.** Running the whole suite in the background was built and measured live ([report](verification/13-background-suite/report.md)): no faster with two cards (5.3 vs 5.5 min executing), so it was not adopted (the owner's decision). Kept (0.9.2): each test run's duration on the card and in `dl timeline`, and `qa_verify` not run twice. **Next:** the user's own `dl timeline` from a real job, to see whether the gate, QA's run or the suite is the slow step |
 | F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
 
+## 0.17.0 — shaping with the BMad Method
+
+Covered by `tests/run.sh` with a fake BMad (its 6.12.2 headless contracts: artifacts, `.memlog.md` tags, JSON). The ledger
+reader was checked against the spike's real BMad output (five runs). **Not run live yet:**
+
+| # | What | Status |
+| --- | --- | --- |
+| S1 | A live job shaped end to end (`tests/e2e-live.sh shaped`): BMad's path, the ledger decided with the human, its update and review, the freeze, the cards, a delivered job that passes the hidden oracle | **Verified live** (run 62) — every shaping check passed, delivered 45/47; the oracle missed C1 (case-insensitive input), as the unshaped control did: no prepared answer carried it (it does now). [Comparison](verification/15-bmad-shaping/COMPARISON.md) |
+| S2 | Cost, time and effect of shaping against the same request unshaped | **Measured on two requests.** A specified one (runs 62 vs 64): the same product for +30 %. An idea (runs 65–68): BMad's spec caught the product decisions the readiness review missed, but shaping took 69 human decisions and did not finish within the harness's rounds. **Open:** an idea shaped with the routing that sends only product decisions to the human (`ee44464`) — delivered, against the control |
+| S6 | The live harness answers a flagged ledger item on its own (a flagged proposal is no longer accepted in bulk) | **Open** — `tests/e2e-live.sh` still accepts Michael's proposals in one call |
+| S3 | BMad's reviewers inside `bmad-architecture` (parallel subagents) in a `dl shape run` session — skipped in the spike's single session | **Open** |
+| S4 | A repo that keeps its own BMad install in git (`_bmad/`) | **Not supported** — refused by `dl shape install` and `doctor` |
+| S5 | BMad v7 (its skills and folders move) | **Not supported** — `upstream.bmad_version` stays 6.12.2 |
+
 ## 0.16.0 — from the comparison with the BMAD Method
 
 Covered by `tests/run.sh` (the light path, the project architecture, the test design, the NFR gate, the blind review and its

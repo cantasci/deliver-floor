@@ -52,7 +52,10 @@ wait_for_limit() {
   (( waits < max_waits )) || { echo "⏸  a usage limit again after $waits waits — stopping (LIMIT_WAITS=$max_waits)"; exit 3; }
   waits=$((waits + 1)); secs=$(( at - $(date +%s) + 60 )); (( secs > 0 )) || secs=60
   echo "⏸  usage limit: ${txt} — waiting $(( (secs + 59) / 60 )) min, then the job goes on (wait $waits of $max_waits)"
-  sleep "$secs"
+  # Until a time of day, not for a duration: macOS does not count a sleeping machine in sleep(1) — seen live, a 194-minute
+  # wait still had an hour to go when the reset had passed, because the lid was closed. Short naps, the clock read after each.
+  local until=$(( $(date +%s) + secs )) left
+  while left=$(( until - $(date +%s) )); (( left > 0 )); do sleep $(( left > 300 ? 300 : left )); done
   return 0
 }
 

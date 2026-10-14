@@ -1,0 +1,259 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Analysts get the notch change between a previous and a current rating, plus the resulting WL, from one shared notch computation (REQ-06-02 calculator, REQ-03-12 Ind. 12). Success: node --test passes, and a downstream module that imports notchCalculator and countryRatingChangeWl gets the documented values.",
+      "source": "bmad: SPEC.md",
+      "quote": "analysts compare an earlier and a current credit rating and need the notch change and the resulting Watchlist level (WL) … node --test passes. A downstream module imports notchCalculator and countryRatingChangeWl and gets the documented values"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "The direct users are other POC modules that import the functions, on behalf of credit analysts. A pure library has no roles or permissions.",
+      "source": "bmad: SPEC.md",
+      "quote": "Other POC parts import these modules, so the contract must be exact."
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "In scope: CAP-1 (RATING_SCALE, notchChange), CAP-2 (notchCalculator, REQ-06-02) and CAP-3 (countryRatingChangeWl, REQ-03-12). Out of scope: any UI, including REQ-03-12's 'auto-filled value editable' (owned by the consuming form job); fetching or scraping from a public source; the 12-month lookback (REQ-02-02); Ind. 11 and Ind. 13 functions; the agency selector; final WL aggregation; mapping Moody's ratings; editing the POC document.",
+      "source": "bmad: SPEC.md",
+      "quote": "Two requirements share one notch computation: REQ-06-02 (notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). … Any UI, including \"auto-filled value editable\" (REQ-03-12 acceptance part), which belongs to the form that consumes these functions … Fetching or scraping country ratings and any public source, and the 12-month lookback (REQ-02-02). … Indicator 11 and 13 WL functions, agency selector, final WL aggregation."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "Every capability has concrete values. Calculator: BBB+→BB+ {3,downgrade,2}; BBB+→BBB- {2,downgrade,1}; AA→A+ {2,downgrade,1}; BB→BBB {-3,upgrade,0}; unchanged {+0,unchanged,0}; AAA→CCC- {18,downgrade,2}. Ind. 12: 1→1, 2+→2, unchanged or upgrade→0, AAA→CCC-→2. Invalid input and trim cases are pinned (see CON-errors).",
+      "source": "bmad: SPEC.md",
+      "quote": "BBB+ → BB+ gives { notches: 3, direction: \"downgrade\", wl: 2 } … 1 notch downgrade → 1; 2+ notch downgrade → 2; unchanged or upgrade → 0"
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "(1) The POC's REQ-06-02 example says 'BBB+ → BB+ = 2 notch', but on the 19-step scale it is 3 notches. Resolved by B-1/B-12: 3 notches, WL 2. The 2-notch case is BBB+→BBB-, WL 1, and tests never assert the POC's 2. (2) A 1-notch downgrade gives calculator WL 0 (Ind. 13 thresholds, B-3) but Ind. 12 WL 1. This is intentional (B-36), stated in code comments of both helpers and in the PR. (3) Priority: B-40 supersedes B-34.",
+      "source": "shape: B-1",
+      "quote": "the POC example miscounts. BBB+ → BB+ is 3 notches → calculator WL 2; the 2-notch example is BBB+ → BBB- → WL 1"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "REQ-03-12 is Must and REQ-06-02 is Should, as in the POC. Both ship in this job.",
+      "source": "shape: B-40",
+      "quote": "record the POC's own priorities, REQ-06-02 Should and REQ-03-12 Must, in readiness"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "src/ratings/notch.mjs exports exactly: RATING_SCALE, a frozen array of 19 strings, best first; notchChange(previous,current), an integer (+ downgrade, - upgrade, 0 unchanged, never -0); notchCalculator(previous,current), {notches (signed like notchChange), direction 'downgrade'|'upgrade'|'unchanged', wl 0|1|2}. src/indicators/countryRating.mjs exports countryRatingChangeWl(previous,current), returning 0|1|2. Named exports only, nothing extra. Null, empty or non-string input throws (CON-errors).",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "is a frozen array of the 19 strings AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC- … Positive means downgrade, negative upgrade, 0 unchanged. … Ratings are plain strings; notch counts are integers; direction is one of \"downgrade\", \"upgrade\", \"unchanged\"; wl is 0, 1 or 2."
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "notchChange's lookup checks each rating after trim() and throws a RangeError for any rating that is not an exact, case-sensitive scale step. That covers CC, C, D, SD, NR, Moody's notation, unknown values, '' and '   '; ' BBB+ ' is accepted. Non-strings throw too: null, undefined, a number, {} and a Symbol. The message contains the value as passed: String(value) for non-strings, the untrimmed text for strings. previous is checked first. The other functions let the error propagate. No null and no fallback. Exotic objects are out of scope. Note for the dev: build the message with String(value), not a template literal, which throws TypeError on a Symbol.",
+      "source": "bmad: SPEC.md",
+      "quote": "throws a RangeError naming the offending value, raised only inside notchChange's rating lookup; other functions let it propagate unchanged, no catching or translating. No silent fallback, no null return. … When both arguments are invalid, previous is validated first and named."
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "There is nothing to keep compatible: the repo has no code yet, and both modules are new. The forward contract (exact exports) is under CON-interface.",
+      "source": "repo: git ls-files (src/.gitkeep, test/.gitkeep only)"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "library: a dependency-free library of pure functions in two layers (ratings core, indicators on top). The draft context.draft.md (one 'repo' library) agrees but leaves the style open; BMad settles it.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "A dependency-free library of pure functions in Node 18+ ESM. No UI, store, network or service."
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "Two library layers: ratings (src/ratings/notch.mjs, test/ratings/notch.test.mjs) and indicators (src/indicators/countryRating.mjs, test/indicators/countryRating.test.mjs). indicators imports ratings, never the reverse. See architecture.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "Two layers: src/ratings is the core (scale and distance), src/indicators sits on it (WL rules)."
+    },
+    {
+      "id": "ARC-ui",
+      "status": "decided",
+      "answer": "No UI. The consuming form job owns the editable auto-fill.",
+      "source": "bmad: SPEC.md",
+      "quote": "Pure-function library in two layers (ratings core, indicators on top); no UI, store or service."
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "The logic lives in a shared in-process library that other POC modules import directly. There is no API, BFF or middleware.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "No UI, store, network or service … other POC modules"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Node.js 18+ with plain ES modules (.mjs). Tests use node:test and node:assert/strict.",
+      "source": "request: Contract",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "ARC-deps",
+      "status": "decided",
+      "answer": "No new dependencies. Only Node built-ins.",
+      "source": "request: Contract",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "ARC-data",
+      "status": "n_a",
+      "answer": "There is no store and no persistence. The caller passes the ratings.",
+      "source": "shape: B-10",
+      "quote": "No override parameter, no persistence, no audit trail in this slice"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "n_a",
+      "answer": "No external system is called. Fetching or scraping from a public source is out of scope.",
+      "source": "bmad: SPEC.md",
+      "quote": "Fetching or scraping country ratings and any public source"
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous pure functions with no I/O and no state, so there are no ordering or idempotency concerns.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "do no I/O, read no clock or random source, keep no module state"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No targets. This is a pure in-process library.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "Deployment, environments, operations, security and performance: not applicable to a pure in-process library."
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "The library has no runtime dependency that could be down.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "not applicable to a pure in-process library"
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "No authentication, authorisation or secrets apply. Input validation applies: every invalid rating throws a RangeError (CON-errors). Checked by the invalid-input tests and the review.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "Deployment, environments, operations, security and performance: not applicable to a pure in-process library … or one that differs in case, throws RangeError"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "The inputs are only rating strings, with no client identity, and nothing is logged.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "Ratings are plain strings … no logging or config"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "decided",
+      "answer": "No audit trail in this slice.",
+      "source": "shape: B-10",
+      "quote": "no audit trail in this slice"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "decided",
+      "answer": "No logging, metrics or config.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "No mutation of inputs or the scale; no logging or config"
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "question": "Not in BMad's artifacts. Does any banking regulation or internal policy (for example model risk, or sign-off of the WL scoring rules) constrain this POC slice?",
+      "options": [
+        "None for the POC: the WL thresholds are the POC's business rules (B-1, B-3) and need no extra check",
+        "A named policy applies: a business or model-risk sign-off of the Ind. 12 and calculator thresholds before use"
+      ],
+      "impact": "Option 1 changes nothing. Option 2 adds a sign-off step and a documented rule source to the plan's NFRs and to closing.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "question": "Not in BMad's artifacts. Does any banking regulation or internal policy (for example model risk, or sign-off of the WL scoring rules) constrain this POC slice?",
+          "at": "2026-10-13T19:13:08.726Z"
+        }
+      ],
+      "answer": "No: the one-task notch-change slice (JOB-models*.md) has no banking-regulation or internal-policy constraint beyond its clarifications.",
+      "source": "human: e2e-human 2026-10-13"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "Unit tests with node:test and node:assert/strict in test/ratings/notch.test.mjs and test/indicators/countryRating.test.mjs, run by npm test. They cover: every adjacent pair of the scale; each sign; unchanged (Object.is +0); a 1-notch upgrade; frozen RATING_SCALE; BBB+→BB+ 3/WL2; BBB+→BBB- 2/WL1; AA→A+ WL1; AAA→CCC- 18/WL2/Ind12 WL2; trim cases; the pinned invalid inputs (RangeError type, message contains the value). BMad sets no coverage %; the pinned list is the bar. No test environment is needed.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "Tests use node:test and node:assert/strict in test/ratings/notch.test.mjs and test/indicators/countryRating.test.mjs; npm test runs them. … Tests cover every adjacent pair of the scale, each sign, and each invalid-input class from AD-4."
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "There is no CI. npm test must pass, and the job's gates apply.",
+      "source": "shape: B-34",
+      "quote": "DEL-ci: none, tests run via npm test"
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "n_a",
+      "answer": "Nothing is deployed. The modules are consumed by in-process import.",
+      "source": "bmad: ARCHITECTURE-SPINE.md",
+      "quote": "Deployment, environments, operations, security and performance: not applicable to a pure in-process library."
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "No docs beyond code and tests. Both helpers need a code comment on the intentional 1-notch difference (B-36). The PR lists these follow-ups: the form job owns the editable auto-fill; the consuming UI needs a mapping step (Moody's, CC, C, D, SD and NR throw); the POC owner corrects the REQ-06-02 example; the reviewer lenses were skipped (B-48).",
+      "source": "shape: B-34",
+      "quote": "DEL-docs: no docs beyond code and tests"
+    },
+    {
+      "id": "X-poc-doc-example",
+      "status": "decided",
+      "answer": "docs/POC_Requirements_v0.2_EN.md line 195 still says 'BBB+ → BB+ = 2 notch downgrade → WL=1'. The delivery does not edit it and follows B-1 (3 notches, WL 2). The PR asks the owner to correct it, so QA and closing must not check against the POC text.",
+      "source": "shape: B-41",
+      "quote": "Keep the PR follow-up asking the owner to correct the POC's REQ-06-02 example to 3 notches / WL 2."
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "ratings",
+        "kind": "library",
+        "stack": [
+          "node"
+        ],
+        "path": [
+          "src/ratings/",
+          "test/ratings/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Core layer: notch.mjs holds RATING_SCALE, notchChange, notchCalculator and an unexported Ind. 13 WL helper. Only this module indexes the scale and throws RangeError. Never imports src/indicators. No verify of its own; the repo has one suite, npm test."
+      },
+      {
+        "id": "indicators",
+        "kind": "library",
+        "stack": [
+          "node"
+        ],
+        "path": [
+          "src/indicators/",
+          "test/indicators/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "notes": "Indicators layer: countryRating.mjs holds countryRatingChangeWl (Ind. 12 rule) and calls notchChange from src/ratings. No verify of its own; the repo has one suite, npm test."
+      }
+    ]
+  }
+}

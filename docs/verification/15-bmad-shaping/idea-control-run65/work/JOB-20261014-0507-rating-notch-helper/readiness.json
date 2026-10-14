@@ -1,0 +1,547 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Analysts should stop counting notch moves and working out the WL by hand. The system takes two ratings and returns the notch change and the resulting WL: the notch calculator (REQ-06-02) and the country rating change indicator, Ind. 12 (REQ-03-12). Success is measured against the POC's own acceptance values (REQ-03-12: 1 notch → WL=1, 2+ notches → WL=2). The request states no other metric.",
+      "source": "request",
+      "quote": "We would like the system to do it for them: the notch calculator and the country rating change indicator"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "The end users are credit analysts. The direct consumers are other parts of the POC, which call the helper. There is a single user and no roles (POC A1).",
+      "source": "request",
+      "quote": "Other parts of the POC will use it"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "question": "What does 'the notch calculator and the country rating change indicator' include? (1) Does it include the Ind. 12 data fetch (REQ-02-02, a scrape of Wikipedia or countryeconomy)? (2) The request also says 'a client's ... rating'. Client ratings are Ind. 11 (internal) and Ind. 13 (external), and those use a different WL mapping. Are their WL mappings in scope? (3) Is Ind. 10 (current internal rating → WL) in scope?",
+      "options": [
+        "A: notch calculator plus the Ind. 12 notch change and WL only. Both ratings are passed in by the caller and nothing is fetched (recommended; fits 'not about screens' and CLAUDE.md pure functions)",
+        "B: A plus the Ind. 11 and Ind. 13 WL mappings (REQ-03-11, REQ-03-13)",
+        "C: A or B plus the Ind. 12 fetch from a public source (REQ-02-02, 3A)",
+        "D: any of the above plus Ind. 10 (REQ-03-10)"
+      ],
+      "impact": "B adds two WL rules and their tests. C adds an integration component, network I/O and Q2. D adds a rule that has a gap (see PRD-conflicts C4). Screens are out in every option.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Other parts of the POC will use it; this is not about screens.",
+      "history": [
+        {
+          "status": "open",
+          "question": "What does 'the notch calculator and the country rating change indicator' include? (1) Does it include the Ind. 12 data fetch (REQ-02-02, a scrape of Wikipedia or countryeconomy)? (2) The request also says 'a client's ... rating'. Client ratings are Ind. 11 (internal) and Ind. 13 (external), and those use a different WL mapping. Are their WL mappings in scope? (3) Is Ind. 10 (current internal rating → WL) in scope?",
+          "at": "2026-10-14T03:13:21.647Z"
+        }
+      ],
+      "answer": "Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2)."
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "question": "The POC gives concrete values only for Ind. 12 downgrades, plus one REQ-06-02 example that contradicts them. There are no examples for no change, upgrades, Moody's symbols, the bottom of the scale or invalid input. Can business supply the Excel dropdown sheet (A4) or confirm a list of examples?",
+      "options": [
+        "Business supplies the Excel dropdown sheet, which A4 says the scoring mirrors",
+        "The BA derives examples from the standard scale and REQ-03-12, and business confirms the list"
+      ],
+      "impact": "Without confirmed examples the ACs rest on our interpretation, and A4 forbids that.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Watchlist scoring logic mirrors exactly the Excel dropdown sheet (no interpretation changes)",
+      "history": [
+        {
+          "status": "open",
+          "question": "The POC gives concrete values only for Ind. 12 downgrades, plus one REQ-06-02 example that contradicts them. There are no examples for no change, upgrades, Moody's symbols, the bottom of the scale or invalid input. Can business supply the Excel dropdown sheet (A4) or confirm a list of examples?",
+          "at": "2026-10-14T03:13:22.034Z"
+        }
+      ],
+      "answer": "C1 stands: only the 19-step S&P-style scale in this slice; anything else is rejected with a RangeError."
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "question": "C1: The REQ-06-02 example counts BBB+ → BB+ as 2 notches. On the S&P/Fitch scale (BBB+, BBB, BBB-, BB+) it is 3. C2: Under Ind. 12 (REQ-03-12), 2 notches gives WL=2 and so does 3. Only the Ind. 11/13 mapping (REQ-03-11/13: 2 → WL=1, 3+ → WL=2) gives the example's WL=1, and then only if the move is 2 notches. A 3-notch move gives WL=2 under every mapping, so the example fits no rule in the document. C3: Ind. 12 starts WL=1 at 1 notch; Ind. 11/13 start it at 2 notches. REQ-06-02 does not say which mapping the calculator's 'resultant WL' uses. C4 (only if Ind. 10 is in scope): REQ-03-10 maps B → WL=1, CCC+ and below → WL=2, B+ and above → WL=0. B- gets no WL.",
+      "options": [
+        "(a) Count on the standard scale and correct the example to 'BBB+ → BB+ = 3 notches → WL=2' (BA recommendation)",
+        "(b) Keep the example's WL=1 and change the pair to BBB+ → BBB- (2 notches → WL=1 under the Ind. 11/13 mapping)",
+        "(c) Let the Excel dropdown sheet (A4) decide"
+      ],
+      "impact": "Changes the expected output of the only worked example and the WL thresholds the helper returns. Under C4, B- has no defined WL.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "BBB+ → BB+ = 2 notch downgrade → WL=1 displayed",
+      "history": [
+        {
+          "status": "open",
+          "question": "C1: The REQ-06-02 example counts BBB+ → BB+ as 2 notches. On the S&P/Fitch scale (BBB+, BBB, BBB-, BB+) it is 3. C2: Under Ind. 12 (REQ-03-12), 2 notches gives WL=2 and so does 3. Only the Ind. 11/13 mapping (REQ-03-11/13: 2 → WL=1, 3+ → WL=2) gives the example's WL=1, and then only if the move is 2 notches. A 3-notch move gives WL=2 under every mapping, so the example fits no rule in the document. C3: Ind. 12 starts WL=1 at 1 notch; Ind. 11/13 start it at 2 notches. REQ-06-02 does not say which mapping the calculator's 'resultant WL' uses. C4 (only if Ind. 10 is in scope): REQ-03-10 maps B → WL=1, CCC+ and below → WL=2, B+ and above → WL=0. B- gets no WL.",
+          "at": "2026-10-14T03:13:22.419Z"
+        }
+      ],
+      "answer": "(a) Count on the standard scale and correct the example to 'BBB+ → BB+ = 3 notches → WL=2' (BA recommendation)"
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "Ind. 12 (REQ-03-12, EPIC-03) is Must. The notch calculator (REQ-06-02, EPIC-06) is Should. If both cannot ship together, the Ind. 12 notch change and WL ship first.",
+      "source": "docs/POC_Requirements_v0.2_EN.md (REQ-03-12, REQ-06-02)",
+      "quote": "notch change auto-calculated | FR | Must"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "question": "Several parts of the public contract are not stated. (1) The input format of a rating: symbol strings such as 'BBB+' or 'Baa1', case sensitivity, whitespace. (2) Whether the caller passes the scale or agency. (3) The sign of the notch change. (4) The output shape (for example {notches, direction, wl}). (5) Which indicator's WL mapping the result uses (see X-calc-mapping). Function and module names are a PM matter.",
+      "options": [
+        "Notch change as a signed integer, downgrade = positive (matches 'higher is worse' for WL), plus wl 0..4",
+        "Notch change as a signed integer, downgrade = negative (the market convention), plus wl",
+        "An unsigned count plus a direction field ('downgrade'|'upgrade'|'none'), plus wl"
+      ],
+      "impact": "Every consumer in the POC depends on the sign and the output shape. Changing them later breaks callers.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "question": "Several parts of the public contract are not stated. (1) The input format of a rating: symbol strings such as 'BBB+' or 'Baa1', case sensitivity, whitespace. (2) Whether the caller passes the scale or agency. (3) The sign of the notch change. (4) The output shape (for example {notches, direction, wl}). (5) Which indicator's WL mapping the result uses (see X-calc-mapping). Function and module names are a PM matter.",
+          "at": "2026-10-14T03:13:22.800Z"
+        }
+      ],
+      "answer": "Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: \"downgrade\" | \"upgrade\" | \"unchanged\", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.",
+      "source": "human: e2e-human 2026-10-14"
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "question": "What should happen for an unknown symbol ('BBB*', '', null, undefined)? For ratings from different scales (Fitch 'BBB+' compared with Moody's 'Baa1')? For NR or WD (withdrawn)? For default symbols (D, SD, RD)? For an internal rating outside AAA..CCC-? REQ-02-08 covers only the form's fallback when a fetch fails.",
+      "options": [
+        "Throw a RangeError or TypeError whose message names the bad input; the caller falls back to manual input as in REQ-02-08 (recommended)",
+        "Return null or an {error} result instead of throwing",
+        "Cross-scale pairs: reject, or map through the Moody's ⇔ S&P/Fitch equivalence"
+      ],
+      "impact": "Defines the error contract that every consumer relies on, and whether pairs that mix agencies are valid.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "If a fetch fails (source unavailable, company not found), the field shall fall back to manual input with a clear error message",
+      "history": [
+        {
+          "status": "open",
+          "question": "What should happen for an unknown symbol ('BBB*', '', null, undefined)? For ratings from different scales (Fitch 'BBB+' compared with Moody's 'Baa1')? For NR or WD (withdrawn)? For default symbols (D, SD, RD)? For an internal rating outside AAA..CCC-? REQ-02-08 covers only the form's fallback when a fetch fails.",
+          "at": "2026-10-14T03:13:23.172Z"
+        }
+      ],
+      "answer": "RangeError for every invalid input, strings and non-strings alike (null, undefined, 42, {} included)."
+    },
+    {
+      "id": "CON-compat",
+      "status": "n_a",
+      "answer": "The repo has no code yet: git ls-files shows only src/.gitkeep and test/.gitkeep. No existing API or data has to stay compatible.",
+      "source": "repo (git ls-files)",
+      "quote": ""
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "question": "Which architecture style, and where does the helper live?",
+      "options": [
+        "As in the draft (.work/JOB-20261014-0507-rating-notch-helper/context.draft.md): a single library component in this repo, run with npm test",
+        "A module inside a future POC app or service"
+      ],
+      "impact": "Decides the component list, the paths and the verify command for every card.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Other parts of the POC will use it",
+      "history": [
+        {
+          "status": "open",
+          "question": "Which architecture style, and where does the helper live?",
+          "at": "2026-10-14T03:13:23.537Z"
+        }
+      ],
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture."
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "question": "Confirm the component list. The draft lists one component, 'repo' (library, javascript, path '.', npm test). CLAUDE.md names the areas src/ratings and src/indicators.",
+      "options": [
+        "As in the draft: one library. Rating scales and notch counting go in src/ratings/, the Ind. 12 WL (and Ind. 11/13 if PRD-scope is B) in src/indicators/, tests in test/ratings/ and test/indicators/",
+        "Everything in src/ratings/ only",
+        "A further fetch component, if PRD-scope C is chosen (it cannot live in src/ratings or src/indicators, because CLAUDE.md forbids I/O there)"
+      ],
+      "impact": "Card paths, scopes and ownership.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`.",
+      "history": [
+        {
+          "status": "open",
+          "question": "Confirm the component list. The draft lists one component, 'repo' (library, javascript, path '.', npm test). CLAUDE.md names the areas src/ratings and src/indicators.",
+          "at": "2026-10-14T03:13:23.900Z"
+        }
+      ],
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture."
+    },
+    {
+      "id": "ARC-ui",
+      "status": "decided",
+      "answer": "No UI. The Data Guide tab and form rows (REQ-06-01, REQ-03-14) are out of scope.",
+      "source": "request",
+      "quote": "this is not about screens"
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "question": "Which layer owns the logic? Is there an API?",
+      "options": [
+        "An in-process ESM library that other POC modules import, with no HTTP API (recommended)",
+        "An HTTP or other API in front of it"
+      ],
+      "impact": "An API adds a server, a contract and NFRs. It is settled together with ARC-style.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Other parts of the POC will use it",
+      "history": [
+        {
+          "status": "open",
+          "question": "Which layer owns the logic? Is there an API?",
+          "at": "2026-10-14T03:13:24.302Z"
+        }
+      ],
+      "answer": "An in-process ESM library that other POC modules import, with no HTTP API (recommended)"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Node.js 18+ with ES modules (.mjs) and no npm dependencies. The POC mentions Python only for fetchers (KAP client, yfinance), and those are not part of this helper.",
+      "source": "CLAUDE.md",
+      "quote": "Plain Node.js 18+ ES modules (`.mjs`). No npm dependencies; do not add any."
+    },
+    {
+      "id": "ARC-deps",
+      "status": "decided",
+      "question": "The request is silent. May the delivery add dependencies?",
+      "options": [
+        "None, per the repo rule in CLAUDE.md 'No npm dependencies; do not add any.' (recommended; the helper needs none)",
+        "Allow a library such as a rating-scale package"
+      ],
+      "impact": "Only matters if someone wants a library. The repo rule forbids it.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "No npm dependencies; do not add any.",
+      "history": [
+        {
+          "status": "open",
+          "question": "The request is silent. May the delivery add dependencies?",
+          "at": "2026-10-14T03:13:24.707Z"
+        }
+      ],
+      "answer": "None, per the repo rule in CLAUDE.md 'No npm dependencies; do not add any.' (recommended; the helper needs none)"
+    },
+    {
+      "id": "ARC-data",
+      "status": "decided",
+      "question": "The request is silent. Is any rating history stored?",
+      "options": [
+        "No store. Both ratings are passed in by the caller (recommended; the POC puts history out of scope)",
+        "Store past ratings"
+      ],
+      "impact": "A store adds a schema, migrations and a new component.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Historical assessment comparison / trend view | Requires data warehouse",
+      "history": [
+        {
+          "status": "open",
+          "question": "The request is silent. Is any rating history stored?",
+          "at": "2026-10-14T03:13:25.134Z"
+        }
+      ],
+      "answer": "No store. Both ratings are passed in by the caller (recommended; the POC puts history out of scope)"
+    },
+    {
+      "id": "ARC-integration",
+      "status": "decided",
+      "question": "Is the Ind. 12 country-rating fetch (a scrape of Wikipedia or countryeconomy.com) part of this delivery? If yes: which agency for 'Other' (X-agency-other), what timeout and failure behaviour?",
+      "options": [
+        "None; ratings are inputs (recommended, PRD-scope A or B)",
+        "A scraper component: no API key, falls back to manual input on failure (REQ-02-08), finishes within 30 s (REQ-02-01)"
+      ],
+      "impact": "Adds network I/O, a new component, flaky-source handling and Q2.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Wikipedia sovereign ratings / countryeconomy.com | Web scrape (no API key)",
+      "history": [
+        {
+          "status": "open",
+          "question": "Is the Ind. 12 country-rating fetch (a scrape of Wikipedia or countryeconomy.com) part of this delivery? If yes: which agency for 'Other' (X-agency-other), what timeout and failure behaviour?",
+          "at": "2026-10-14T03:13:25.545Z"
+        }
+      ],
+      "answer": "None; ratings are inputs (recommended, PRD-scope A or B)"
+    },
+    {
+      "id": "ARC-async",
+      "status": "decided",
+      "question": "Synchronous or asynchronous?",
+      "options": [
+        "Synchronous pure functions (recommended when there is no fetch)",
+        "Async only for a fetch component, if ARC-integration includes one"
+      ],
+      "impact": "Internal only.",
+      "owner": "pm",
+      "source": "pm: michael 2026-10-14 — CLAUDE.md: pure functions, no I/O in src/ratings and src/indicators; nothing in the helper needs async",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`.",
+      "history": [
+        {
+          "status": "open",
+          "question": "Synchronous or asynchronous?",
+          "at": "2026-10-14T03:12:57.588Z"
+        }
+      ],
+      "answer": "Synchronous pure functions"
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "No target is stated for a pure calculation. If a fetch comes into scope, REQ-02-01's 30 seconds applies to it.",
+      "source": "docs/POC_Requirements_v0.2_EN.md (REQ-02-01)",
+      "quote": "Fetch completes within 30 seconds"
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "An in-process pure library has no runtime dependency. Degradation (REQ-02-08) matters only if a fetch is in scope.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "No authentication or authorisation; the POC has a single user. Inputs are validated as CON-errors decides. There are no secrets.",
+      "source": "docs/POC_Requirements_v0.2_EN.md (A1)",
+      "quote": "POC operates for a single user; no authentication required"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "The inputs are rating symbols only, with no client identifiers. Pure functions log and store nothing.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "Override flags and the audit trail belong to the form and the export (REQ-02-09, REQ-07-02). The request excludes screens.",
+      "source": "request",
+      "quote": "this is not about screens"
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "Pure functions with no I/O, so no logging or metrics.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "The WL logic must mirror the Excel dropdown sheet exactly. The Excel file is not in the repo (see PRD-acceptance). The POC output may not go to production without a business-unit review (C1).",
+      "source": "docs/POC_Requirements_v0.2_EN.md (A4, C1)",
+      "quote": "Watchlist scoring logic mirrors exactly the Excel dropdown sheet (no interpretation changes)"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "node:test with node:assert/strict. Test files live at test/<area>/<name>.test.mjs, and npm test runs them all. Unit tests are written by the dev; QA tests the public functions against the full scale tables. No coverage target is stated (a PM decision).",
+      "source": "CLAUDE.md",
+      "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`. `npm test` runs everything."
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "`node --test` must pass. There are no lint, typecheck or scan scripts in package.json.",
+      "source": ".deliver.json",
+      "quote": "\"verify_full\": \"node --test\""
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "question": "How is the helper delivered and consumed (deployment shape, rollback)?",
+      "options": [
+        "Nothing is deployed: other POC parts import it from this repo (the repo convention; POC C1 says no production without a business review) (recommended)",
+        "Published as a package or service"
+      ],
+      "impact": "Delivery shape only.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "POC output shall not move to production without a business unit review session",
+      "history": [
+        {
+          "status": "open",
+          "question": "How is the helper delivered and consumed (deployment shape, rollback)?",
+          "at": "2026-10-14T03:13:25.958Z"
+        }
+      ],
+      "answer": "Nothing is deployed: other POC parts import it from this repo (the repo convention; POC C1 says no production without a business review) (recommended)"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "decided",
+      "question": "What documentation is needed?",
+      "options": [
+        "JSDoc on the exported functions plus a short README section listing the scales and the WL mapping (recommended)",
+        "None"
+      ],
+      "impact": "Internal only.",
+      "owner": "pm",
+      "history": [
+        {
+          "status": "open",
+          "question": "What documentation is needed?",
+          "at": "2026-10-14T03:12:57.934Z"
+        }
+      ],
+      "answer": "JSDoc on exported functions plus a short README section on the scales and WL mapping",
+      "source": "pm: michael 2026-10-14 — Other POC parts will consume the helper; the contract must be discoverable"
+    },
+    {
+      "id": "X-scales",
+      "status": "decided",
+      "question": "Which rating scales, and in what notch order? The POC names an internal scale 'AAA → CCC-' (REQ-03-10), an agency selector S&P / Moody's / Fitch (REQ-03-13), and Fitch for the Germany and Turkey country ratings. It never lists the scales.",
+      "options": [
+        "S&P/Fitch AAA, AA+ … CCC-, CC, C, D (22 steps); Moody's Aaa, Aa1 … Caa3, Ca, C (21 steps); internal AAA … CCC- (19 steps). Notches are counted within one scale (recommended)",
+        "S&P/Fitch symbols only; Moody's mapped by the standard equivalence",
+        "Whatever the Excel sheet defines"
+      ],
+      "impact": "Decides every notch count, especially at the bottom of the scale (CCC- → CC/C/D, Ca/C) and the REQ-06-02 example.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Dropdown AAA → CCC-; manual only",
+      "history": [
+        {
+          "status": "open",
+          "question": "Which rating scales, and in what notch order? The POC names an internal scale 'AAA → CCC-' (REQ-03-10), an agency selector S&P / Moody's / Fitch (REQ-03-13), and Fitch for the Germany and Turkey country ratings. It never lists the scales.",
+          "at": "2026-10-14T03:13:26.368Z"
+        }
+      ],
+      "answer": "C1 stands: only the 19-step S&P-style scale in this slice; anything else is rejected with a RangeError."
+    },
+    {
+      "id": "X-modifiers",
+      "status": "decided",
+      "question": "Do outlook (positive/stable/negative) or watch status (CreditWatch / Rating Watch / review) count toward the notch change or the WL? How are NR, WD, SD and RD handled?",
+      "options": [
+        "Ignore them; only the symbol counts, and NR/WD are invalid input (recommended)",
+        "A negative outlook or watch adds to the WL",
+        "Accept the modifiers in the input and strip them"
+      ],
+      "impact": "Changes the WL for a stable symbol with a negative outlook, and the input format.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Country rating Fitch AAA (stable, rarely triggers)",
+      "history": [
+        {
+          "status": "open",
+          "question": "Do outlook (positive/stable/negative) or watch status (CreditWatch / Rating Watch / review) count toward the notch change or the WL? How are NR, WD, SD and RD handled?",
+          "at": "2026-10-14T03:13:26.783Z"
+        }
+      ],
+      "answer": "Ignore them; only the symbol counts, and NR/WD are invalid input (recommended)"
+    },
+    {
+      "id": "X-direction",
+      "status": "decided",
+      "question": "What WL do no change and upgrades get? REQ-03-12 says '1 notch → WL=1' without saying downgrade. REQ-03-11 puts 'same/upgrade' in one option.",
+      "options": [
+        "No change and upgrades of any size give WL=0; only downgrades count (recommended, consistent with REQ-03-11)",
+        "Upgrades count by absolute notches"
+      ],
+      "impact": "The WL for every upgrade.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "Dropdown → same/upgrade / 1 notch / 2 notches / 3+ notches",
+      "history": [
+        {
+          "status": "open",
+          "question": "What WL do no change and upgrades get? REQ-03-12 says '1 notch → WL=1' without saying downgrade. REQ-03-11 puts 'same/upgrade' in one option.",
+          "at": "2026-10-14T03:13:27.233Z"
+        }
+      ],
+      "answer": "No change and upgrades of any size give WL=0; only downgrades count (recommended, consistent with REQ-03-11)"
+    },
+    {
+      "id": "X-calc-mapping",
+      "status": "decided",
+      "question": "Which WL mapping does the notch calculator's 'resultant WL' (REQ-06-02) use?",
+      "options": [
+        "The caller names the indicator (11, 12 or 13) and gets that indicator's mapping",
+        "Always Ind. 12 (1 → WL=1, 2+ → WL=2)",
+        "Always the Ind. 11/13 mapping (2 → WL=1, 3+ → WL=2), which fits the example's WL=1"
+      ],
+      "impact": "The same move gives a different WL: a 1-notch downgrade is WL=1 under Ind. 12 and WL=0 under Ind. 11/13.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "analyst selects previous rating and current rating → system outputs notch change and resultant WL",
+      "history": [
+        {
+          "status": "open",
+          "question": "Which WL mapping does the notch calculator's 'resultant WL' (REQ-06-02) use?",
+          "at": "2026-10-14T03:13:27.646Z"
+        }
+      ],
+      "answer": "The caller names the indicator (11, 12 or 13) and gets that indicator's mapping"
+    },
+    {
+      "id": "X-window",
+      "status": "decided",
+      "answer": "Ind. 12 compares two points, the current rating and the rating 12 months prior, and takes the net notch change between them. Moves in between are not counted.",
+      "source": "docs/POC_Requirements_v0.2_EN.md (REQ-02-02)",
+      "quote": "compared against the rating 12 months prior; notch change shall be calculated automatically"
+    },
+    {
+      "id": "X-agency-other",
+      "status": "decided",
+      "question": "For the 'Other' segment, which agency is the reference country rating (POC Q2)? This only matters if the helper picks or fetches the rating (PRD-scope C). Otherwise the caller supplies it.",
+      "options": [
+        "Fitch",
+        "S&P",
+        "The most conservative of the three",
+        "Not this delivery's concern; the caller passes the ratings (recommended with PRD-scope A or B)"
+      ],
+      "impact": "Fetch logic and which rating is fed in.",
+      "owner": "business",
+      "source": "human: e2e-human 2026-10-14",
+      "quote": "For the \"Other\" segment, which agency is the reference for country rating: Fitch, S&P, or the most conservative of the three?",
+      "history": [
+        {
+          "status": "open",
+          "question": "For the 'Other' segment, which agency is the reference country rating (POC Q2)? This only matters if the helper picks or fetches the rating (PRD-scope C). Otherwise the caller supplies it.",
+          "at": "2026-10-14T03:13:28.031Z"
+        }
+      ],
+      "answer": "Not this delivery's concern; the caller passes the ratings (recommended with PRD-scope A or B)"
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "watchlist-core",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node"
+        ],
+        "path": [
+          "src/ratings/",
+          "src/indicators/",
+          "test/ratings/",
+          "test/indicators/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "verify": "npm test",
+        "notes": "Proposed, not confirmed. It is the draft's single 'repo' component (path '.', npm test), split into the CLAUDE.md areas. Pure functions, no I/O, no dependencies. The job's reviewer is ecc:typescript-reviewer. If PRD-scope C (fetch) is chosen, a separate fetch component is needed outside src/ratings and src/indicators; its stack, path and owner are open."
+      }
+    ]
+  }
+}

@@ -1,0 +1,115 @@
+2026-10-14T03:07:11Z	new	Rating notch helper
+2026-10-14T03:07:15Z	phase	shaping
+2026-10-14T03:07:22Z	shape	BMad 6.12.2 installed (outside git: _bmad/, .claude/skills/bmad-*/)
+2026-10-14T03:07:25Z	shape	run 01-help started
+2026-10-14T03:08:26Z	shape	run 01-help: complete (0 new ledger item(s))
+2026-10-14T03:08:30Z	shape	run 02-create-spec started
+2026-10-14T03:10:04Z	shape	run 02-create-spec: complete (19 new ledger item(s))
+2026-10-14T03:10:33Z	shape-propose	B-1: The scale is right and the POC example is wrong: BBB+ to BB+ is 3 notches, WL2 under the Ind. 11/13 rule. The test uses 3/WL2 and the POC text is flagged for correction.
+2026-10-14T03:10:33Z	shape-propose	B-2: The caller picks the WL rule through a required profile argument ('ind12' or 'ind11-13'); there is no hidden default, and a missing or unknown profile is an error result.
+2026-10-14T03:10:33Z	shape-propose	B-3: Only the 19-step S&P/Fitch notation is accepted; Moody's notation is an error result. Choosing the agency for Other stays with Credit Policy (Q2), outside this helper.
+2026-10-14T03:10:33Z	shape-propose	B-4: Anything outside the 19 listed ratings is an error result: CC, C, D/SD, and suffixes such as '(neg)'.
+2026-10-14T03:10:34Z	shape-propose	B-5: Take the proposed defaults: notchChange(previous, current), wlFromNotches(notches, profile), countryRatingChange({previous, current}); input is trimmed and case-sensitive with ASCII '-'; return is a result object, never a throw.
+2026-10-14T03:10:34Z	shape-propose	B-6: Confirm: Node 18+ ESM library, no dependencies, one component.
+2026-10-14T03:10:34Z	shape-propose	B-7: Confirm: no store, no external call, no deployment; consumed by import.
+2026-10-14T03:10:35Z	shape-propose	B-8: Ship both together: they share one scale and one table, and splitting them adds cost for nothing.
+2026-10-14T03:10:35Z	shape-propose	B-9: Accept: 19-step scale AAA to CCC-.
+2026-10-14T03:10:35Z	shape-propose	B-10: Accept: under the Ind. 11/13 rule 1 notch gives WL0.
+2026-10-14T03:10:35Z	shape-propose	B-11: Accept: a downgrade is positive; upgrade and no change give WL0.
+2026-10-14T03:10:36Z	shape-propose	B-12: Accept: calculation only; fetching ratings and history is out of scope.
+2026-10-14T03:10:36Z	shape-propose	B-13: Accept: Node 18+ ESM, no dependencies, from CLAUDE.md.
+2026-10-14T03:10:36Z	shape-propose	B-14: Accept: invalid, missing or unknown ratings give an error result, never a guessed number.
+2026-10-14T03:10:36Z	shape-propose	B-15: Accept: bookkeeping only, no effect on what is built.
+2026-10-14T03:10:37Z	shape-propose	B-16: Accept CAP-1 as written.
+2026-10-14T03:10:37Z	shape-propose	B-17: Accept CAP-2 as written: Ind. 12 1→WL1, 2+→WL2; Ind. 11/13 2→WL1, 3+→WL2.
+2026-10-14T03:10:37Z	shape-propose	B-18: Accept CAP-3: takes both ratings, returns notch change and WL; no fetching.
+2026-10-14T03:10:37Z	shape-propose	B-19: Accept CAP-4: explicit error result for missing, unknown or off-scale ratings.
+2026-10-14T03:10:42Z	phase	awaiting_clarification
+2026-10-14T03:10:51Z	clarify	B-5: Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: "downgrade" | "upgrade" | "unchanged", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.
+2026-10-14T03:10:51Z	clarify	B-6: Plain Node.js ESM (.mjs), no dependencies; tests with node --test next to the code under test/.
+2026-10-14T03:10:51Z	clarify	B-7: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-14T03:10:52Z	clarify	B-8: REQ-06-02 comes first (Must); REQ-03-12 follows (Should).
+2026-10-14T03:10:52Z	clarify	B-12: Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).
+2026-10-14T03:10:53Z	clarify	B-13: Plain Node.js ESM (.mjs), no dependencies; tests with node --test next to the code under test/.
+2026-10-14T03:10:53Z	clarify	B-18: Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).
+2026-10-14T03:10:54Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T03:11:09Z	phase	shaping
+2026-10-14T03:11:10Z	shape	run 03-update-spec started
+2026-10-14T03:12:17Z	shape	run 03-update-spec: complete (8 new ledger item(s))
+2026-10-14T03:12:35Z	shape-propose	B-20: notchCalculator returns { error: <message naming the offending input> }; notchChange and countryRatingChangeWl, whose return types the human fixed as an integer and 0|1|2, throw an Error naming the offending input. No number is ever guessed.
+2026-10-14T03:12:35Z	shape-propose	B-21: Confirm: notchCalculator(previous, current, profile), profile required, since B-2 makes the profile required and has no default.
+2026-10-14T03:12:35Z	shape-propose	B-22: The PM records the POC text correction as a follow-up in the PR (REQ-06-02 example: BBB+ to BB+ is 3 notches, WL2); this delivery does not edit the POC document.
+2026-10-14T03:12:36Z	phase	awaiting_clarification
+2026-10-14T03:12:43Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T03:12:55Z	phase	shaping
+2026-10-14T03:12:59Z	shape	run 04-update-spec started
+2026-10-14T03:13:33Z	shape	run 04-update-spec: complete (0 new ledger item(s))
+2026-10-14T03:13:39Z	shape	run 05-create-architecture started
+2026-10-14T03:14:50Z	shape	run 05-create-architecture: partial (14 new ledger item(s))
+2026-10-14T03:15:07Z	shape-propose	B-28: Accept: the lint passed; the independent review lenses run as the review round after shaping (bmad-review), before the architecture binds the job.
+2026-10-14T03:15:07Z	shape-propose	B-29: Keep Node 18+ as in CLAUDE.md (the floor the project already states); no code depends on it, so raising it later changes nothing built.
+2026-10-14T03:15:08Z	shape-propose	B-30: Accept: functional core, two one-way layers, indicators import ratings only.
+2026-10-14T03:15:08Z	shape-propose	B-31: Accept: thresholds live once in notch.mjs; Ind. 12 reads the ind12 entry through a non-public internal export.
+2026-10-14T03:15:08Z	shape-propose	B-32: Accept: strict exact-match validation on the 19 RATING_SCALE strings, no trimming or case folding.
+2026-10-14T03:15:08Z	shape-propose	B-33: Accept: success results never carry error; error results never carry wl.
+2026-10-14T03:15:09Z	shape-propose	B-34: Accept: Node 18+ floor kept, same as B-29.
+2026-10-14T03:15:09Z	shape-propose	B-36: Accept AD-1..AD-6 as written; they are inferred from the spec and CLAUDE.md, and I confirm them with the human now.
+2026-10-14T03:15:09Z	shape-propose	B-37: Accept.
+2026-10-14T03:15:09Z	shape-propose	B-38: Accept.
+2026-10-14T03:15:10Z	shape-propose	B-39: Accept.
+2026-10-14T03:15:10Z	shape-propose	B-40: Accept.
+2026-10-14T03:15:10Z	shape-propose	B-41: Accept.
+2026-10-14T03:15:15Z	shape-propose	B-35: Accept: BMad's working log is reused; it only affects BMad's own notes, not the code.
+2026-10-14T03:15:15Z	phase	awaiting_clarification
+2026-10-14T03:15:24Z	clarify	B-31: Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: "downgrade" | "upgrade" | "unchanged", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.
+2026-10-14T03:15:25Z	clarify	B-40: C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.
+2026-10-14T03:15:25Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T03:15:36Z	phase	shaping
+2026-10-14T03:15:41Z	shape	run 06-update-spec started
+2026-10-14T03:16:34Z	shape	run 06-update-spec: complete (6 new ledger item(s))
+2026-10-14T03:16:47Z	shape-propose	B-42: Keep the split: notchCalculator returns { error } (its result is an object the form can branch on); notchChange and countryRatingChangeWl throw RangeError because their return types are fixed (integer, 0|1|2).
+2026-10-14T03:16:48Z	shape-propose	B-43: Accept 'Aaa' as AAA: the human chose trimmed, case-insensitive matching (B-40), and 'Aaa' is the only Moody's string that collides with the 19-step scale; every other Moody's string (Baa1 …) is still rejected.
+2026-10-14T03:16:48Z	shape-propose	B-44: Signature is notchCalculator(previous, current, profile) with profile required (no default), as B-2 and B-21 decided; B-31's two-argument form was a listing of the public names, not a decision to drop the profile.
+2026-10-14T03:16:52Z	phase	awaiting_clarification
+2026-10-14T03:16:58Z	clarify	B-43: C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.
+2026-10-14T03:16:58Z	clarify	B-44: Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: "downgrade" | "upgrade" | "unchanged", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.
+2026-10-14T03:16:58Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T03:17:09Z	phase	shaping
+2026-10-14T03:17:12Z	shape	run 07-update-architecture started
+2026-10-14T03:17:41Z	shape	run 07-update-architecture: partial (9 new ledger item(s))
+2026-10-14T03:18:01Z	shape-propose	B-48: Keep profile required: notchCalculator(previous, current, profile). B-31's two-argument form is a shorthand; Ind. 11/13 pass 'ind11-13', Ind. 12 uses 'ind12'.
+2026-10-14T03:18:01Z	shape-propose	B-49: Case-insensitivity wins: 'Aaa' is folded to AAA (it is the same letters as the S&P/Fitch AAA). Every other Moody's notation (Aa1, Baa2, …) stays rejected. Credit Policy owns Moody's mapping later.
+2026-10-14T03:18:01Z	shape-propose	B-50: Keep the per-function contract of AD-5: notchCalculator returns {error}; notchChange and countryRatingChangeWl throw RangeError naming the input.
+2026-10-14T03:18:01Z	shape-propose	B-51: Yes: run the bmad-review lenses (rubric walker, web-verification, adversarial two-builder) after these decisions go back to BMad, before the architecture binds the job. Process only.
+2026-10-14T03:18:02Z	shape-propose	B-52: Accept Node 18+ as the floor, as CLAUDE.md states; no web verification needed for a built-ins-only library.
+2026-10-14T03:18:02Z	phase	awaiting_clarification
+2026-10-14T03:18:09Z	clarify	B-48: Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: "downgrade" | "upgrade" | "unchanged", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.
+2026-10-14T03:18:09Z	clarify	B-49: C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.
+2026-10-14T03:18:10Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T03:18:24Z	phase	shaping
+2026-10-14T03:18:27Z	shape	run 08-update-spec started
+2026-10-14T03:19:34Z	shape	run 08-update-spec: complete (3 new ledger item(s))
+2026-10-14T03:19:50Z	shape-propose	B-57: Confirm: notchCalculator(previous, current) has no profile argument and applies the ind11-13 rule (<=1 notch WL0, 2 WL1, 3+ WL2), as REQ-06-02's own example (2 notches -> WL1) matches it; ind12 stays internal to countryRatingChangeWl.
+2026-10-14T03:19:51Z	shape-propose	B-58: Confirm: 'Aaa' folds to 'AAA' under the case-insensitive rule (same letters as AAA); every other Moody's notation (Aa1, Baa1, ...) is rejected.
+2026-10-14T03:19:51Z	phase	awaiting_clarification
+2026-10-14T03:20:01Z	clarify	B-58: C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.
+2026-10-14T03:20:01Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T03:20:18Z	phase	shaping
+2026-10-14T03:20:21Z	shape	run 09-update-architecture started
+2026-10-14T03:21:00Z	shape	run 09-update-architecture: partial (3 new ledger item(s))
+2026-10-14T03:21:15Z	shape-propose	B-60: Same as B-57: notchCalculator(previous, current) has no profile argument and applies the ind11-13 rule; ind12 stays internal to countryRatingChangeWl. The profile selector is dropped entirely.
+2026-10-14T03:21:16Z	shape-propose	B-61: Same as B-58: 'Aaa' folds to 'AAA' under the case-insensitive rule; every other Moody's notation is rejected.
+2026-10-14T03:21:19Z	phase	awaiting_clarification
+2026-10-14T03:21:24Z	clarify	B-61: C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.
+2026-10-14T03:21:24Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T03:21:42Z	phase	shaping
+2026-10-14T03:21:46Z	shape	run 10-update-spec started
+2026-10-14T03:22:31Z	shape	run 10-update-spec: complete (1 new ledger item(s))
+2026-10-14T03:22:44Z	shape-propose	B-63: Keep the case-insensitive rule: 'Aaa' (and 'aaa') folds to AAA and is accepted. Every other Moody's rating carries a digit and is rejected. Tests cover 'Aaa' → AAA explicitly.
+2026-10-14T03:22:44Z	phase	awaiting_clarification
+2026-10-14T03:22:50Z	clarify	B-63: C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.
+2026-10-14T03:23:02Z	phase	shaping
+2026-10-14T03:23:05Z	shape	run 11-update-architecture started
+2026-10-14T03:23:42Z	shape	run 11-update-architecture: partial (1 new ledger item(s))
+2026-10-14T03:23:54Z	shape-propose	B-64: Keep the fold: 'Aaa' is accepted as AAA through the case-insensitive match, and every other Moody's rating stays rejected. The spine's AD-5 already works this way and the rest of the helper is unaffected; Credit Policy can overrule it later in one place (the validator).
+2026-10-14T03:23:58Z	phase	awaiting_clarification

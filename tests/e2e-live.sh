@@ -15,6 +15,15 @@
 #     light       a repo with the watchlist slice already delivered (no architecture.md); a small change (JOB-light.md) →
 #                 Michael takes the light path (no Lead, ≤ 2 cards), the human confirms the drafted architecture once and
 #                 it is committed; then a second small change (JOB-light2.md) settles its architecture from that file (B1, B2)
+#     shaped      the watchlist request without its clarifications (JOB-shaped.md), upstream.engine bmad: the BMad Method
+#                 shapes it — its own path, the ledger decided with the human (HUMAN_ANSWERS.json by topic; an item no answer
+#                 fits takes Michael's proposal, counted), its update and review — frozen, then delivered; the hidden oracle
+#                 judges whether the shaped specification was the right one (S1)
+#     idea        an idea, not a specification (JOB-idea.md: one paragraph, no requirements table, no contract) — shaped as
+#                 above; its human knows the business's answers (HUMAN_ANSWERS-idea.json: scope, contract, C1–C8) (S2)
+#   E2E_SHAPING=off      the shaped scenario without shaping: the same request, the readiness review alone (the control run)
+#   E2E_FALLBACK=recommended   a readiness question no prepared answer fits takes the BA's (recommended) option — the same
+#                        policy as "Michael's proposal accepted" in a shaped run, so the two compare; each is logged
 #   Every scenario on 0.16.0 settings also judges the risk-based test design, the NFR gate and the blind review (B3, B4).
 #   Each writes <work dir>/<scenario>/report.md (the scenario, step by step) and keeps every artifact.
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
@@ -26,7 +35,7 @@ set -uo pipefail
 # grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
 gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SC="${1:?usage: e2e-live.sh complete|incomplete|parallel|models|light [work dir]}"
+SC="${1:?usage: e2e-live.sh complete|incomplete|parallel|models|light|shaped|idea [work dir]}"
 EXN=watchlist-poc; EX="$HERE/examples/$EXN"
 case $SC in
   complete)   REQ="$EX/JOB.md";            ORACLE=watchlist.oracle.test.mjs ;;
@@ -34,12 +43,22 @@ case $SC in
   parallel)   REQ="$EX/JOB-parallel.md";   ORACLE=parallel.oracle.test.mjs ;;
   models)     REQ="$EX/JOB-models.md";     ORACLE=models.oracle.test.mjs ;;
   light)      REQ="$EX/JOB-light.md";      ORACLE=light.oracle.test.mjs ;;
+  shaped)     REQ="$EX/JOB-shaped.md";     ORACLE=watchlist.oracle.test.mjs ;;
+  idea)       REQ="$EX/JOB-idea.md";       ORACLE=watchlist.oracle.test.mjs ;;
   *) echo "unknown scenario: $SC" >&2; exit 2 ;;
 esac
+ANSWERS="$EX/HUMAN_ANSWERS.json"; [[ $SC == idea ]] && ANSWERS="$EX/HUMAN_ANSWERS-idea.json"   # what the scenario's human knows
+SHAPED_SC=0; [[ $SC == shaped || $SC == idea ]] && SHAPED_SC=1
 W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; W="$(cd "$W/$SC" && pwd)"
 export ISO_HOME="$W/home"; mkdir -p "$ISO_HOME"
 . "$HERE/tests/lib-isolated-claude.sh"
 export PERMISSION_MODE="${PERMISSION_MODE:-bypassPermissions}" IS_SANDBOX=1
+# Claude Code does not hand its token to the commands it runs: the BMad sessions dl shape run starts get it from a file
+if [[ -n ${CLAUDE_CODE_OAUTH_TOKEN:-} && -z ${DELIVER_CLAUDE_TOKEN_FILE:-} ]]; then
+  DELIVER_CLAUDE_TOKEN_FILE="$(mktemp "${TMPDIR:-/tmp}/deliver-e2e-token.XXXXXX")"; chmod 600 "$DELIVER_CLAUDE_TOKEN_FILE"
+  printf '%s' "$CLAUDE_CODE_OAUTH_TOKEN" > "$DELIVER_CLAUDE_TOKEN_FILE"; export DELIVER_CLAUDE_TOKEN_FILE
+  trap 'rm -f "$DELIVER_CLAUDE_TOKEN_FILE"' EXIT
+fi
 export GIT_AUTHOR_NAME=e2e GIT_AUTHOR_EMAIL=e2e@example.com GIT_COMMITTER_NAME=e2e GIT_COMMITTER_EMAIL=e2e@example.com
 REP="$W/report.md"; : > "$REP"
 log()  { printf '%s\n' "$*" | tee -a "$REP"; }
@@ -66,6 +85,11 @@ if [[ -n ${E2E_FRESH_REPO:-} ]]; then
   mkdir -p "$ISO_HOME/.deliver" && echo '{"dispatch":"subagent"}' > "$ISO_HOME/.deliver/config.json"
   [[ ! -f $SB/.deliver.json ]] && ok "fresh repo: no .deliver.json; ~/.deliver/config.json says dispatch subagent" || bad "sandbox wrote a .deliver.json"
 else iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null; fi
+if [[ $SHAPED_SC == 1 ]]; then   # shaping on; the POC document the request names is in the repo
+  mkdir -p "$SB/docs" && cp "$EX/POC_Requirements_v0.2_EN.md" "$SB/docs/"
+  [[ ${E2E_SHAPING:-on} == off ]] || { jq '.upstream = {engine: "bmad", review_rounds: 2}' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"; }
+  git -C "$SB" add -A && git -C "$SB" commit -qm "shaping with the BMad Method; the POC document" && log "upstream.engine = bmad; docs/POC_Requirements_v0.2_EN.md in the repo"
+fi
 if [[ $SC == light ]]; then   # an existing codebase: the slice JOB.md delivers, with its unit and QA tests
   for d in T-01 T-02 QA-T-01 QA-T-02; do cp -R "$EX/reference/$d/." "$SB/"; done
   git -C "$SB" add -A && git -C "$SB" commit -qm "watchlist: notch calculator and Indicator 12 (REQ-06-02, REQ-03-12)"
@@ -99,16 +123,37 @@ fi
 # matched by topic, recorded with dl clarify as a person in a terminal would — and the run resumes. A question no
 # prepared answer matches fails the scenario: a real person would have to answer it.
 human_rounds() { local J=$1 JJ=$1/job.json round
-for round in 1 2 3; do
+for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SHAPED_SC == 1 ]] && echo 12 || echo 3)}"); do
   [[ "$(jq -r .phase "$JJ")" == awaiting_clarification ]] || break
   step "4.$round · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
   [[ $SC != incomplete ]] && log "note: the $SC request still raised question(s) — recorded below; answering them is the human's job"
   log "Open questions (QUESTIONS.md):"; sed 's/^/    /' "$J/QUESTIONS.md" >> "$REP"
+  # Shaping: what BMad decided, assumed, asked or found, each with Michael's proposal. The prepared human answers what a
+  # prepared answer fits; the rest takes Michael's proposal — counted, since a real person would read each one.
+  if [[ -f $J/shaping.json ]] && jq -e '[.ledger[] | select(.status=="open" and .needs_human)] | length > 0' "$J/shaping.json" >/dev/null; then
+    while IFS=$'\t' read -r id q; do
+      ans="$(node "$HERE/tests/pick-answer.mjs" "$ANSWERS" "$q" 2>/dev/null)"
+      if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id from HUMAN_ANSWERS — $(cut -c1-90 <<<"$q")"; fi
+    done < <(jq -r '.ledger[] | select(.status=="open" and .needs_human) | [.id, .text] | @tsv' "$J/shaping.json")
+    n="$(jq '[.ledger[] | select(.status=="open" and .needs_human)] | length' "$J/shaping.json")"
+    if [[ $n -gt 0 ]]; then
+      iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify proposals "e2e: no prepared answer fits — Michael's proposal accepted" > /dev/null \
+        && log "accepted Michael's proposal for $n item(s) no prepared answer fits: $(jq -r '[.ledger[] | select(.decision.text // "" | test("no prepared answer fits")) | .id] | join(", ")' "$J/shaping.json")" \
+        || bad "could not accept Michael's proposals"
+    fi
+    run_rounds | sed 's/^/    /'; continue
+  fi
   while IFS=$'\t' read -r id q; do
-    ans="$(node "$HERE/tests/pick-answer.mjs" "$EX/HUMAN_ANSWERS.json" "$q" "$id" 2>/dev/null)"
+    ans="$(node "$HERE/tests/pick-answer.mjs" "$ANSWERS" "$q" "$id" 2>/dev/null)"
     if [[ $id == "${E2E_MISMATCH:-}" && ! -f $W/.mismatched ]]; then   # R2: the first answer is about something else
-      ans="$(jq -r '.[] | select(.topic | startswith("what '"'"'displayed'"'"' means")) | .answer' "$EX/HUMAN_ANSWERS.json")"; touch "$W/.mismatched"
+      ans="$(jq -r '.[] | select(.topic | startswith("what '"'"'displayed'"'"' means")) | .answer' "$ANSWERS")"; touch "$W/.mismatched"
       log "    (R2) answering $id on purpose with an unrelated answer: ${ans:0:90}"
+    fi
+    # E2E_FALLBACK=recommended — the same policy as the shaped run's "Michael's proposal accepted": no prepared answer fits →
+    # the option the BA marked (recommended), else its first option; counted, since a real person would read each one
+    if [[ -z $ans && ${E2E_FALLBACK:-} == recommended ]]; then
+      ans="$(jq -r --arg id "$id" '(.items // .)[] | select(.id == $id) | (.options // []) as $o | (([$o[] | select(test("recommended"; "i"))][0]) // $o[0] // "")' "$J/readiness.json")"
+      [[ -n $ans ]] && { echo "$id" >> "$W/.fallback"; log "    no prepared answer fits $id — took the BA's recommended option: ${ans:0:100}"; }
     fi
     if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id — $(cut -c1-90 <<<"$q")"
     else bad "no prepared answer for $id — a real person must answer: $q"; fi
@@ -174,7 +219,7 @@ else bad "hidden oracle FAILED (oracle.log)"; grep -E '✖|AssertionError|expect
 TL="$(node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$J" --json 2>/dev/null)"
 if [[ -n $TL ]]; then
   node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$J" > "$W/timeline.txt" 2>/dev/null
-  jm="$(jq -r .total_min <<<"$TL")"; max="${E2E_MAX_MIN:-15}"
+  jm="$(jq -r .total_min <<<"$TL")"; max="${E2E_MAX_MIN:-$([[ $SHAPED_SC == 1 ]] && echo 45 || echo 15)}"
   awk -v a="$jm" -v b="$max" 'BEGIN { exit !(a <= b) }' && ok "the job took $jm min (≤ $max; timeline.txt)" \
     || { bad "the job took $jm min (> $max) — where it went: $(jq -r '[.phases[] | "\(.phase) \(.min)"] | join(", ")' <<<"$TL"); busiest: $(jq -r '.seats[0] | "\(.who) \(.busy_min) min"' <<<"$TL") (timeline.txt)"; }
 fi
@@ -258,6 +303,27 @@ if [[ "$(jq -r '.settings.test_design.risk // false' "$JJ")" == true ]]; then
   grep -q $'\tagent\tecc:code-reviewer' "$J/events.log" && log "blind agent runs: $(grep -c $'\tagent\tecc:code-reviewer' "$J/events.log")"
 fi
 
+if [[ $SHAPED_SC == 1 && ${E2E_SHAPING:-on} != off ]]; then
+  step "S1 · shaped with the BMad Method"
+  SHJ="$J/shaping.json"
+  chk "the job was shaped (shaping.json)" test -f "$SHJ"
+  log "BMad's path (bmad-help): $(jq -r '[.plan.sequence[]?.skill] | join(" → ")' "$SHJ") · skipped: $(jq -r '[.plan.skipped[]?.skill] | join(", ")' "$SHJ")"
+  log "runs: $(jq -r '[.runs[] | "\(.name) \(.status) \(.seconds)s $\(.cost // 0 | . * 100 | round / 100)"] | join(" · ")' "$SHJ")"
+  log "shaping: $(jq '.runs | length' "$SHJ") runs, $(jq '[.runs[].seconds] | add / 60 | floor' "$SHJ") min, \$$(jq '[.runs[].cost // 0] | add * 100 | round / 100' "$SHJ")"
+  log "ledger: $(jq -r '.ledger | group_by(.kind) | map("\(.[0].kind) \(length)") | join(", ")' "$SHJ") · decided by the human $(jq '[.ledger[] | select(.decision.by // "" | startswith("human"))] | length' "$SHJ"), by Michael $(jq '[.ledger[] | select(.decision.by == "pm")] | length' "$SHJ"), Michael's proposal accepted without a prepared answer $(jq '[.ledger[] | select(.decision.text // "" | test("no prepared answer fits"))] | length' "$SHJ")"
+  chk "every ledger item decided (or noted)" jq -e 'all(.ledger[]; .status != "open")' "$SHJ"
+  log "BMad's reviews: $(jq -r '[.reviews[] | "round \(.round): \(.verdict) (\(.findings))"] | join(" · ")' "$SHJ")"
+  chk "BMad reviewed its own work at least once" jq -e '.reviews | length >= 1' "$SHJ"
+  chk "frozen with readiness at planning (frozen.shaping_sha256)" jq -e '.frozen.shaping_sha256' "$JJ"
+  nb="$(jq '[(.items // .)[] | select((.source // "") | test("^\\s*(bmad|shape):"))] | length' "$J/readiness.json")"
+  [[ $nb -gt 0 ]] && ok "the readiness review settled $nb item(s) from BMad's words (bmad: / shape:)" || bad "no readiness item quotes BMad's artifacts or the ledger"
+  ids="$(node "$ISO_HOME/.claude/skills/deliver/bin/bmad.mjs" ids "$J" 2>/dev/null | jq -r 'join(", ")')"; log "traced ids: ${ids:-none} (dl validate refuses a plan that leaves one out)"
+  [[ -f $J/standards/bmad-architecture.md ]] && log "AD rules for the reviewers: $(grep -c '^- \[AD-' "$J/standards/bmad-architecture.md")" || log "no architecture spine: no AD rules"
+  chk "the PR body says how it was shaped" grep -q '## Shaped with the BMad Method' "$J/report.md"
+  chk "the record keeps BMad's inputs and artifacts on main" bash -c "git -C '$SB' ls-tree -r --name-only main | grep -q '^.deliver/jobs/.*/bmad/shaping.json'"
+  chk "BMad's install stayed outside git" bash -c "! git -C '$SB' ls-tree -r --name-only main | grep -qE '^(_bmad/|\.claude/skills/bmad-)'"
+  cp "$SHJ" "$W/shaping.json" 2>/dev/null; cp -R "$J/bmad" "$W/bmad" 2>/dev/null
+fi
 if [[ $SC == light ]]; then
   step "B1 · the light path"
   chk "Michael took the light path, with the request's words" jq -e '.tracks[0].to == "light" and any(.pm_decisions[]; .what | test("light path"))' "$JJ"

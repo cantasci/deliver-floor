@@ -6,6 +6,8 @@
 # Michael uses no subagents at all: every role has a seat (dl md-hire / md-send).
 set -uo pipefail
 input="$(cat)"
+# a BMad session started by dl shape run (shaping) is not Michael: it ends when its skill is done, with its own reviewers
+[[ -n ${DELIVER_SHAPING:-} ]] && exit 0
 command -v jq >/dev/null || exit 0
 # On the Munder Difflin floor every role has a seat of its own: Michael (AGENT_ID=god) hands work to people, not subagents.
 if [[ ${AGENT_ID:-} == god ]]; then

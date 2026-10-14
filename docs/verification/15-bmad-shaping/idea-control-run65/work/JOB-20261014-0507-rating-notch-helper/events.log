@@ -1,0 +1,105 @@
+2026-10-14T03:07:09Z	new	Rating notch helper
+2026-10-14T03:07:29Z	jobset	stack: .stack=["node"]
+2026-10-14T03:07:30Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"\"the notch calculator and the country rating change indicator\" — domain logic"},{"role":"backend","agent":"backend-dev","why":"builds the pure rating/indicator functions (src/ratings, src/indicators)"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack node/javascript (package.json, CLAUDE.md: plain Node.js ESM)"},{"role":"blind","agent":"ecc:code-reviewer","why":"WL scoring (REQ-03-12 1 notch → WL=1; 2+ → WL=2) is the core flow and can fail at P0/P1"}]
+2026-10-14T03:07:30Z	jobset	assumptions: .assumptions += ["Stack is Node.js (CLAUDE.md: plain Node.js 18+ ESM, no npm dependencies); pure functions without I/O in src/ratings and src/indicators"]
+2026-10-14T03:07:34Z	context	drafted from the repo: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/idea-control/idea/repo/.work/JOB-20261014-0507-rating-notch-helper/context.draft.md
+2026-10-14T03:07:35Z	roles	ba backend-lead backend qa reviewer blind
+2026-10-14T03:07:35Z	phase	readiness
+2026-10-14T03:07:56Z	dispatch	business-analyst
+2026-10-14T03:11:07Z	agent	business-analyst a7fab3ffa69c9da9a: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"Analysts should stop counting notch moves and working out the WL by hand. The system takes two 
+2026-10-14T03:12:15Z	agent	business-analyst a7fab3ffa69c9da9a: Not written; parsed OK. I didn't create `/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7
+2026-10-14T03:12:57Z	decide	ARC-async: Synchronous pure functions — CLAUDE.md: pure functions, no I/O in src/ratings and src/indicators; nothing in the helper needs async
+2026-10-14T03:12:58Z	decide	DEL-docs: JSDoc on exported functions plus a short README section on the scales and WL mapping — Other POC parts will consume the helper; the contract must be discoverable
+2026-10-14T03:13:07Z	jobset	roles: .roles += [{"role":"docs","agent":"ecc:doc-updater","why":"DEL-docs: JSDoc plus a README section on the scales and WL mapping"}]
+2026-10-14T03:13:07Z	roles-defaults	qa: 2 seats — one per developer seat
+2026-10-14T03:13:07Z	roles	ba backend-lead backend qa reviewer blind docs
+2026-10-14T03:13:07Z	phase	readiness
+2026-10-14T03:13:08Z	readiness	35 items: 12 decided, 6 n/a, 17 open
+2026-10-14T03:13:13Z	phase	awaiting_clarification
+2026-10-14T03:13:14Z	checkpoint	awaiting_clarification, 0 card(s) merged — a fresh session goes on from here
+2026-10-14T03:13:21Z	clarify	PRD-scope: Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).
+2026-10-14T03:13:22Z	clarify	PRD-acceptance: C1 stands: only the 19-step S&P-style scale in this slice; anything else is rejected with a RangeError.
+2026-10-14T03:13:22Z	clarify	PRD-conflicts: (a) Count on the standard scale and correct the example to 'BBB+ → BB+ = 3 notches → WL=2' (BA recommendation)
+2026-10-14T03:13:22Z	clarify	CON-interface: Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: "downgrade" | "upgrade" | "unchanged", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.
+2026-10-14T03:13:23Z	clarify	CON-errors: RangeError for every invalid input, strings and non-strings alike (null, undefined, 42, {} included).
+2026-10-14T03:13:23Z	clarify	ARC-style: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-14T03:13:24Z	clarify	ARC-components: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-14T03:13:24Z	clarify	ARC-layer: An in-process ESM library that other POC modules import, with no HTTP API (recommended)
+2026-10-14T03:13:24Z	clarify	ARC-deps: None, per the repo rule in CLAUDE.md 'No npm dependencies; do not add any.' (recommended; the helper needs none)
+2026-10-14T03:13:25Z	clarify	ARC-data: No store. Both ratings are passed in by the caller (recommended; the POC puts history out of scope)
+2026-10-14T03:13:25Z	clarify	ARC-integration: None; ratings are inputs (recommended, PRD-scope A or B)
+2026-10-14T03:13:26Z	clarify	DEL-deploy: Nothing is deployed: other POC parts import it from this repo (the repo convention; POC C1 says no production without a business review) (recommended)
+2026-10-14T03:13:26Z	clarify	X-scales: C1 stands: only the 19-step S&P-style scale in this slice; anything else is rejected with a RangeError.
+2026-10-14T03:13:26Z	clarify	X-modifiers: Ignore them; only the symbol counts, and NR/WD are invalid input (recommended)
+2026-10-14T03:13:27Z	clarify	X-direction: No change and upgrades of any size give WL=0; only downgrades count (recommended, consistent with REQ-03-11)
+2026-10-14T03:13:27Z	clarify	X-calc-mapping: The caller names the indicator (11, 12 or 13) and gets that indicator's mapping
+2026-10-14T03:13:28Z	clarify	X-agency-other: Not this delivery's concern; the caller passes the ratings (recommended with PRD-scope A or B)
+2026-10-14T03:13:46Z	context	proposed for .deliver/knowledge/architecture.md: architecture: 1 component(s) — repo (.)
+2026-10-14T03:13:46Z	baseline	PASS (node --test)
+2026-10-14T03:13:47Z	freeze	readiness + architecture frozen (6ac9d706d4be)
+2026-10-14T03:13:47Z	roles	ba backend-lead backend qa reviewer blind docs
+2026-10-14T03:13:47Z	phase	planning
+2026-10-14T03:13:55Z	checkpoint	planning, 0 card(s) merged — a fresh session goes on from here
+2026-10-14T03:14:21Z	dispatch	business-analyst
+2026-10-14T03:16:39Z	agent	business-analyst a2e205b74925c1b8f: ## Goal Credit analysts currently count by hand how many notches a rating has moved and which Watchlist level (WL) that gives. This job delivers a pure, in-proc
+2026-10-14T03:16:47Z	pm-decision	OQ-1: notchCalculator(previous, current, indicator?) with indicator 11|12|13, default 12 — Keeps the two-argument call of CON-interface working and honours X-calc-mapping (caller names the indicator); 12 is the in-scope Must indicator
+2026-10-14T03:17:32Z	dispatch	ecc:architect
+2026-10-14T03:18:57Z	agent	ecc:architect aab3fcbb28fc4281d: ```json [ { "tmp_id": "B1", "title": "src/ratings/notch.mjs: frozen RATING_SCALE, notchChange, notchCalculator with shared RangeError validation and JSDoc", "ro
+2026-10-14T03:19:26Z	pm-decision	Drop README card T-03; AC-10 narrowed to JSDoc — README.md and test/docs are outside the frozen watchlist-core paths and docs has no component; frozen readiness cannot change, so the README section goes to a follow-up
+2026-10-14T03:19:26Z	followup	Add a README section on the rating notch helper (scale, sign convention, Ind.12 and Ind.11/13 WL mappings, RangeError rules, corrected REQ-06-02 example BBB+ -> BB+ = 3 notches WL=2, C1 business review note). Needs a docs component in the architecture.
+2026-10-14T03:19:27Z	jobset	roles: .roles |= map(select(.role!="docs"))
+2026-10-14T03:19:35Z	dispatch	business-analyst
+2026-10-14T03:21:23Z	agent	business-analyst aabbd89acc50e3269: === T-01 === # T-01: notch.mjs: RATING_SCALE, notchChange, notchCalculator ## User story As a credit analyst (and as any POC module that works for one), I want 
+2026-10-14T03:22:19Z	phase	executing
+2026-10-14T03:22:24Z	checkpoint	executing, 0 card(s) merged — a fresh session goes on from here
+2026-10-14T03:22:46Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-14T03:22:47Z	qa-start	T-01 → QA writes its tests in /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/idea-control/idea/repo/.work/JOB-20261014-0507-rating-notch-helper/wt/T-01-qa (branch job/JOB-20261014-0507-rating-notch-helper--T-01-qa) while the dev builds
+2026-10-14T03:23:06Z	dispatch	backend-dev
+2026-10-14T03:23:13Z	dispatch	qa-tester
+2026-10-14T03:24:15Z	agent	backend-dev af06dceb8a1a526af: status: done commit: f41459a (local only, not pushed) verify: passed (`node --test test/ratings/unit-notch.test.mjs` → 27 tests pass, 0 fail; RED seen first wit
+2026-10-14T03:24:55Z	agent	qa-tester a5a25fabed0013958: QA-WRITE for T-01 is done. I wrote 94 tests and committed them as `24dd935` on `job/JOB-20261014-0507-rating-notch-helper--T-01-qa`. I did not push, because tha
+2026-10-14T03:25:00Z	gate	T-01 PASS
+2026-10-14T03:25:05Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-14T03:25:12Z	qa	T-01 pass (qa_verify PASS) — AC-1: qa-notch tests 'AC-1'..'AC-3' [spec AC-1] (scale, frozen, exports); AC-2: 'AC-4' downgrade tests; AC-3: 'AC-5','AC-6','AC-7' upgrade/zero/antisymmetry; AC-4: 'AC-8','AC-9','AC-10' invalid/missing inputs; AC-6: 'AC-11','AC-12' calculator Ind.12; AC-7: 'AC-13','AC-14','AC-15','AC-16' Ind.11/13 and indicator validation; AC-9: 'AC-17','AC-18','AC-19' purity/immutability/no-imports; AC-10 unit: unit-notch JSDoc test
+2026-10-14T03:25:25Z	dispatch	ecc:typescript-reviewer
+2026-10-14T03:25:29Z	dispatch	ecc:code-reviewer
+2026-10-14T03:25:34Z	agent	ecc:typescript-reviewer a44054770a01224ab: {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: The JSDoc `@returns` on `notchCalculator` has no description text after the type. Add one lin
+2026-10-14T03:25:36Z	agent	ecc:code-reviewer a29dfe5d6caed6d8a: {"findings":[]} 
+2026-10-14T03:25:40Z	review	T-01 reviewer approve — no blocking items; 3 nits
+2026-10-14T03:25:41Z	review	T-01 blind approve — blind: no findings
+2026-10-14T03:25:43Z	integrate	T-01 merged
+2026-10-14T03:25:44Z	merge-check	T-01 PASS (watchlist-core suite)
+2026-10-14T03:25:48Z	checkpoint	executing, 1 card(s) merged — a fresh session goes on from here
+2026-10-14T03:26:17Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-14T03:26:25Z	qa-start	T-02 → QA writes its tests in /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/idea-control/idea/repo/.work/JOB-20261014-0507-rating-notch-helper/wt/T-02-qa (branch job/JOB-20261014-0507-rating-notch-helper--T-02-qa) while the dev builds
+2026-10-14T03:26:36Z	dispatch	backend-dev
+2026-10-14T03:26:43Z	dispatch	qa-tester
+2026-10-14T03:28:19Z	agent	backend-dev afd306e79a86fdeb4: status: done (committed locally, not pushed) commit: 8244325 verify: passed (`node --test test/indicators/unit-countryRating.test.mjs`, 12/12; tests were writte
+2026-10-14T03:28:36Z	agent	qa-tester aef39349dc3927d83: Verdict: no verdict yet, since this is QA-WRITE. The tests are committed locally but not pushed, so the card branch doesn't have them yet. The push was blocked.
+2026-10-14T03:28:41Z	gate	T-02 PASS
+2026-10-14T03:28:47Z	qa-join	T-02: QA's tests (1 commit(s)) joined the card branch
+2026-10-14T03:28:49Z	qa	T-02 pass (qa_verify PASS) — AC-1: 'AC-1: countryRatingChangeWl is exported' test; AC-2: 'AC-5: 1-notch downgrade returns the number 1'; AC-3: 'AC-5: downgrade of 2 or more notches returns 2'; AC-4: 'AC-5: no change or any upgrade returns 0'; AC-5: 'AC-5: X-window' test; AC-6: 'AC-5: result is a number in {0,1,2} for every one of the 361 ordered pairs'; AC-7: AC-4 invalid-rating tests (each group as previous and current); AC-8: 'AC-4: missing arguments throw RangeError'; AC-9: 'cross-check with notchChange and notchCalculator over all 361 ordered pairs'; AC-10: 'result is not a Promise and repeated calls return strictly equal results', 'RATING_SCALE is unchanged'; AC-11: source-imports test and package.json no-dependencies test; AC-12 unit: JSDoc test in unit-countryRating.test.mjs
+2026-10-14T04:31:29Z	dispatch	ecc:typescript-reviewer
+2026-10-14T04:31:32Z	dispatch	ecc:code-reviewer
+2026-10-14T04:31:40Z	agent	ecc:typescript-reviewer a09207e12d9b12b2a: {"verdict":"approve","blocking":[],"nits":["src/indicators/countryRating.mjs: the implementation is correct and minimal. It calls notchChange, so the RangeError
+2026-10-14T04:31:42Z	agent	ecc:code-reviewer a65e90059e04230ca: ```json {"findings":[ {"file":"test/indicators/unit-countryRating.test.mjs","line":78,"issue":"The check `e instanceof RangeError && !(e instanceof TypeError)` 
+2026-10-14T04:31:47Z	review	T-02 reviewer approve — correct, minimal, in scope; nits only
+2026-10-14T04:31:48Z	review	T-02 blind approve — no blocking findings; two nits (redundant assertion, test overlap)
+2026-10-14T04:31:50Z	integrate	T-02 merged
+2026-10-14T04:31:51Z	merge-check	T-02 PASS (watchlist-core suite)
+2026-10-14T04:31:56Z	checkpoint	executing, 2 card(s) merged — a fresh session goes on from here
+2026-10-14T04:32:12Z	phase	integrating
+2026-10-14T04:32:12Z	verify-all	PASS
+2026-10-14T04:32:16Z	checkpoint	integrating, 2 card(s) merged — a fresh session goes on from here
+2026-10-14T04:32:30Z	verify-all	PASS
+2026-10-14T04:32:33Z	phase	closing
+2026-10-14T04:32:44Z	dispatch	business-analyst
+2026-10-14T04:33:50Z	agent	business-analyst a0c0e6a8301a7cb93: ## Closing check: JOB-20261014-0507-rating-notch-helper All 10 ACs are met. NFR-security passes. NFR-compliance is CONCERNS until the business unit reviews the 
+2026-10-14T04:34:04Z	waive	NFR-compliance — Code mirrors the recorded rules; the business-unit review (C1/A4) is a human step outside this job and is listed as a follow-up before production use
+2026-10-14T04:34:04Z	followup	Business-unit review (C1/A4) of the WL tables vs the Excel dropdown sheet before production use
+2026-10-14T04:34:04Z	followup	README section (DEL-docs): scale, sign convention, WL mappings, RangeError rules; needs a docs component
+2026-10-14T04:34:05Z	followup	T-01: Rename QA tests that use card-spec numbers as AC-n (collide with plan AC ids)
+2026-10-14T04:34:06Z	knowledge	lessons/standards committed to job/JOB-20261014-0507-rating-notch-helper: .deliver/knowledge/architecture.md 
+2026-10-14T04:34:06Z	record	the job's record committed to job/JOB-20261014-0507-rating-notch-helper: .deliver/jobs/JOB-20261014-0507-rating-notch-helper/
+2026-10-14T04:34:07Z	ship	local merge into main
+2026-10-14T04:34:10Z	cleanup	

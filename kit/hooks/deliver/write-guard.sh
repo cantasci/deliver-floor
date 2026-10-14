@@ -16,6 +16,12 @@ f="$(hkp .tool_input.file_path)"; [[ -n $f ]] || f="$(hkp .tool_input.notebook_p
 [[ $f == /* ]] || f="$(hkp .cwd)/$f"
 f="$(canon_path "$f")"
 deny() { echo "deliver write-guard: $1" >&2; exit 2; }
+# A BMad session (dl shape run, DELIVER_SHAPING=<job>) writes its artifacts in its output folder and its own scripts' state —
+# nothing else: not the product, not the job's state, not the ledger it reports to.
+if [[ -n ${DELIVER_SHAPING:-} ]]; then
+  case $f in */.work/"$DELIVER_SHAPING"/bmad/out/*|*/_bmad/*) exit 0 ;; esac
+  deny "a BMad session writes only in its output folder (.work/$DELIVER_SHAPING/bmad/out/) — not $f."
+fi
 
 while IFS=$'\t' read -r job root; do
   root="$(canon_path "$root")"
@@ -39,8 +45,9 @@ while IFS=$'\t' read -r job root; do
           && deny "readiness.json is frozen (decisions + architecture). Only the human can reopen it: /deliver:unfreeze <reason>."
         exit 0 ;;
       "$jd"/board.json)
-        case $phase in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) exit 0 ;; esac
+        case $phase in intake|shaping|readiness|awaiting_clarification|planning|awaiting_plan_approval) exit 0 ;; esac
         deny "board.json is written by dl once work has started: dl card <id> set <field> <value> \"<reason>\" or dl card add <card.json> \"<reason>\"." ;;
+      "$jd"/shaping.json|"$jd"/bmad/*) deny "the shaping ledger and BMad's artifacts are written by dl and by BMad only: dl shape propose | decide | gap, the human's dl clarify." ;;
       "$jd"/*) exit 0 ;;
       "$root"/.work/*) exit 0 ;;
       *) deny "Michael does not write product code while a job runs ($f). Add or re-dispatch a card instead." ;;

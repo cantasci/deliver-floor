@@ -10,12 +10,17 @@
 #   dl status                      active job's phase + board table + next actions
 #   dl next                        the next actions the flow requires, one per line (ACTION args)
 #   dl board                       board table only
-#   dl phase <phase>               set phase (intake readiness awaiting_clarification planning awaiting_plan_approval executing
+#   dl phase <phase>               set phase (intake shaping readiness awaiting_clarification planning awaiting_plan_approval executing
 #                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
 #   dl track light|full "<why>" [--quote "<request words>"]   the light path for a small change to existing code (fewer
 #                                  readiness items, the BA cuts ≤ light.max_cards cards, no Leads) or the full one (default)
+#   dl shape install|run|wait|status|ledger [open]   shaping with the BMad Method (settings.upstream.engine: bmad): BMad
+#                                  chooses its path and writes the specification headless; dl builds its prompts
+#   dl shape propose|decide <id> "<text>" ["<rationale>"] --file <BMad artifact> --quote "<its words>"   the ledger of
+#                                  what BMad decided, assumed, asked or found: Michael proposes, the human decides (dl clarify)
+#   dl shape gap <readiness id> "<what is missing>"   the readiness review sends a gap back to BMad (phase shaping again)
 #   dl context draft|check [file]|propose <file>   the existing architecture of a repo with code, as a project standard
 #                                  (.deliver/knowledge/architecture.md): drafted from the repo, confirmed once, then quoted
 #   dl waive <NFR-id> "<why>"      a non-functional requirement that is not PASS at closing ships knowingly (listed in the PR)
@@ -139,7 +144,7 @@ resolve_root() {
 }
 
 STATES="ready running review merged blocked archived"
-PHASES="intake readiness awaiting_clarification planning awaiting_plan_approval executing integrating closing awaiting_pr_merge done aborted"
+PHASES="intake shaping readiness awaiting_clarification planning awaiting_plan_approval executing integrating closing awaiting_pr_merge done aborted"
 MERGE_MODES="human semi auto local"
 MD_PROVIDERS="claude codex gemini grok kimi qwen opencode crush pi copilot cursor antigravity"
 GH="${DELIVER_GH:-gh}"
@@ -172,7 +177,7 @@ seal_ok() { local f=$1 sf; sf="$(dirname "$f")/.seal-$(basename "$f")"; [[ ! -f 
 seal_settled() { seal_ok "$1" || with_lock "$(basename "$1")" seal_ok "$1"; }
 check_seals() {
   seal_settled "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
-  case "$(jq -r .phase "$JOBJ")" in intake|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
+  case "$(jq -r .phase "$JOBJ")" in intake|shaping|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
   seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and accepts it with /deliver:reseal <reason>"
 }
 jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
@@ -557,11 +562,34 @@ cmd_next() {
     elif [[ $crc -eq 1 && ! -f $JOB_DIR/context.md ]]; then echo "CONTEXT the project architecture is out of date ($(grep -m1 '^ERROR' <<<"$cx" | cut -c7-140)) — the readiness review confirms the change; dl context propose <updated file>"
     fi
   fi
+  # shaping: BMad's path, the decisions with the human, its review — the readiness review reads the result
+  if [[ $phase == awaiting_clarification ]] && shaping_job && [[ "$(shape_status | jq -r .next)" != done ]]; then
+    local ask; ask="$(jq -r '.ledger[] | select(.status=="open" and .needs_human) | "ASK     human: \(.id)\(if (.proposal.confidence == "low") or .repeat_of then " ⚠ decide on its own" else "" end) — \(.text[0:160])\(if .repeat_of then "  · asked before as \(.repeat_of | join(", ")): rule on exactly this" else "" end)\(if .proposal then "  · Michael proposes (\(.proposal.confidence // "?")): \(.proposal.text[0:140])" else "" end)\(if .proposal.concern then "  · his concern: \(.proposal.concern[0:140])" else "" end)"' "$JOB_DIR/shaping.json")"
+    if [[ -n $ask ]]; then printf '%s\n' "$ask"; echo "        record each: dl clarify <id> \"<the human's decision>\" · Michael's unflagged proposals at once: dl clarify proposals \"<the human's words>\" (⚠ items are decided on their own)"
+    else echo "PHASE   dl phase shaping  (every decision taken — they go back to BMad: dl shape run)"; fi
+    return 0
+  fi
   case $phase in
-    intake)   echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)"
-              [[ "$(jq -r '.track // "full"' "$JOBJ")" == full ]] && jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null \
-                && echo "TRIAGE  a small change inside existing code? dl track light \"<why>\" --quote \"<the request's words>\" (fewer readiness items, the BA cuts ≤ $(light_max) card(s), no Leads) — else the full path, as now"
+    intake)   [[ "$(jq -r '.track // "full"' "$JOBJ")" == full ]] && jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null \
+                && echo "TRIAGE  a small change inside existing code? dl track light \"<why>\" --quote \"<the request's words>\" (fewer readiness items, the BA cuts ≤ $(light_max) card(s), no Leads$(shaping_on && echo ", no shaping")) — else the full path, as now"
+              if shaping_on; then echo "INTAKE  dl phase shaping — BMad shapes the request before the readiness review$([[ "$(setting upstream.engine)" == auto ]] && echo " ($(shape_why))"); the stack and the roles follow from its artifacts"
+              else echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)$([[ "$(setting upstream.engine)" == auto && "$(jq -r '.track // "full"' "$JOBJ")" == full ]] && echo " · not shaped: $(shape_why)")"; fi
               true ;;
+    shaping)
+      local ss nx; ss="$(shape_status)"; nx="$(jq -r .next <<<"$ss")"
+      case $nx in
+        init|install) echo "SHAPE   dl shape install  (BMad $(setting upstream.bmad_version), into the repo outside git)" ;;
+        running) echo "WAIT    dl shape wait  (BMad: $(jq -r .run.name <<<"$ss"))" ;;
+        help|create|update|review) echo "SHAPE   dl shape run  (BMad: $nx$(jq -r 'if .skill then " " + .skill else "" end' <<<"$ss") — dl writes its prompt; you start it and read what it returns)" ;;
+        decide)
+          jq -r '.pm[]? | "DECIDE  (PM) \(.) — dl shape decide \(.) \"<decision>\" \"<rationale>\" --file <BMad artifact> --quote \"<its words>\""' <<<"$ss"
+          jq -r '.unproposed[]? | "PROPOSE \(.) — dl shape propose \(.) \"<your proposal>\" --file <BMad artifact> --quote \"<its words>\" --confidence high|low [--concern \"<what could make it wrong>\"]"' <<<"$ss"
+          [[ "$(jq '(.human // []) | length' <<<"$ss")" -gt 0 && "$(jq '(.unproposed // []) | length' <<<"$ss")" == 0 ]] \
+            && echo "PHASE   dl phase awaiting_clarification  (the human decides $(jq '.human | length' <<<"$ss") item(s), each with your proposal)"
+          echo "        dl shape ledger open — what BMad said, item by item" ;;
+        done) echo "ROLES   the stack and the roles from BMad's artifacts — dl jobset '.stack=[…]' · dl jobset '.roles=[…]' (dl shape ledger · $(node "$BIN_DIR/bmad.mjs" artifacts "$JOB_DIR" | head -1 | cut -c3-))"
+              echo "PHASE   dl phase readiness  (shaping finished: BMad's reviews $(jq -r '.reviews | join(", ")' <<<"$ss"))" ;;
+      esac ;;
     readiness|awaiting_clarification)
       local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
       jq -r '(.items // .)[] | select(.status=="open" and .owner=="pm") | "DECIDE  (PM) \(.id) — \(.question)  (record: dl decide \(.id) \"<decision>\" \"<rationale>\")"' "$JOB_DIR/readiness.json" 2>/dev/null
@@ -679,13 +707,29 @@ cmd_phase() {
   if [[ $force -eq 0 ]]; then
     [[ $cur == done || $cur == aborted ]] && refuse 1 "job is $cur"
     case $p in
+      shaping)
+        [[ $cur == intake || $cur == shaping || $cur == awaiting_clarification ]] || refuse 1 "shaping comes after intake (now: $cur)"
+        shaping_on || shaping_job || refuse 1 "shaping is off for this job (settings.upstream.engine: $(setting upstream.engine); track $(jq -r '.track // "full"' "$JOBJ"))"
+        if [[ $cur == awaiting_clarification ]]; then
+          local wait_h; wait_h="$(shape_status | jq -r '(.human // []) | join(" ")')"
+          [[ -z $wait_h ]] || refuse 1 "the human has not decided $wait_h yet — dl clarify <id> \"<answer>\""
+        fi ;;
       readiness)
-        [[ $cur == intake || $cur == awaiting_clarification || $cur == readiness ]] || refuse 1 "readiness comes after intake (now: $cur)"
+        [[ $cur == intake || $cur == shaping || $cur == awaiting_clarification || $cur == readiness ]] || refuse 1 "readiness comes after intake (now: $cur)"
+        if shaping_on || shaping_job; then
+          [[ "$(shape_status | jq -r .next)" == done ]] || refuse 1 "shaping is not finished (next: $(shape_status | jq -r .next)) — dl next: BMad's path, the decisions with the human, its review"
+        fi
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml" ;;
       awaiting_clarification)
-        [[ $cur == readiness || $cur == awaiting_clarification ]] || refuse 1 "the human is asked only at the start (readiness). Now ($cur) it is your decision: dl pm-decide \"<what>\" \"<why>\" — it goes into the PR"
-        local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
-        [[ $rc -eq 3 ]] || refuse 1 "there are no open questions for the human (dl readiness)" ;;
+        if [[ $cur == shaping ]]; then
+          local ss; ss="$(shape_status)"
+          [[ "$(jq '(.human // []) | length' <<<"$ss")" -gt 0 ]] || refuse 1 "no ledger item waits for the human (dl shape ledger open)"
+          [[ "$(jq '(.unproposed // []) | length' <<<"$ss")" == 0 ]] || refuse 1 "propose a decision for each first — the human decides on BMad's words and yours: dl shape propose <id> … ($(jq -r '.unproposed | join(" ")' <<<"$ss"))"
+        else
+          [[ $cur == readiness || $cur == awaiting_clarification ]] || refuse 1 "the human is asked only at the start (readiness). Now ($cur) it is your decision: dl pm-decide \"<what>\" \"<why>\" — it goes into the PR"
+          local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
+          [[ $rc -eq 3 ]] || refuse 1 "there are no open questions for the human (dl readiness)"
+        fi ;;
       planning)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml"
         local rr=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >&2 || rr=$?
@@ -721,6 +765,9 @@ cmd_phase() {
       done) [[ "$(jq -r '.shipped // false' "$JOBJ")" == true ]] || refuse 1 "the job is not delivered yet — dl ship (and, for a PR, its merge: dl pr)" ;;
     esac
   fi
+  if [[ $cur == intake && $p != intake && $p != aborted && "$(setting upstream.engine)" == auto && "$(jq -r '.track // "full"' "$JOBJ")" == full ]]; then
+    log_event shape-auto "$(shaping_on && echo shaped || echo "not shaped"): $(shape_why)"
+  fi
   case $p in # entering a waiting phase asks the question afresh
     awaiting_plan_approval) jq_inplace "$JOBJ" '.gates.plan = null' ;;
   esac
@@ -728,7 +775,13 @@ cmd_phase() {
   [[ $p == executing ]] && { seal "$BOARD"; tracker open; }
   if [[ $p == planning ]]; then
     jq_inplace "$JOBJ" --arg h "$(sha256_of "$JOB_DIR/readiness.json")" --arg t "$(now)" '.frozen = {"readiness_sha256":$h,"at":$t}'
-    log_event freeze "readiness + architecture frozen ($(sha256_of "$JOB_DIR/readiness.json" | cut -c1-12))"
+    # what BMad wrote and every decision taken on it are frozen with them
+    shaping_job && jq_inplace "$JOBJ" --arg s "$(node "$BIN_DIR/bmad.mjs" manifest "$JOB_DIR")" '.frozen.shaping_sha256 = $s'
+    log_event freeze "readiness + architecture frozen ($(sha256_of "$JOB_DIR/readiness.json" | cut -c1-12))$(shaping_job && echo ", with BMad's artifacts and the shaping ledger")"
+  fi
+  [[ $p == awaiting_clarification ]] && shaping_job && [[ "$(shape_status | jq -r .next)" != done ]] && node "$BIN_DIR/bmad.mjs" questions "$JOB_DIR" > "$JOB_DIR/QUESTIONS.md"
+  if [[ $p == readiness ]] && shaping_job; then   # the architecture's AD-n rules: every lead, dev and reviewer answers to them
+    node "$BIN_DIR/bmad.mjs" standards "$JOB_DIR" >/dev/null
   fi
   [[ $p == readiness || $p == planning ]] && apply_role_defaults
   [[ $p == readiness || $p == planning ]] && { node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"; }
@@ -772,6 +825,9 @@ assert_frozen() {
   [[ -z $want ]] && return 0
   [[ -f $JOB_DIR/readiness.json && "$(sha256_of "$JOB_DIR/readiness.json")" == "$want" ]] \
     || refuse 6 "readiness.json (requirements decisions + architecture) changed after it was frozen at planning. Frozen decisions do not change; only the human can reopen them: /deliver:unfreeze <reason>"
+  want="$(jq -r '.frozen.shaping_sha256 // empty' "$JOBJ")"
+  [[ -z $want || "$(node "$BIN_DIR/bmad.mjs" manifest "$JOB_DIR")" == "$want" ]] \
+    || refuse 6 "BMad's artifacts or the shaping ledger changed after they were frozen at planning. Frozen decisions do not change; only the human can reopen them: /deliver:unfreeze <reason>"
 }
 cmd_unfreeze() {
   human_only "dl unfreeze"; load_job
@@ -791,7 +847,7 @@ cmd_readiness() {
 }
 # The human is asked only at the start (intake → readiness → awaiting_clarification). From planning on, whatever only a
 # person could have decided is Michael's decision: recorded here with its reason and listed in the PR body (report.md).
-after_start() { case "$(phase_now)" in intake|readiness|awaiting_clarification) return 1 ;; *) return 0 ;; esac; }
+after_start() { case "$(phase_now)" in intake|shaping|readiness|awaiting_clarification) return 1 ;; *) return 0 ;; esac; }
 pm_decision() { # pm_decision "<what>" "<why>" [card]
   jq_inplace "$JOBJ" --arg w "$1" --arg y "$2" --arg c "${3:-}" --arg t "$(now)" '.pm_decisions = ((.pm_decisions // []) + [{at:$t, what:$w, why:$y} + (if $c != "" then {card:$c} else {} end)])'
   log_event pm-decision "${3:+$3: }$1 — $2"
@@ -919,6 +975,135 @@ cmd_context() {
   esac
 }
 
+# --- shaping with the BMad Method (settings.upstream.engine: bmad) ------------------------------------------------------
+# Between intake and the readiness review. BMad is fed, not steered — bin/bmad.mjs writes every prompt: the request, the repo,
+# the standards, our delivery checklist. It chooses its own path (bmad-help), writes the specification headless and reviews
+# it. What it decided, assumed, asked or found is the shaping ledger: Michael decides each WITH the human, on what BMad said
+# (dl shape propose, then dl clarify); on his own only what changes nothing that is built (dl shape decide). The decisions go
+# back to BMad (its update), it reviews again; the readiness review reads the result and planning freezes it all.
+# engine bmad: every full-path job is shaped; auto (the default): only a request that is not a specification yet — fewer than
+# two of requirement ids, acceptance criteria and a contract (bmad.mjs needs); off: none. A light-path job is never shaped.
+shaping_on() {
+  [[ "$(jq -r '.track // "full"' "$JOBJ")" == full ]] || return 1
+  case "$(setting upstream.engine)" in
+    bmad) return 0 ;;
+    auto) node "$BIN_DIR/bmad.mjs" needs "$JOB_DIR" >/dev/null 2>&1 ;;
+    *) return 1 ;;
+  esac
+}
+shape_why() { node "$BIN_DIR/bmad.mjs" needs "$JOB_DIR" 2>/dev/null | jq -r .reason; }
+shaping_job() { [[ -f $JOB_DIR/shaping.json ]]; }
+shape_rounds() { local r q; r="$(setting upstream.review_rounds)"; q="$(setting upstream.reask_rounds)"; echo "${r:-2} ${q:-2}"; }
+# shellcheck disable=SC2046   # two numbers: the review rounds and the update chain's limit
+shape_status() { if shaping_job; then node "$BIN_DIR/bmad.mjs" status "$JOB_DIR" $(shape_rounds); else echo '{"next":"install"}'; fi; }
+shape_install() {
+  [[ "$(phase_now)" == shaping ]] || refuse 1 "BMad is installed in the shaping phase (dl phase shaping; now: $(phase_now))"
+  local ver; ver="$(setting upstream.bmad_version)"; ver=${ver:-6.12.2}
+  node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>20||(a===20&&b>=12)?0:1)' \
+    || refuse 1 "BMad $ver needs Node 20.12 or later (this is $(node -p process.versions.node))"
+  command -v uv >/dev/null || echo "note: uv is not installed — some BMad skills run their scripts with it (https://docs.astral.sh/uv/)" >&2
+  git -C "$ROOT" ls-files --error-unmatch _bmad >/dev/null 2>&1 \
+    && refuse 1 "this repo keeps its own BMad install in git (_bmad/); shaping installs a pinned one outside git and would change it — not supported yet (docs/OPEN.md)"
+  node "$BIN_DIR/bmad.mjs" init "$JOB_DIR" "$ver" >/dev/null
+  # outside git: the history gets the job's code and its record, not the tool that shaped it
+  local ex pat before log="$JOB_DIR/bmad/runs/install.log"
+  ex="$(git -C "$ROOT" rev-parse --git-path info/exclude)"; [[ $ex == /* ]] || ex="$ROOT/$ex"
+  mkdir -p "$(dirname "$ex")"
+  for pat in "/_bmad/" "/.claude/skills/bmad-*/"; do grep -qxF "$pat" "$ex" 2>/dev/null || echo "$pat" >> "$ex"; done
+  before="$(git -C "$ROOT" status --porcelain)"
+  ( cd "$ROOT" && npx -y "bmad-method@$ver" install --yes --modules bmm --tools claude-code --output-folder ".work/$JOB/bmad/out" \
+      --user-name deliver --communication-language English --document-output-language English ) > "$log" 2>&1 \
+    || { show_tail 12 "$log" < "$log"; refuse 1 "npx bmad-method@$ver install failed (log: $log)"; }
+  [[ -f $ROOT/.claude/skills/bmad-help/SKILL.md && -d $ROOT/_bmad ]] || refuse 1 "BMad $ver installed no bmad-help skill (log: $log)"
+  [[ "$(git -C "$ROOT" status --porcelain)" == "$before" ]] \
+    || refuse 1 "BMad's installer changed files git tracks — the repo is the human's:"$'\n'"$(diff <(echo "$before") <(git -C "$ROOT" status --porcelain) | grep '^>' | head -8)"
+  node "$BIN_DIR/bmad.mjs" installed "$JOB_DIR" "$ver" >/dev/null
+  log_event shape "BMad $ver installed (outside git: _bmad/, .claude/skills/bmad-*/)"; reset_stop_guard
+  echo "BMad $ver installed — next: dl shape run (bmad-help chooses BMad's own path)"
+}
+shape_run() {
+  [[ "$(phase_now)" == shaping ]] || refuse 1 "BMad runs in the shaping phase (now: $(phase_now))"
+  if [[ "$(shape_status | jq -r .next)" == running ]]; then shape_wait; return; fi
+  local r name prompt log model mode=${PERMISSION_MODE:-auto}
+  # shellcheck disable=SC2046
+  r="$(node "$BIN_DIR/bmad.mjs" start "$JOB_DIR" $(shape_rounds) 2>&1)" || refuse 1 "${r#bmad: }"
+  name="$(jq -r .name <<<"$r")"; prompt="$(jq -r .prompt <<<"$r")"; log="$(jq -r .log <<<"$r")"; model="$(setting upstream.model)"
+  # Its own session, not a subagent of Michael's: BMad's skills run their reviewers as subagents, which a subagent cannot start.
+  # The hooks know it by DELIVER_SHAPING: it writes only its output folder, runs no dl and does not commit. In a process session
+  # of its own (setsid): seen live, Michael's tool call hit its 10-minute limit and the signal took BMad's session with it —
+  # nohup is not enough. It outlives the call and Michael's whole session; dl shape wait picks it up.
+  # Claude Code does not pass its own token to the commands it runs: signed in by a token in the environment, the BMad session
+  # gets it from DELIVER_CLAUDE_TOKEN_FILE (a /login of this machine needs nothing)
+  local tokf=${DELIVER_CLAUDE_TOKEN_FILE:-}; [[ -z $tokf || -r $tokf ]] || refuse 1 "DELIVER_CLAUDE_TOKEN_FILE ($tokf) is not readable"
+  local detach=(nohup)
+  if command -v setsid >/dev/null; then detach=(setsid nohup)
+  elif command -v perl >/dev/null; then detach=(perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV or die "exec: $!"' -- nohup); fi
+  "${detach[@]}" bash -c 'cd "$1" && { [[ -z $9 ]] || export CLAUDE_CODE_OAUTH_TOKEN="$(tr -d "[:space:]" < "$9")"; } && DELIVER_SHAPING="$2" claude -p "$(cat "$3")" --permission-mode "$4" --output-format json ${5:+--model "$5"} < /dev/null > "$6" 2> "$7"; echo $? > "$8"' \
+    _ "$ROOT" "$JOB" "$prompt" "$mode" "$model" "$log" "${log%.json}.err" "${log%.json}.rc" "$tokf" > /dev/null 2>&1 < /dev/null &
+  echo $! > "$JOB_DIR/bmad/runs/.pid"; date +%s > "$JOB_DIR/bmad/runs/.started"
+  log_event shape "run $name started"
+  echo "BMad: $name — started in its own session"
+  shape_wait
+}
+shape_wait() {
+  local st name rcf pid t0 lim rc out w0 max=${DL_SHAPE_WAIT:-420}   # by the clock: one call stays well inside a tool call's 10 minutes
+  st="$(shape_status)"
+  [[ "$(jq -r .next <<<"$st")" == running ]] || { echo "no BMad run in progress — next: $(jq -r .next <<<"$st") (dl next)"; return 0; }
+  name="$(jq -r .run.name <<<"$st")"; rcf="$JOB_DIR/bmad/runs/$name.rc"
+  pid="$(cat "$JOB_DIR/bmad/runs/.pid" 2>/dev/null || true)"; t0="$(cat "$JOB_DIR/bmad/runs/.started" 2>/dev/null || date +%s)"
+  lim="$(setting upstream.timeout_min)"; lim=$(( ${lim:-20} * 60 )); w0=$(date +%s)
+  while [[ ! -f $rcf ]]; do
+    if [[ -n $pid ]] && ! kill -0 "$pid" 2>/dev/null; then sleep 1; [[ -f $rcf ]] || echo 1 > "$rcf"; break; fi   # gone without a status
+    if (( $(date +%s) - t0 > lim )); then
+      pkill -P "$pid" 2>/dev/null || true; kill "$pid" 2>/dev/null || true; echo 124 > "$rcf"
+      echo "BMad: $name stopped after $(( lim / 60 )) min (settings.upstream.timeout_min)" >&2; break
+    fi
+    if (( $(date +%s) - w0 >= max )); then echo "BMad: $name still running ($(( ($(date +%s) - t0) / 60 )) min, in its own session) — dl shape wait"; return 0; fi
+    sleep 2
+  done
+  rc="$(cat "$rcf")"
+  out="$(node "$BIN_DIR/bmad.mjs" finish "$JOB_DIR" "$rc" "$(( $(date +%s) - t0 ))" 2>&1)" || refuse 1 "${out#bmad: }"
+  rm -f "$JOB_DIR/bmad/runs/.pid" "$JOB_DIR/bmad/runs/.started"
+  log_event shape "run $name: $(jq -r '.status + (if .verdict then " — " + .verdict else "" end) + " (\(.new_items | length) new ledger item(s))"' <<<"$out")"
+  reset_stop_guard
+  jq -r '"BMad: \(.run) — \(.status)\(if .error then " — " + .error else "" end) · \(.seconds)s\(if .cost then " · $\((.cost * 100 | round) / 100)" else "" end)",
+    (if .path then "  its path: " + (.path | join(" → ")) else empty end),
+    (if .verdict then "  its review: " + .verdict else empty end),
+    (.files[]? | "  wrote " + .), (.new_items[]? | "  " + .)' <<<"$out"
+  [[ "$(jq -r .status <<<"$out")" == invalid ]] && echo "  no usable result — dl shape run tries again (3 at most); the session's output: ${rcf%.rc}.json, .err"
+  echo "next: $(shape_status | jq -r .next) (dl next)"
+}
+cmd_shape() {
+  load_job
+  local sub=${1:-status}; [[ $# -gt 0 ]] && shift
+  shaping_job || shaping_on || refuse 1 "shaping is off for this job (settings.upstream.engine: $(setting upstream.engine); track $(jq -r '.track // "full"' "$JOBJ"))"
+  case $sub in
+    status) shape_status ;;
+    install) shape_install ;;
+    run) shape_run ;;
+    wait) shape_wait ;;
+    ledger) shaping_job || refuse 1 "nothing has been shaped yet"; node "$BIN_DIR/bmad.mjs" ledger "$JOB_DIR" ${1:+"$1"} ;;
+    propose|decide)
+      local pos=() file="" quote="" conf="" concern="" out
+      while [[ $# -gt 0 ]]; do case $1 in --file) file=${2:-}; shift 2 ;; --quote) quote=${2:-}; shift 2 ;; --confidence) conf=${2:-}; shift 2 ;; --concern) concern=${2:-}; shift 2 ;; *) pos+=("$1"); shift ;; esac; done
+      [[ "$(phase_now)" == shaping || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "the ledger is decided while shaping (now: $(phase_now))"
+      [[ -n ${pos[0]:-} && -n ${pos[1]:-} && -n $file && -n $quote && ( $sub == propose || -n ${pos[2]:-} ) ]] \
+        || die "usage: dl shape propose <id> \"<proposal>\" --file <BMad artifact> --quote \"<its words>\" --confidence high|low [--concern \"<what could make it wrong>\"] · dl shape decide <id> \"<decision>\" \"<rationale>\" --file … --quote …"
+      if [[ $sub == propose ]]; then out="$(node "$BIN_DIR/bmad.mjs" propose "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" "$conf" "$concern" 2>&1)" || refuse 1 "${out#bmad: }"
+      else out="$(node "$BIN_DIR/bmad.mjs" decide "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" "${pos[2]}" "${conf:-high}" "$concern" 2>&1)" || refuse 1 "${out#bmad: }"; fi
+      log_event "shape-$sub" "${pos[0]}: ${pos[1]}"; reset_stop_guard; echo "$out"
+      [[ "$(phase_now)" == awaiting_clarification ]] && node "$BIN_DIR/bmad.mjs" questions "$JOB_DIR" > "$JOB_DIR/QUESTIONS.md"
+      true ;;
+    gap)
+      [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification ]] && shaping_job && [[ "$(shape_status | jq -r .next)" == done ]] \
+        || refuse 1 "a gap goes back to BMad from the readiness review, once shaping is finished (now: $(phase_now))"
+      local gout; gout="$(node "$BIN_DIR/bmad.mjs" gap "$JOB_DIR" "${1:-}" "${2:-}" 2>&1)" || refuse 1 "${gout#bmad: }"
+      jq_inplace "$JOBJ" '.phase = "shaping"'; log_event phase shaping; log_event shape-gap "${1:-}: ${2:-}"; reset_stop_guard
+      echo "$gout — phase shaping: dl shape run" ;;
+    *) die "usage: dl shape status | install | run | wait | ledger [open] | propose … | decide … | gap <readiness id> \"<what is missing>\"" ;;
+  esac
+}
+
 # dl waive <NFR-id> "<why>" — a decided non-functional requirement that is not PASS at closing (CONCERNS, FAIL) ships only
 # knowingly: Michael's decision, with its reason, under its own heading in the PR. The human sees it before the merge.
 cmd_waive() {
@@ -935,6 +1120,15 @@ report_context() {
   [[ -f $JOB_DIR/context.md ]] || return 0
   printf '\n<!-- deliver:context -->\n## Project architecture\n\nThis PR %s `.deliver/knowledge/architecture.md` — the architecture as confirmed at the start of this job. Merging it makes it a project standard: later jobs read their components from it instead of asking again; a new component is still asked.\n' \
     "$([[ -f $ROOT/.deliver/knowledge/architecture.md ]] && echo updates || echo adds)" >> "$JOB_DIR/report.md"
+}
+report_shaping() {
+  grep -q '<!-- deliver:shaping -->' "$JOB_DIR/report.md" && return 0
+  if ! shaping_job; then   # auto, and not shaped: say why, so the human can ask for it next time (upstream.engine bmad)
+    [[ "$(setting upstream.engine)" == auto && "$(jq -r '.track // "full"' "$JOBJ")" == full ]] || return 0
+    printf '\n<!-- deliver:shaping -->\n## Not shaped\n\nupstream.engine auto: %s. To have BMad shape such a request anyway: upstream.engine "bmad".\n' "$(shape_why)" >> "$JOB_DIR/report.md"
+    return 0
+  fi
+  printf '\n<!-- deliver:shaping -->\n%s\n' "$(node "$BIN_DIR/bmad.mjs" report "$JOB_DIR")" >> "$JOB_DIR/report.md"
 }
 report_waivers() {
   grep -q '<!-- deliver:waivers -->' "$JOB_DIR/report.md" && return 0
@@ -965,6 +1159,15 @@ cmd_reopen() {
 cmd_clarify() {
   human_only "answering a business question (dl clarify)"; load_job
   local id=${1:-} answer=${2:-}; [[ -n $id && -n $answer ]] || die 'usage: dl clarify <id> "<answer>"'
+  if shaping_job && [[ $id == proposals || $id =~ ^B-[0-9]+$ ]]; then   # a decision on what BMad said (the shaping ledger)
+    [[ "$(phase_now)" =~ ^(shaping|awaiting_clarification|readiness)$ ]] || refuse 1 "the shaping ledger is decided before planning freezes it (now: $(phase_now))"
+    local out; out="$(node "$BIN_DIR/bmad.mjs" answer "$JOB_DIR" "$id" "${DELIVER_APPROVER:-${USER:-human}}" "$answer" 2>&1)" || refuse 1 "${out#bmad: }"
+    if [[ "$(phase_now)" == readiness ]] && [[ "$(shape_status | jq -r .next)" != done ]]; then   # overruled after shaping: back to BMad
+      jq_inplace "$JOBJ" '.phase = "shaping"'; log_event phase shaping; out="$out — phase shaping: BMad gets the new decision (dl shape run)"
+    fi
+    node "$BIN_DIR/bmad.mjs" questions "$JOB_DIR" > "$JOB_DIR/QUESTIONS.md"
+    reset_stop_guard; log_event clarify "$id: $answer"; echo "$out"; return 0
+  fi
   [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "clarifications are recorded in readiness / awaiting_clarification (now: $(phase_now))"
   node "$BIN_DIR/readiness.mjs" clarify "$JOB_DIR" "$id" "${DELIVER_APPROVER:-${USER:-human}}" "$answer" || exit 1
   node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || true
@@ -1023,7 +1226,7 @@ cmd_knowledge() {
     must) # dl knowledge must <role> — the Must rules (id + text) the role answers to on this job (a reviewer: in dl review)
       load_job; [[ -n ${2:-} ]] || die "usage: dl knowledge must <role>"
       local kind; kind="$(node "$BIN_DIR/roles.mjs" kind "$2" 2>/dev/null)"
-      node "$BIN_DIR/knowledge.mjs" must "$ROOT" "${kind:-review}" "$2" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" | jq -r 'if length == 0 then "(no Must rules apply)" else .[] | "\(.id)\t\(.text)\t(\(.doc), \(.origin))" end' ;;
+      DELIVER_JOB_DIR="${JOB_DIR:-}" node "$BIN_DIR/knowledge.mjs" must "$ROOT" "${kind:-review}" "$2" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" | jq -r 'if length == 0 then "(no Must rules apply)" else .[] | "\(.id)\t\(.text)\t(\(.doc), \(.origin))" end' ;;
     new) # dl knowledge new <template> [--scope project|company] — a standards document to fill in (brand-visual …)
       local tpl=${2:-} sc=project dest; [[ ${3:-} == --scope ]] && sc=${4:-}
       [[ -n $tpl && -f $SKILL_DIR/templates/standards/$tpl.md ]] || die "usage: dl knowledge new <template> [--scope project|company] — templates: $(cd "$SKILL_DIR/templates/standards" && ls *.md | sed 's/\.md$//' | tr '\n' ' ')"
@@ -1463,7 +1666,7 @@ cmd_review() {
     # The company's and the project's standards (brand visual identity …): the reviewer answers every Must rule that applies
     # to it, one by one; an approval with a rule unanswered or violated is refused.
     local kind; kind="$(node "$BIN_DIR/roles.mjs" kind "$by" 2>/dev/null)"; [[ -n $kind ]] || kind=review
-    judged="$(node "$BIN_DIR/knowledge.mjs" judge "$(jq -r '.repo // "."' "$JOBJ")" "$kind" "$by" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" "$std" "$verdict" 2>&1)" || rr=$?
+    judged="$(DELIVER_JOB_DIR="$JOB_DIR" node "$BIN_DIR/knowledge.mjs" judge "$(jq -r '.repo // "."' "$JOBJ")" "$kind" "$by" "$(jq -r '(.stack // []) | join(",")' "$JOBJ")" "$std" "$verdict" 2>&1)" || rr=$?
     [[ $rr -eq 0 ]] || refuse 1 "$card: the standards check of this review is not complete —"$'\n'"$judged"
   fi
   card_set "$card" '(.cards[] | select(.id==$id)) |= (
@@ -1563,6 +1766,9 @@ job_record_publish() {
     [[ -f $JOB_DIR/$f ]] && sed "s#$ROOT/##g" "$JOB_DIR/$f" > "$d/$f"
   done
   [[ -d $JOB_DIR/specs ]] && { mkdir -p "$d/specs"; cp "$JOB_DIR"/specs/*.md "$d/specs/" 2>/dev/null || true; }
+  if [[ -f $JOB_DIR/shaping.json ]]; then   # what BMad was given, what it wrote and every decision taken on it
+    mkdir -p "$d/bmad"; cp "$JOB_DIR/shaping.json" "$d/bmad/"; cp -R "$JOB_DIR/bmad/inputs" "$JOB_DIR/bmad/out" "$d/bmad/" 2>/dev/null || true
+  fi
   git -C "$IWT" add -f -- ".deliver/jobs/$JOB"
   if ! git -C "$IWT" diff --cached --quiet; then
     dl_commit "$IWT" "docs(deliver): record of ${JOB%%-[a-z]*}" "Record of $JOB" \
@@ -1768,7 +1974,7 @@ cmd_ship() {
       || refuse 1 "report.md does not account for every decided non-functional requirement (readiness NFR-*) — its \"## Non-functional requirements\" table: | NFR-x | PASS / CONCERNS / FAIL | evidence |"$'\n'"$nfrerr"
   fi
   knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
-  report_decisions; report_waivers; report_contract_changes; report_context; report_lessons; report_followups
+  report_shaping; report_decisions; report_waivers; report_contract_changes; report_context; report_lessons; report_followups
   job_record_publish; head="$(branch_head "$JOB_BRANCH")"
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
@@ -2519,6 +2725,7 @@ main() {
     roles) cmd_roles ;;
     readiness) cmd_readiness ;;
     track) cmd_track "$@" ;;
+    shape) cmd_shape "$@" ;;
     context) cmd_context "$@" ;;
     waive) cmd_waive "$@" ;;
     clarify) cmd_clarify "$@" ;;

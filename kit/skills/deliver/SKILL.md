@@ -136,6 +136,45 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    On the Munder Difflin floor (`settings.dispatch: "munder"`): now `"$DL" md-hire` — a person for every seat — and from here
    on every role works at its seat (see **Munder Difflin** below), never as a subagent.
 
+## Phase 0.3 — Shaping with the BMad Method (`shaping` → `awaiting_clarification`; only with `settings.upstream.engine: "bmad"`)
+
+`dl next` says `INTAKE dl phase shaping` when it is on (full path only; a light-path job is not shaped). BMad is **fed, not
+steered**: `dl` writes every prompt it gets — the whole request, the repo, the standards, the project's architecture and our
+delivery checklist as information. BMad chooses its own path (bmad-help), writes the specification headless and reviews it.
+You never write to BMad and never choose its skills; at intake, with shaping on, do not decide the stack or the roles yet —
+they follow from what BMad wrote.
+
+1. `"$DL" phase shaping`, then `"$DL" shape install` (the pinned BMad, into the repo outside git).
+2. `"$DL" shape run` — one BMad step in its own session (Bash timeout 600000); it prints what BMad wrote and what it put in
+   the **shaping ledger**. "still running" → `"$DL" shape wait` (again, as often as it says so: BMad's session runs on by
+   itself and survives your tool call and your session). Repeat as `dl next` says (SHAPE / WAIT).
+3. **The ledger is decided with the human, on what BMad said** (`"$DL" shape ledger open`). Nothing BMad decided binds by
+   itself — seen: it called its spec "complete" with ten decisions of its own, three against the business.
+   - For every item that changes what is built (a question, an assumption, a decision of BMad's, a blocked step, a review
+     finding with needs_human), write **your proposal**, standing on BMad's own words, and **how sure you are**:
+     `"$DL" shape propose B-n "<what you propose>" --file <the BMad artifact> --quote "<its words>" --confidence high|low [--concern "<what could make it wrong, the alternative>"]`.
+     Never the request: `dl` refuses a file outside BMad's output folder and a quote that is not in it.
+     **Check each proposal against every decision already taken** (`dl shape ledger`) — above all the human's. A proposal
+     that contradicts one is wrong; one that rests only on BMad's own inference (an assumption, a decision of its own, a
+     convention) is `low`, with your concern. You warn the human; you never decide for them — seen live: proposals accepted
+     as they stood, one against the human's own earlier ruling, made most of the wrong decisions. `dl` flags a low proposal,
+     a question BMad asks again and a high or critical finding: the human decides each of those on its own.
+   - **Yours to decide** (dl next: DECIDE): BMad's assumptions and its review's low and medium findings —
+     `"$DL" shape decide B-n "<decision>" "<rationale>" --file … --quote …`. The human sees them listed and can overrule any
+     before the freeze. Not sure of one? `--confidence low --concern "…"`: it goes to the human, with your proposal.
+     **The human's** (PROPOSE): BMad's questions, the product decisions it took on its own, a step it could not run, a high
+     or critical finding. Measured on an idea: with everything sent to the human, 69 decisions for one small job.
+   - Then `"$DL" phase awaiting_clarification` (refused until every item has your proposal) and ask the human —
+     interactive: **the flagged items one by one first** (AskUserQuestion: BMad's words, your proposal, your concern — and
+     the earlier decision when BMad asks again), then the rest at once ("accept all of Michael's proposals" is an answer for
+     those only); record **their words**: `"$DL" clarify B-n "<answer>"` or `"$DL" clarify proposals "<their words>"`
+     (it accepts unflagged proposals only). Headless: `QUESTIONS.md` is written, flagged items first; stop.
+   - `"$DL" phase shaping` once every item is decided — the decisions go back to BMad (`dl shape run`: its update, on every
+     artifact it made), then it reviews them (bmad-review, `settings.upstream.review_rounds`); new findings come back to step 3.
+4. `dl next` says `ROLES … PHASE dl phase readiness` when shaping is finished. Set the stack and the roles **from BMad's
+   artifacts** (its Stack, its components), then `"$DL" phase readiness` — the architecture's `AD-n` rules become this job's
+   standard (every Lead, dev and reviewer answers to them, the reviewer by id).
+
 ## Phase 0.5 — Requirements readiness (`readiness` → `awaiting_clarification`)
 
 Before anything is planned, every requirement and every decision a delivery needs is checked, one by one — architecture
@@ -153,6 +192,9 @@ REPO: <absolute repo root>   STACK: <stack>   ROLES: <job.roles>
 READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.mjs applicable <job dir>>
 STANDARDS (company + project — a standard settles an item only where it states it: source "standard: <file>", quote its
   words verbatim): <output of: "$DL" knowledge list>
+SHAPED (only a shaped job — binding: what BMad wrote, decided with the human): <output of: node <skill dir>/bin/bmad.mjs artifacts <job dir>>
+  Settle items from them in their own words: source "bmad: <artifact path>" + quote (verbatim in it), or "shape: B-n" (a
+  decision of the ledger). What they do not state stays open — and goes back to BMad, not to the human first.
 PROJECT ARCHITECTURE: <abs path to <repo>/.deliver/knowledge/architecture.md (a standard) | the draft .work/<job>/context.draft.md
   (not confirmed: an option of ARC-style / ARC-components, never their answer) | none — a repo without code>
 ```
@@ -184,6 +226,9 @@ PROJECT ARCHITECTURE: <abs path to <repo>/.deliver/knowledge/architecture.md (a 
    does not actually answer its question, put it back to the human — this is still the start:
    `"$DL" reopen <id> "<why the answer does not answer it>"` (it is open again and QUESTIONS.md asks it; never edit the item). Check every answer **before** `dl phase planning`:
    after the freeze you no longer ask (invariant 7), so a gap found later is decided by you within the frozen decisions.
+   **A shaped job:** an item BMad's artifacts are silent on goes back to BMad first — `"$DL" shape gap <id> "<what is
+   missing>"` (phase shaping again: dl shape run, its update; what it states or asks comes back through the ledger). Only
+   what BMad itself cannot settle reaches the human.
 4. `"$DL" phase planning` — refused until nothing is open, and while the whole suite (`verify_full`) already fails on the job
    branch before any card (the **baseline**, run here): a red base would fail every card's QA and the final verify-all for
    reasons that are not the job's. That is the human's call, now at the start — ask them: fix the base, then `"$DL" baseline`
@@ -201,11 +246,14 @@ ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/ba.md>
 JOB REQUEST:
 <the full request — if it came from a file, its whole content and the file path>
 READINESS (binding decisions): <abs path to .work/<job>/readiness.md>
+SHAPED (a shaped job only): <output of: node <skill dir>/bin/bmad.mjs artifacts <job dir>> — trace every CAP-n / FR-n on an AC line
 REPO: <absolute repo root>   STACK: <stack>
 Read the code as needed to make the plan realistic. Keep the request's requirement IDs on every AC.
 ```
 
-Write the result into `.work/<job>/plan.md` (keep the template's first heading). With `settings.test_design.risk` (the
+Write the result into `.work/<job>/plan.md` (keep the template's first heading). **A shaped job:** the BA plans from BMad's
+artifacts (in the prompt: `SHAPED: …`) and names on the AC line which of its capabilities (`CAP-n`) or requirements (`FR-n`)
+it delivers — `dl validate` refuses a plan that leaves one of them untraced. With `settings.test_design.risk` (the
 default) every AC line carries its priority `[P0]`…`[P3]` — what a failure costs — and every decided NFR-* readiness item is
 in `## Non-functional requirements` with its target and how it is checked; `dl validate` refuses a plan without them.
 

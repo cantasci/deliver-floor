@@ -9,9 +9,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # resolved: macOS links /var and /tmp into /private
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
-# The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) — they run without them, as a
-# user who turned them off would; their own section runs with the kit's defaults. Removed before "install / uninstall".
-mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"}}' > "$DELIVER_HOME/config.json"
+# The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) and shaping (auto since 0.17.0)
+# — they run without them, as a user who turned them off would; their own sections run with the kit's defaults or set them.
+# Removed before "install / uninstall".
+mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"}}' > "$DELIVER_HOME/config.json"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO HIVE_ROOT CLAUDE_PROJECT_DIR
 
@@ -1467,12 +1468,18 @@ case "$HL_MODE:$n" in
   *) jq '.phase = "done"' "$HL_JF" > "$HL_JF.t" && mv "$HL_JF.t" "$HL_JF"; echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
 esac
 FAKE
-printf '#!/bin/sh\necho "$*" >> "%s/hl-sleep"\n' "$TMP" > "$HB/sleep"; printf '#!/bin/sh\nexit 0\n' > "$HB/caffeinate"; chmod +x "$HB"/*
-hl() { echo '{"phase":"executing"}' > "$HL/.work/JOB-x/job.json"; rm -f "$TMP/hl-n" "$TMP/hl-sleep"
+# a clock of our own: the fake sleep moves it on, the fake date reads it (a real wait would take hours)
+printf '#!/bin/sh\necho "$*" >> "%s/hl-sleep"\n[ -f "%s/hl-clock" ] && echo $(( $(cat "%s/hl-clock") + $1 )) > "%s/hl-clock"\nexit 0\n' "$TMP" "$TMP" "$TMP" "$TMP" > "$HB/sleep"
+printf '#!/bin/sh\nif [ "$1" = "+%%s" ] && [ -f "%s/hl-clock" ]; then cat "%s/hl-clock"; else exec /bin/date "$@"; fi\n' "$TMP" "$TMP" > "$HB/date"
+printf '#!/bin/sh\nexit 0\n' > "$HB/caffeinate"; chmod +x "$HB"/*
+hl() { echo '{"phase":"executing"}' > "$HL/.work/JOB-x/job.json"; rm -f "$TMP/hl-n" "$TMP/hl-sleep"; /bin/date +%s > "$TMP/hl-clock"
   PATH="$HB:$PATH" HL_MODE=$1 HL_CNT="$TMP/hl-n" HL_JF="$HL/.work/JOB-x/job.json" "$HERE/scripts/run-headless.sh" "$HL" 2>&1; }
 out="$(hl limit)"
 contains "a round that meets a usage limit waits for the reset Claude Code names" "$out" "⏸  usage limit: You've hit your session limit · resets 2:30pm (Europe/Berlin) — waiting"
-[[ "$(cat "$TMP/hl-sleep" 2>/dev/null)" =~ ^[0-9]+$ && "$(cat "$TMP/hl-sleep")" -ge 60 ]] && ok "…sleeps until a minute past it" || bad "sleep: $(cat "$TMP/hl-sleep" 2>/dev/null)"
+hl_reset="$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)" | node "$LR")"
+[[ -s $TMP/hl-sleep ]] && (( $(cat "$TMP/hl-clock") >= hl_reset + 60 )) && awk '$1 > 300 { bad = 1 } END { exit bad }' "$TMP/hl-sleep" \
+  && ok "…until a minute past it by the clock, in naps of 5 minutes at most (live: a closed lid stretched one long sleep by an hour)" \
+  || bad "sleep: $(tr '\n' ' ' < "$TMP/hl-sleep" 2>/dev/null | cut -c1-80) clock $(cat "$TMP/hl-clock") reset $hl_reset"
 contains "…then the job goes on by itself, the wait neither a round nor 'no progress'" "$out" "✔ job JOB-x: done"
 [[ "$(cat "$TMP/hl-n")" == 2 ]] && ok "…in the round after the wait" || bad "claude ran $(cat "$TMP/hl-n") times"
 out="$(hl credits)"; rc=$?
@@ -2048,6 +2055,240 @@ jq '(.items[] | select(.id=="ARC-style")).quote = "microservices: one per team"'
 contains "…only with what it states" "$("$DL" readiness 2>&1)" "ARC-style: quote not found in standard 'architecture.md'"
 [[ "$("$DL" next)" != *CONTEXT* ]] && ok "an architecture that matches the repo: dl next has nothing to ask" || bad "CONTEXT with a valid file"
 cd "$R"
+
+echo "shaping with the BMad Method: BMad chooses its path and writes the spec headless; Michael decides what it said with the human"
+# A fake BMad: npx installs it, claude -p answers each prompt the way BMad 6.12.2's headless contracts do (artifacts, .memlog.md tags, JSON)
+SHB="$TMP/shapebin"; mkdir -p "$SHB"; export FAKE_LOG="$TMP/shape-fake.log" FAKE_DIR="$TMP/shape-fake"; mkdir -p "$FAKE_DIR"; : > "$FAKE_LOG"
+cat > "$SHB/npx" <<'FAKE'
+#!/bin/bash
+echo "npx $*" >> "$FAKE_LOG"
+mkdir -p _bmad/_config .claude/skills/bmad-help && echo "version: 6.12.2" > _bmad/_config/manifest.yaml && echo "# help" > .claude/skills/bmad-help/SKILL.md
+FAKE
+cat > "$SHB/claude" <<'FAKE'
+#!/bin/bash
+p=""; while [[ $# -gt 0 ]]; do case $1 in -p) p=$2; shift 2 ;; *) shift ;; esac; done
+echo "claude shaping=${DELIVER_SHAPING:-none} pgid=$(ps -o pgid= -p $$ | tr -d ' ')" >> "$FAKE_LOG"
+[[ -n ${FAKE_SLOW:-} ]] && sleep "$FAKE_SLOW"
+if [[ -n ${FAKE_NEED_TOKEN:-} && ${CLAUDE_CODE_OAUTH_TOKEN:-} != "$FAKE_NEED_TOKEN" ]]; then   # signed in by a token Claude Code does not pass on
+  jq -n '{type:"result",subtype:"success",is_error:true,result:"Not logged in · Please run /login",total_cost_usd:0}'; exit 1
+fi
+O=".work/$DELIVER_SHAPING/bmad/out"; S="$O/specs/spec-x"; A="$O/planning-artifacts/architecture/arch-x"
+res() { jq -n --arg r "$1" '{type:"result",subtype:"success",result:$r,total_cost_usd:0.1}'; }
+n() { local c; c=$(( $(cat "$FAKE_DIR/$1" 2>/dev/null || echo 0) + 1 )); echo $c > "$FAKE_DIR/$1"; echo $c; }
+case $p in
+  *"bmad-help skill"*)
+    [[ $(n help) == 1 ]] && { res "I would start with a spec."; exit 0; }   # no JSON: an unusable run, tried again
+    res 'The request states its requirements.
+```json
+{"sequence":[{"skill":"bmad-spec","intent":"create","why":"the request states the requirements"},{"skill":"bmad-architecture","intent":"create","why":"the contracts"},{"skill":"bmad-review","intent":"review","why":"cheap"}],"skipped":[{"skill":"bmad-prd","why":"it would restate the request"}]}
+```' ;;
+  *"bmad-spec skill"*"intent: create"*)
+    mkdir -p "$S"; printf -- '---\nid: SPEC-x\n---\n# Notch calculator\n\n## Capabilities\n\n- **CAP-1**\n  - **intent:** Callers get the signed notch change between two ratings.\n- **CAP-2**\n  - **intent:** Callers get the WL of a downgrade.\n\n## Constraints\n\n- Plain Node ESM, zero dependencies.\n' > "$S/SPEC.md"
+    printf -- '- (event) Headless express create\n- (decision) Scale has 22 steps including CC, C and D\n- (assumption) Input is trimmed and upper-cased\n- (question) Is WL 0 right for a 1-notch downgrade?\n' > "$S/.memlog.md"
+    res 'Spec written.
+```json
+{"status":"complete","files":["'"$S"'/SPEC.md"],"open_questions":["Is WL 0 right for a 1-notch downgrade?"]}
+```' ;;
+  *"bmad-spec skill"*"intent: update"*)
+    printf '%s' "$p" > "$FAKE_DIR/update-spec-$(n upd-spec).txt"; printf '\n<!-- updated %s -->\n' "$RANDOM$RANDOM" >> "$S/SPEC.md"; echo "- (decision) applied the decisions" >> "$S/.memlog.md"
+    res '```json
+{"status":"complete","conflicts_with_prior_decisions":["Scale shrank from 22 to 19 steps"],"open_questions":[]}
+```' ;;
+  *"bmad-architecture skill"*"intent: create"*)
+    mkdir -p "$A"; printf -- '# Architecture Spine\n\n## Invariants & Rules\n\n### AD-1 — Pure functions only [ADOPTED]\n\n- **Binds:** all\n- **Rule:** Exported functions do no I/O.\n\n### AD-2 — Exact public surface\n\n- **Rule:** Only the named exports, no default export.\n\n## Stack\n\n- Node 22, node --test\n' > "$A/ARCHITECTURE-SPINE.md"
+    printf -- '- (decision) AD-1 pure functions only\n' > "$A/.memlog.md"
+    res '```json
+{"status":"partial","spine":"'"$A"'/ARCHITECTURE-SPINE.md","open_questions":["Relative import or a published package?"],"assumptions":["Node 22 floor, from the local Node"]}
+```' ;;
+  *"bmad-architecture skill"*"intent: update"*)
+    printf '\n<!-- updated %s -->\n' "$RANDOM$RANDOM" >> "$A/ARCHITECTURE-SPINE.md"
+    res '```json
+{"status":"complete","conflicts_with_prior_decisions":[],"open_questions":[]}
+```' ;;
+  *"skill:bmad-review"*)
+    if [[ $(n review) == 1 ]]; then res 'Findings.
+```json
+{"findings":[{"lens":"edge-case-hunter","severity":"high","artifact":"SPEC.md","finding":"The Unicode minus (U+2212) is not normalised","needs_human":true},{"lens":"adversarial","severity":"low","artifact":"ARCHITECTURE-SPINE.md","finding":"Reword AD-1 to name the modules","needs_human":false}],"verdict":"ready-with-concerns"}
+```'
+    else res '```json
+{"findings":[],"verdict":"ready"}
+```'; fi ;;
+  *) echo "unexpected prompt: ${p:0:200}" >&2; exit 3 ;;
+esac
+FAKE
+chmod +x "$SHB"/*
+SHR="$TMP/shaped"; mkdir -p "$SHR" && cd "$SHR" && git init -q -b main
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"true", upstream:{engine:"bmad", review_rounds:2}}' > .deliver.json && git add -A && git commit -qm init
+"$DL" new "Notch calculator" "Build the rating notch calculator from the POC: plain Node ESM, no dependencies." >/dev/null; SJ="$SHR/.work/$(cat .work/ACTIVE)"; SJN="$(basename "$SJ")"
+contains "dl next: with settings.upstream.engine bmad, BMad shapes the request first" "$("$DL" next)" "INTAKE  dl phase shaping"
+contains "the readiness review waits for shaping" "$("$DL" phase readiness 2>&1)" "shaping is not finished"
+expect_ok "intake → shaping" "$DL" phase shaping
+contains "dl next: install BMad" "$("$DL" next)" "SHAPE   dl shape install"
+contains "dl shape install: the pinned BMad, into the repo" "$(PATH="$SHB:$PATH" "$DL" shape install 2>&1)" "BMad 6.12.2 installed"
+grep -q "bmad-method@6.12.2 install --yes --modules bmm --tools claude-code --output-folder .work/$SJN/bmad/out" "$FAKE_LOG" && ok "…pinned, headless, its output folder inside the job" || bad "npx: $(cat "$FAKE_LOG")"
+grep -qxF "/_bmad/" "$(git rev-parse --git-path info/exclude)" && [[ -z "$(git status --porcelain)" ]] && ok "…outside git: the repo's status is clean" || bad "git status: $(git status --porcelain)"
+[[ -f $SJ/bmad/inputs/request.md && -f $SJ/bmad/inputs/delivery-checklist.yaml ]] && ok "…the input package: the request and our delivery checklist" || bad "inputs: $(ls "$SJ/bmad/inputs")"
+out="$(FAKE_NEED_TOKEN=tok-1 PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "a BMad session that is not signed in says so, and what to do (seen live: Claude Code does not pass its token on)" "$out" "the BMad session is not signed in to Claude"
+printf 'tok-1\n' > "$TMP/tokfile"; chmod 600 "$TMP/tokfile"
+out="$(FAKE_NEED_TOKEN=tok-1 DELIVER_CLAUDE_TOKEN_FILE="$TMP/tokfile" PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+[[ $out != *"not signed in"* ]] && ok "…DELIVER_CLAUDE_TOKEN_FILE signs it in (the token goes to BMad's session only)" || bad "token file: $out"
+contains "a BMad run that ends without its JSON is not used" "$out" "no JSON at the end of BMad's answer"
+contains "…and is tried again" "$("$DL" next)" "SHAPE   dl shape run  (BMad: help"
+out="$(FAKE_SLOW=4 DL_SHAPE_WAIT=1 PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "a call that stops waiting leaves BMad running in its own session (live: a tool call's timeout took it along)" "$out" "still running"
+[[ "$(tail -1 "$FAKE_LOG" | sed 's/.*pgid=//')" != "$(ps -o pgid= -p $$ | tr -d ' ')" ]] && ok "…a process group of its own, not dl's caller's" || bad "pgid: $(tail -1 "$FAKE_LOG")"
+out="$(PATH="$SHB:$PATH" "$DL" shape wait 2>&1)"
+contains "…dl shape wait picks it up: bmad-help chose BMad's own path; the review is ours, not in its sequence" "$out" "its path: bmad-spec → bmad-architecture"
+grep -q "claude shaping=$SJN" "$FAKE_LOG" && ok "…in its own session, marked for the hooks (DELIVER_SHAPING)" || bad "fake log: $(cat "$FAKE_LOG")"
+grep -q "a checklist, not instructions" "$SJ"/bmad/runs/03-help.prompt.md && ok "…dl wrote its prompt: the request, the repo, our checklist as information" || bad "prompt: $(ls "$SJ"/bmad/runs)"
+out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "bmad-spec: what it asked goes into the ledger" "$out" "question: Is WL 0 right for a 1-notch downgrade?"
+contains "…and what it decided on its own (its memlog), for the human — nothing it decides binds by itself" "$out" "decision: Scale has 22 steps including CC, C and D"
+contains "…what it assumed is Michael's to decide, not the human's (live: 69 decisions on one idea)" "$out" "assumption (PM): Input is trimmed and upper-cased"
+contains "dl next: Michael proposes a decision for each, on BMad's words" "$("$DL" next)" "PROPOSE B-1"
+contains "the human is not asked before every item has a proposal" "$("$DL" phase awaiting_clarification 2>&1)" "propose a decision for each first"
+SPEC=".work/$SJN/bmad/out/specs/spec-x/SPEC.md"
+contains "a proposal says how sure Michael is" "$("$DL" shape propose B-1 "WL 0" --file "$SPEC" --quote "Plain Node ESM" 2>&1)" "say how sure you are: --confidence high | low"
+contains "…a low one, what could make it wrong" "$("$DL" shape propose B-1 "WL 0" --file "$SPEC" --quote "Plain Node ESM" --confidence low 2>&1)" "says what could make it wrong and the alternative"
+contains "a proposal stands on a BMad artifact, not on the request" "$("$DL" shape propose B-1 "WL 0" --file ".work/$SJN/bmad/inputs/request.md" --quote "plain Node ESM" --confidence high 2>&1)" "is not a BMad artifact of this job"
+contains "…on words that are in it" "$("$DL" shape propose B-1 "WL 0" --file "$SPEC" --quote "a WL of zero" --confidence high 2>&1)" "quote not found in"
+contains "Michael proposes B-1 and warns the human: BMad's sources do not state it" "$("$DL" shape propose B-1 "WL 0 for a 1-notch downgrade" --file "$SPEC" --quote "Callers get the WL of a downgrade" --confidence low --concern "only BMad's inference: the POC gives no WL for one notch; Indicator 12 says WL 1" 2>&1)" "flagged for the human to decide on its own: Michael is not sure"
+contains "Michael alone decides nothing that changes what is built" "$("$DL" shape decide B-2 "19 steps" "the POC's dropdown" --file "$SPEC" --quote "Plain Node ESM" 2>&1)" "is decided with the human"
+"$DL" shape propose B-2 "19 steps, AAA to CCC-: no CC, C or D" --file "$SPEC" --quote "Plain Node ESM" --confidence high >/dev/null
+contains "Michael decides BMad's assumption himself, with his reason" "$("$DL" shape decide B-3 "trim and upper-case before matching" "the request asks for plain rating strings; canonical case is BMad's reading" --file "$SPEC" --quote "Plain Node ESM" 2>&1)" "the human can overrule it before the freeze"
+expect_ok "every item proposed → the human decides" "$DL" phase awaiting_clarification
+grep -q "### B-2 — decision (bmad-spec)" "$SJ/QUESTIONS.md" && grep -q "Michael proposes\*\* (high confidence): 19 steps" "$SJ/QUESTIONS.md" && ok "QUESTIONS.md: what BMad said, with Michael's proposal, his confidence and BMad's words" || bad "QUESTIONS.md: $(head -20 "$SJ/QUESTIONS.md")"
+sed -n '/^## Decide each of these on its own (1)/,/^## Michael is confident/p' "$SJ/QUESTIONS.md" | grep -q "⚠ Michael is not sure: only BMad's inference" \
+  && ok "…the flagged item first, on its own, with his concern" || bad "QUESTIONS.md sections: $(grep '^##' "$SJ/QUESTIONS.md")"
+sed -n '/^## Michael decided these himself (1)/,$p' "$SJ/QUESTIONS.md" | grep -q '\*\*B-3\*\* (assumption): Input is trimmed' \
+  && ok "…and what Michael decided himself, for the human to overrule" || bad "QUESTIONS.md: $(grep -A3 'decided these himself' "$SJ/QUESTIONS.md")"
+contains "dl next asks the human, each with the proposal" "$("$DL" next)" "ASK     human: B-2 — Scale has 22 steps including CC, C and D  · Michael proposes (high): 19 steps"
+contains "…and marks what is to be decided on its own" "$("$DL" next)" "ASK     human: B-1 ⚠ decide on its own"
+contains "an unattended session cannot decide for the human" "$(DELIVER_HEADLESS=1 "$DL" clarify B-1 "yes" 2>&1)" "is the human's decision"
+contains "the shaping goes on only once the human decided" "$("$DL" phase shaping 2>&1)" "the human has not decided B-1 B-2 yet"
+expect_ok "the human decides B-2 in their words" "$DL" clarify B-2 "19 steps, AAA to CCC-, nothing below"
+contains "a flagged proposal is never accepted with the rest: the human decides it on its own" "$("$DL" clarify proposals "agreed" 2>&1)" "every open proposal is flagged — decide each on its own"
+contains "…shaping waits for it" "$("$DL" phase shaping 2>&1)" "the human has not decided B-1 yet"
+expect_ok "the human decides B-1 on its own" "$DL" clarify B-1 "WL 0 for one notch: Indicator 13 starts at two"
+contains "the human overrules Michael's own decision" "$("$DL" clarify B-3 "trim, and match case-insensitively" 2>&1)" "B-3: decided by the human"
+contains "dl next: back to BMad" "$("$DL" next)" "PHASE   dl phase shaping"
+expect_ok "awaiting_clarification → shaping" "$DL" phase shaping
+out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "the decisions go back to BMad (its update)" "$out" "update-spec — complete"
+grep -q 'decided by the business: 19 steps, AAA to CCC-, nothing below' "$FAKE_DIR/update-spec-1.txt" && grep -q 'BMad said: "Scale has 22 steps' "$FAKE_DIR/update-spec-1.txt" \
+  && ok "…each with what BMad said and what the human decided" || bad "update prompt: $(head -12 "$FAKE_DIR/update-spec-1.txt")"
+contains "…what it changed against its own decisions is noted for the PR" "$out" "conflict (noted): Scale shrank from 22 to 19 steps"
+out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "bmad-architecture: built on the settled spec; its questions and assumptions to the ledger" "$out" "question: Relative import or a published package?"
+SPINE=".work/$SJN/bmad/out/planning-artifacts/architecture/arch-x/ARCHITECTURE-SPINE.md"
+for i in $("$DL" shape status | jq -r '.unproposed[]'); do "$DL" shape propose "$i" "relative imports, Node 22" --file "$SPINE" --quote "Exported functions do no I/O" --confidence high >/dev/null; done
+PMA="$("$DL" shape status | jq -r '.pm[0]')"
+contains "Michael not sure of one of his: it goes to the human, with his proposal" "$("$DL" shape decide "$PMA" "keep Node 22" "the local Node" --file "$SPINE" --quote "Node 22" --confidence low --concern "BMad took it from this machine, not from the request" 2>&1)" "not sure — it goes to the human"
+"$DL" phase awaiting_clarification >/dev/null && "$DL" clarify proposals "fine" >/dev/null && "$DL" clarify "$PMA" "Node 20 and later" >/dev/null && "$DL" phase shaping >/dev/null
+out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"; out2="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+[[ $out == *"update-spec — complete"* && $out2 == *"update-architecture — complete"* ]] && ok "a decision goes to every artifact BMad made, in its order (a spec decision can move the architecture)" || bad "batch: $out | $out2"
+out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "BMad reviews its own work (bmad-review)" "$out" "its review: ready-with-concerns"
+contains "…a finding that changes nothing built is the PM's" "$("$DL" next)" "DECIDE  (PM) B-"
+PMI="$("$DL" shape status | jq -r '.pm[0]')"; HI="$("$DL" shape status | jq -r '.human[0]')"
+expect_ok "Michael decides it, with his reason and BMad's words" "$DL" shape decide "$PMI" "reword AD-1" "wording only" --file "$SPINE" --quote "Pure functions only"
+"$DL" shape propose "$HI" "normalise U+2212 to a hyphen-minus" --file "$SPEC" --quote "Callers get the signed notch change" --confidence high >/dev/null && "$DL" phase awaiting_clarification >/dev/null
+contains "a high finding of BMad's review is never accepted with the rest" "$("$DL" clarify proposals "ok" 2>&1)" "every open proposal is flagged"
+"$DL" clarify "$HI" "normalise it" >/dev/null && "$DL" phase shaping >/dev/null
+for k in 1 2 3; do PATH="$SHB:$PATH" "$DL" shape run >/dev/null 2>&1; done
+contains "a second review after the decisions; ready → shaping is finished" "$("$DL" next)" "PHASE   dl phase readiness  (shaping finished: BMad's reviews ready-with-concerns, ready)"
+"$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"x"},{"role":"backend","agent":"backend-dev","why":"x"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:code-reviewer","why":"x"}]' >/dev/null
+expect_ok "shaping → readiness" "$DL" phase readiness
+contains "the architecture's AD-n rules are this job's standard: the reviewer answers each" "$("$DL" knowledge must review reviewer 2>&1)" "AD-1	Pure functions only: Exported functions do no I/O."
+ready_all
+jq --arg f "$SPEC" '(.items[] | select(.id=="ARC-style")) |= (.source = "bmad: \($f)" | .quote = "Plain Node ESM, zero dependencies") | (.items[] | select(.id=="PRD-scope")) |= (.source = "shape: B-2" | .quote = "19 steps")' "$SJ/readiness.json" > "$SJ/r.t" && mv "$SJ/r.t" "$SJ/readiness.json"
+rd="$("$DL" readiness 2>&1)"; [[ $rd != *ARC-style* && $rd != *PRD-scope* ]] && ok "the readiness review settles items from BMad's artifacts and the ledger, quoted" || bad "readiness: $(grep -E 'ARC-style|PRD-scope' <<<"$rd")"
+jq '(.items[] | select(.id=="ARC-style")).quote = "a microservice per team"' "$SJ/readiness.json" > "$SJ/r.t" && mv "$SJ/r.t" "$SJ/readiness.json"
+contains "…only with words that are in them" "$("$DL" readiness 2>&1)" "quote not found in BMad's"
+jq '(.items[] | select(.id=="ARC-style")).quote = "Plain Node ESM, zero dependencies"' "$SJ/readiness.json" > "$SJ/r.t" && mv "$SJ/r.t" "$SJ/readiness.json"
+expect_ok "readiness → planning: frozen with BMad's artifacts and the ledger" "$DL" phase planning
+jq -e '.frozen.shaping_sha256' "$SJ/job.json" >/dev/null && ok "…job.json records the shaping manifest" || bad "frozen: $(jq -c .frozen "$SJ/job.json")"
+printf '# Plan\n\n## Acceptance criteria\n\n- AC-1 [P0] (CAP-1): notch change\n' > "$SJ/plan.md"
+contains "every capability BMad shaped is traced by an acceptance criterion" "$("$DL" validate 2>&1)" "CAP-2 of BMad's artifacts is traced by no acceptance criterion"
+cp "$SHR/$SPEC" "$TMP/spec.keep"; echo "<!-- edited -->" >> "$SHR/$SPEC"
+expect_fail 6 "BMad's artifacts do not change after the freeze" "$DL" validate
+contains "…said as such" "$out" "BMad's artifacts or the shaping ledger changed after they were frozen"
+cp "$TMP/spec.keep" "$SHR/$SPEC"
+[[ "$("$DL" validate 2>&1)" != *"changed after they were frozen"* ]] && ok "…the same artifacts again: the flow goes on" || bad "after restore: $("$DL" validate 2>&1 | head -2)"
+contains "the PR says how it was shaped: BMad's path, its reviews, every decision and who took it" "$(node "$SDIR/bin/bmad.mjs" report "$SJ")" "**Path:** bmad-spec → bmad-architecture"
+node "$SDIR/bin/bmad.mjs" report "$SJ" | grep -qF '| B-2 | decision · bmad-spec | Scale has 22 steps including CC, C and D | 19 steps, AAA to CCC-, nothing below | the human |' && ok "…B-2: BMad's own decision, overruled by the human" || bad "report: $(node "$SDIR/bin/bmad.mjs" report "$SJ" | grep B-2)"
+node "$SDIR/bin/bmad.mjs" report "$SJ" | grep -q '| B-3 | assumption · bmad-spec | .* | trim, and match case-insensitively | the human, overruling Michael |' && ok "…B-3: Michael's decision, overruled by the human" || bad "report: $(node "$SDIR/bin/bmad.mjs" report "$SJ" | grep 'B-3 ')"
+# the hooks
+shk() { printf '%s' "$1" | env ${2:+DELIVER_SHAPING=$2} "$HERE/kit/hooks/deliver/$3.sh" 2>&1; echo "rc=$?"; }
+contains "a BMad session writes in its output folder" "$(shk "{\"tool_input\":{\"file_path\":\"$SHR/.work/$SJN/bmad/out/specs/x.md\"},\"cwd\":\"$SHR\"}" "$SJN" write-guard)" "rc=0"
+contains "…and nowhere else" "$(shk "{\"tool_input\":{\"file_path\":\"$SHR/src/notch.mjs\"},\"cwd\":\"$SHR\"}" "$SJN" write-guard)" "a BMad session writes only in its output folder"
+contains "…runs no dl" "$(shk '{"tool_input":{"command":"dl next"},"cwd":"/"}' "$SJN" bash-guard)" "a BMad session does not run dl"
+contains "…and does not commit" "$(shk '{"tool_input":{"command":"git commit -m x"},"cwd":"/"}' "$SJN" bash-guard)" "does not change the repo's history"
+contains "agents cannot run the shaping" "$(shk '{"tool_input":{"command":"dl shape run"},"agent_id":"a1","cwd":"/"}' "" bash-guard)" "rc=2"
+contains "nobody edits the ledger but dl" "$(shk "{\"tool_input\":{\"command\":\"jq . x > $SJ/shaping.json\"},\"cwd\":\"$SHR\"}" "" bash-guard)" "the shaping ledger and BMad's artifacts are written by dl and by BMad only"
+NS="$TMP/notshaped"; mkdir -p "$NS" && cd "$NS" && git init -q -b main && echo '{"dispatch":"subagent"}' > .deliver.json && git add -A && git commit -qm i && "$DL" new "Plain" "A job as before" >/dev/null
+contains "a job without the setting is not shaped" "$("$DL" shape status 2>&1)" "shaping is off"
+# auto (the kit's default): shape only what is not a specification yet — fewer than two of requirement ids, acceptance
+# criteria and a contract. Measured live: same product for 30 % more on a specification; decisions caught on an idea.
+[[ "$(jq -r .upstream.engine "$SDIR/config.json")" == auto ]] && ok "the kit's default is upstream.engine auto" || bad "default: $(jq -c .upstream "$SDIR/config.json")"
+AU="$TMP/auto"; mkdir -p "$AU" && cd "$AU" && git init -q -b main && jq -n '{dispatch:"subagent", upstream:{engine:"auto"}}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "Idea" "Our analysts work out rating moves by hand; we would like the system to do it. Other parts will use it." >/dev/null
+contains "auto: an idea (no requirements, no acceptance criteria, no contract) is shaped" "$("$DL" next)" "INTAKE  dl phase shaping — BMad shapes the request before the readiness review (the request states no requirement ids, acceptance criteria or contract — BMad shapes it first)"
+"$DL" phase shaping >/dev/null && grep -q $'\tshape-auto\tshaped: the request states no requirement ids' "$(ls -d .work/JOB-*)/events.log" && ok "…the decision is in the event log" || bad "events: $(grep shape-auto .work/JOB-*/events.log)"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup >/dev/null 2>&1
+"$DL" new "Spec" "$(cat "$HERE/examples/watchlist-poc/JOB.md")" >/dev/null
+contains "…a specification (requirement ids, acceptance criteria, a contract) is not" "$("$DL" next)" "not shaped: the request states requirement ids, acceptance criteria, and a contract — a specification already, not shaped"
+contains "…and shaping it is refused" "$("$DL" phase shaping 2>&1)" "shaping is off for this job"
+AJ="$AU/.work/$(cat .work/ACTIVE)"
+contains "…bmad.mjs needs answers no (exit 3), with its reason" "$(node "$SDIR/bin/bmad.mjs" needs "$AJ" | jq -r .shape; node "$SDIR/bin/bmad.mjs" needs "$AJ" >/dev/null; echo "rc=$?")" "false
+rc=3"
+[[ "$("$DL" next)" != *shaping* ]] && ok "…its intake goes to the readiness review as before" || bad "next: $("$DL" next)"
+cd "$R"
+
+echo "shaping converges: a question BMad asks again shows what was decided; the update chain has a limit (live run 66 never ended)"
+CV="$TMP/converge"; mkdir -p "$CV/.work/JOB-c" && CJ="$CV/.work/JOB-c" && BM="$SDIR/bin/bmad.mjs"
+jq -n --arg r "$CV" '{id:"JOB-20261014-0900-c", title:"c", request:"an idea", repo:$r, stack:[]}' > "$CJ/job.json"
+node "$BM" init "$CJ" 6.12.2 >/dev/null && node "$BM" installed "$CJ" 6.12.2 >/dev/null
+cvrun() { # cvrun '<result text>' [file to touch] — one fake BMad run: start, write what it wrote, finish
+  local n; n="$(node "$BM" start "$CJ" 2 2 | jq -r .name)"
+  [[ -n ${2:-} ]] && { mkdir -p "$(dirname "$CJ/bmad/out/$2")"; echo "$n $RANDOM" >> "$CJ/bmad/out/$2"; }
+  jq -n --arg r "$1" '{result:$r,total_cost_usd:0.1}' > "$CJ/bmad/runs/$n.json"; node "$BM" finish "$CJ" 0 5 >/dev/null
+}
+cvdecide() { for i in $(node "$BM" status "$CJ" 2 2 | jq -r '(.human // [])[]'); do node "$BM" answer "$CJ" "$i" e2e "the rule: $i" >/dev/null; done; }
+cvrun '```json
+{"sequence":[{"skill":"bmad-spec","intent":"create","why":"x"}],"skipped":[]}
+```'
+cvrun '```json
+{"status":"complete","open_questions":["Does the case-insensitive rule fold Moody'"'"'s Aaa to AAA, or is Aaa rejected?"]}
+```' specs/s/SPEC.md
+cvdecide
+for k in 1 2 3; do   # every update asks about what it was just told, in other words
+  [[ "$(node "$BM" status "$CJ" 2 2 | jq -r .next)" == update ]] || break
+  cvrun '```json
+{"status":"complete","open_questions":["Is Moody'"'"'s Aaa folded to AAA under the case-insensitive rule or rejected? B-1 gives no explicit ruling (round '"$k"')"]}
+```' specs/s/SPEC.md
+  if [[ $k == 1 ]]; then
+    node "$BM" questions "$CJ" > "$CJ/QUESTIONS.md"
+    jq -e '.ledger[] | select(.id=="B-2") | .repeat_of == ["B-1"]' "$CJ/shaping.json" >/dev/null && ok "a question about what was decided is marked as asked before (B-2 → B-1)" || bad "repeat_of: $(jq -c '.ledger[1]' "$CJ/shaping.json")"
+    grep -q '⚠ asked before as B-1 — decided by you: "the rule: B-1"' "$CJ/QUESTIONS.md" && ok "…QUESTIONS.md shows the human their earlier answer and asks for a ruling on exactly this" || bad "QUESTIONS.md: $(grep -A3 '## B-2' "$CJ/QUESTIONS.md")"
+  fi
+  cvdecide
+done
+[[ "$(jq '[.runs[] | select(.step=="update")] | length' "$CJ/shaping.json")" == 2 ]] && ok "the update chain stops after upstream.reask_rounds (2) — it no longer asks forever" || bad "updates: $(jq -c '[.runs[] | .name]' "$CJ/shaping.json")"
+contains "…shaping goes on to BMad's review" "$(node "$BM" status "$CJ" 2 2 | jq -r .next)" "review"
+contains "…what was decided past the limit binds through the ledger, and the PR says so" "$(node "$BM" report "$CJ")" "Decided after BMad's last update** (binding through the ledger, not written into its artifacts — the update chain reached its limit): B-3"
+cvrun '```json
+{"findings":[],"verdict":"ready-with-concerns"}
+```'
+contains "after the review the chain starts again: B-3 goes into the artifacts" "$(node "$BM" status "$CJ" 2 2 | jq -c '[.next, .newBatch]')" '["update",true]'
+cvrun '```json
+{"status":"complete","open_questions":[]}
+```' specs/s/SPEC.md
+cvrun '```json
+{"findings":[],"verdict":"ready"}
+```'
+contains "…its second review, and shaping ends — at most (made + reviewed) × reask_rounds updates" "$(node "$BM" status "$CJ" 2 2 | jq -r .next)" "done"
 
 unset DELIVER_KNOWLEDGE; rm -f "$DELIVER_HOME/config.json"   # the install tests check what the installer writes there
 echo "install / uninstall"

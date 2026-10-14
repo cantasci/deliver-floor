@@ -6,6 +6,7 @@ import { nodeTestDirArgs } from "./node-test-args.mjs";
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { globToRegExp } from "./scope.mjs";
+import { ids as shapedIds } from "./bmad.mjs";
 import { planACs as riskACs, cardRisk, needsBlind, testDesign, refsOf, nfrItems } from "./risk.mjs";
 
 const file = process.argv[2];
@@ -133,6 +134,14 @@ if (job) {
     if (!Array.isArray(c.reviewers) || !c.reviewers.length) { errors.push(`${c.id}: 'reviewers' must be a non-empty array of reviewer roles`); continue; }
     for (const r of c.reviewers) if (!kinds.has(r)) errors.push(`${c.id}: reviewer '${r}' is not a role on this job`);
   }
+}
+
+// Shaped with BMad: every capability of its spec (CAP-n) and every requirement of its PRD (FR-n) is traced by an acceptance
+// criterion of the plan — the cards deliver what was shaped and decided, nothing of it is dropped on the way.
+if (plan && existsSync(join(dir, "shaping.json"))) {
+  const acLines = plan.split("\n").filter((l) => /^\s*[-*]\s+\**AC-\d+\b/.test(l)).join("\n");
+  const lost = shapedIds(dir).filter((id) => !new RegExp(`\\b${id}\\b`).test(acLines));
+  if (lost.length) errors.push(`plan.md: ${lost.join(", ")} of BMad's artifacts ${lost.length > 1 ? "are" : "is"} traced by no acceptance criterion — name ${lost.length > 1 ? "each" : "it"} on the AC line that delivers it, e.g. "- AC-3 [P1] (${lost[0]}): …"`);
 }
 
 // Risk-based test design (settings.test_design.risk): every AC of the plan has a priority, every card's spec says how its

@@ -91,5 +91,10 @@
     "topic": "the existing export-list test vs a new export (JOB-light2.md)",
     "match": "isInvestmentGrade|export list|exports the contract|assertion|existing (QA )?test",
     "answer": "Update only that assertion so the export list includes isInvestmentGrade; every other existing test stays as it is."
+  },
+  {
+    "topic": "how ratings are read: notation, case, normalisation (C1) — JOB-shaped.md, where the request no longer states it",
+    "match": "normali[sz]|lower[- ]?case|upper[- ]?case|case[- ]?(in)?sensitive|exact(ly)? match|Moody|Unicode minus|suffix|notation|non-string",
+    "answer": "C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError."
   }
 ]
