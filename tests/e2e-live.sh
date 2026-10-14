@@ -47,7 +47,7 @@ case $SC in
   idea)       REQ="$EX/JOB-idea.md";       ORACLE=watchlist.oracle.test.mjs ;;
   *) echo "unknown scenario: $SC" >&2; exit 2 ;;
 esac
-ANSWERS="$ANSWERS"; [[ $SC == idea ]] && ANSWERS="$EX/HUMAN_ANSWERS-idea.json"   # what the scenario's human knows
+ANSWERS="$EX/HUMAN_ANSWERS.json"; [[ $SC == idea ]] && ANSWERS="$EX/HUMAN_ANSWERS-idea.json"   # what the scenario's human knows
 SHAPED_SC=0; [[ $SC == shaped || $SC == idea ]] && SHAPED_SC=1
 W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; W="$(cd "$W/$SC" && pwd)"
 export ISO_HOME="$W/home"; mkdir -p "$ISO_HOME"
