@@ -44,6 +44,11 @@ before a card is cut** — by default only for a request that is not a specifica
   tool limit — its wait counted loops, not time — and the timeout's signal took BMad's session along (`nohup` is not enough).
   BMad now runs in a process session of its own (`setsid`), and a call waits at most seven minutes by the clock;
   `dl shape wait` picks the run up in the same session or the next.
+- **The human decides what shapes the product, Michael the rest.** Live on an idea (run 68), sending every item to the human
+  meant 69 decisions for one small job. Now BMad's questions, its own product decisions, a step it could not run and a high
+  or critical finding go to the human; its assumptions and the lesser findings are Michael's (`dl shape decide`, with his
+  reason and BMad's words) — listed in QUESTIONS.md and the PR, and the human overrules any before the freeze
+  (`dl clarify B-n`; the new decision goes back to BMad). Michael not sure of one (`--confidence low`): it goes to the human.
 - **Michael warns, the human decides.** Live, most wrong decisions were proposals accepted as they stood, all at once — one
   against the human's own earlier ruling. A proposal now carries its confidence (`dl shape propose … --confidence high|low`,
   a low one with `--concern`: what could make it wrong, the alternative); a question BMad asks again needs that concern too.

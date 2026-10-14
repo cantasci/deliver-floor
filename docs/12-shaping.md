@@ -29,8 +29,8 @@ official BMad product.
 | Which BMad skills run | chooses (bmad-help) | starts them (`dl shape run`) | — |
 | What BMad is given | — | nothing of his own: `dl` writes every prompt — the request, the repo, the standards, the project's architecture, our delivery checklist as information | — |
 | The specification | writes it, updates it, reviews it | — | — |
-| A decision, an assumption, a question of BMad's, a review finding that changes what is built | reports it | proposes, quoting BMad's own words (`dl shape propose`) — never the request | decide (`dl clarify B-n "…"`, or all of his proposals at once: `dl clarify proposals "…"`) |
-| A finding that changes nothing built (wording, consistency, test detail) | reports it | decides it, with his reason (`dl shape decide`) | see it in the PR |
+| A question of BMad's, a product decision it took on its own, a step it could not run, a high or critical review finding | reports it | proposes, quoting BMad's own words, with his confidence (`dl shape propose`) — never the request | decide (`dl clarify B-n "…"`; his confident, unflagged proposals at once: `dl clarify proposals "…"`) |
+| An assumption of BMad's, a low or medium review finding | reports it | decides it, with his reason and BMad's words (`dl shape decide`); not sure → it goes to you | see them listed in QUESTIONS.md and the PR; overrule any before the work starts (`dl clarify B-n "…"`) |
 | An item the readiness review finds BMad silent on | answers or asks (its update) | sends it back (`dl shape gap`) | only what BMad cannot settle |
 
 Seen in the first spike: `bmad-spec` called its spec "complete" and had taken ten decisions of its own — three of them against

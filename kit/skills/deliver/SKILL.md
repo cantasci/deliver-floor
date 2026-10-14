@@ -159,8 +159,11 @@ they follow from what BMad wrote.
      convention) is `low`, with your concern. You warn the human; you never decide for them — seen live: proposals accepted
      as they stood, one against the human's own earlier ruling, made most of the wrong decisions. `dl` flags a low proposal,
      a question BMad asks again and a high or critical finding: the human decides each of those on its own.
-   - A finding that changes nothing built (needs_human false: wording, consistency, test detail) is yours:
-     `"$DL" shape decide B-n "<decision>" "<rationale>" --file … --quote …`.
+   - **Yours to decide** (dl next: DECIDE): BMad's assumptions and its review's low and medium findings —
+     `"$DL" shape decide B-n "<decision>" "<rationale>" --file … --quote …`. The human sees them listed and can overrule any
+     before the freeze. Not sure of one? `--confidence low --concern "…"`: it goes to the human, with your proposal.
+     **The human's** (PROPOSE): BMad's questions, the product decisions it took on its own, a step it could not run, a high
+     or critical finding. Measured on an idea: with everything sent to the human, 69 decisions for one small job.
    - Then `"$DL" phase awaiting_clarification` (refused until every item has your proposal) and ask the human —
      interactive: **the flagged items one by one first** (AskUserQuestion: BMad's words, your proposal, your concern — and
      the earlier decision when BMad asks again), then the rest at once ("accept all of Michael's proposals" is an answer for

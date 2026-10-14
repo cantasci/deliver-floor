@@ -1090,7 +1090,7 @@ cmd_shape() {
       [[ -n ${pos[0]:-} && -n ${pos[1]:-} && -n $file && -n $quote && ( $sub == propose || -n ${pos[2]:-} ) ]] \
         || die "usage: dl shape propose <id> \"<proposal>\" --file <BMad artifact> --quote \"<its words>\" --confidence high|low [--concern \"<what could make it wrong>\"] · dl shape decide <id> \"<decision>\" \"<rationale>\" --file … --quote …"
       if [[ $sub == propose ]]; then out="$(node "$BIN_DIR/bmad.mjs" propose "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" "$conf" "$concern" 2>&1)" || refuse 1 "${out#bmad: }"
-      else out="$(node "$BIN_DIR/bmad.mjs" decide "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" "${pos[2]}" 2>&1)" || refuse 1 "${out#bmad: }"; fi
+      else out="$(node "$BIN_DIR/bmad.mjs" decide "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" "${pos[2]}" "${conf:-high}" "$concern" 2>&1)" || refuse 1 "${out#bmad: }"; fi
       log_event "shape-$sub" "${pos[0]}: ${pos[1]}"; reset_stop_guard; echo "$out"
       [[ "$(phase_now)" == awaiting_clarification ]] && node "$BIN_DIR/bmad.mjs" questions "$JOB_DIR" > "$JOB_DIR/QUESTIONS.md"
       true ;;
@@ -1160,8 +1160,11 @@ cmd_clarify() {
   human_only "answering a business question (dl clarify)"; load_job
   local id=${1:-} answer=${2:-}; [[ -n $id && -n $answer ]] || die 'usage: dl clarify <id> "<answer>"'
   if shaping_job && [[ $id == proposals || $id =~ ^B-[0-9]+$ ]]; then   # a decision on what BMad said (the shaping ledger)
-    [[ "$(phase_now)" == shaping || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "the shaping ledger is decided while shaping (now: $(phase_now))"
+    [[ "$(phase_now)" =~ ^(shaping|awaiting_clarification|readiness)$ ]] || refuse 1 "the shaping ledger is decided before planning freezes it (now: $(phase_now))"
     local out; out="$(node "$BIN_DIR/bmad.mjs" answer "$JOB_DIR" "$id" "${DELIVER_APPROVER:-${USER:-human}}" "$answer" 2>&1)" || refuse 1 "${out#bmad: }"
+    if [[ "$(phase_now)" == readiness ]] && [[ "$(shape_status | jq -r .next)" != done ]]; then   # overruled after shaping: back to BMad
+      jq_inplace "$JOBJ" '.phase = "shaping"'; log_event phase shaping; out="$out — phase shaping: BMad gets the new decision (dl shape run)"
+    fi
     node "$BIN_DIR/bmad.mjs" questions "$JOB_DIR" > "$JOB_DIR/QUESTIONS.md"
     reset_stop_guard; log_event clarify "$id: $answer"; echo "$out"; return 0
   fi

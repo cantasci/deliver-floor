@@ -2145,7 +2145,7 @@ grep -q "a checklist, not instructions" "$SJ"/bmad/runs/03-help.prompt.md && ok 
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 contains "bmad-spec: what it asked goes into the ledger" "$out" "question: Is WL 0 right for a 1-notch downgrade?"
 contains "…and what it decided on its own (its memlog), for the human — nothing it decides binds by itself" "$out" "decision: Scale has 22 steps including CC, C and D"
-contains "…and what it assumed" "$out" "assumption: Input is trimmed and upper-cased"
+contains "…what it assumed is Michael's to decide, not the human's (live: 69 decisions on one idea)" "$out" "assumption (PM): Input is trimmed and upper-cased"
 contains "dl next: Michael proposes a decision for each, on BMad's words" "$("$DL" next)" "PROPOSE B-1"
 contains "the human is not asked before every item has a proposal" "$("$DL" phase awaiting_clarification 2>&1)" "propose a decision for each first"
 SPEC=".work/$SJN/bmad/out/specs/spec-x/SPEC.md"
@@ -2156,21 +2156,22 @@ contains "…on words that are in it" "$("$DL" shape propose B-1 "WL 0" --file "
 contains "Michael proposes B-1 and warns the human: BMad's sources do not state it" "$("$DL" shape propose B-1 "WL 0 for a 1-notch downgrade" --file "$SPEC" --quote "Callers get the WL of a downgrade" --confidence low --concern "only BMad's inference: the POC gives no WL for one notch; Indicator 12 says WL 1" 2>&1)" "flagged for the human to decide on its own: Michael is not sure"
 contains "Michael alone decides nothing that changes what is built" "$("$DL" shape decide B-2 "19 steps" "the POC's dropdown" --file "$SPEC" --quote "Plain Node ESM" 2>&1)" "is decided with the human"
 "$DL" shape propose B-2 "19 steps, AAA to CCC-: no CC, C or D" --file "$SPEC" --quote "Plain Node ESM" --confidence high >/dev/null
-"$DL" shape propose B-3 "accept as BMad wrote it" --file "$SPEC" --quote "Plain Node ESM" --confidence high >/dev/null
+contains "Michael decides BMad's assumption himself, with his reason" "$("$DL" shape decide B-3 "trim and upper-case before matching" "the request asks for plain rating strings; canonical case is BMad's reading" --file "$SPEC" --quote "Plain Node ESM" 2>&1)" "the human can overrule it before the freeze"
 expect_ok "every item proposed → the human decides" "$DL" phase awaiting_clarification
 grep -q "### B-2 — decision (bmad-spec)" "$SJ/QUESTIONS.md" && grep -q "Michael proposes\*\* (high confidence): 19 steps" "$SJ/QUESTIONS.md" && ok "QUESTIONS.md: what BMad said, with Michael's proposal, his confidence and BMad's words" || bad "QUESTIONS.md: $(head -20 "$SJ/QUESTIONS.md")"
 sed -n '/^## Decide each of these on its own (1)/,/^## Michael is confident/p' "$SJ/QUESTIONS.md" | grep -q "⚠ Michael is not sure: only BMad's inference" \
   && ok "…the flagged item first, on its own, with his concern" || bad "QUESTIONS.md sections: $(grep '^##' "$SJ/QUESTIONS.md")"
+sed -n '/^## Michael decided these himself (1)/,$p' "$SJ/QUESTIONS.md" | grep -q '\*\*B-3\*\* (assumption): Input is trimmed' \
+  && ok "…and what Michael decided himself, for the human to overrule" || bad "QUESTIONS.md: $(grep -A3 'decided these himself' "$SJ/QUESTIONS.md")"
 contains "dl next asks the human, each with the proposal" "$("$DL" next)" "ASK     human: B-2 — Scale has 22 steps including CC, C and D  · Michael proposes (high): 19 steps"
 contains "…and marks what is to be decided on its own" "$("$DL" next)" "ASK     human: B-1 ⚠ decide on its own"
 contains "an unattended session cannot decide for the human" "$(DELIVER_HEADLESS=1 "$DL" clarify B-1 "yes" 2>&1)" "is the human's decision"
-contains "the shaping goes on only once the human decided" "$("$DL" phase shaping 2>&1)" "the human has not decided B-1 B-2 B-3 yet"
+contains "the shaping goes on only once the human decided" "$("$DL" phase shaping 2>&1)" "the human has not decided B-1 B-2 yet"
 expect_ok "the human decides B-2 in their words" "$DL" clarify B-2 "19 steps, AAA to CCC-, nothing below"
-out="$("$DL" clarify proposals "agreed" 2>&1)"
-contains "…accepts Michael's confident proposals at once" "$out" "B-3: decided by the human"
-contains "…but not the one he flagged: the human decides it on its own" "$out" "not accepted — Michael flagged them; decide each on its own"
+contains "a flagged proposal is never accepted with the rest: the human decides it on its own" "$("$DL" clarify proposals "agreed" 2>&1)" "every open proposal is flagged — decide each on its own"
 contains "…shaping waits for it" "$("$DL" phase shaping 2>&1)" "the human has not decided B-1 yet"
 expect_ok "the human decides B-1 on its own" "$DL" clarify B-1 "WL 0 for one notch: Indicator 13 starts at two"
+contains "the human overrules Michael's own decision" "$("$DL" clarify B-3 "trim, and match case-insensitively" 2>&1)" "B-3: decided by the human"
 contains "dl next: back to BMad" "$("$DL" next)" "PHASE   dl phase shaping"
 expect_ok "awaiting_clarification → shaping" "$DL" phase shaping
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
@@ -2182,7 +2183,9 @@ out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 contains "bmad-architecture: built on the settled spec; its questions and assumptions to the ledger" "$out" "question: Relative import or a published package?"
 SPINE=".work/$SJN/bmad/out/planning-artifacts/architecture/arch-x/ARCHITECTURE-SPINE.md"
 for i in $("$DL" shape status | jq -r '.unproposed[]'); do "$DL" shape propose "$i" "relative imports, Node 22" --file "$SPINE" --quote "Exported functions do no I/O" --confidence high >/dev/null; done
-"$DL" phase awaiting_clarification >/dev/null && "$DL" clarify proposals "fine" >/dev/null && "$DL" phase shaping >/dev/null
+PMA="$("$DL" shape status | jq -r '.pm[0]')"
+contains "Michael not sure of one of his: it goes to the human, with his proposal" "$("$DL" shape decide "$PMA" "keep Node 22" "the local Node" --file "$SPINE" --quote "Node 22" --confidence low --concern "BMad took it from this machine, not from the request" 2>&1)" "not sure — it goes to the human"
+"$DL" phase awaiting_clarification >/dev/null && "$DL" clarify proposals "fine" >/dev/null && "$DL" clarify "$PMA" "Node 20 and later" >/dev/null && "$DL" phase shaping >/dev/null
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"; out2="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 [[ $out == *"update-spec — complete"* && $out2 == *"update-architecture — complete"* ]] && ok "a decision goes to every artifact BMad made, in its order (a spec decision can move the architecture)" || bad "batch: $out | $out2"
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
@@ -2215,6 +2218,7 @@ cp "$TMP/spec.keep" "$SHR/$SPEC"
 [[ "$("$DL" validate 2>&1)" != *"changed after they were frozen"* ]] && ok "…the same artifacts again: the flow goes on" || bad "after restore: $("$DL" validate 2>&1 | head -2)"
 contains "the PR says how it was shaped: BMad's path, its reviews, every decision and who took it" "$(node "$SDIR/bin/bmad.mjs" report "$SJ")" "**Path:** bmad-spec → bmad-architecture"
 node "$SDIR/bin/bmad.mjs" report "$SJ" | grep -qF '| B-2 | decision · bmad-spec | Scale has 22 steps including CC, C and D | 19 steps, AAA to CCC-, nothing below | the human |' && ok "…B-2: BMad's own decision, overruled by the human" || bad "report: $(node "$SDIR/bin/bmad.mjs" report "$SJ" | grep B-2)"
+node "$SDIR/bin/bmad.mjs" report "$SJ" | grep -q '| B-3 | assumption · bmad-spec | .* | trim, and match case-insensitively | the human, overruling Michael |' && ok "…B-3: Michael's decision, overruled by the human" || bad "report: $(node "$SDIR/bin/bmad.mjs" report "$SJ" | grep 'B-3 ')"
 # the hooks
 shk() { printf '%s' "$1" | env ${2:+DELIVER_SHAPING=$2} "$HERE/kit/hooks/deliver/$3.sh" 2>&1; echo "rc=$?"; }
 contains "a BMad session writes in its output folder" "$(shk "{\"tool_input\":{\"file_path\":\"$SHR/.work/$SJN/bmad/out/specs/x.md\"},\"cwd\":\"$SHR\"}" "$SJN" write-guard)" "rc=0"
