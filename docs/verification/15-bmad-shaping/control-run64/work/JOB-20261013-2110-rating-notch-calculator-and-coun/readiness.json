@@ -1,0 +1,505 @@
+{
+  "items": [
+    {
+      "id": "PRD-goal",
+      "status": "decided",
+      "answer": "Replace the analyst's manual, subjective reading of rating changes with a deterministic notch count and WL: Ind. 12 gets its WL from the notch change, and a notch calculator helper gives notch change + resultant WL for any previous/current rating pair. Success = the REQ-06-02 and REQ-03-12 acceptance criteria pass under node --test.",
+      "source": "docs/POC_Requirements_v0.2_EN.md §1 Problem Statement",
+      "quote": "the Watchlist level to be determined subjectively — introducing risk of error, inconsistency, and significant time loss"
+    },
+    {
+      "id": "PRD-users",
+      "status": "decided",
+      "answer": "The credit analyst (single user, no roles or authentication in the POC) uses the calculator; other POC modules are the programmatic consumers of the contract.",
+      "source": "request: REQ-06-02",
+      "quote": "analyst selects previous rating and current rating"
+    },
+    {
+      "id": "PRD-scope",
+      "status": "decided",
+      "answer": "The caller passes the rating the analyst confirmed or edited. No override parameter, no persistence, no audit trail in this slice.",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "Build only these two requirements.",
+      "question": "REQ-03-12 also says 'Pre-filled from public source' and 'auto-filled value editable', and REQ-06-02 says the analyst 'selects' ratings and the WL is 'displayed'. The contract only lists pure functions. Are the public-source pre-fill, the editable field and a display part of this delivery?",
+      "options": [
+        "(a, BA recommendation) Only the contract: RATING_SCALE, notchChange, notchCalculator, countryRatingChangeWl, pure, with tests; fetching, override flag, display are later jobs; Ind. 13 not implemented",
+        "(b) (a) plus a fetcher for sovereign ratings (I/O)",
+        "(c) (a) plus a user-facing calculator (CLI or web page)"
+      ],
+      "impact": "(a) 1-2 cards, no I/O; (b)/(c) add integration or UI.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "Only REQ-06-02 and REQ-03-12 are built. Not decided: pre-fill, editable field and display.",
+          "question": "REQ-03-12 also says 'Pre-filled from public source' and 'auto-filled value editable', and REQ-06-02 says the analyst 'selects' ratings and the WL is 'displayed'. The contract only lists pure functions. Are the public-source pre-fill, the editable field and a display part of this delivery?",
+          "at": "2026-10-13T19:16:47.215Z"
+        }
+      ]
+    },
+    {
+      "id": "PRD-acceptance",
+      "status": "decided",
+      "answer": "(a) Confirm the BA's table once X-example-notches, X-calc-wl-rule, X-upgrade-wl are answered",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "1 notch → WL=1; 2+ notches → WL=2; auto-filled value editable",
+      "question": "Confirm worked examples QA will use verbatim, e.g. countryRatingChangeWl: AAA→AA+ = 1; BBB+→BBB- = 2; BB→BB = 0; BB→BBB = 0.",
+      "options": [
+        "(a) Confirm the BA's table once X-example-notches, X-calc-wl-rule, X-upgrade-wl are answered",
+        "(b) Business supplies examples from the Excel dropdown sheet"
+      ],
+      "impact": "Without examples P1 ACs lack concrete values.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "Ind. 12 thresholds exist but no rating-pair example for them; REQ-06-02's only example does not hold on the standard scale.",
+          "question": "Confirm worked examples QA will use verbatim, e.g. countryRatingChangeWl: AAA→AA+ = 1; BBB+→BBB- = 2; BB→BB = 0; BB→BBB = 0.",
+          "at": "2026-10-13T19:16:47.569Z"
+        }
+      ]
+    },
+    {
+      "id": "PRD-conflicts",
+      "status": "decided",
+      "answer": "Resolve each X- item",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "BBB+ → BB+ = 2 notch downgrade → WL=1 displayed",
+      "question": "See X-example-notches, X-calc-wl-rule, X-upgrade-wl.",
+      "options": [
+        "Resolve each X- item"
+      ],
+      "impact": "Wrong WL on the core output (P1).",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "BBB+ → BB+ is 3 notches on the AAA…CCC- scale, request says 2; the calculator's WL rule is unnamed; upgrade behaviour unstated.",
+          "question": "See X-example-notches, X-calc-wl-rule, X-upgrade-wl.",
+          "at": "2026-10-13T19:16:47.953Z"
+        }
+      ]
+    },
+    {
+      "id": "PRD-priority",
+      "status": "decided",
+      "answer": "REQ-03-12 is Must, REQ-06-02 is Should. Build shared notchChange first.",
+      "source": "docs/POC_Requirements_v0.2_EN.md §5",
+      "quote": "notch change auto-calculated | FR | Must"
+    },
+    {
+      "id": "CON-interface",
+      "status": "decided",
+      "answer": "notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "`notchChange(previous, current)` → integer; positive = downgrade, negative = upgrade, 0 = unchanged.",
+      "question": "(1) Is notchCalculator's notches signed or magnitude? (2) range of wl? (3) RATING_SCALE type?",
+      "options": [
+        "(a, BA recommendation) notches = magnitude (0 when unchanged), direction carries the sign; wl in 0|1|2; RATING_SCALE a frozen array of strings",
+        "(b) notches signed, identical to notchChange"
+      ],
+      "impact": "Other POC parts import these exactly.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "Names, arities and notchChange sign are fixed by the request.",
+          "question": "(1) Is notchCalculator's notches signed or magnitude? (2) range of wl? (3) RATING_SCALE type?",
+          "at": "2026-10-13T19:16:48.345Z"
+        }
+      ]
+    },
+    {
+      "id": "CON-errors",
+      "status": "decided",
+      "answer": "RangeError for every invalid input, strings and non-strings alike (null, undefined, 42, {} included).",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "`countryRatingChangeWl(previous, current)` → 0 | 1 | 2 (REQ-03-12 thresholds), built on `notchChange`.",
+      "question": "What must the functions do with an unknown/invalid rating?",
+      "options": [
+        "(a, BA recommendation) Throw TypeError for non-string, RangeError for a string not in RATING_SCALE, naming the value",
+        "(b) Return null so the caller falls back to manual input",
+        "(c) Treat NR/WD as no change, throw for garbage"
+      ],
+      "impact": "Silent wrong WL vs visible failure.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "Not stated by the request.",
+          "question": "What must the functions do with an unknown/invalid rating?",
+          "at": "2026-10-13T19:16:48.763Z"
+        }
+      ]
+    },
+    {
+      "id": "CON-compat",
+      "status": "decided",
+      "answer": "Nothing to stay compatible with; new exports are the contract.",
+      "source": "request: Contract",
+      "quote": "Contract (other parts of the POC will import exactly these)"
+    },
+    {
+      "id": "ARC-style",
+      "status": "decided",
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "",
+      "question": "Architecture style of the repo?",
+      "options": [
+        "as in the draft: one library component, plain Node ESM under src/<area>/, suite npm test",
+        "modular monolith with later UI/fetcher components"
+      ],
+      "impact": "Where later code goes.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "",
+          "question": "Architecture style of the repo?",
+          "at": "2026-10-13T19:16:49.178Z"
+        }
+      ]
+    },
+    {
+      "id": "ARC-components",
+      "status": "decided",
+      "answer": "Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "",
+      "question": "Confirm the component list.",
+      "options": [
+        "as in the draft: one component repo, library, node, path ., npm test",
+        "plus UI or fetcher component if chosen elsewhere"
+      ],
+      "impact": "Card split.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "",
+          "question": "Confirm the component list.",
+          "at": "2026-10-13T19:16:49.530Z"
+        }
+      ]
+    },
+    {
+      "id": "ARC-ui",
+      "status": "decided",
+      "answer": "(a, BA recommendation) None",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "BBB+ → BB+ = 2 notch downgrade → WL=1 displayed",
+      "question": "Is any user interface delivered in this job?",
+      "options": [
+        "(a, BA recommendation) None",
+        "(b) A small CLI",
+        "(c) A web page"
+      ],
+      "impact": "(b)/(c) add a component.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "The request names no UI.",
+          "question": "Is any user interface delivered in this job?",
+          "at": "2026-10-13T19:16:50.016Z"
+        }
+      ]
+    },
+    {
+      "id": "ARC-layer",
+      "status": "decided",
+      "answer": "Shared domain library modules consumed by in-process import; no API.",
+      "source": "request: Contract",
+      "quote": "Contract (other parts of the POC will import exactly these)"
+    },
+    {
+      "id": "ARC-stack",
+      "status": "decided",
+      "answer": "Plain Node.js ESM (.mjs), Node 18+ per CLAUDE.md, no dependencies, node:test.",
+      "source": "request: Contract",
+      "quote": "Plain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`."
+    },
+    {
+      "id": "ARC-deps",
+      "status": "decided",
+      "answer": "No new dependencies.",
+      "source": "request: Contract",
+      "quote": "Plain Node ESM, no dependencies"
+    },
+    {
+      "id": "ARC-data",
+      "status": "decided",
+      "answer": "(a, BA recommendation) No store — pure functions",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "",
+      "question": "Is anything persisted in this delivery?",
+      "options": [
+        "(a, BA recommendation) No store — pure functions",
+        "(b) Persist ratings"
+      ],
+      "impact": "(b) adds a data component.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "No store named.",
+          "question": "Is anything persisted in this delivery?",
+          "at": "2026-10-13T19:16:50.375Z"
+        }
+      ]
+    },
+    {
+      "id": "ARC-integration",
+      "status": "decided",
+      "answer": "(a, BA recommendation) None — fetch is REQ-02-02, a separate job",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "Wikipedia sovereign ratings / countryeconomy.com | Web scrape (no API key)",
+      "question": "Is any external source called in this delivery?",
+      "options": [
+        "(a, BA recommendation) None — fetch is REQ-02-02, a separate job",
+        "(b) Scrape here"
+      ],
+      "impact": "(b) adds I/O and an open policy question.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "REQ-03-12 says 'Pre-filled from public source'; fetch not stated as in this job.",
+          "question": "Is any external source called in this delivery?",
+          "at": "2026-10-13T19:16:50.779Z"
+        }
+      ]
+    },
+    {
+      "id": "ARC-async",
+      "status": "n_a",
+      "answer": "Synchronous pure functions.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-performance",
+      "status": "n_a",
+      "answer": "In-memory lookups on a ~19-entry scale.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-availability",
+      "status": "n_a",
+      "answer": "A library, no dependency can be down.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-security",
+      "status": "decided",
+      "answer": "No authentication (single-user POC); no secrets. Input validation per CON-errors.",
+      "source": "docs/POC_Requirements_v0.2_EN.md §7 A1",
+      "quote": "POC operates for a single user; no authentication required"
+    },
+    {
+      "id": "NFR-privacy",
+      "status": "n_a",
+      "answer": "Inputs are public rating codes only.",
+      "source": "request: Contract",
+      "quote": "`countryRatingChangeWl(previous, current)` → 0 | 1 | 2"
+    },
+    {
+      "id": "NFR-audit",
+      "status": "n_a",
+      "answer": "Pure functions record nothing; override audit is outside this slice.",
+      "source": "request",
+      "quote": "Build only these two requirements."
+    },
+    {
+      "id": "NFR-observability",
+      "status": "n_a",
+      "answer": "No logging in pure functions.",
+      "source": "CLAUDE.md",
+      "quote": "Pure functions, no I/O in `src/ratings` and `src/indicators`."
+    },
+    {
+      "id": "NFR-compliance",
+      "status": "decided",
+      "answer": "WL rules must mirror the Excel dropdown sheet exactly; ambiguities go to business.",
+      "source": "docs/POC_Requirements_v0.2_EN.md §7 A4",
+      "quote": "Watchlist scoring logic mirrors exactly the Excel dropdown sheet (no interpretation changes)"
+    },
+    {
+      "id": "TST-strategy",
+      "status": "decided",
+      "answer": "node:test + assert/strict; unit tests by dev in test/ratings and test/indicators; QA integration tests with the confirmed example table.",
+      "source": "CLAUDE.md",
+      "quote": "Tests: `node:test` + `node:assert/strict`, files `test/<area>/<name>.test.mjs`. `npm test` runs everything."
+    },
+    {
+      "id": "DEL-ci",
+      "status": "decided",
+      "answer": "node --test must pass; no lint or scanners.",
+      "source": ".deliver.json",
+      "quote": "\"verify_full\": \"node --test\""
+    },
+    {
+      "id": "DEL-deploy",
+      "status": "decided",
+      "answer": "Not deployed; consumed by in-repo import.",
+      "source": "request: Contract",
+      "quote": "other parts of the POC will import exactly these"
+    },
+    {
+      "id": "DEL-docs",
+      "status": "n_a",
+      "answer": "The request asks for no documentation or changelog; the contract is in the request itself.",
+      "source": "request: Contract",
+      "quote": "other parts of the POC will import exactly these"
+    },
+    {
+      "id": "X-example-notches",
+      "status": "decided",
+      "answer": "(a) Standard counting: 3-notch downgrade; example count is a typo, WL follows X-calc-wl-rule",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "BBB+ → BB+ = 2 notch downgrade → WL=1 displayed",
+      "question": "Which part of the example is right?",
+      "options": [
+        "(a) Standard counting: 3-notch downgrade; example count is a typo, WL follows X-calc-wl-rule",
+        "(b) Count and WL right, ratings a typo (e.g. BBB+ → BBB- = 2 → WL=1)",
+        "(c) Non-standard notch definition — BA advises against"
+      ],
+      "impact": "The only REQ-06-02 example cannot pass as written.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "BBB+ → BBB → BBB- → BB+ is 3 notches, not 2.",
+          "question": "Which part of the example is right?",
+          "at": "2026-10-13T19:16:51.207Z"
+        }
+      ]
+    },
+    {
+      "id": "X-calc-wl-rule",
+      "status": "decided",
+      "answer": "(a) Ind. 13 rule: 0-1 down → 0; 2 → 1; 3+ → 2",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "analyst selects previous rating and current rating → system outputs notch change and resultant WL",
+      "question": "Which threshold rule gives notchCalculator's wl?",
+      "options": [
+        "(a) Ind. 13 rule: 0-1 down → 0; 2 → 1; 3+ → 2",
+        "(b) Ind. 12 rule: 1 down → 1; 2+ → 2",
+        "(c) Add an indicator argument (changes contract)",
+        "(d) Return WL per indicator (changes contract)"
+      ],
+      "impact": "Core output (P1).",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "No indicator named for the calculator's WL.",
+          "question": "Which threshold rule gives notchCalculator's wl?",
+          "at": "2026-10-13T19:16:51.573Z"
+        }
+      ]
+    },
+    {
+      "id": "X-upgrade-wl",
+      "status": "decided",
+      "answer": "(a, BA recommendation) WL=0 for unchanged and any upgrade",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "Dropdown → same/upgrade / 1 notch / 2 notches / 3+ notches",
+      "question": "What WL do unchanged and upgrade give?",
+      "options": [
+        "(a, BA recommendation) WL=0 for unchanged and any upgrade",
+        "(b) Thresholds on absolute count"
+      ],
+      "impact": "(b) would watchlist upgraded clients.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "REQ-03-12 does not say 'downgrade'.",
+          "question": "What WL do unchanged and upgrade give?",
+          "at": "2026-10-13T19:16:51.996Z"
+        }
+      ]
+    },
+    {
+      "id": "X-rating-scale",
+      "status": "decided",
+      "answer": "(a, BA recommendation) the 19 grades AAA…CCC-; anything else invalid",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "Dropdown AAA → CCC-; manual only",
+      "question": "What is in RATING_SCALE?",
+      "options": [
+        "(a, BA recommendation) the 19 grades AAA…CCC-; anything else invalid",
+        "(b) (a) plus CC, C, D",
+        "(c) plus Moody's codes",
+        "(d) NR/WD invalid or no change"
+      ],
+      "impact": "Valid inputs and bottom-of-scale counts.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "Only stated scale is Ind. 10's AAA → CCC-.",
+          "question": "What is in RATING_SCALE?",
+          "at": "2026-10-13T19:16:52.372Z"
+        }
+      ]
+    },
+    {
+      "id": "X-input-format",
+      "status": "decided",
+      "answer": "(a) Exact match only",
+      "source": "human: e2e-human 2026-10-13",
+      "quote": "BBB+ → BB+ = 2 notch downgrade",
+      "question": "Are 'bbb+', ' BBB+ ', 'BBB−' accepted?",
+      "options": [
+        "(a) Exact match only",
+        "(b, BA recommendation) Trim and upper-case; ASCII +/- only",
+        "(c) (b) plus map Unicode minus"
+      ],
+      "impact": "QA edge tests.",
+      "owner": "business",
+      "history": [
+        {
+          "status": "open",
+          "answer": "Case, whitespace, minus sign not stated.",
+          "question": "Are 'bbb+', ' BBB+ ', 'BBB−' accepted?",
+          "at": "2026-10-13T19:16:52.788Z"
+        }
+      ]
+    },
+    {
+      "id": "X-ind13-scope",
+      "status": "decided",
+      "answer": "Ind. 13 is not built; quoted only as related context.",
+      "source": "request",
+      "quote": "Build only these two requirements."
+    }
+  ],
+  "architecture": {
+    "style": "library",
+    "components": [
+      {
+        "id": "watchlist-poc",
+        "kind": "library",
+        "stack": [
+          "javascript",
+          "node"
+        ],
+        "path": [
+          "src/ratings/",
+          "src/indicators/",
+          "test/ratings/",
+          "test/indicators/"
+        ],
+        "owner": "backend",
+        "reviewer": "reviewer",
+        "verify": "npm test",
+        "notes": "Single-component repo; not confirmed — ARC-style/ARC-components open."
+      }
+    ]
+  }
+}

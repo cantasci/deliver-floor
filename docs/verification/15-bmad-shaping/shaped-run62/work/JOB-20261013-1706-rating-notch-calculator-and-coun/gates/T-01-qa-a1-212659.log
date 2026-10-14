@@ -1,0 +1,236 @@
+# qa_verify: node --test test/ratings/qa/*.test.mjs
+TAP version 13
+# Subtest: qa-ratings: AC-1: RATING_SCALE deep-equals the 19 steps, length 19, a real array
+ok 1 - qa-ratings: AC-1: RATING_SCALE deep-equals the 19 steps, length 19, a real array
+  ---
+  duration_ms: 3.505542
+  ...
+# Subtest: qa-ratings: AC-1: boundaries of the scale (AAA at 0, CCC- at 18, BBB+ at 7, BB+ at 10)
+ok 2 - qa-ratings: AC-1: boundaries of the scale (AAA at 0, CCC- at 18, BBB+ at 7, BB+ at 10)
+  ---
+  duration_ms: 0.129959
+  ...
+# Subtest: qa-ratings: AC-1: static and dynamic import give the same frozen instance
+ok 3 - qa-ratings: AC-1: static and dynamic import give the same frozen instance
+  ---
+  duration_ms: 0.082125
+  ...
+# Subtest: qa-ratings: AC-2: RATING_SCALE is frozen and every mutation throws TypeError
+ok 4 - qa-ratings: AC-2: RATING_SCALE is frozen and every mutation throws TypeError
+  ---
+  duration_ms: 0.203833
+  ...
+# Subtest: qa-ratings: AC-3: all 361 ordered pairs equal indexOf(current) - indexOf(previous)
+ok 5 - qa-ratings: AC-3: all 361 ordered pairs equal indexOf(current) - indexOf(previous)
+  ---
+  duration_ms: 0.274542
+  ...
+# Subtest: qa-ratings: AC-3: the 18 adjacent pairs give 1, the reverse pairs give -1
+ok 6 - qa-ratings: AC-3: the 18 adjacent pairs give 1, the reverse pairs give -1
+  ---
+  duration_ms: 0.081458
+  ...
+# Subtest: qa-ratings: AC-3: pinned values, BBB+ -> BB+ is 3 and never 2
+ok 7 - qa-ratings: AC-3: pinned values, BBB+ -> BB+ is 3 and never 2
+  ---
+  duration_ms: 0.162042
+  ...
+# Subtest: qa-ratings: AC-3: antisymmetry notchChange(a,b) === -notchChange(b,a) for a != b
+ok 8 - qa-ratings: AC-3: antisymmetry notchChange(a,b) === -notchChange(b,a) for a != b
+  ---
+  duration_ms: 0.2135
+  ...
+# Subtest: qa-ratings: AC-3: additivity notchChange(a,b) + notchChange(b,c) === notchChange(a,c) on all triples
+ok 9 - qa-ratings: AC-3: additivity notchChange(a,b) + notchChange(b,c) === notchChange(a,c) on all triples
+  ---
+  duration_ms: 2.086417
+  ...
+# Subtest: qa-ratings: AC-4: all 19 self-pairs return +0, never -0
+ok 10 - qa-ratings: AC-4: all 19 self-pairs return +0, never -0
+  ---
+  duration_ms: 0.344458
+  ...
+# Subtest: qa-ratings: AC-5: each of the 15 invalid values throws RangeError in both positions (30 calls)
+ok 11 - qa-ratings: AC-5: each of the 15 invalid values throws RangeError in both positions (30 calls)
+  ---
+  duration_ms: 0.269625
+  ...
+# Subtest: qa-ratings: AC-5: examples from the spec, NR and null
+ok 12 - qa-ratings: AC-5: examples from the spec, NR and null
+  ---
+  duration_ms: 0.060334
+  ...
+# Subtest: qa-ratings: AC-5: boundary extras AAA+, 'BBB +', ' bbb+ ' and Aaa throw RangeError
+ok 13 - qa-ratings: AC-5: boundary extras AAA+, 'BBB +', ' bbb+ ' and Aaa throw RangeError
+  ---
+  duration_ms: 0.069166
+  ...
+# Subtest: qa-ratings: AC-6: message contains the value as passed (7 rows)
+ok 14 - qa-ratings: AC-6: message contains the value as passed (7 rows)
+  ---
+  duration_ms: 0.181875
+  ...
+# Subtest: qa-ratings: AC-6: Symbol('x') gives a RangeError (not a TypeError) naming Symbol(x)
+ok 15 - qa-ratings: AC-6: Symbol('x') gives a RangeError (not a TypeError) naming Symbol(x)
+  ---
+  duration_ms: 0.051208
+  ...
+# Subtest: qa-ratings: AC-6: previous is checked first, ('XX1','XX2') names XX1 and not XX2
+ok 16 - qa-ratings: AC-6: previous is checked first, ('XX1','XX2') names XX1 and not XX2
+  ---
+  duration_ms: 0.045833
+  ...
+# Subtest: qa-ratings: AC-6: valid previous with invalid current names the current value (XYZ)
+ok 17 - qa-ratings: AC-6: valid previous with invalid current names the current value (XYZ)
+  ---
+  duration_ms: 0.041542
+  ...
+# Subtest: qa-ratings: AC-7: surrounding spaces are trimmed on valid ratings
+ok 18 - qa-ratings: AC-7: surrounding spaces are trimmed on valid ratings
+  ---
+  duration_ms: 0.043042
+  ...
+# Subtest: qa-ratings: AC-8: the 7 table rows deep-equal with exactly 3 keys
+ok 19 - qa-ratings: AC-8: the 7 table rows deep-equal with exactly 3 keys
+  ---
+  duration_ms: 0.189125
+  ...
+# Subtest: qa-ratings: AC-8: key edges, corrected example 3/WL 2, 1 notch WL 0, 2 notches WL 1, cap at 18 WL 2, upgrade WL 0
+ok 20 - qa-ratings: AC-8: key edges, corrected example 3/WL 2, 1 notch WL 0, 2 notches WL 1, cap at 18 WL 2, upgrade WL 0
+  ---
+  duration_ms: 0.0525
+  ...
+# Subtest: qa-ratings: AC-9: all 361 pairs agree with notchChange on notches, direction and WL
+ok 21 - qa-ratings: AC-9: all 361 pairs agree with notchChange on notches, direction and WL
+  ---
+  duration_ms: 0.248708
+  ...
+# Subtest: qa-ratings: AC-9: threshold pairs at notches -1, 0, 1, 2 and 3
+ok 22 - qa-ratings: AC-9: threshold pairs at notches -1, 0, 1, 2 and 3
+  ---
+  duration_ms: 0.110875
+  ...
+# Subtest: qa-ratings: AC-10: notchCalculator('BBB','BBB') is unchanged with +0 notches and WL 0
+ok 23 - qa-ratings: AC-10: notchCalculator('BBB','BBB') is unchanged with +0 notches and WL 0
+  ---
+  duration_ms: 0.049625
+  ...
+# Subtest: qa-ratings: AC-13: notchCalculator('CC','BBB') throws RangeError naming CC
+ok 24 - qa-ratings: AC-13: notchCalculator('CC','BBB') throws RangeError naming CC
+  ---
+  duration_ms: 0.0515
+  ...
+# Subtest: qa-ratings: AC-13: notchCalculator('BBB','') throws RangeError
+ok 25 - qa-ratings: AC-13: notchCalculator('BBB','') throws RangeError
+  ---
+  duration_ms: 0.046708
+  ...
+# Subtest: qa-ratings: AC-13: for all 15 invalid values in both positions notchCalculator throws the same RangeError message as notchChange
+ok 26 - qa-ratings: AC-13: for all 15 invalid values in both positions notchCalculator throws the same RangeError message as notchChange
+  ---
+  duration_ms: 0.231834
+  ...
+# Subtest: qa-ratings: AC-13: notchCalculator has no try/catch (the error is not wrapped)
+ok 27 - qa-ratings: AC-13: notchCalculator has no try/catch (the error is not wrapped)
+  ---
+  duration_ms: 0.086042
+  ...
+# Subtest: qa-ratings: AC-14: namespace has exactly RATING_SCALE, notchCalculator and notchChange, no default
+ok 28 - qa-ratings: AC-14: namespace has exactly RATING_SCALE, notchCalculator and notchChange, no default
+  ---
+  duration_ms: 0.047833
+  ...
+# Subtest: qa-ratings: AC-1: the scale literal exists exactly once in src/ (CCC- only in notch.mjs)
+ok 29 - qa-ratings: AC-1: the scale literal exists exactly once in src/ (CCC- only in notch.mjs)
+  ---
+  duration_ms: 1.771792
+  ...
+# Subtest: qa-ratings: AC-8: no test in test/ expects 2 notches or WL 1 for BBB+ -> BB+
+ok 30 - qa-ratings: AC-8: no test in test/ expects 2 notches or WL 1 for BBB+ -> BB+
+  ---
+  duration_ms: 2.305709
+  ...
+# Subtest: qa-ratings: AC-13: notchCalculator source has no try/catch
+ok 31 - qa-ratings: AC-13: notchCalculator source has no try/catch
+  ---
+  duration_ms: 2.908416
+  ...
+# Subtest: qa-ratings: AC-15: src/ratings has at least notch.mjs
+ok 32 - qa-ratings: AC-15: src/ratings has at least notch.mjs
+  ---
+  duration_ms: 0.426083
+  ...
+# Subtest: qa-ratings: AC-15: no import from indicators/ in the comment-stripped source of src/ratings/
+ok 33 - qa-ratings: AC-15: no import from indicators/ in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.654375
+  ...
+# Subtest: qa-ratings: AC-15: no import of node:fs, net, http or process in the comment-stripped source of src/ratings/
+ok 34 - qa-ratings: AC-15: no import of node:fs, net, http or process in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.690667
+  ...
+# Subtest: qa-ratings: AC-15: no require( in the comment-stripped source of src/ratings/
+ok 35 - qa-ratings: AC-15: no require( in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.755709
+  ...
+# Subtest: qa-ratings: AC-15: no dynamic import( in the comment-stripped source of src/ratings/
+ok 36 - qa-ratings: AC-15: no dynamic import( in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.638958
+  ...
+# Subtest: qa-ratings: AC-15: no console in the comment-stripped source of src/ratings/
+ok 37 - qa-ratings: AC-15: no console in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.8195
+  ...
+# Subtest: qa-ratings: AC-15: no Date in the comment-stripped source of src/ratings/
+ok 38 - qa-ratings: AC-15: no Date in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.843
+  ...
+# Subtest: qa-ratings: AC-15: no Math.random in the comment-stripped source of src/ratings/
+ok 39 - qa-ratings: AC-15: no Math.random in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.653583
+  ...
+# Subtest: qa-ratings: AC-15: no process in the comment-stripped source of src/ratings/
+ok 40 - qa-ratings: AC-15: no process in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.604375
+  ...
+# Subtest: qa-ratings: AC-15: no module-scope let/var in the comment-stripped source of src/ratings/
+ok 41 - qa-ratings: AC-15: no module-scope let/var in the comment-stripped source of src/ratings/
+  ---
+  duration_ms: 0.612541
+  ...
+# Subtest: qa-ratings: AC-15: notchCalculator gets its distance from notchChange( and does not index the scale
+ok 42 - qa-ratings: AC-15: notchCalculator gets its distance from notchChange( and does not index the scale
+  ---
+  duration_ms: 0.069709
+  ...
+# Subtest: qa-ratings: AC-15: notch.mjs has a non-exported named function and an 'intentional' comment (B-36)
+ok 43 - qa-ratings: AC-15: notch.mjs has a non-exported named function and an 'intentional' comment (B-36)
+  ---
+  duration_ms: 0.554833
+  ...
+# Subtest: qa-ratings: AC-15: only RATING_SCALE, notchChange and notchCalculator are exported from the source
+ok 44 - qa-ratings: AC-15: only RATING_SCALE, notchChange and notchCalculator are exported from the source
+  ---
+  duration_ms: 0.567708
+  ...
+# Subtest: qa-ratings: AC-15: package.json has no dependencies and no devDependencies
+ok 45 - qa-ratings: AC-15: package.json has no dependencies and no devDependencies
+  ---
+  duration_ms: 1.02375
+  ...
+1..45
+# tests 45
+# suites 0
+# pass 45
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 74.812083

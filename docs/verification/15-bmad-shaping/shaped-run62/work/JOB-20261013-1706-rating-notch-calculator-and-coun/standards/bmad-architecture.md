@@ -1,0 +1,17 @@
+---
+title: The architecture shaped for this job (BMad, decided with the business)
+applies_to: [lead, dev, review]
+---
+
+# Architecture decisions
+
+Every rule binds this job's code; the reviewer answers each by its id.
+
+## Must
+
+- [AD-1] `notchChange` is the single source of truth for distance: Only `notch.mjs` looks up a rating's position. `notchCalculator` and `countryRatingChangeWl` obtain the distance by calling `notchChange`. Positive means downgrade, negative upgrade, 0 unchanged. `notchCalculator().notches` equals `notchChange` for the same inputs, and `direction` is derived from its sign.
+- [AD-2] One scale, best first: `RATING_SCALE` is a frozen array of the 19 strings AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-. Array position is rank. Nothing outside `notch.mjs` redefines or copies it.
+- [AD-3] WL mappings are named pure functions, kept apart per rule: Each rule is one small pure function from a signed notch count to a WL, with no scale logic. The calculator uses the Ind. 13 rule (unchanged, upgrade or 1-notch downgrade → 0; 2-notch downgrade → 1; 3 or more → 2). `countryRatingChangeWl` uses the Ind. 12 rule (1 → 1, ≥2 → 2). For both, upgrades and unchanged give 0 and only downgrades count. The two rules differ on a 1-notch downgrade on purpose: the calculator gives WL 0, Ind. 12 gives WL 1. Both helpers say so in a code comment. The calculator rule lives in `notch.mjs` and is not exported; the Ind. 12 rule lives in `countryRating.mjs`.
+- [AD-4] Invalid rating: RangeError from `notchChange`, nothing else: The rating check runs after `trim()`. A non-string, empty or unknown rating, or one that differs in case, throws `RangeError` whose message names the offending value exactly as passed: `String(value)` for a non-string, the original untrimmed text for a string. When both arguments are invalid, the previous rating is validated first and is the one named. `notchCalculator` and `countryRatingChangeWl` let it propagate unchanged. No fallback, no null, no error object.
+- [AD-5] Purity and import direction: Modules in `src/ratings` and `src/indicators` do no I/O, read no clock or random source, keep no module state, and have no npm dependencies. `src/indicators` may import `src/ratings`; `src/ratings` never imports `src/indicators`. Exports are exactly those in the request's Contract.
+- [AD-6] Test layout and the corrected example: Tests use `node:test` and `node:assert/strict` in `test/ratings/notch.test.mjs` and `test/indicators/countryRating.test.mjs`; `npm test` runs them. The REQ-06-02 example is BBB+ → BB+ = 3 notches, WL 2; the 2-notch case is BBB+ → BBB-, WL 1 (B-1, B-12). Tests cover every adjacent pair of the scale, each sign, and each invalid-input class from AD-4. Invalid-input tests assert the `RangeError` type and that the message contains the offending value, and pin exactly these non-string inputs: `null`, `undefined`, a number, `{}` and a `Symbol`. Exotic objects (null-prototype, throwing `toString`) are out of scope. Pinned cases: `' BBB+ '` is accepted; `'bbb+'`, `'   '` and `''` are rejected. Extreme distance: AAA → CCC- is 18 notches, calculator WL 2 and Ind. 12 WL 2. Also pinned: an unchanged rating gives notches 0, wl 0 and `direction` `"unchanged"`, with `Object.is(notches, 0)` so it is +0 not -0; a 1-notch upgrade; `RATING_SCALE` is frozen; and the calculator WL for a 2-notch downgrade beyond BBB+ → BBB- (AA → A+, WL 1).

@@ -76,8 +76,8 @@ reader was checked against the spike's real BMad output (five runs). **Not run l
 
 | # | What | Status |
 | --- | --- | --- |
-| S1 | A live job shaped end to end (`tests/e2e-live.sh shaped`): BMad's path, the ledger decided with the human, its update and review, the freeze, the cards, a delivered job that passes the hidden oracle | **Open** |
-| S2 | Cost and time of shaping per job, against the same request unshaped | **Open** — the spike: 5 runs, 4 min, $0.94 |
+| S1 | A live job shaped end to end (`tests/e2e-live.sh shaped`): BMad's path, the ledger decided with the human, its update and review, the freeze, the cards, a delivered job that passes the hidden oracle | **Verified live** (run 62) — every shaping check passed, delivered 45/47; the oracle missed C1 (case-insensitive input), as the unshaped control did: no prepared answer carried it (it does now). [Comparison](verification/15-bmad-shaping/COMPARISON.md) |
+| S2 | Cost, time and effect of shaping against the same request unshaped | **Measured on one request** (runs 62 vs 64): +$1.85 (+30 %), about twice the time, the same product (13 edge cases alike), every open point with a proposal, a traced spec and architecture. **Open:** a vaguer request (an idea, no contract), where it should pay |
 | S3 | BMad's reviewers inside `bmad-architecture` (parallel subagents) in a `dl shape run` session — skipped in the spike's single session | **Open** |
 | S4 | A repo that keeps its own BMad install in git (`_bmad/`) | **Not supported** — refused by `dl shape install` and `doctor` |
 | S5 | BMad v7 (its skills and folders move) | **Not supported** — `upstream.bmad_version` stays 6.12.2 |

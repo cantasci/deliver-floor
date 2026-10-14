@@ -1,0 +1,284 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "Rating scale, notchChange and notchCalculator (src/ratings/notch.mjs)",
+      "role": "backend",
+      "component": "watchlist-poc",
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "context": "WHY: REQ-06-02 (Should) asks for a notch calculator helper, and REQ-03-12 (Must, card T-02) needs the shared signed notch count. Build this module first. New file in an empty src/. Plain Node 18+ ESM .mjs, package.json type=module, script test=node --test. Do NOT add dependencies.\n\nFILE: src/ratings/notch.mjs. Three named exports, imports nothing.\n\n1) RATING_SCALE: exactly these 19 strings, best first: [\"AAA\",\"AA+\",\"AA\",\"AA-\",\"A+\",\"A\",\"A-\",\"BBB+\",\"BBB\",\"BBB-\",\"BB+\",\"BB\",\"BB-\",\"B+\",\"B\",\"B-\",\"CCC+\",\"CCC\",\"CCC-\"]. Minus is ASCII '-'. Object.freeze recommended (must still pass assert.deepStrictEqual against a plain array).\n\n2) notchChange(previous, current) -> RATING_SCALE.indexOf(current) - RATING_SCALE.indexOf(previous). Positive = downgrade, negative = upgrade, 0 = unchanged. (BBB,BBB-)=1, (BBB-,BB+)=1, (BBB,BB+)=2, (BBB+,BB+)=3, (AAA,CCC-)=18, (A,A)=0, (BB+,BBB-)=-1, (BB,BBB)=-3, (CCC-,AAA)=-18.\n\n3) notchCalculator(previous, current) -> { notches, direction, wl }, exactly these 3 keys. notches === notchChange(...) (same sign); direction 'downgrade' if >0, 'upgrade' if <0, 'unchanged' if 0; wl (Ind. 13 rule): 0 if notches<=1 (incl. unchanged and every upgrade), 1 if ===2, 2 if >=3. NOTE: the POC doc example 'BBB+ -> BB+ = 2 notches, WL=1' is a known typo; business decided 3 notches, wl 2. This rule deliberately differs from Ind. 12 (T-02): do not share thresholds.\n\nVALIDATION (binding): each argument must be strictly one of the 19 strings (typeof v === 'string' && RATING_SCALE.includes(v)); anything else throws RangeError (null, undefined, 42, {}, missing argument, 'bbb+', ' BBB+', 'BBB+ ', 'BBB\\u2212', '', 'CC', 'C', 'D', 'NR', 'WD', 'Baa1'). Never String()/trim/toUpperCase, never default fallback. Message text is free but should name the bad argument. Validate both arguments in notchChange; notchCalculator may call notchChange. Any extra exported helper is extra API: keep minimal; T-02 must not need it.\n\nPURITY: no node:fs, fetch, console, module-level mutable state.\n\nUNIT TESTS: test/ratings/notch.test.mjs, node:test + node:assert/strict, TDD. Cover AC-1 (deepStrictEqual, 19 distinct), AC-2/3 examples, AC-4/8 INVALID list both positions + missing arg with assert.throws(fn, RangeError), AC-5/6 deepStrictEqual objects, AC-7 loop over all 361 pairs.\n\nCommit messages: plain, '<card id>: <what changed>', no AI attribution.",
+      "depends_on": [],
+      "scope": [
+        "src/ratings/notch.mjs",
+        "test/ratings/notch.test.mjs"
+      ],
+      "verify": "node --test test/ratings/notch.test.mjs",
+      "qa_scope": [
+        "test/ratings/notch.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/ratings/notch.integration.test.mjs",
+      "acceptance": [
+        "AC-1 [P0] — a wrong scale shifts every notch count and every WL built on it: Given `import { RATING_SCALE } from \"../../src/ratings/notch.mjs\"`, when it is read, then `assert.deepStrictEqual(RATING_SCALE, [\"AAA\",\"AA+\",\"AA\",\"AA-\",\"A+\",\"A\",\"A-\",\"BBB+\",\"BBB\",\"BBB-\",\"BB+\",\"BB\",\"BB-\",\"B+\",\"B\",\"B-\",\"CCC+\",\"CCC\",\"CCC-\"])`, `new Set(RATING_SCALE).size === 19`, `RATING_SCALE[0] === \"AAA\"`, `RATING_SCALE[18",
+        "AC-2 [P0] — a wrong count gives Ind. 12 a wrong WL for every client: Given two valid codes, when `notchChange(previous, current)` is called on a downgrade, then it returns the integer `RATING_SCALE.indexOf(current) - RATING_SCALE.indexOf(previous)`: (\"BBB\",\"BBB-\") → 1; (\"BBB-\",\"BB+\") → 1; (\"BBB\",\"BB+\") → 2; (\"BBB+\",\"BB+\") → 3; (\"AAA\",\"CCC-\") → 18.",
+        "AC-3 [P0] — a wrong sign turns an upgrade into a downgrade: Given two valid codes, when `notchChange` is called on an unchanged or upgraded pair, then (\"A\",\"A\") → 0; (\"CCC-\",\"CCC-\") → 0; (\"BB+\",\"BBB-\") → -1; (\"BB\",\"BBB\") → -3; (\"CCC-\",\"AAA\") → -18. Unchanged is `+0`, not `-0` (`assert.strictEqual` tells them apart).",
+        "AC-4 [P0] — bad input that returns a number silently hides a downgrade: Given each `v` in INVALID, when `notchChange(v, \"BBB\")` or `notchChange(\"BBB\", v)` is called, then it throws `RangeError` and returns nothing. `notchChange(\"BBB\")` (current missing) also throws `RangeError`.",
+        "AC-5 [P1] — the helper suggests a wrong WL, but the analyst can still count by hand (REQ-06-02 is Should): Given a downgrade, when `notchCalculator(previous, current)` is called, then it deep-strict-equals",
+        "AC-6 [P1] — an upgrade shown as a risk misleads the analyst, who has a workaround: Given an unchanged or upgraded pair, when `notchCalculator` is called, then it deep-strict-equals",
+        "AC-7 [P1] — a pair outside the examples gives a wrong helper result, with a workaround: Given every ordered pair (p, c) of the 361 pairs from `RATING_SCALE`, when `notchCalculator(p, c)` is called, then",
+        "AC-8 [P1] — the helper returns something for bad input, with a workaround: Given each `v` in INVALID, when `notchCalculator(v, \"BBB\")` or `notchCalculator(\"BBB\", v)` is called, then it throws `RangeError`."
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-13T19:26:01Z"
+        }
+      ],
+      "worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/wt/T-01",
+      "branch": "job/JOB-20261013-2110-rating-notch-calculator-and-coun--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "ead0c35f2be6746583e4cef48073e087af74d1b3",
+        "attempt": 1,
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/T-01-a1-212751.log",
+        "at": "2026-10-13T19:27:52Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-13T19:27:52.786Z",
+          "author": "gate",
+          "text": "PASS — 15 checks ok, 0 failed (T-01-a1-212751.log)"
+        },
+        {
+          "at": "2026-10-13T19:28:00.277Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1: RATING_SCALE deep-strict-equals the 19 grades; AC-2: 361-pair loop + downgrade rows; AC-3: unchanged is +0 for all 19 grades; AC-4: notchChange(v, partner) throws RangeError; AC-5: BBB+ -> BB+ is 3 notches WL 2; AC-6: every upgrade has wl 0; AC-7: each result matches the independent rule; AC-8: notchCalculator(v, partner) throws RangeError"
+        },
+        {
+          "at": "2026-10-13T19:28:31.197Z",
+          "author": "reviewer",
+          "text": "approve — no blocking items; nits only"
+        },
+        {
+          "at": "2026-10-13T19:28:32.171Z",
+          "author": "blind",
+          "text": "approve — nits only (tautological assertion, duplicated coverage)"
+        },
+        {
+          "at": "2026-10-13T19:28:34.029Z",
+          "author": "integrate",
+          "text": "the watchlist-poc suite on job/JOB-20261013-2110-rating-notch-calculator-and-coun after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "56128b12d211af09d559f5b04e89d5b496a86e5e",
+        "qa_branch": "9ccb30ec41e9e7e8d5a2a1bd222939784418dd27",
+        "at": "2026-10-13T19:27:58Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "56128b12d211af09d559f5b04e89d5b496a86e5e",
+        "gate_head": "ead0c35f2be6746583e4cef48073e087af74d1b3",
+        "qa_verify": "PASS",
+        "seconds": 0,
+        "suite_seconds": 0,
+        "suite": "npm test",
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/T-01-qa-a1-212759.log",
+        "summary": "AC-1: RATING_SCALE deep-strict-equals the 19 grades; AC-2: 361-pair loop + downgrade rows; AC-3: unchanged is +0 for all 19 grades; AC-4: notchChange(v, partner) throws RangeError; AC-5: BBB+ -> BB+ is 3 notches WL 2; AC-6: every upgrade has wl 0; AC-7: each result matches the independent rule; AC-8: notchCalculator(v, partner) throws RangeError",
+        "at": "2026-10-13T19:27:59Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "56128b12d211af09d559f5b04e89d5b496a86e5e",
+          "qa_verify": "PASS",
+          "summary": "AC-1: RATING_SCALE deep-strict-equals the 19 grades; AC-2: 361-pair loop + downgrade rows; AC-3: unchanged is +0 for all 19 grades; AC-4: notchChange(v, partner) throws RangeError; AC-5: BBB+ -> BB+ is 3 notches WL 2; AC-6: every upgrade has wl 0; AC-7: each result matches the independent rule; AC-8: notchCalculator(v, partner) throws RangeError",
+          "at": "2026-10-13T19:27:59Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "56128b12d211af09d559f5b04e89d5b496a86e5e",
+          "summary": "no blocking items; nits only",
+          "at": "2026-10-13T19:28:30Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "56128b12d211af09d559f5b04e89d5b496a86e5e",
+          "summary": "nits only (tautological assertion, duplicated coverage)",
+          "at": "2026-10-13T19:28:31Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "56128b12d211af09d559f5b04e89d5b496a86e5e",
+        "summary": "blind: approve — nits only (tautological assertion, duplicated coverage) | reviewer: approve — no blocking items; nits only",
+        "pending": [],
+        "at": "2026-10-13T19:28:31Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "watchlist-poc",
+        "head": "bb29c05f565504fe9891bea101392944405729ab",
+        "seconds": 0,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/T-01-merged-212833.log",
+        "n": 1,
+        "at": "2026-10-13T19:28:33Z"
+      }
+    },
+    {
+      "id": "T-02",
+      "title": "Indicator 12 country rating change WL (src/indicators/countryRating.mjs)",
+      "role": "backend",
+      "component": "watchlist-poc",
+      "agent": "backend-dev",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "context": "WHY: REQ-03-12 (Must). Ind. 12 Country rating change gets its WL (0-4, higher worse) from the sovereign rating notch change; rule mirrors the Excel dropdown sheet exactly. Depends on T-01 which provides src/ratings/notch.mjs: RATING_SCALE (19 grades) and notchChange(previous,current) = signed integer, positive = downgrade, throws RangeError unless each argument is exactly one of the 19 codes (incl. null, undefined, 42, {}, missing args, wrong-case/padded strings).\n\nFILE: src/indicators/countryRating.mjs. ONLY import: notchChange (RATING_SCALE only if needed) from '../ratings/notch.mjs'. No deps.\n\nEXPORT: countryRatingChangeWl(previous, current) -> 0|1|2 (number). n = notchChange(previous,current); return 1 if n===1, 2 if n>=2, else 0 (unchanged and every upgrade -> 0). Examples: (BBB,BBB-)=1, (BBB-,BB+)=1, (BBB,BB+)=2, (BBB+,BB+)=2, (AAA,CCC-)=2, (AA,AA)=0, (BB+,BBB-)=0, (BB,BBB)=0, (CCC-,AAA)=0.\nNOTE: deliberately different from notchCalculator's wl (Ind. 13 rule). Do NOT reuse notchCalculator; do not change notch.mjs.\nDeclare exactly two parameters, no defaults/rest/override parameter, so countryRatingChangeWl.length === 2. Computes only from its two arguments (caller passes the analyst-confirmed or edited rating); nothing cached between calls.\n\nVALIDATION: delegate to notchChange so every invalid input throws RangeError, incl. countryRatingChangeWl() with no args. Never catch/swallow, coerce, trim, case-fold or default.\n\nPURITY: no I/O, console, module-level state.\nOUT OF SCOPE: fetching/pre-filling sovereign rating, 12-month window (REQ-02-02), Ind. 13, override flag, UI.\n\nUNIT TESTS: test/indicators/countryRating.test.mjs, node:test + node:assert/strict: AC-9 examples with assert.strictEqual; AC-10 loop over all 361 ordered pairs vs notchChange; AC-11 INVALID list both positions + no-arg call with assert.throws(fn, RangeError); AC-12 edit sequence and .length check.\n\nCommit messages: plain, '<card id>: <what changed>', no AI attribution.",
+      "depends_on": [
+        "T-01"
+      ],
+      "scope": [
+        "src/indicators/countryRating.mjs",
+        "test/indicators/countryRating.test.mjs"
+      ],
+      "verify": "node --test test/indicators/countryRating.test.mjs",
+      "qa_scope": [
+        "test/indicators/countryRating.integration.test.mjs"
+      ],
+      "qa_verify": "node --test test/indicators/countryRating.integration.test.mjs",
+      "acceptance": [
+        "AC-9 [P0] — a wrong Ind. 12 WL rates a client wrongly for compliance (the Must requirement): Given `import { countryRatingChangeWl } from \"../../src/indicators/countryRating.mjs\"`, when it is called, then `assert.strictEqual` gives a number",
+        "AC-10 [P0] — a pair outside the examples gets a wrong WL, with no workaround: Given every ordered pair (p, c) of the 361 pairs from `RATING_SCALE`, when `countryRatingChangeWl(p, c)` is called, then it returns 1 when `notchChange(p, c) === 1`, 2 when it is `>= 2`, and 0 otherwise. The result is always one of 0, 1, 2 (`typeof \"number\"`).",
+        "AC-11 [P0] — bad input that returns 0 hides a downgrade: Given each `v` in INVALID, when `countryRatingChangeWl(v, \"BBB\")` or `countryRatingChangeWl(\"BBB\", v)` is called, then it throws `RangeError`. `countryRatingChangeWl()` with no arguments throws `RangeError` too.",
+        "AC-12 [P1] — a stale or stored result would ignore the analyst's edit; the workaround is to enter the WL by hand: Given the analyst edits the current rating, when these calls run in order, then"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-13T19:28:53Z"
+        }
+      ],
+      "worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/wt/T-02",
+      "branch": "job/JOB-20261013-2110-rating-notch-calculator-and-coun--T-02",
+      "gate": {
+        "result": "PASS",
+        "head": "97cb4b4b67cc17eeecfd4a63ac6b813a98c2d1ee",
+        "attempt": 1,
+        "seconds": 0,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/T-02-a1-213018.log",
+        "at": "2026-10-13T19:30:18Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-13T19:30:19.228Z",
+          "author": "gate",
+          "text": "PASS — 11 checks ok, 0 failed (T-02-a1-213018.log)"
+        },
+        {
+          "at": "2026-10-13T19:30:25.999Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-9: example-row tests in countryRating.integration.test.mjs (AC-9 examples, threshold test); AC-10: 361-pair loop with counts 190/18/153; AC-11: INVALID values in both positions + no-arg call throw RangeError; AC-12: edit sequence in order and reversed, length===2"
+        },
+        {
+          "at": "2026-10-13T19:30:57.118Z",
+          "author": "reviewer",
+          "text": "approve — no blocking items; rule and purity verified"
+        },
+        {
+          "at": "2026-10-13T19:30:58.131Z",
+          "author": "blind",
+          "text": "approve — only nits, no findings blocking"
+        },
+        {
+          "at": "2026-10-13T19:31:00.246Z",
+          "author": "integrate",
+          "text": "the watchlist-poc suite on job/JOB-20261013-2110-rating-notch-calculator-and-coun after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "1033b1ab99c4fba3144201171da7ad72a3453977",
+        "qa_branch": "22c9652613be7da861af8c73e7fe74c395fe02f3",
+        "at": "2026-10-13T19:30:24Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "1033b1ab99c4fba3144201171da7ad72a3453977",
+        "gate_head": "97cb4b4b67cc17eeecfd4a63ac6b813a98c2d1ee",
+        "qa_verify": "PASS",
+        "seconds": 1,
+        "suite_seconds": 0,
+        "suite": "npm test",
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/T-02-qa-a1-213024.log",
+        "summary": "AC-9: example-row tests in countryRating.integration.test.mjs (AC-9 examples, threshold test); AC-10: 361-pair loop with counts 190/18/153; AC-11: INVALID values in both positions + no-arg call throw RangeError; AC-12: edit sequence in order and reversed, length===2",
+        "at": "2026-10-13T19:30:25Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "1033b1ab99c4fba3144201171da7ad72a3453977",
+          "qa_verify": "PASS",
+          "summary": "AC-9: example-row tests in countryRating.integration.test.mjs (AC-9 examples, threshold test); AC-10: 361-pair loop with counts 190/18/153; AC-11: INVALID values in both positions + no-arg call throw RangeError; AC-12: edit sequence in order and reversed, length===2",
+          "at": "2026-10-13T19:30:25Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "1033b1ab99c4fba3144201171da7ad72a3453977",
+          "summary": "no blocking items; rule and purity verified",
+          "at": "2026-10-13T19:30:56Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "1033b1ab99c4fba3144201171da7ad72a3453977",
+          "summary": "only nits, no findings blocking",
+          "at": "2026-10-13T19:30:57Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "1033b1ab99c4fba3144201171da7ad72a3453977",
+        "summary": "blind: approve — only nits, no findings blocking | reviewer: approve — no blocking items; rule and purity verified",
+        "pending": [],
+        "at": "2026-10-13T19:30:57Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "watchlist-poc",
+        "head": "1f591793cb01e7e2649e24f2aba70df17f00bc1c",
+        "seconds": 1,
+        "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/T-02-merged-213059.log",
+        "n": 2,
+        "at": "2026-10-13T19:31:00Z"
+      }
+    }
+  ]
+}

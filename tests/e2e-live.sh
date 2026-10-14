@@ -19,6 +19,9 @@
 #                 shapes it — its own path, the ledger decided with the human (HUMAN_ANSWERS.json by topic; an item no answer
 #                 fits takes Michael's proposal, counted), its update and review — frozen, then delivered; the hidden oracle
 #                 judges whether the shaped specification was the right one (S1)
+#   E2E_SHAPING=off      the shaped scenario without shaping: the same request, the readiness review alone (the control run)
+#   E2E_FALLBACK=recommended   a readiness question no prepared answer fits takes the BA's (recommended) option — the same
+#                        policy as "Michael's proposal accepted" in a shaped run, so the two compare; each is logged
 #   Every scenario on 0.16.0 settings also judges the risk-based test design, the NFR gate and the blind review (B3, B4).
 #   Each writes <work dir>/<scenario>/report.md (the scenario, step by step) and keeps every artifact.
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
@@ -79,7 +82,7 @@ if [[ -n ${E2E_FRESH_REPO:-} ]]; then
 else iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null; fi
 if [[ $SC == shaped ]]; then   # shaping on; the POC document the request names is in the repo
   mkdir -p "$SB/docs" && cp "$EX/POC_Requirements_v0.2_EN.md" "$SB/docs/"
-  jq '.upstream = {engine: "bmad", review_rounds: 2}' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
+  [[ ${E2E_SHAPING:-on} == off ]] || { jq '.upstream = {engine: "bmad", review_rounds: 2}' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"; }
   git -C "$SB" add -A && git -C "$SB" commit -qm "shaping with the BMad Method; the POC document" && log "upstream.engine = bmad; docs/POC_Requirements_v0.2_EN.md in the repo"
 fi
 if [[ $SC == light ]]; then   # an existing codebase: the slice JOB.md delivers, with its unit and QA tests
@@ -140,6 +143,12 @@ for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SC == shaped ]] && echo 8 || ech
     if [[ $id == "${E2E_MISMATCH:-}" && ! -f $W/.mismatched ]]; then   # R2: the first answer is about something else
       ans="$(jq -r '.[] | select(.topic | startswith("what '"'"'displayed'"'"' means")) | .answer' "$EX/HUMAN_ANSWERS.json")"; touch "$W/.mismatched"
       log "    (R2) answering $id on purpose with an unrelated answer: ${ans:0:90}"
+    fi
+    # E2E_FALLBACK=recommended — the same policy as the shaped run's "Michael's proposal accepted": no prepared answer fits →
+    # the option the BA marked (recommended), else its first option; counted, since a real person would read each one
+    if [[ -z $ans && ${E2E_FALLBACK:-} == recommended ]]; then
+      ans="$(jq -r --arg id "$id" '(.items // .)[] | select(.id == $id) | (.options // []) as $o | (([$o[] | select(test("recommended"; "i"))][0]) // $o[0] // "")' "$J/readiness.json")"
+      [[ -n $ans ]] && { echo "$id" >> "$W/.fallback"; log "    no prepared answer fits $id — took the BA's recommended option: ${ans:0:100}"; }
     fi
     if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id — $(cut -c1-90 <<<"$q")"
     else bad "no prepared answer for $id — a real person must answer: $q"; fi
@@ -289,7 +298,7 @@ if [[ "$(jq -r '.settings.test_design.risk // false' "$JJ")" == true ]]; then
   grep -q $'\tagent\tecc:code-reviewer' "$J/events.log" && log "blind agent runs: $(grep -c $'\tagent\tecc:code-reviewer' "$J/events.log")"
 fi
 
-if [[ $SC == shaped ]]; then
+if [[ $SC == shaped && ${E2E_SHAPING:-on} != off ]]; then
   step "S1 · shaped with the BMad Method"
   SHJ="$J/shaping.json"
   chk "the job was shaped (shaping.json)" test -f "$SHJ"

@@ -1,0 +1,174 @@
+# gate: T-02  attempt: 1  2026-10-13T19:30:21Z
+ok    on job/JOB-20261013-1706-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/indicators/qa/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: indicators/countryRating
+    # Subtest: AC-11 Ind. 12 rule
+        # Subtest: (BBB, BBB-) -> 1
+        ok 1 - (BBB, BBB-) -> 1
+          ---
+          duration_ms: 0.351958
+          ...
+        # Subtest: (BBB, BB+) -> 2
+        ok 2 - (BBB, BB+) -> 2
+          ---
+          duration_ms: 0.078
+          ...
+        # Subtest: (BBB, BB) -> 2
+        ok 3 - (BBB, BB) -> 2
+          ---
+          duration_ms: 0.035167
+          ...
+        # Subtest: (AAA, CCC-) -> 2
+        ok 4 - (AAA, CCC-) -> 2
+          ---
+          duration_ms: 0.037333
+          ...
+        # Subtest: (BBB, BBB) -> 0
+        ok 5 - (BBB, BBB) -> 0
+          ---
+          duration_ms: 0.033083
+          ...
+        # Subtest: (BBB-, BBB) -> 0
+        ok 6 - (BBB-, BBB) -> 0
+          ---
+          duration_ms: 0.029916
+          ...
+        # Subtest: (BB, BBB) -> 0
+        ok 7 - (BB, BBB) -> 0
+          ---
+          duration_ms: 0.117458
+          ...
+        # Subtest: (CCC-, AAA) -> 0
+        ok 8 - (CCC-, AAA) -> 0
+          ---
+          duration_ms: 0.032459
+          ...
+        # Subtest: all 361 ordered pairs follow the rule against notchChange
+        ok 9 - all 361 ordered pairs follow the rule against notchChange
+          ---
+          duration_ms: 0.656541
+          ...
+        # Subtest: boundaries at notches -18, -1, 0, 1, 2, 3 and 18
+        ok 10 - boundaries at notches -18, -1, 0, 1, 2, 3 and 18
+          ---
+          duration_ms: 0.214292
+          ...
+        # Subtest: every adjacent downgrade gives 1 and every adjacent upgrade gives 0
+        ok 11 - every adjacent downgrade gives 1 and every adjacent upgrade gives 0
+          ---
+          duration_ms: 0.05075
+          ...
+        # Subtest: trim comes from notchChange
+        ok 12 - trim comes from notchChange
+          ---
+          duration_ms: 0.025958
+          ...
+        # Subtest: extra arguments do not change the result
+        ok 13 - extra arguments do not change the result
+          ---
+          duration_ms: 0.022292
+          ...
+        1..13
+    ok 1 - AC-11 Ind. 12 rule
+      ---
+      duration_ms: 2.176625
+      type: 'suite'
+      ...
+    # Subtest: AC-12 differs from the calculator on a 1-notch downgrade
+        # Subtest: A -> A-: calculator WL 0, Ind. 12 WL 1
+        ok 1 - A -> A-: calculator WL 0, Ind. 12 WL 1
+          ---
+          duration_ms: 0.049084
+          ...
+        # Subtest: 2-notch downgrade: calculator WL 1, Ind. 12 WL 2
+        ok 2 - 2-notch downgrade: calculator WL 1, Ind. 12 WL 2
+          ---
+          duration_ms: 0.024
+          ...
+        1..2
+    ok 2 - AC-12 differs from the calculator on a 1-notch downgrade
+      ---
+      duration_ms: 0.106125
+      type: 'suite'
+      ...
+    # Subtest: AC-13 invalid ratings propagate the RangeError from notchChange
+        # Subtest: ("BBB", null) names "null"
+        ok 1 - ("BBB", null) names "null"
+          ---
+          duration_ms: 0.153667
+          ...
+        # Subtest: ("Aa2", "AA") names "Aa2"
+        ok 2 - ("Aa2", "AA") names "Aa2"
+          ---
+          duration_ms: 0.035708
+          ...
+        # Subtest: ("XX1", "XX2") names only the previous rating
+        ok 3 - ("XX1", "XX2") names only the previous rating
+          ---
+          duration_ms: 0.034
+          ...
+        # Subtest: ("NR", "BBB") names "NR"
+        ok 4 - ("NR", "BBB") names "NR"
+          ---
+          duration_ms: 0.03075
+          ...
+        # Subtest: valid previous with invalid current names the current value
+        ok 5 - valid previous with invalid current names the current value
+          ---
+          duration_ms: 0.030375
+          ...
+        # Subtest: Symbol and {} give RangeError, never TypeError
+        ok 6 - Symbol and {} give RangeError, never TypeError
+          ---
+          duration_ms: 0.060792
+          ...
+        # Subtest: constructor and message are identical to notchChange's
+        ok 7 - constructor and message are identical to notchChange's
+          ---
+          duration_ms: 0.475167
+          ...
+        # Subtest: lower-case "bbb" is rejected with the notchChange message
+        ok 8 - lower-case "bbb" is rejected with the notchChange message
+          ---
+          duration_ms: 0.045208
+          ...
+        1..8
+    ok 3 - AC-13 invalid ratings propagate the RangeError from notchChange
+      ---
+      duration_ms: 0.933584
+      type: 'suite'
+      ...
+    # Subtest: AC-14 module exports
+        # Subtest: exports exactly countryRatingChangeWl and no default
+        ok 1 - exports exactly countryRatingChangeWl and no default
+          ---
+          duration_ms: 0.229916
+          ...
+        1..1
+    ok 4 - AC-14 module exports
+      ---
+      duration_ms: 0.255167
+      type: 'suite'
+      ...
+    1..4
+ok 1 - indicators/countryRating
+  ---
+  duration_ms: 3.6665
+  type: 'suite'
+  ...
+1..1
+# tests 24
+# suites 5
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 66.15225
+ok    verify passed

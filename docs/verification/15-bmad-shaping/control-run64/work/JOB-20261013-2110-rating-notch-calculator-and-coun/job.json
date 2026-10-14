@@ -1,0 +1,175 @@
+{
+  "id": "JOB-20261013-2110-rating-notch-calculator-and-coun",
+  "title": "Rating notch calculator and country indicator",
+  "request": "Requirements: /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-shaped.md\nRating notch calculator + country rating change indicator (Watchlist POC slice)\n\nSource: POC_Requirements_v0.2_EN.md (Corporate Client Credit Monitoring — Watchlist Tool).\nThis job is a 2-requirement slice of that document (docs/POC_Requirements_v0.2_EN.md in the repo). Build only these two requirements.\n\n## Requirements (verbatim from the POC)\n\n| Req ID | Requirement | Acceptance Criteria (summary) |\n|---|---|---|\n| REQ-06-02 | A notch calculator helper shall be available: analyst selects previous rating and current rating → system outputs notch change and resultant WL | BBB+ → BB+ = 2 notch downgrade → WL=1 displayed |\n| REQ-03-12 | Indicator 12 (Country rating change): Pre-filled from public source; notch change auto-calculated | 1 notch → WL=1; 2+ notches → WL=2; auto-filled value editable |\n\nRelated rule (REQ-03-13, Indicator 13 — external rating change): 2 notch downgrade → WL=1; 3+ notches → WL=2.\n\n## Contract (other parts of the POC will import exactly these)\n\n- `src/ratings/notch.mjs`\n  - `RATING_SCALE` — the rating scale, best first.\n  - `notchChange(previous, current)` → integer; positive = downgrade, negative = upgrade, 0 = unchanged.\n  - `notchCalculator(previous, current)` → `{ notches, direction: \"downgrade\" | \"upgrade\" | \"unchanged\", wl }`.\n- `src/indicators/countryRating.mjs`\n  - `countryRatingChangeWl(previous, current)` → 0 | 1 | 2 (REQ-03-12 thresholds), built on `notchChange`.\n\nPlain Node ESM, no dependencies; tests with `node --test` next to the code under `test/`.",
+  "created": "2026-10-13T19:10:19Z",
+  "repo": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo",
+  "phase": "done",
+  "stack": [
+    "node"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "REQ-03-12: indicator rule and notch domain logic"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "why": "builds src/ratings/notch.mjs and src/indicators/countryRating.mjs"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "Plain Node ESM (.mjs) code"
+    },
+    {
+      "role": "blind",
+      "agent": "ecc:code-reviewer",
+      "why": "REQ-06-02/REQ-03-12: WL outputs are the core of the watchlist and could fail at P0/P1"
+    }
+  ],
+  "assumptions": [
+    "Plain Node ESM per request and CLAUDE.md; no dependencies; verify_full is node --test"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261013-2110-rating-notch-calculator-and-coun",
+  "integration_worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "1f591793cb01e7e2649e24f2aba70df17f00bc1c",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/verify-all-213136.log",
+    "at": "2026-10-13T19:31:36Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 2,
+    "qa_early": true,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "qa_verify_full": true,
+    "test_design": {
+      "risk": true
+    },
+    "review": {
+      "blind": "risk"
+    },
+    "light": {
+      "max_cards": 2
+    },
+    "upstream": {
+      "engine": "off",
+      "bmad_version": "6.12.2",
+      "review_rounds": 2,
+      "model": "",
+      "timeout_min": 20
+    },
+    "merge_verify": true,
+    "keep_awake": true,
+    "checkpoints": true,
+    "ports": {},
+    "record_job": true,
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false,
+      "convention_source": "the history: 0 of the last 2 commits are Conventional Commits — no convention"
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "293eb1ab6886b32545ee13f58a1f23dc8b79f2ff",
+    "at": "2026-10-13T23:31:56Z"
+  },
+  "checkpoint": {
+    "phase": "closing",
+    "merged": 2,
+    "events": 88,
+    "at": "2026-10-13T23:31:17Z"
+  },
+  "baseline": {
+    "result": "PASS",
+    "head": "62c0e4c90b543fc621007367e2bd938502893deb",
+    "command": "node --test",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2110-rating-notch-calculator-and-coun/gates/baseline-211725.log",
+    "at": "2026-10-13T19:17:25Z"
+  },
+  "frozen": {
+    "readiness_sha256": "0042b5e8f10b30ad2f45d11df041d666723b18e6b781814e5b569347af817fe0",
+    "at": "2026-10-13T19:17:26Z"
+  },
+  "followups": [
+    {
+      "text": "Correct the REQ-06-02 example in docs/POC_Requirements_v0.2_EN.md: BBB+ -> BB+ is 3 notches (WL 2), not 2 notches (WL 1)",
+      "card": "",
+      "evidence": "",
+      "at": "2026-10-13T23:31:51Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "d2b05448d95e0c4190bbb7a586660b674bafbbfc",
+    "shared_pr": ""
+  },
+  "record_published": {
+    "head": "a3ddc2537d25adf9a303383c8c4af56cdddc24b7",
+    "path": ".deliver/jobs/JOB-20261013-2110-rating-notch-calculator-and-coun"
+  }
+}

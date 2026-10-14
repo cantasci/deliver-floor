@@ -1467,12 +1467,18 @@ case "$HL_MODE:$n" in
   *) jq '.phase = "done"' "$HL_JF" > "$HL_JF.t" && mv "$HL_JF.t" "$HL_JF"; echo '{"type":"result","subtype":"success","num_turns":1,"total_cost_usd":0,"result":"done"}' ;;
 esac
 FAKE
-printf '#!/bin/sh\necho "$*" >> "%s/hl-sleep"\n' "$TMP" > "$HB/sleep"; printf '#!/bin/sh\nexit 0\n' > "$HB/caffeinate"; chmod +x "$HB"/*
-hl() { echo '{"phase":"executing"}' > "$HL/.work/JOB-x/job.json"; rm -f "$TMP/hl-n" "$TMP/hl-sleep"
+# a clock of our own: the fake sleep moves it on, the fake date reads it (a real wait would take hours)
+printf '#!/bin/sh\necho "$*" >> "%s/hl-sleep"\n[ -f "%s/hl-clock" ] && echo $(( $(cat "%s/hl-clock") + $1 )) > "%s/hl-clock"\nexit 0\n' "$TMP" "$TMP" "$TMP" "$TMP" > "$HB/sleep"
+printf '#!/bin/sh\nif [ "$1" = "+%%s" ] && [ -f "%s/hl-clock" ]; then cat "%s/hl-clock"; else exec /bin/date "$@"; fi\n' "$TMP" "$TMP" > "$HB/date"
+printf '#!/bin/sh\nexit 0\n' > "$HB/caffeinate"; chmod +x "$HB"/*
+hl() { echo '{"phase":"executing"}' > "$HL/.work/JOB-x/job.json"; rm -f "$TMP/hl-n" "$TMP/hl-sleep"; /bin/date +%s > "$TMP/hl-clock"
   PATH="$HB:$PATH" HL_MODE=$1 HL_CNT="$TMP/hl-n" HL_JF="$HL/.work/JOB-x/job.json" "$HERE/scripts/run-headless.sh" "$HL" 2>&1; }
 out="$(hl limit)"
 contains "a round that meets a usage limit waits for the reset Claude Code names" "$out" "⏸  usage limit: You've hit your session limit · resets 2:30pm (Europe/Berlin) — waiting"
-[[ "$(cat "$TMP/hl-sleep" 2>/dev/null)" =~ ^[0-9]+$ && "$(cat "$TMP/hl-sleep")" -ge 60 ]] && ok "…sleeps until a minute past it" || bad "sleep: $(cat "$TMP/hl-sleep" 2>/dev/null)"
+hl_reset="$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)" | node "$LR")"
+[[ -s $TMP/hl-sleep ]] && (( $(cat "$TMP/hl-clock") >= hl_reset + 60 )) && awk '$1 > 300 { bad = 1 } END { exit bad }' "$TMP/hl-sleep" \
+  && ok "…until a minute past it by the clock, in naps of 5 minutes at most (live: a closed lid stretched one long sleep by an hour)" \
+  || bad "sleep: $(tr '\n' ' ' < "$TMP/hl-sleep" 2>/dev/null | cut -c1-80) clock $(cat "$TMP/hl-clock") reset $hl_reset"
 contains "…then the job goes on by itself, the wait neither a round nor 'no progress'" "$out" "✔ job JOB-x: done"
 [[ "$(cat "$TMP/hl-n")" == 2 ]] && ok "…in the round after the wait" || bad "claude ran $(cat "$TMP/hl-n") times"
 out="$(hl credits)"; rc=$?

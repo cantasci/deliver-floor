@@ -28,6 +28,14 @@ before a card is cut** (`settings.upstream.engine: "bmad"`, off by default — [
   reviews, every decision and who took it) and `.deliver/jobs/<job>/bmad/` keeps the inputs and the artifacts.
 - **Hooks:** a BMad session writes only in its output folder, runs no `dl` and changes no history; nobody but `dl` edits
   the ledger; agents cannot run `dl shape`. `scripts/doctor.sh` checks Node 20.12+, npx and uv when shaping is on.
+- **Signed in by a token?** Claude Code does not pass its own token to the commands it runs (live run 61: every BMad session
+  "Not logged in"). A `/login` needs nothing; with a token in the environment, `DELIVER_CLAUDE_TOKEN_FILE` names a file
+  holding it and `dl` gives it to BMad's session only.
+- **A usage-limit wait reads the clock** (`run-headless.sh`): macOS does not count a sleeping machine in `sleep`, so a closed
+  lid stretched a 194-minute wait by an hour (live run 62). It now naps at most five minutes and looks at the time.
+- Measured live against the same request unshaped ([the comparison](docs/verification/15-bmad-shaping/COMPARISON.md)): the
+  same product, every open point with a proposal on BMad's words, a traced specification and architecture — for +30 % cost
+  and about twice the time. `tests/e2e-live.sh shaped` with `E2E_SHAPING=off` is that control.
 
 ## 0.16.0 — 2026-10-13
 

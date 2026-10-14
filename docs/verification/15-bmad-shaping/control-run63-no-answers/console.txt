@@ -1,0 +1,185 @@
+
+━━ 1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo
+✔ Successfully added marketplace: ecc (declared in user settings)
+2 userConfig options not yet set — run /plugin configure ecc@ecc in Claude Code, or pass --config KEY=VALUE.
+  ✔ ECC plugin installed (Version: 2.2.3)
+  ✔ kit installed (scripts/install.sh --user)
+upstream.engine = bmad; docs/POC_Requirements_v0.2_EN.md in the repo
+  ✔ doctor: result: 27 ok, 6 warning(s), 0 problem(s)
+
+━━ 2 · run: the only input is examples/watchlist-poc/JOB-shaped.md
+    ▶ claude -p "/deliver /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-shaped.md"   (log: .work/runs/20261013-171708.jsonl)
+      result: success  turns=1  cost=$0
+    ⏸  usage limit: You've hit your session limit · resets 8:30pm (Europe/Berlin) — waiting 194 min, then the job goes on (wait 1 of 30)
+    /Users/cantasci/Desktop/Projects/side-projects/skills-shop/scripts/run-headless.sh: line 43: 88392 Terminated: 15          sleep "$secs"
+    ▶ claude -p "/deliver /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-shaped.md"   (log: .work/runs/20261013-210255.jsonl)
+      result: success  turns=10  cost=$0.32017870000000004
+    round 1 — JOB-20261013-2103-rating-notch-calculator-and-coun (readiness)
+    ▶ claude -p "/deliver resume"   (log: .work/runs/20261013-210342.jsonl)
+      result: success  turns=11  cost=$1.0825977
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+  ✔ Michael opened the job JOB-20261013-2103-rating-notch-calculator-and-coun
+
+━━ 4.1 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✔ answered PRD-scope — Which parts of REQ-03-12 and REQ-06-02 are in this delivery? The request says 'Build only 
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✔ answered PRD-conflicts — Conflicts: (1) REQ-06-02's example counts BBB+ → BB+ as 2 notches, but the standard S&P/Fi
+  ✔ answered CON-interface — Not given: the contents and notation of RATING_SCALE (X-scale); whether notchCalculator.no
+  ✔ answered CON-errors — What must notchChange, notchCalculator and countryRatingChangeWl do when a rating is not o
+  ✔ answered ARC-style — Confirm the architecture style. The request places the code in two modules of the one pack
+  ✔ answered ARC-components — Confirm the components. The draft lists one library 'repo' (javascript, path '.', suite np
+  ✔ answered ARC-ui — REQ-06-02 says 'analyst selects previous rating and current rating' and 'WL=1 displayed', 
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✔ answered X-notches-sign — In notchCalculator's { notches, direction, wl }, is `notches` signed (BB → BBB gives -3) o
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.2 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.3 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.4 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.5 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.6 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.7 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+
+━━ 4.8 · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes
+note: the shaped request still raised question(s) — recorded below; answering them is the human's job
+Open questions (QUESTIONS.md):
+  ✘ no prepared answer for PRD-acceptance — a real person must answer: The acceptance criteria give WL thresholds but no rating pairs for REQ-03-12. The one concrete example (REQ-06-02: BBB+ → BB+) contradicts the usual scale (see X-example). Which concrete rating pairs and expected outputs are the reference cases?
+  ✘ no prepared answer for ARC-data — a real person must answer: Is anything stored, e.g. the 12-month-prior country rating or the analyst's edited value?
+  ✘ no prepared answer for ARC-integration — a real person must answer: REQ-03-12 says 'Pre-filled from public source'. Is any external call part of this delivery?
+  ✘ no prepared answer for X-scale — a real person must answer: Which ratings does RATING_SCALE contain, in which notation? Neither the request nor the POC doc defines it. The only hint is the Ind. 10 dropdown 'AAA → CCC-'.
+  ✘ no prepared answer for X-example — a real person must answer: REQ-06-02's example 'BBB+ → BB+ = 2 notch downgrade → WL=1' does not match the standard scale: BBB+ → BBB → BBB- → BB+ is 3 notches, WL=2 under both rules. Which part is right?
+  ✘ no prepared answer for X-wl-rule — a real person must answer: notchCalculator takes no indicator argument. Which thresholds produce its wl? REQ-03-12: 1 → WL1, 2+ → WL2. REQ-03-13: 2 → WL1, 3+ → WL2.
+  ✘ no prepared answer for X-upgrade — a real person must answer: What WL do countryRatingChangeWl and notchCalculator give for an upgrade (BB → BBB) and for no change (A → A)?
+  ✘ no prepared answer for X-input-normalisation — a real person must answer: Are inputs matched exactly or normalised (lower case, spaces, Unicode minus, outlook suffix)?
+    ⏸  the requirements have open questions: .work/JOB-20261013-2103-rating-notch-calculator-and-coun/QUESTIONS.md — answer each with: dl clarify <id> "<answer>"
+wall time: 231 min
+
+━━ 5 · verify the whole flow on disk
+  ✘ job reached done
+  ✘ job shipped (local)
+roles: ba, backend-lead, backend, qa×2, reviewer, blind, docs
+  ✔ roles chosen from the request: ba, qa, a dev role, a reviewer — each with a reason
+  ✔ role cards generated for every role
+PM decisions: 1 (implementation details, recorded with rationale)
+  ✘ readiness review complete (no open item) with an architecture
+readiness: 35 items — 22 decided, 5 n/a · architecture: library: watchlist-poc [javascript+node]
+  ✘ readiness frozen at planning and unchanged since
+  ✘ no cards on the board
+  ✔ a BA spec for every card
+
+| Card | Component | Seat | Attempts | Gate | QA | Review | State |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+  ✘ no QA test files on main
+  ✔ role really ran: business-analyst
+  ✘ no ecc:architect run in events.log
+  ✘ no qa-tester run in events.log
+  ✘ no dev agent run
+  ✘ no reviewer run
+  ✔ no tracker errors
+  ✘ kanban view rendered
+  ✘ report.md is the template
+  ✔ no AI attribution in the delivered history (1 commits)
+  ✔ the whole test suite passes on main
+  ✘ hidden oracle FAILED (oracle.log)
+✖ oracle/watchlist.oracle.test.mjs (45.056542ms)
+✖ failing tests:
+✖ oracle/watchlist.oracle.test.mjs (45.056542ms)
+  ✔ the job took 5.3 min (≤ 45; timeline.txt)
+
+━━ B3 · risk-based test design and the NFR gate
+  ✔ every AC of the plan has a priority: AC-1 P1
+  ✔ every card spec has a ## Test design
+
+Test design of null:
+sed: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped/repo/.work/JOB-20261013-2103-rating-notch-calculator-and-coun/specs/null.md: No such file or directory
+QA verdicts (each must name every AC of its card — dl qa refuses otherwise):
+decided NFR items: NFR-security, NFR-compliance
+  ✘ NFR rows in the report: NFR-security (decided: "No authentication, authorisation or secrets (single user). T") has no row in report.md's Non-functional requirements table
+NFR-compliance (decided: "WL thresholds must match the original Excel dropdown sheet e") has no row in report.md's Non-functional requirements table
+  ✔ the plan says how each is checked (## Non-functional requirements)
+
+━━ B4 · the blind review
+settings.review.blind: risk
+
+━━ result
+cost: $1.40  ·  artifacts: /private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/live-control/shaped
+**23 passed, 78 failed**

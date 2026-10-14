@@ -1,0 +1,729 @@
+# qa_verify: node --test test/indicators/countryRating.integration.test.mjs
+TAP version 13
+# Subtest: AC-9 [P0]: Ind. 12 WL for the plan's example pairs
+    # Subtest: AC-9: BBB -> BBB- (1 notches) gives Ind. 12 WL 1
+    ok 1 - AC-9: BBB -> BBB- (1 notches) gives Ind. 12 WL 1
+      ---
+      duration_ms: 0.398042
+      ...
+    # Subtest: AC-9: BBB- -> BB+ (1 notches) gives Ind. 12 WL 1
+    ok 2 - AC-9: BBB- -> BB+ (1 notches) gives Ind. 12 WL 1
+      ---
+      duration_ms: 0.041417
+      ...
+    # Subtest: AC-9: BBB -> BB+ (2 notches) gives Ind. 12 WL 2
+    ok 3 - AC-9: BBB -> BB+ (2 notches) gives Ind. 12 WL 2
+      ---
+      duration_ms: 0.09975
+      ...
+    # Subtest: AC-9: BBB+ -> BB+ (3 notches) gives Ind. 12 WL 2
+    ok 4 - AC-9: BBB+ -> BB+ (3 notches) gives Ind. 12 WL 2
+      ---
+      duration_ms: 0.03675
+      ...
+    # Subtest: AC-9: AAA -> CCC- (18 notches) gives Ind. 12 WL 2
+    ok 5 - AC-9: AAA -> CCC- (18 notches) gives Ind. 12 WL 2
+      ---
+      duration_ms: 0.033167
+      ...
+    # Subtest: AC-9: A -> A (0 notches) gives Ind. 12 WL 0
+    ok 6 - AC-9: A -> A (0 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.030625
+      ...
+    # Subtest: AC-9: AA -> AA (0 notches) gives Ind. 12 WL 0
+    ok 7 - AC-9: AA -> AA (0 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.029667
+      ...
+    # Subtest: AC-9: CCC- -> CCC- (0 notches) gives Ind. 12 WL 0
+    ok 8 - AC-9: CCC- -> CCC- (0 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.100791
+      ...
+    # Subtest: AC-9: BB+ -> BBB- (-1 notches) gives Ind. 12 WL 0
+    ok 9 - AC-9: BB+ -> BBB- (-1 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.143375
+      ...
+    # Subtest: AC-9: BB -> BBB (-3 notches) gives Ind. 12 WL 0
+    ok 10 - AC-9: BB -> BBB (-3 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.237375
+      ...
+    # Subtest: AC-9: CCC- -> AAA (-18 notches) gives Ind. 12 WL 0
+    ok 11 - AC-9: CCC- -> AAA (-18 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.036917
+      ...
+    # Subtest: AC-9: BBB -> BB (3 notches) gives Ind. 12 WL 2
+    ok 12 - AC-9: BBB -> BB (3 notches) gives Ind. 12 WL 2
+      ---
+      duration_ms: 0.024709
+      ...
+    # Subtest: AC-9: BBB -> BBB (0 notches) gives Ind. 12 WL 0
+    ok 13 - AC-9: BBB -> BBB (0 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.020917
+      ...
+    # Subtest: AC-9: AAA -> AA+ (1 notches) gives Ind. 12 WL 1
+    ok 14 - AC-9: AAA -> AA+ (1 notches) gives Ind. 12 WL 1
+      ---
+      duration_ms: 0.019584
+      ...
+    # Subtest: AC-9: CCC -> CCC- (1 notches) gives Ind. 12 WL 1
+    ok 15 - AC-9: CCC -> CCC- (1 notches) gives Ind. 12 WL 1
+      ---
+      duration_ms: 0.039041
+      ...
+    # Subtest: AC-9: AAA -> AAA (0 notches) gives Ind. 12 WL 0
+    ok 16 - AC-9: AAA -> AAA (0 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.022583
+      ...
+    # Subtest: AC-9: AA+ -> AAA (-1 notches) gives Ind. 12 WL 0
+    ok 17 - AC-9: AA+ -> AAA (-1 notches) gives Ind. 12 WL 0
+      ---
+      duration_ms: 0.01925
+      ...
+    # Subtest: AC-9: threshold notches -1/0/1/2/3/18 map to 0/0/1/2/2/2
+    ok 18 - AC-9: threshold notches -1/0/1/2/3/18 map to 0/0/1/2/2/2
+      ---
+      duration_ms: 0.107584
+      ...
+    # Subtest: AC-9: Ind. 12 differs from notchCalculator().wl on (BBB,BBB-) 1 vs 0 and (BBB,BB+) 2 vs 1
+    ok 19 - AC-9: Ind. 12 differs from notchCalculator().wl on (BBB,BBB-) 1 vs 0 and (BBB,BB+) 2 vs 1
+      ---
+      duration_ms: 0.057375
+      ...
+    # Subtest: AC-9: every row's contrast column agrees with notchCalculator (T-01 and T-02 used together)
+    ok 20 - AC-9: every row's contrast column agrees with notchCalculator (T-01 and T-02 used together)
+      ---
+      duration_ms: 0.083708
+      ...
+    # Subtest: AC-9: unchanged and upgrade give +0, not -0
+    ok 21 - AC-9: unchanged and upgrade give +0, not -0
+      ---
+      duration_ms: 0.044666
+      ...
+    # Subtest: AC-9: a third argument has no effect
+    ok 22 - AC-9: a third argument has no effect
+      ---
+      duration_ms: 0.023792
+      ...
+    1..22
+ok 1 - AC-9 [P0]: Ind. 12 WL for the plan's example pairs
+  ---
+  duration_ms: 2.5205
+  type: 'suite'
+  ...
+# Subtest: AC-10 [P0]: every ordered pair of the 361
+    # Subtest: AC-10: 361 pairs match the rule written from scale indices, counts 190/18/153
+    ok 1 - AC-10: 361 pairs match the rule written from scale indices, counts 190/18/153
+      ---
+      duration_ms: 0.4015
+      ...
+    # Subtest: AC-10: the 19 diagonal pairs all give 0
+    ok 2 - AC-10: the 19 diagonal pairs all give 0
+      ---
+      duration_ms: 0.060084
+      ...
+    # Subtest: AC-10: agrees with notchChange on all 361 pairs
+    ok 3 - AC-10: agrees with notchChange on all 361 pairs
+      ---
+      duration_ms: 0.128375
+      ...
+    # Subtest: AC-10: every upgrade (171 pairs) gives 0 and every one-notch downgrade (18 pairs) gives 1
+    ok 4 - AC-10: every upgrade (171 pairs) gives 0 and every one-notch downgrade (18 pairs) gives 1
+      ---
+      duration_ms: 0.0685
+      ...
+    1..4
+ok 2 - AC-10 [P0]: every ordered pair of the 361
+  ---
+  duration_ms: 0.715167
+  type: 'suite'
+  ...
+# Subtest: AC-11 [P0]: invalid input throws RangeError, never 0
+    # Subtest: AC-11: invalid "bbb+" as previous against AAA throws RangeError
+    ok 1 - AC-11: invalid "bbb+" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.381375
+      ...
+    # Subtest: AC-11: invalid "bbb+" as current against AAA throws RangeError
+    ok 2 - AC-11: invalid "bbb+" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.038583
+      ...
+    # Subtest: AC-11: invalid " BBB+" as previous against AAA throws RangeError
+    ok 3 - AC-11: invalid " BBB+" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.022625
+      ...
+    # Subtest: AC-11: invalid " BBB+" as current against AAA throws RangeError
+    ok 4 - AC-11: invalid " BBB+" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.06775
+      ...
+    # Subtest: AC-11: invalid "BBB+ " as previous against AAA throws RangeError
+    ok 5 - AC-11: invalid "BBB+ " as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.023291
+      ...
+    # Subtest: AC-11: invalid "BBB+ " as current against AAA throws RangeError
+    ok 6 - AC-11: invalid "BBB+ " as current against AAA throws RangeError
+      ---
+      duration_ms: 0.027291
+      ...
+    # Subtest: AC-11: invalid "BBB−" as previous against AAA throws RangeError
+    ok 7 - AC-11: invalid "BBB−" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.020458
+      ...
+    # Subtest: AC-11: invalid "BBB−" as current against AAA throws RangeError
+    ok 8 - AC-11: invalid "BBB−" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.020291
+      ...
+    # Subtest: AC-11: invalid "" as previous against AAA throws RangeError
+    ok 9 - AC-11: invalid "" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.021
+      ...
+    # Subtest: AC-11: invalid "" as current against AAA throws RangeError
+    ok 10 - AC-11: invalid "" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.021125
+      ...
+    # Subtest: AC-11: invalid "CC" as previous against AAA throws RangeError
+    ok 11 - AC-11: invalid "CC" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.020333
+      ...
+    # Subtest: AC-11: invalid "CC" as current against AAA throws RangeError
+    ok 12 - AC-11: invalid "CC" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.020208
+      ...
+    # Subtest: AC-11: invalid "C" as previous against AAA throws RangeError
+    ok 13 - AC-11: invalid "C" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.021958
+      ...
+    # Subtest: AC-11: invalid "C" as current against AAA throws RangeError
+    ok 14 - AC-11: invalid "C" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.020334
+      ...
+    # Subtest: AC-11: invalid "D" as previous against AAA throws RangeError
+    ok 15 - AC-11: invalid "D" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.078167
+      ...
+    # Subtest: AC-11: invalid "D" as current against AAA throws RangeError
+    ok 16 - AC-11: invalid "D" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.025292
+      ...
+    # Subtest: AC-11: invalid "NR" as previous against AAA throws RangeError
+    ok 17 - AC-11: invalid "NR" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.021125
+      ...
+    # Subtest: AC-11: invalid "NR" as current against AAA throws RangeError
+    ok 18 - AC-11: invalid "NR" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.021167
+      ...
+    # Subtest: AC-11: invalid "WD" as previous against AAA throws RangeError
+    ok 19 - AC-11: invalid "WD" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.022125
+      ...
+    # Subtest: AC-11: invalid "WD" as current against AAA throws RangeError
+    ok 20 - AC-11: invalid "WD" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.023875
+      ...
+    # Subtest: AC-11: invalid "Baa1" as previous against AAA throws RangeError
+    ok 21 - AC-11: invalid "Baa1" as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.020167
+      ...
+    # Subtest: AC-11: invalid "Baa1" as current against AAA throws RangeError
+    ok 22 - AC-11: invalid "Baa1" as current against AAA throws RangeError
+      ---
+      duration_ms: 0.020083
+      ...
+    # Subtest: AC-11: invalid null as previous against AAA throws RangeError
+    ok 23 - AC-11: invalid null as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.021041
+      ...
+    # Subtest: AC-11: invalid null as current against AAA throws RangeError
+    ok 24 - AC-11: invalid null as current against AAA throws RangeError
+      ---
+      duration_ms: 0.019708
+      ...
+    # Subtest: AC-11: invalid undefined as previous against AAA throws RangeError
+    ok 25 - AC-11: invalid undefined as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.023833
+      ...
+    # Subtest: AC-11: invalid undefined as current against AAA throws RangeError
+    ok 26 - AC-11: invalid undefined as current against AAA throws RangeError
+      ---
+      duration_ms: 0.020084
+      ...
+    # Subtest: AC-11: invalid 42 as previous against AAA throws RangeError
+    ok 27 - AC-11: invalid 42 as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.024417
+      ...
+    # Subtest: AC-11: invalid 42 as current against AAA throws RangeError
+    ok 28 - AC-11: invalid 42 as current against AAA throws RangeError
+      ---
+      duration_ms: 0.024041
+      ...
+    # Subtest: AC-11: invalid {} as previous against AAA throws RangeError
+    ok 29 - AC-11: invalid {} as previous against AAA throws RangeError
+      ---
+      duration_ms: 0.019667
+      ...
+    # Subtest: AC-11: invalid {} as current against AAA throws RangeError
+    ok 30 - AC-11: invalid {} as current against AAA throws RangeError
+      ---
+      duration_ms: 0.019791
+      ...
+    # Subtest: AC-11: invalid "bbb+" as previous against BBB throws RangeError
+    ok 31 - AC-11: invalid "bbb+" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.021375
+      ...
+    # Subtest: AC-11: invalid "bbb+" as current against BBB throws RangeError
+    ok 32 - AC-11: invalid "bbb+" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.020125
+      ...
+    # Subtest: AC-11: invalid " BBB+" as previous against BBB throws RangeError
+    ok 33 - AC-11: invalid " BBB+" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.020084
+      ...
+    # Subtest: AC-11: invalid " BBB+" as current against BBB throws RangeError
+    ok 34 - AC-11: invalid " BBB+" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.019917
+      ...
+    # Subtest: AC-11: invalid "BBB+ " as previous against BBB throws RangeError
+    ok 35 - AC-11: invalid "BBB+ " as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.030292
+      ...
+    # Subtest: AC-11: invalid "BBB+ " as current against BBB throws RangeError
+    ok 36 - AC-11: invalid "BBB+ " as current against BBB throws RangeError
+      ---
+      duration_ms: 0.26675
+      ...
+    # Subtest: AC-11: invalid "BBB−" as previous against BBB throws RangeError
+    ok 37 - AC-11: invalid "BBB−" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.042
+      ...
+    # Subtest: AC-11: invalid "BBB−" as current against BBB throws RangeError
+    ok 38 - AC-11: invalid "BBB−" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.023916
+      ...
+    # Subtest: AC-11: invalid "" as previous against BBB throws RangeError
+    ok 39 - AC-11: invalid "" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.020875
+      ...
+    # Subtest: AC-11: invalid "" as current against BBB throws RangeError
+    ok 40 - AC-11: invalid "" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.02025
+      ...
+    # Subtest: AC-11: invalid "CC" as previous against BBB throws RangeError
+    ok 41 - AC-11: invalid "CC" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.0195
+      ...
+    # Subtest: AC-11: invalid "CC" as current against BBB throws RangeError
+    ok 42 - AC-11: invalid "CC" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.019125
+      ...
+    # Subtest: AC-11: invalid "C" as previous against BBB throws RangeError
+    ok 43 - AC-11: invalid "C" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.018708
+      ...
+    # Subtest: AC-11: invalid "C" as current against BBB throws RangeError
+    ok 44 - AC-11: invalid "C" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.018917
+      ...
+    # Subtest: AC-11: invalid "D" as previous against BBB throws RangeError
+    ok 45 - AC-11: invalid "D" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.018833
+      ...
+    # Subtest: AC-11: invalid "D" as current against BBB throws RangeError
+    ok 46 - AC-11: invalid "D" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.018833
+      ...
+    # Subtest: AC-11: invalid "NR" as previous against BBB throws RangeError
+    ok 47 - AC-11: invalid "NR" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.018625
+      ...
+    # Subtest: AC-11: invalid "NR" as current against BBB throws RangeError
+    ok 48 - AC-11: invalid "NR" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.01875
+      ...
+    # Subtest: AC-11: invalid "WD" as previous against BBB throws RangeError
+    ok 49 - AC-11: invalid "WD" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.018958
+      ...
+    # Subtest: AC-11: invalid "WD" as current against BBB throws RangeError
+    ok 50 - AC-11: invalid "WD" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.018584
+      ...
+    # Subtest: AC-11: invalid "Baa1" as previous against BBB throws RangeError
+    ok 51 - AC-11: invalid "Baa1" as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.018834
+      ...
+    # Subtest: AC-11: invalid "Baa1" as current against BBB throws RangeError
+    ok 52 - AC-11: invalid "Baa1" as current against BBB throws RangeError
+      ---
+      duration_ms: 0.029667
+      ...
+    # Subtest: AC-11: invalid null as previous against BBB throws RangeError
+    ok 53 - AC-11: invalid null as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.021792
+      ...
+    # Subtest: AC-11: invalid null as current against BBB throws RangeError
+    ok 54 - AC-11: invalid null as current against BBB throws RangeError
+      ---
+      duration_ms: 0.020375
+      ...
+    # Subtest: AC-11: invalid undefined as previous against BBB throws RangeError
+    ok 55 - AC-11: invalid undefined as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.019917
+      ...
+    # Subtest: AC-11: invalid undefined as current against BBB throws RangeError
+    ok 56 - AC-11: invalid undefined as current against BBB throws RangeError
+      ---
+      duration_ms: 0.020958
+      ...
+    # Subtest: AC-11: invalid 42 as previous against BBB throws RangeError
+    ok 57 - AC-11: invalid 42 as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.020625
+      ...
+    # Subtest: AC-11: invalid 42 as current against BBB throws RangeError
+    ok 58 - AC-11: invalid 42 as current against BBB throws RangeError
+      ---
+      duration_ms: 0.020416
+      ...
+    # Subtest: AC-11: invalid {} as previous against BBB throws RangeError
+    ok 59 - AC-11: invalid {} as previous against BBB throws RangeError
+      ---
+      duration_ms: 0.020125
+      ...
+    # Subtest: AC-11: invalid {} as current against BBB throws RangeError
+    ok 60 - AC-11: invalid {} as current against BBB throws RangeError
+      ---
+      duration_ms: 0.021542
+      ...
+    # Subtest: AC-11: invalid "bbb+" as previous against CCC- throws RangeError
+    ok 61 - AC-11: invalid "bbb+" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.020333
+      ...
+    # Subtest: AC-11: invalid "bbb+" as current against CCC- throws RangeError
+    ok 62 - AC-11: invalid "bbb+" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.020417
+      ...
+    # Subtest: AC-11: invalid " BBB+" as previous against CCC- throws RangeError
+    ok 63 - AC-11: invalid " BBB+" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.02
+      ...
+    # Subtest: AC-11: invalid " BBB+" as current against CCC- throws RangeError
+    ok 64 - AC-11: invalid " BBB+" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.020167
+      ...
+    # Subtest: AC-11: invalid "BBB+ " as previous against CCC- throws RangeError
+    ok 65 - AC-11: invalid "BBB+ " as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.020167
+      ...
+    # Subtest: AC-11: invalid "BBB+ " as current against CCC- throws RangeError
+    ok 66 - AC-11: invalid "BBB+ " as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.020417
+      ...
+    # Subtest: AC-11: invalid "BBB−" as previous against CCC- throws RangeError
+    ok 67 - AC-11: invalid "BBB−" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.020417
+      ...
+    # Subtest: AC-11: invalid "BBB−" as current against CCC- throws RangeError
+    ok 68 - AC-11: invalid "BBB−" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.02025
+      ...
+    # Subtest: AC-11: invalid "" as previous against CCC- throws RangeError
+    ok 69 - AC-11: invalid "" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.022416
+      ...
+    # Subtest: AC-11: invalid "" as current against CCC- throws RangeError
+    ok 70 - AC-11: invalid "" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.021875
+      ...
+    # Subtest: AC-11: invalid "CC" as previous against CCC- throws RangeError
+    ok 71 - AC-11: invalid "CC" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.022042
+      ...
+    # Subtest: AC-11: invalid "CC" as current against CCC- throws RangeError
+    ok 72 - AC-11: invalid "CC" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.021708
+      ...
+    # Subtest: AC-11: invalid "C" as previous against CCC- throws RangeError
+    ok 73 - AC-11: invalid "C" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.037
+      ...
+    # Subtest: AC-11: invalid "C" as current against CCC- throws RangeError
+    ok 74 - AC-11: invalid "C" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.019833
+      ...
+    # Subtest: AC-11: invalid "D" as previous against CCC- throws RangeError
+    ok 75 - AC-11: invalid "D" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.018167
+      ...
+    # Subtest: AC-11: invalid "D" as current against CCC- throws RangeError
+    ok 76 - AC-11: invalid "D" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.018125
+      ...
+    # Subtest: AC-11: invalid "NR" as previous against CCC- throws RangeError
+    ok 77 - AC-11: invalid "NR" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.018375
+      ...
+    # Subtest: AC-11: invalid "NR" as current against CCC- throws RangeError
+    ok 78 - AC-11: invalid "NR" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.018292
+      ...
+    # Subtest: AC-11: invalid "WD" as previous against CCC- throws RangeError
+    ok 79 - AC-11: invalid "WD" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.021292
+      ...
+    # Subtest: AC-11: invalid "WD" as current against CCC- throws RangeError
+    ok 80 - AC-11: invalid "WD" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.017292
+      ...
+    # Subtest: AC-11: invalid "Baa1" as previous against CCC- throws RangeError
+    ok 81 - AC-11: invalid "Baa1" as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.018334
+      ...
+    # Subtest: AC-11: invalid "Baa1" as current against CCC- throws RangeError
+    ok 82 - AC-11: invalid "Baa1" as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.018333
+      ...
+    # Subtest: AC-11: invalid null as previous against CCC- throws RangeError
+    ok 83 - AC-11: invalid null as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.031167
+      ...
+    # Subtest: AC-11: invalid null as current against CCC- throws RangeError
+    ok 84 - AC-11: invalid null as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.020291
+      ...
+    # Subtest: AC-11: invalid undefined as previous against CCC- throws RangeError
+    ok 85 - AC-11: invalid undefined as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.028292
+      ...
+    # Subtest: AC-11: invalid undefined as current against CCC- throws RangeError
+    ok 86 - AC-11: invalid undefined as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.020208
+      ...
+    # Subtest: AC-11: invalid 42 as previous against CCC- throws RangeError
+    ok 87 - AC-11: invalid 42 as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.017041
+      ...
+    # Subtest: AC-11: invalid 42 as current against CCC- throws RangeError
+    ok 88 - AC-11: invalid 42 as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.025792
+      ...
+    # Subtest: AC-11: invalid {} as previous against CCC- throws RangeError
+    ok 89 - AC-11: invalid {} as previous against CCC- throws RangeError
+      ---
+      duration_ms: 0.018792
+      ...
+    # Subtest: AC-11: invalid {} as current against CCC- throws RangeError
+    ok 90 - AC-11: invalid {} as current against CCC- throws RangeError
+      ---
+      duration_ms: 0.017208
+      ...
+    # Subtest: AC-11: both arguments invalid throws RangeError
+    ok 91 - AC-11: both arguments invalid throws RangeError
+      ---
+      duration_ms: 0.096709
+      ...
+    # Subtest: AC-11: no arguments throws RangeError
+    ok 92 - AC-11: no arguments throws RangeError
+      ---
+      duration_ms: 0.031208
+      ...
+    # Subtest: AC-11: a missing current argument throws RangeError
+    ok 93 - AC-11: a missing current argument throws RangeError
+      ---
+      duration_ms: 0.036167
+      ...
+    # Subtest: AC-11: the error is a RangeError instance from the call itself, not swallowed into 0 or wrapped
+    ok 94 - AC-11: the error is a RangeError instance from the call itself, not swallowed into 0 or wrapped
+      ---
+      duration_ms: 0.120542
+      ...
+    # Subtest: AC-11: the error is the same kind notchChange raises for the same input
+    ok 95 - AC-11: the error is the same kind notchChange raises for the same input
+      ---
+      duration_ms: 0.250458
+      ...
+    # Subtest: AC-11: new String('BBB') throws RangeError in either position
+    ok 96 - AC-11: new String('BBB') throws RangeError in either position
+      ---
+      duration_ms: 0.042333
+      ...
+    # Subtest: AC-11: ['BBB'] throws RangeError in either position
+    ok 97 - AC-11: ['BBB'] throws RangeError in either position
+      ---
+      duration_ms: 0.027458
+      ...
+    # Subtest: AC-11: 'toString' throws RangeError in either position
+    ok 98 - AC-11: 'toString' throws RangeError in either position
+      ---
+      duration_ms: 0.026583
+      ...
+    # Subtest: AC-11: '__proto__' throws RangeError in either position
+    ok 99 - AC-11: '__proto__' throws RangeError in either position
+      ---
+      duration_ms: 0.027583
+      ...
+    # Subtest: AC-11: 0 throws RangeError in either position
+    ok 100 - AC-11: 0 throws RangeError in either position
+      ---
+      duration_ms: 0.025583
+      ...
+    # Subtest: AC-11: NaN throws RangeError in either position
+    ok 101 - AC-11: NaN throws RangeError in either position
+      ---
+      duration_ms: 0.026042
+      ...
+    # Subtest: AC-11: true throws RangeError in either position
+    ok 102 - AC-11: true throws RangeError in either position
+      ---
+      duration_ms: 0.025334
+      ...
+    # Subtest: AC-11: 10n throws RangeError in either position
+    ok 103 - AC-11: 10n throws RangeError in either position
+      ---
+      duration_ms: 0.028042
+      ...
+    # Subtest: AC-11: Symbol('BBB') throws RangeError in either position
+    ok 104 - AC-11: Symbol('BBB') throws RangeError in either position
+      ---
+      duration_ms: 0.026209
+      ...
+    # Subtest: AC-11: Object.create(null) throws RangeError in either position
+    ok 105 - AC-11: Object.create(null) throws RangeError in either position
+      ---
+      duration_ms: 0.036833
+      ...
+    # Subtest: AC-11: no coercion, trimming or case folding of near-miss codes
+    ok 106 - AC-11: no coercion, trimming or case folding of near-miss codes
+      ---
+      duration_ms: 0.089083
+      ...
+    1..106
+ok 3 - AC-11 [P0]: invalid input throws RangeError, never 0
+  ---
+  duration_ms: 4.208667
+  type: 'suite'
+  ...
+# Subtest: AC-12 [P1]: the analyst's edit is used, nothing is kept between calls
+    # Subtest: AC-12: edit sequence in order gives 1, 2, 0, 1
+    ok 1 - AC-12: edit sequence in order gives 1, 2, 0, 1
+      ---
+      duration_ms: 0.043333
+      ...
+    # Subtest: AC-12: the same sequence in reverse order gives the same results (no state)
+    ok 2 - AC-12: the same sequence in reverse order gives the same results (no state)
+      ---
+      duration_ms: 0.028833
+      ...
+    # Subtest: AC-12: a call with another valid pair between the steps does not change the next result
+    ok 3 - AC-12: a call with another valid pair between the steps does not change the next result
+      ---
+      duration_ms: 0.024792
+      ...
+    # Subtest: AC-12: a rejected call between valid calls leaves no state behind
+    ok 4 - AC-12: a rejected call between valid calls leaves no state behind
+      ---
+      duration_ms: 0.030834
+      ...
+    # Subtest: AC-12: repeated identical calls return identical results
+    ok 5 - AC-12: repeated identical calls return identical results
+      ---
+      duration_ms: 0.379042
+      ...
+    # Subtest: AC-12: countryRatingChangeWl.length === 2 (no override parameter)
+    ok 6 - AC-12: countryRatingChangeWl.length === 2 (no override parameter)
+      ---
+      duration_ms: 0.035083
+      ...
+    1..6
+ok 4 - AC-12 [P1]: the analyst's edit is used, nothing is kept between calls
+  ---
+  duration_ms: 0.59825
+  type: 'suite'
+  ...
+1..4
+# tests 138
+# suites 4
+# pass 138
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 90.165875
