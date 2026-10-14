@@ -1,0 +1,156 @@
+# qa_verify: node --test test/indicators/qa-countryRating.test.mjs
+TAP version 13
+# Subtest: AC-1: countryRatingChangeWl is exported from src/indicators/countryRating.mjs as a function
+ok 1 - AC-1: countryRatingChangeWl is exported from src/indicators/countryRating.mjs as a function
+  ---
+  duration_ms: 0.4675
+  ...
+# Subtest: AC-5: 1-notch downgrade returns the number 1
+ok 2 - AC-5: 1-notch downgrade returns the number 1
+  ---
+  duration_ms: 0.1435
+  ...
+# Subtest: AC-5: downgrade of 2 or more notches returns 2
+ok 3 - AC-5: downgrade of 2 or more notches returns 2
+  ---
+  duration_ms: 0.046084
+  ...
+# Subtest: AC-5: no change or any upgrade returns 0 (Object.is +0)
+ok 4 - AC-5: no change or any upgrade returns 0 (Object.is +0)
+  ---
+  duration_ms: 0.079625
+  ...
+# Subtest: AC-5: X-window: only the net change of the end points counts (BBB -> BBB- is 1)
+ok 5 - AC-5: X-window: only the net change of the end points counts (BBB -> BBB- is 1)
+  ---
+  duration_ms: 0.108875
+  ...
+# Subtest: AC-5: IG/HY crossing (BBB- -> BB+) is 1 notch, no extra weight
+ok 6 - AC-5: IG/HY crossing (BBB- -> BB+) is 1 notch, no extra weight
+  ---
+  duration_ms: 0.036209
+  ...
+# Subtest: AC-5: threshold boundaries by notch count -18, -1, 0, 1, 2, 18
+ok 7 - AC-5: threshold boundaries by notch count -18, -1, 0, 1, 2, 18
+  ---
+  duration_ms: 0.09325
+  ...
+# Subtest: AC-5: result is a number in {0,1,2} for every one of the 361 ordered pairs and matches the formula
+ok 8 - AC-5: result is a number in {0,1,2} for every one of the 361 ordered pairs and matches the formula
+  ---
+  duration_ms: 0.619209
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (case / whitespace)
+ok 9 - AC-4: invalid rating as previous throws RangeError (case / whitespace)
+  ---
+  duration_ms: 0.256875
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (case / whitespace)
+ok 10 - AC-4: invalid rating as current throws RangeError (case / whitespace)
+  ---
+  duration_ms: 0.271916
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (other scales / below CCC-)
+ok 11 - AC-4: invalid rating as previous throws RangeError (other scales / below CCC-)
+  ---
+  duration_ms: 0.11275
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (other scales / below CCC-)
+ok 12 - AC-4: invalid rating as current throws RangeError (other scales / below CCC-)
+  ---
+  duration_ms: 0.062791
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (outlook / unknown)
+ok 13 - AC-4: invalid rating as previous throws RangeError (outlook / unknown)
+  ---
+  duration_ms: 0.0295
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (outlook / unknown)
+ok 14 - AC-4: invalid rating as current throws RangeError (outlook / unknown)
+  ---
+  duration_ms: 0.056541
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (prototype names)
+ok 15 - AC-4: invalid rating as previous throws RangeError (prototype names)
+  ---
+  duration_ms: 0.037375
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (prototype names)
+ok 16 - AC-4: invalid rating as current throws RangeError (prototype names)
+  ---
+  duration_ms: 0.03525
+  ...
+# Subtest: AC-4: invalid rating as previous throws RangeError (non-strings)
+ok 17 - AC-4: invalid rating as previous throws RangeError (non-strings)
+  ---
+  duration_ms: 0.072917
+  ...
+# Subtest: AC-4: invalid rating as current throws RangeError (non-strings)
+ok 18 - AC-4: invalid rating as current throws RangeError (non-strings)
+  ---
+  duration_ms: 0.060625
+  ...
+# Subtest: AC-4: both arguments invalid throws RangeError
+ok 19 - AC-4: both arguments invalid throws RangeError
+  ---
+  duration_ms: 0.050458
+  ...
+# Subtest: AC-4: plan examples (null,'AAA') and ('BBB+','Baa1') throw RangeError
+ok 20 - AC-4: plan examples (null,'AAA') and ('BBB+','Baa1') throw RangeError
+  ---
+  duration_ms: 0.03825
+  ...
+# Subtest: AC-4: missing arguments throw RangeError
+ok 21 - AC-4: missing arguments throw RangeError
+  ---
+  duration_ms: 0.04125
+  ...
+# Subtest: AC-4: RangeError reaches the caller unchanged: same class as notchChange's, never turned into 0
+ok 22 - AC-4: RangeError reaches the caller unchanged: same class as notchChange's, never turned into 0
+  ---
+  duration_ms: 0.2085
+  ...
+# Subtest: AC-4: no invalid input ever returns a value (0 included), over a wider sweep
+ok 23 - AC-4: no invalid input ever returns a value (0 included), over a wider sweep
+  ---
+  duration_ms: 0.532125
+  ...
+# Subtest: AC-8: QA's typed list deep-strict-equals the imported RATING_SCALE
+ok 24 - AC-8: QA's typed list deep-strict-equals the imported RATING_SCALE
+  ---
+  duration_ms: 0.263
+  ...
+# Subtest: AC-8: cross-check with notchChange and notchCalculator over all 361 ordered pairs
+ok 25 - AC-8: cross-check with notchChange and notchCalculator over all 361 ordered pairs
+  ---
+  duration_ms: 0.573125
+  ...
+# Subtest: AC-9: result is not a Promise and repeated calls return strictly equal results
+ok 26 - AC-9: result is not a Promise and repeated calls return strictly equal results
+  ---
+  duration_ms: 0.074125
+  ...
+# Subtest: AC-9: RATING_SCALE is unchanged (and still frozen) after calling countryRatingChangeWl
+ok 27 - AC-9: RATING_SCALE is unchanged (and still frozen) after calling countryRatingChangeWl
+  ---
+  duration_ms: 0.10875
+  ...
+# Subtest: AC-9: source's only import is from ../ratings/notch.mjs; no node:, require(, import(, eval(, new Function
+ok 28 - AC-9: source's only import is from ../ratings/notch.mjs; no node:, require(, import(, eval(, new Function
+  ---
+  duration_ms: 0.768791
+  ...
+# Subtest: AC-9: package.json has no dependencies key
+ok 29 - AC-9: package.json has no dependencies key
+  ---
+  duration_ms: 0.672125
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 69.288083

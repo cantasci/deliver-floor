@@ -1,0 +1,79 @@
+# gate: T-02  attempt: 1  2026-10-14T03:28:40Z
+ok    on job/JOB-20261014-0507-rating-notch-helper--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/unit-countryRating.test.mjs"] (+ QA tests ["test/indicators/qa-countryRating.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/unit-countryRating.test.mjs
+TAP version 13
+# Subtest: exports countryRatingChangeWl as a function
+ok 1 - exports countryRatingChangeWl as a function
+  ---
+  duration_ms: 0.451959
+  ...
+# Subtest: 1-notch downgrade gives WL 1
+ok 2 - 1-notch downgrade gives WL 1
+  ---
+  duration_ms: 0.0665
+  ...
+# Subtest: downgrade of 2 or more notches gives WL 2
+ok 3 - downgrade of 2 or more notches gives WL 2
+  ---
+  duration_ms: 0.079625
+  ...
+# Subtest: no change or upgrade gives +0
+ok 4 - no change or upgrade gives +0
+  ---
+  duration_ms: 0.078333
+  ...
+# Subtest: only the net change counts (BBB -> BBB-)
+ok 5 - only the net change counts (BBB -> BBB-)
+  ---
+  duration_ms: 0.042834
+  ...
+# Subtest: notch boundaries -18, -1, 0, 1, 2, 18
+ok 6 - notch boundaries -18, -1, 0, 1, 2, 18
+  ---
+  duration_ms: 0.043041
+  ...
+# Subtest: all 361 pairs return 0|1|2 following the notch mapping
+ok 7 - all 361 pairs return 0|1|2 following the notch mapping
+  ---
+  duration_ms: 0.232958
+  ...
+# Subtest: invalid rating as previous or current throws RangeError, never TypeError
+ok 8 - invalid rating as previous or current throws RangeError, never TypeError
+  ---
+  duration_ms: 0.394
+  ...
+# Subtest: missing arguments throw RangeError
+ok 9 - missing arguments throw RangeError
+  ---
+  duration_ms: 0.224417
+  ...
+# Subtest: results are synchronous and repeatable
+ok 10 - results are synchronous and repeatable
+  ---
+  duration_ms: 0.540875
+  ...
+# Subtest: source has only the notch.mjs import and no forbidden constructs
+ok 11 - source has only the notch.mjs import and no forbidden constructs
+  ---
+  duration_ms: 0.24775
+  ...
+# Subtest: countryRatingChangeWl has a JSDoc block with @param, @returns, @throws
+ok 12 - countryRatingChangeWl has a JSDoc block with @param, @returns, @throws
+  ---
+  duration_ms: 0.115708
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 64.257417
+ok    verify passed

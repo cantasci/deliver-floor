@@ -1,0 +1,46 @@
+2026-10-14T04:31:19Z	new	Rating notch helper
+2026-10-14T04:31:23Z	phase	shaping
+2026-10-14T04:31:30Z	shape	BMad 6.12.2 installed (outside git: _bmad/, .claude/skills/bmad-*/)
+2026-10-14T04:31:33Z	shape	run 01-help started
+2026-10-14T04:32:12Z	shape	run 01-help: complete (0 new ledger item(s))
+2026-10-14T04:32:15Z	shape	run 02-create-spec started
+2026-10-14T04:33:37Z	shape	run 02-create-spec: complete (14 new ledger item(s))
+2026-10-14T04:34:01Z	shape-propose	B-1: Trust the scale: BBB+ to BB+ is 3 notches, WL 2. Treat the REQ-06-02 example (2 notches, WL 1) as a documentation slip; record a follow-up so the POC text is corrected.
+2026-10-14T04:34:01Z	shape-propose	B-2: Take the indicator kind as an explicit input (country | internal | external), each with its own thresholds as the POC states them. No single rule set.
+2026-10-14T04:34:01Z	shape-propose	B-3: Build on the POC text and the standard scale; the sheet is not in the repo. Keep the tables in one data file so they can be corrected against the Excel sheet later; record a follow-up to verify against it.
+2026-10-14T04:34:01Z	shape-propose	B-4: Accept BMad's reading: NR, WR, SD, D and unknown symbols return an explicit error; outlook/watch changes are not rating symbols and are out of scope.
+2026-10-14T04:34:02Z	shape-propose	B-5: Rating symbols are enough; no agency awareness in this helper. Agency choice stays with the Ind. 13 form and segment logic (non-goal).
+2026-10-14T04:34:02Z	shape-propose	B-6: Accept: one 21-notch scale, Moody's symbols mapped to the same positions.
+2026-10-14T04:34:02Z	shape-propose	B-7: Accept: no change, an upgrade, or a 1-notch downgrade on internal/external gives WL 0; the POC dropdown only scores 2 notches (WL 1) and 3+ (WL 2).
+2026-10-14T04:34:02Z	shape-propose	B-8: Accept: downgrade positive, upgrade negative.
+2026-10-14T04:34:02Z	shape-propose	B-9: Accept: the kind is an explicit input.
+2026-10-14T04:34:03Z	shape-propose	B-10: Accept: pure functions, scale and notch difference in src/ratings, WL rules in src/indicators (matches CLAUDE.md).
+2026-10-14T04:34:03Z	shape-propose	B-11: Accept: logic only, no screens or fetching; the request says it is not about screens.
+2026-10-14T04:34:03Z	shape-propose	B-12: Accept the non-goals as listed.
+2026-10-14T04:34:03Z	shape-propose	B-13: Accept: explicit kind parameter.
+2026-10-14T04:34:04Z	shape-propose	B-14: Accept: the companion file holds the scale, WL tables, examples and shapes.
+2026-10-14T04:34:08Z	phase	awaiting_clarification
+2026-10-14T04:34:17Z	clarify	B-3: A 1-notch downgrade gives calculator WL 0 (Indicator 13 starts at 2 notches); Indicator 12 stays 1 notch → WL 1.
+2026-10-14T04:34:18Z	clarify	B-7: A 1-notch downgrade gives calculator WL 0 (Indicator 13 starts at 2 notches); Indicator 12 stays 1 notch → WL 1.
+2026-10-14T04:34:18Z	clarify	B-8: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-14T04:34:19Z	clarify	B-12: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-14T04:34:19Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T04:34:32Z	phase	shaping
+2026-10-14T04:34:35Z	shape	run 03-update-spec started
+2026-10-14T04:35:20Z	shape	run 03-update-spec: complete (5 new ledger item(s))
+2026-10-14T04:35:33Z	shape-propose	B-15: The POC document's owner corrects REQ-06-02 outside this job; this job does not edit it and lists it as a follow-up in the PR (dl followup).
+2026-10-14T04:35:33Z	shape-propose	B-16: Confirm: 'C8' means the displayed-result criterion (displayed = the returned { notches, direction, wl }); no UI, CLI or printed output.
+2026-10-14T04:35:37Z	phase	awaiting_clarification
+2026-10-14T04:35:43Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T04:35:57Z	phase	shaping
+2026-10-14T04:36:01Z	shape	run 04-update-spec started
+2026-10-14T05:17:34Z	shape	run 04-update-spec: invalid (0 new ledger item(s))
+2026-10-14T05:29:00Z	shape	run 05-update-spec started
+2026-10-14T05:29:35Z	shape	run 05-update-spec: complete (0 new ledger item(s))
+2026-10-14T05:45:04Z	shape	run 06-create-architecture started
+2026-10-14T06:18:01Z	shape	run 06-create-architecture: invalid (0 new ledger item(s))
+2026-10-14T06:18:09Z	shape	run 07-create-architecture started
+2026-10-14T06:42:59Z	shape	run 07-create-architecture: invalid (0 new ledger item(s))
+2026-10-14T06:43:21Z	shape	run 08-create-architecture started
+2026-10-14T06:45:08Z	agent	ecc:architect a130d822ad959a448: I couldn't do two parts of what you asked. I only have read and search tools here, so I couldn't run `node -v`, and I couldn't create `reviews/review-versions.m
+2026-10-14T06:45:47Z	agent	ecc:architect a83daa0d38847d736: I couldn't create the review file. I only have read and search tools here, so `reviews/` and `review-adversarial.md` don't exist yet. The full review text is be

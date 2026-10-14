@@ -1,0 +1,1875 @@
+{
+  "engine": "bmad",
+  "version": "6.12.2",
+  "installed": {
+    "version": "6.12.2",
+    "at": "2026-10-14T03:07:22Z"
+  },
+  "plan": {
+    "run": 1,
+    "sequence": [
+      {
+        "skill": "bmad-spec",
+        "intent": "create",
+        "why": "Pins down what to build before how. The request is narrow: the notch calculator (REQ-06-02) and the country rating change indicator (Ind. 12, REQ-02-02 and REQ-03-12). It is a pure-logic helper that other POC parts will call, with no screens. The POC document is already the requirements baseline, so the spec only has to condense it to this slice. It must also give the delivery checklist's human-decision items (scope, interface, errors, acceptance, conflicts, ARC-*) a place to be answered or marked open. Tell it that the helper is a library with no UI, no database and no auth.",
+        "inputs": [
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/inputs/request.md",
+          "/Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-idea.md",
+          "docs/POC_Requirements_v0.2_EN.md (Ind. 11-13, REQ-02-02, REQ-03-11..13, REQ-06-02, A4, Q2, sections 6-7)",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/inputs/delivery-checklist.yaml",
+          "CLAUDE.md"
+        ]
+      },
+      {
+        "skill": "bmad-architecture",
+        "intent": "create",
+        "why": "The spec says what to build. The architecture records the few decisions that keep the parts consistent: where the helper lives (a pure function in src/ratings, per CLAUDE.md), its public interface and error contract, the rating-scale data shape, and how the country rating change indicator relates to the notch calculator. It also covers how the fetch from the public source (Wikipedia and similar) is separated from the pure calculation, if the fetch is in scope. It must record the stack (Node 18+ ESM, no dependencies) as a quoted repo constraint, and note that the repo has no code yet. Run it after the spec and with the spec as input, so decisions trace to requirements.",
+        "inputs": [
+          "SPEC.md and its supporting files from bmad-spec",
+          "CLAUDE.md",
+          "docs/POC_Requirements_v0.2_EN.md (section 3A, Ind. 12; section 7 constraints C2, A4)",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/inputs/delivery-checklist.yaml"
+        ]
+      }
+    ],
+    "skipped": [
+      {
+        "skill": "bmad-product-brief / bmad-prfaq / bmad-forge-idea / bmad-brainstorming",
+        "why": "The idea is already fixed: the request names two POC features, and the POC document defines the problem and the segments. Ideation or concept-testing would add nothing."
+      },
+      {
+        "skill": "bmad-prd",
+        "why": "The POC Requirements v0.2 is already a requirements register with IDs, priorities and acceptance summaries. A full PRD for a two-function helper would duplicate it. bmad-spec condenses the slice and records the gaps."
+      },
+      {
+        "skill": "bmad-ux",
+        "why": "The request says it is not about screens. The checklist's ui items are n/a. The UI behaviour in the POC (green, yellow and white field states) belongs to other parts."
+      },
+      {
+        "skill": "bmad-deep-recon",
+        "why": "Optional only. It would help if the human decides the live fetch from Wikipedia or countryeconomy.com is in scope and wants the source structure and the rating-scale mappings researched. It is not needed to reach a specification; the scope decision comes first (see open_questions)."
+      },
+      {
+        "skill": "bmad-project-context",
+        "why": "CLAUDE.md already gives the agent instructions (no dependencies, node:test, pure functions in src/ratings). The repo has no code yet to adopt."
+      },
+      {
+        "skill": "bmad-advanced-elicitation / bmad-party-mode",
+        "why": "Optional polish only. They are not needed for readiness, and the review that follows covers critique."
+      },
+      {
+        "skill": "bmad-create-epics-and-stories, bmad-sprint-planning, bmad-build, bmad-code-review, bmad-qa-generate-e2e-tests, bmad-walkthrough, bmad-retrospective, bmad-correct-course",
+        "why": "Past the stop point. The delivery team cuts tasks and implements itself. Correct-course also applies only mid-sprint."
+      }
+    ],
+    "ours": []
+  },
+  "runs": [
+    {
+      "n": 1,
+      "name": "01-help",
+      "step": "help",
+      "skill": null,
+      "batch": null,
+      "at": "2026-10-14T03:07:25Z",
+      "rc": 0,
+      "seconds": 61,
+      "cost": 0.23250459999999998,
+      "files": [],
+      "status": "complete",
+      "json": {
+        "sequence": [
+          {
+            "skill": "bmad-spec",
+            "intent": "create",
+            "why": "Pins down what to build before how. The request is narrow: the notch calculator (REQ-06-02) and the country rating change indicator (Ind. 12, REQ-02-02 and REQ-03-12). It is a pure-logic helper that other POC parts will call, with no screens. The POC document is already the requirements baseline, so the spec only has to condense it to this slice. It must also give the delivery checklist's human-decision items (scope, interface, errors, acceptance, conflicts, ARC-*) a place to be answered or marked open. Tell it that the helper is a library with no UI, no database and no auth.",
+            "inputs": [
+              ".work/JOB-20261014-0507-rating-notch-helper/bmad/inputs/request.md",
+              "/Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-idea.md",
+              "docs/POC_Requirements_v0.2_EN.md (Ind. 11-13, REQ-02-02, REQ-03-11..13, REQ-06-02, A4, Q2, sections 6-7)",
+              ".work/JOB-20261014-0507-rating-notch-helper/bmad/inputs/delivery-checklist.yaml",
+              "CLAUDE.md"
+            ]
+          },
+          {
+            "skill": "bmad-architecture",
+            "intent": "create",
+            "why": "The spec says what to build. The architecture records the few decisions that keep the parts consistent: where the helper lives (a pure function in src/ratings, per CLAUDE.md), its public interface and error contract, the rating-scale data shape, and how the country rating change indicator relates to the notch calculator. It also covers how the fetch from the public source (Wikipedia and similar) is separated from the pure calculation, if the fetch is in scope. It must record the stack (Node 18+ ESM, no dependencies) as a quoted repo constraint, and note that the repo has no code yet. Run it after the spec and with the spec as input, so decisions trace to requirements.",
+            "inputs": [
+              "SPEC.md and its supporting files from bmad-spec",
+              "CLAUDE.md",
+              "docs/POC_Requirements_v0.2_EN.md (section 3A, Ind. 12; section 7 constraints C2, A4)",
+              ".work/JOB-20261014-0507-rating-notch-helper/bmad/inputs/delivery-checklist.yaml"
+            ]
+          }
+        ],
+        "skipped": [
+          {
+            "skill": "bmad-product-brief / bmad-prfaq / bmad-forge-idea / bmad-brainstorming",
+            "why": "The idea is already fixed: the request names two POC features, and the POC document defines the problem and the segments. Ideation or concept-testing would add nothing."
+          },
+          {
+            "skill": "bmad-prd",
+            "why": "The POC Requirements v0.2 is already a requirements register with IDs, priorities and acceptance summaries. A full PRD for a two-function helper would duplicate it. bmad-spec condenses the slice and records the gaps."
+          },
+          {
+            "skill": "bmad-ux",
+            "why": "The request says it is not about screens. The checklist's ui items are n/a. The UI behaviour in the POC (green, yellow and white field states) belongs to other parts."
+          },
+          {
+            "skill": "bmad-deep-recon",
+            "why": "Optional only. It would help if the human decides the live fetch from Wikipedia or countryeconomy.com is in scope and wants the source structure and the rating-scale mappings researched. It is not needed to reach a specification; the scope decision comes first (see open_questions)."
+          },
+          {
+            "skill": "bmad-project-context",
+            "why": "CLAUDE.md already gives the agent instructions (no dependencies, node:test, pure functions in src/ratings). The repo has no code yet to adopt."
+          },
+          {
+            "skill": "bmad-advanced-elicitation / bmad-party-mode",
+            "why": "Optional polish only. They are not needed for readiness, and the review that follows covers critique."
+          },
+          {
+            "skill": "bmad-create-epics-and-stories, bmad-sprint-planning, bmad-build, bmad-code-review, bmad-qa-generate-e2e-tests, bmad-walkthrough, bmad-retrospective, bmad-correct-course",
+            "why": "Past the stop point. The delivery team cuts tasks and implements itself. Correct-course also applies only mid-sprint."
+          }
+        ],
+        "assumptions": [
+          "The deliverable is a library of pure functions (the notch calculator and the country rating change indicator), placed in src/ratings and src/indicators per CLAUDE.md. Nothing in the request suggests a service, API, store or UI.",
+          "The POC document v0.2 is the requirements baseline, but it is still a draft pending business review. The spec treats it as the source and flags where it is inconsistent.",
+          "The stack is Node.js 18+ ES modules with no npm dependencies, taken from CLAUDE.md. The request names no language.",
+          "Rule A4 applies: scoring mirrors the Excel dropdown sheet exactly, with no reinterpretation.",
+          "Rating scales are ordinal lists. The internal scale runs AAA to CCC-, per REQ-03-10. The external scales are S&P and Fitch, Moody's, and the sovereign ratings."
+        ],
+        "open_questions": [
+          "Conflict on the worked example: REQ-06-02 says BBB+ to BB+ is a 2-notch downgrade giving WL=1. On the standard S&P/Fitch scale that move is 3 notches (BBB+, BBB, BBB-, BB+). Also, for country rating (Ind. 12) 2+ notches gives WL=2, while for internal and external ratings (Ind. 11, 13) 2 notches gives WL=1 and 3+ gives WL=2. Which rule applies to the helper's WL output, and is the example wrong? Owner: business (Credit Monitoring).",
+          "Scope: is the country rating change indicator only the calculation (previous and current rating in, notch change and WL out), or does it include fetching the current and 12-months-ago rating from the public source (REQ-02-02 and Ind. 12 say fetch plus compare)? This decides whether there is an integration layer and a deep-recon step. Owner: business/pm.",
+          "Q2 from the POC, which blocks the country rating logic: for the 'Other' segment, which agency is the reference (Fitch, S&P, or the most conservative of the three)? Germany and Turkey are Fitch. Owner: Credit Policy.",
+          "Is the notch calculator for clients (internal and external rating, Ind. 11 and 13), for countries (Ind. 12), or both? The request says 'a client's or a country's'. Is the helper one function with a rating-type parameter, or two?",
+          "Rating scale definition: does it handle the Moody's scale (Aaa to C) and the S&P/Fitch scale? Are the internal AAA to CCC- steps one notch each? How are outlooks, watch status, withdrawn or not-rated, and defaults (D, SD, RD) treated? Is a cross-agency mapping needed?",
+          "Direction and sign convention: upgrades give a WL of 0 and the notch count is reported how (negative, positive, absolute)? What happens on invalid or unknown ratings and on missing previous ratings (error type, or null with a manual-entry fallback)? Is there a cap or a pseudo-notch for a downgrade into default?",
+          "Dependencies and consumption: may the delivery add dependencies (the repo is dependency-free, and a scraper might want one)? How do other POC parts consume it: import only? Is there a data-freshness or source-link output requirement (REQ-02-07)? Owner: human decision (ARC-deps and ARC-layer).",
+          "No performance, security, privacy, audit, observability or compliance targets are stated. Treat them as n/a unless the human says otherwise. The POC's 30-second fetch limit applies only if the fetch is in scope."
+        ]
+      }
+    },
+    {
+      "n": 2,
+      "name": "02-create-spec",
+      "step": "create",
+      "skill": "bmad-spec",
+      "batch": null,
+      "at": "2026-10-14T03:08:30Z",
+      "rc": 0,
+      "seconds": 94,
+      "cost": 0.3897589,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md"
+      ],
+      "status": "complete",
+      "json": {
+        "status": "complete",
+        "files": [
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md"
+        ],
+        "assumptions": [
+          "Rating scale is the 19-step S&P/Fitch scale AAA to CCC-, taken from the POC's Ind. 10 dropdown (AAA to CCC-).",
+          "Any caller other than Ind. 12 uses the Ind. 11/13 thresholds. One notch under that rule gives WL0, because the POC states no WL for it.",
+          "A downgrade is a positive notch count. Only downgrades give WL above 0; upgrades and no change give WL0.",
+          "The helper only does the calculation. Fetching ratings and their 12-month history is out of scope.",
+          "Node 18+ ESM with no dependencies, placed in src/ratings and src/indicators, comes from CLAUDE.md, not from the request.",
+          "Invalid, missing or unknown ratings return an error result, never a guessed number. This lets callers fall back to manual entry (REQ-02-08).",
+          "I used the out folder directly as the spec folder, as you instructed. The skill's default would be specs/spec-rating-notch-helper/."
+        ],
+        "open_questions": [
+          "Conflict in the POC: REQ-06-02 says BBB+ to BB+ is a 2-notch downgrade giving WL1. On the 19-step scale it is 3 notches (BBB+, BBB, BBB-, BB+), which gives WL2. Which is right, the example or the scale?",
+          "Conflict in the POC: Ind. 12 gives 1 notch WL1 and 2+ notches WL2. Ind. 11 and 13 give 2 notches WL1 and 3+ notches WL2. Does the calculator take an indicator selector, and what is the default?",
+          "Q2: which agency's scale applies to the Other segment, and must Moody's notation (Aaa, Baa1 and so on) be accepted?",
+          "Are ratings below CCC- (CC, C, D/SD) and outlook or watch suffixes accepted or rejected?",
+          "Interface (CON-interface, CON-errors): function names, input normalisation (case, whitespace, '-' variants) and return shape (result object or throw). The readiness file proposes defaults.",
+          "ARC-style, ARC-components, ARC-layer, ARC-stack, ARC-deps: confirm a Node ESM library with no dependencies. The request names no language and CLAUDE.md is the only evidence.",
+          "ARC-data, ARC-integration, DEL-deploy: confirm there is no store, no external call and no deployment (import-only). ARC-ui is settled by the request: 'not about screens'.",
+          "PRD-priority: REQ-06-02 is Should and Ind. 12 is Must. Do they ship together, or does Ind. 12 go first?"
+        ]
+      }
+    },
+    {
+      "n": 3,
+      "name": "03-update-spec",
+      "step": "update",
+      "skill": "bmad-spec",
+      "batch": 1,
+      "at": "2026-10-14T03:11:10Z",
+      "rc": 0,
+      "seconds": 67,
+      "cost": 0.3111455,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md"
+      ],
+      "status": "complete",
+      "json": {
+        "status": "complete",
+        "files": [
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md"
+        ],
+        "conflicts_with_prior_decisions": [
+          {
+            "decisions": [
+              "B-5",
+              "B-2"
+            ],
+            "prior": "B-5 gives `notchCalculator(previous, current)` two arguments, but B-2 makes `profile` a required argument.",
+            "applied": "The spec uses `notchCalculator(previous, current, profile)`, recorded as an assumption."
+          },
+          {
+            "decisions": [
+              "B-5",
+              "B-17 (CAP-3)"
+            ],
+            "prior": "CAP-3 said the country indicator returns the notch change and the WL. B-5 makes `countryRatingChangeWl` return only 0, 1 or 2.",
+            "applied": "CAP-3 now returns the WL only. Callers use `notchChange` for the notch count."
+          },
+          {
+            "decisions": [
+              "B-2",
+              "B-10"
+            ],
+            "prior": "The earlier assumption was that any non-Ind. 12 caller uses the Ind. 11/13 thresholds. B-2 says there is no hidden default.",
+            "applied": "The default is removed. The profile is required. 1 notch under `ind11-13` still gives WL0."
+          },
+          {
+            "decisions": [
+              "B-8"
+            ],
+            "prior": "The POC priorities read as REQ-06-02 Should and Ind. 12 Must. B-8 reverses this: REQ-06-02 is Must and goes first, REQ-03-12 is Should.",
+            "applied": "The spec has a Delivery order section with the B-8 order."
+          },
+          {
+            "decisions": [
+              "B-1"
+            ],
+            "prior": "Constraint A4 says scoring mirrors the Excel dropdown sheet exactly. B-1 rules the POC example wrong.",
+            "applied": "A4 now has an exception for the BBB+ → BB+ example (3 notches, WL2)."
+          }
+        ],
+        "open_questions": [
+          "The error-result shape is unspecified for `notchChange` (returns an integer) and `countryRatingChangeWl` (returns 0, 1 or 2). I assumed `notchCalculator` returns `{ error }` and the other two throw `Error`. Please confirm.",
+          "Please confirm `profile` as the third argument of `notchCalculator`.",
+          "Someone needs to own the correction to the POC text for REQ-06-02. It says BBB+ → BB+ is a 2-notch downgrade giving WL1."
+        ]
+      }
+    },
+    {
+      "n": 4,
+      "name": "04-update-spec",
+      "step": "update",
+      "skill": "bmad-spec",
+      "batch": 2,
+      "at": "2026-10-14T03:12:59Z",
+      "rc": 0,
+      "seconds": 34,
+      "cost": 0.2309877,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md"
+      ],
+      "status": "complete",
+      "json": {
+        "status": "complete",
+        "files": [
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md"
+        ],
+        "conflicts_with_prior_decisions": [],
+        "open_questions": []
+      }
+    },
+    {
+      "n": 5,
+      "name": "05-create-architecture",
+      "step": "create",
+      "skill": "bmad-architecture",
+      "batch": null,
+      "at": "2026-10-14T03:13:39Z",
+      "rc": 0,
+      "seconds": 71,
+      "cost": 0.36030229999999996,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md"
+      ],
+      "status": "partial",
+      "json": {
+        "status": "partial",
+        "intent": "create",
+        "altitude": "feature",
+        "purpose": "build-substrate",
+        "doc_workspace": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out",
+        "spine": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "memlog": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        "companions": [
+          "SPEC.md",
+          "notch-wl-tables.md",
+          "readiness.md"
+        ],
+        "assumptions": [
+          "Paradigm is a functional core: a pure-function library in two one-way layers, with src/indicators importing src/ratings and never the reverse. It follows CLAUDE.md and B-5/B-6.",
+          "The WL threshold tables live once, in src/ratings/notch.mjs, in a frozen map keyed by 'ind12' and 'ind11-13'. countryRatingChangeWl reads the ind12 entry through an internal export of notch.mjs that is not part of the public interface bound in B-5, so Ind. 12 cannot drift from the calculator.",
+          "Validation is strict and shared: only strings exactly equal to one of the 19 RATING_SCALE entries are accepted, with no trimming or case folding. This follows B-3 and B-4.",
+          "A success result from notchCalculator never contains `error`, and an error result never contains `wl`. This shape rule is my inference from B-20.",
+          "Node.js 18+ is kept as the floor from CLAUDE.md. I did not web-verify it: no technology beyond Node built-ins is named, and the dev machine runs 22.11.0.",
+          "The existing .memlog.md from the spec run was reused and appended to, rather than re-initialised.",
+          "The six architecture decisions (AD-1 to AD-6) are all inferred from the inputs, because no human was available."
+        ],
+        "open_questions": [
+          "The Reviewer Gate was only partly run. lint_spine.py passed with 0 findings, but I did not dispatch the parallel subagent lenses (rubric walker, web-verification lens, adversarial two-builder lens). They should be run before downstream use.",
+          "Node 18 reached upstream end of life in April 2025 (from my own knowledge, not checked against the web). Should the floor stay at CLAUDE.md's 18+, or be raised to a supported LTS? The decision belongs to the human, and nothing in this design depends on it."
+        ],
+        "conflicts_with_prior_decisions": []
+      }
+    },
+    {
+      "n": 6,
+      "name": "06-update-spec",
+      "step": "update",
+      "skill": "bmad-spec",
+      "batch": 3,
+      "at": "2026-10-14T03:15:41Z",
+      "rc": 0,
+      "seconds": 52,
+      "cost": 0.2725319,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md"
+      ],
+      "status": "complete",
+      "json": {
+        "status": "complete",
+        "files": [
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md"
+        ],
+        "conflicts_with_prior_decisions": [
+          {
+            "decision": "B-40",
+            "conflicts_with": [
+              "B-3",
+              "B-4",
+              "B-32",
+              "B-36 (AD-4 'no normalisation')"
+            ],
+            "detail": "B-40 trims input and ignores case ('bbb+' = 'BBB+'). The earlier decisions required exact match with no trimming or case folding. B-40 is later and is applied; the earlier strictness is superseded on that point."
+          },
+          {
+            "decision": "B-40",
+            "conflicts_with": [
+              "B-20"
+            ],
+            "detail": "B-40 says invalid input is rejected with a RangeError. B-20 has notchCalculator return {error} instead of throwing. The spec uses RangeError for notchChange and countryRatingChangeWl and keeps {error} for notchCalculator."
+          },
+          {
+            "decision": "B-31",
+            "conflicts_with": [
+              "B-2",
+              "B-21"
+            ],
+            "detail": "B-31 lists notchCalculator(previous, current) with no profile argument. B-2 and B-21 require a profile with no default. The spec keeps the required third argument until the human decides."
+          }
+        ],
+        "open_questions": [
+          "Should notchCalculator return {error} (B-20) or throw a RangeError (B-40) for invalid input?",
+          "Case-insensitive matching makes Moody's 'Aaa' fold to 'AAA', yet Moody's notation must be rejected. Is 'Aaa' accepted as AAA or rejected?",
+          "Which notchCalculator signature do the other POC parts import: (previous, current) as in B-31, or (previous, current, profile) as in B-21?"
+        ]
+      }
+    },
+    {
+      "n": 7,
+      "name": "07-update-architecture",
+      "step": "update",
+      "skill": "bmad-architecture",
+      "batch": 3,
+      "at": "2026-10-14T03:17:12Z",
+      "rc": 0,
+      "seconds": 29,
+      "cost": 0.20590619999999998,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md"
+      ],
+      "status": "partial",
+      "json": {
+        "status": "partial",
+        "intent": "update",
+        "altitude": "feature",
+        "purpose": "build-substrate",
+        "doc_workspace": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out",
+        "spine": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "memlog": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        "companions": [
+          "notch-wl-tables.md",
+          "readiness.md"
+        ],
+        "assumptions": [
+          "Only B-40 changed the spine. AD-5 now uses a trim plus case-insensitive validator and throws RangeError. The conventions row and the AD-6 test list were aligned to match.",
+          "B-32 and B-36 are overridden on the 'exact match, no normalisation' point by B-40.",
+          "B-28, B-29, B-30, B-33, B-34, B-35, B-37, B-38, B-39 and B-41 were already reflected in the spine, or concern process only. They are logged, with no change.",
+          "AD-3's internal ind12 export is kept. B-31 does not address it.",
+          "The Reviewer Gate lenses were not dispatched in this run. B-28 moves them to bmad-review.",
+          "I did not run lint_spine.py after this edit.",
+          "The AD-5 edit was not re-checked or re-linted. The spine's updated: frontmatter date was not changed."
+        ],
+        "open_questions": [
+          "Which notchCalculator signature do other POC parts import: (previous, current), as B-31 states, or (previous, current, profile), as B-21/B-2 and AD-3 state? The spine keeps profile required until a human decides.",
+          "Is Moody's 'Aaa' rejected, as B-40 requires, or folded to 'AAA' by the case-insensitive rule? The two cannot both hold, and the validator needs a ruling.",
+          "For validation failures, does notchCalculator return {error} (B-20/AD-5), or reject with RangeError (B-40)? The spine keeps {error} for notchCalculator and RangeError for notchChange and countryRatingChangeWl.",
+          "The review lenses (rubric walker, web-verification, adversarial two-builder) are still to run in bmad-review before the architecture binds the job (B-28).",
+          "Node 18 is past upstream end of life. It stays as the floor per B-29/B-34, and this was not web-verified."
+        ],
+        "conflicts_with_prior_decisions": [
+          "B-31 vs B-21/B-2/AD-3: B-31 lists notchCalculator(previous, current) with no profile, while the profile argument is required and has no default. Not applied.",
+          "B-40 vs B-20/AD-5: B-40 says rejection with RangeError, while B-20 says notchCalculator returns {error} and does not throw. Resolved per function in the spine, pending human confirmation.",
+          "B-40 vs B-3/B-4/B-32/B-36/AD-5 (strict exact match, no normalisation): B-40 supersedes these and was applied.",
+          "B-40's case-insensitivity vs its own rejection of Moody's notation: 'Aaa' becomes ambiguous."
+        ]
+      }
+    },
+    {
+      "n": 8,
+      "name": "08-update-spec",
+      "step": "update",
+      "skill": "bmad-spec",
+      "batch": 4,
+      "at": "2026-10-14T03:18:27Z",
+      "rc": 0,
+      "seconds": 67,
+      "cost": 0.32044140000000004,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md"
+      ],
+      "status": "complete",
+      "json": {
+        "status": "complete",
+        "files": [
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md"
+        ],
+        "conflicts_with_prior_decisions": [
+          {
+            "decision": "B-44 / B-48 (notchCalculator(previous, current), no profile)",
+            "conflicts_with": "B-2 (profile required, no default), B-21 (confirms the three-argument signature), and the earlier B-31 hold that kept the three-argument form",
+            "resolution": "Applied as stated by the business. The required-profile rule and the missing/unknown-profile error are retired for notchCalculator, and the WL rule inside it is assumed to be ind11-13."
+          }
+        ],
+        "open_questions": [
+          "Which WL rule does the profile-less notchCalculator use? ind11-13 is assumed, and ind12 is stricter at 1 and 2 notches. Confirm, and confirm the profile selector is dropped entirely.",
+          "Does Moody's 'Aaa' fold to 'AAA' under the case-insensitive rule, or is it rejected? Ruling C1 does not name it, and the spec folds it."
+        ]
+      }
+    },
+    {
+      "n": 9,
+      "name": "09-update-architecture",
+      "step": "update",
+      "skill": "bmad-architecture",
+      "batch": 4,
+      "at": "2026-10-14T03:20:21Z",
+      "rc": 0,
+      "seconds": 38,
+      "cost": 0.24831660000000003,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md"
+      ],
+      "status": "partial",
+      "json": {
+        "status": "partial",
+        "intent": "update",
+        "altitude": "feature",
+        "purpose": "build-substrate",
+        "doc_workspace": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out",
+        "spine": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "memlog": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        "companions": [
+          "notch-wl-tables.md",
+          "readiness.md"
+        ],
+        "assumptions": [
+          "notchCalculator(previous, current) uses the ind11-13 WL rule. The business dropped the profile argument without naming a rule, and REQ-06-02's own example (2 notches, WL1) matches ind11-13. countryRatingChangeWl keeps ind12.",
+          "'Aaa' folds to 'AAA' by the case-insensitive rule. The C1 ruling (B-43/B-49) does not name it. Every other Moody's rating is rejected.",
+          "The reviewer lenses and lint_spine.py were not run in this pass. B-51 defers the lenses to bmad-review, which runs after these decisions go back to BMad. The spine edits were not re-linted."
+        ],
+        "open_questions": [
+          "Which WL rule does the profile-less notchCalculator use: ind11-13 (assumed) or ind12? Is the profile selector dropped entirely?",
+          "Is 'Aaa' accepted as AAA (case-insensitive fold) or rejected as Moody's notation?"
+        ],
+        "conflicts_with_prior_decisions": [
+          "B-44/B-48 vs B-2/B-21 and the former AD-3: those required a profile argument with no default, and the new ruling drops it. The ruling is applied as stated. AD-3 is rewritten with its ID kept, the 'hidden default profile' prevention and the error result for a missing or unknown profile are retired, and AD-4's WL wording now covers both tables. This supersedes the earlier hold on B-31."
+        ]
+      }
+    },
+    {
+      "n": 10,
+      "name": "10-update-spec",
+      "step": "update",
+      "skill": "bmad-spec",
+      "batch": 5,
+      "at": "2026-10-14T03:21:46Z",
+      "rc": 0,
+      "seconds": 44,
+      "cost": 0.2755291,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md"
+      ],
+      "status": "complete",
+      "json": {
+        "status": "complete",
+        "files": [
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/notch-wl-tables.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+          ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md"
+        ],
+        "conflicts_with_prior_decisions": [],
+        "open_questions": [
+          "B-58/B-61 do not say whether Moody's 'Aaa' is rejected. It case-folds to 'AAA' under the case-insensitive rule, so the spec still accepts it as AAA (an assumption). Confirm, or rule that it is rejected."
+        ]
+      }
+    },
+    {
+      "n": 11,
+      "name": "11-update-architecture",
+      "step": "update",
+      "skill": "bmad-architecture",
+      "batch": 5,
+      "at": "2026-10-14T03:23:05Z",
+      "rc": 0,
+      "seconds": 37,
+      "cost": 0.23014349999999997,
+      "files": [
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md"
+      ],
+      "status": "partial",
+      "json": {
+        "status": "partial",
+        "intent": "update",
+        "altitude": "feature",
+        "purpose": "build-substrate",
+        "doc_workspace": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out",
+        "spine": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "memlog": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        "companions": [
+          "notch-wl-tables.md",
+          "readiness.md"
+        ],
+        "assumptions": [
+          "AD-5: Moody's 'Aaa' still folds to 'AAA' under the case-insensitive rule. B-58/B-61 restate C1 without naming it, and the earlier spec ruling already folded it.",
+          "B-57/B-60 and B-58/B-61 restate B-44/B-48, B-40 and B-43/B-49, so I treated them as confirmations. No AD IDs changed and no new AD was added.",
+          "I did not re-run the Reviewer Gate (lint_spine.py and the lens subagents), which headless mode normally requires. The edit was three wording changes in AD-3, AD-5 and Deferred, and the earlier pass is not re-verified. Re-run it before the spine is relied on downstream."
+        ],
+        "open_questions": [
+          "Is Moody's 'Aaa' accepted as AAA through the case-insensitive fold, or rejected as Moody's notation? B-58/B-61 give no explicit ruling on this string. The spine keeps the fold and lists the question under Deferred."
+        ],
+        "conflicts_with_prior_decisions": []
+      }
+    }
+  ],
+  "ledger": [
+    {
+      "id": "B-1",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Conflict in the POC: REQ-06-02 says BBB+ to BB+ is a 2-notch downgrade giving WL1. On the 19-step scale it is 3 notches (BBB+, BBB, BBB-, BB+), which gives WL2. Which is right, the example or the scale?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "The scale is right and the POC example is wrong: BBB+ to BB+ is 3 notches, WL2 under the Ind. 11/13 rule. The test uses 3/WL2 and the POC text is flagged for correction.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "on the 19-step scale it is 3 notches (BBB+, BBB, BBB−, BB+), which gives WL2 under Ind. 11/13",
+        "at": "2026-10-14T03:10:33Z"
+      },
+      "decision": {
+        "text": "The scale is right and the POC example is wrong: BBB+ to BB+ is 3 notches, WL2 under the Ind. 11/13 rule. The test uses 3/WL2 and the POC text is flagged for correction. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-2",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Conflict in the POC: Ind. 12 gives 1 notch WL1 and 2+ notches WL2. Ind. 11 and 13 give 2 notches WL1 and 3+ notches WL2. Does the calculator take an indicator selector, and what is the default?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "The caller picks the WL rule through a required profile argument ('ind12' or 'ind11-13'); there is no hidden default, and a missing or unknown profile is an error result.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "The helper must not hard-code its caller's indicator: WL rule is chosen by the caller",
+        "at": "2026-10-14T03:10:33Z"
+      },
+      "decision": {
+        "text": "The caller picks the WL rule through a required profile argument ('ind12' or 'ind11-13'); there is no hidden default, and a missing or unknown profile is an error result. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-3",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Q2: which agency's scale applies to the Other segment, and must Moody's notation (Aaa, Baa1 and so on) be accepted?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Only the 19-step S&P/Fitch notation is accepted; Moody's notation is an error result. Choosing the agency for Other stays with Credit Policy (Q2), outside this helper.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Choosing the reference agency for the \"Other\" segment (Q2).",
+        "at": "2026-10-14T03:10:33Z"
+      },
+      "decision": {
+        "text": "Only the 19-step S&P/Fitch notation is accepted; Moody's notation is an error result. Choosing the agency for Other stays with Credit Policy (Q2), outside this helper. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-4",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Are ratings below CCC- (CC, C, D/SD) and outlook or watch suffixes accepted or rejected?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Anything outside the 19 listed ratings is an error result: CC, C, D/SD, and suffixes such as '(neg)'.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Missing, empty, non-string and unrecognised ratings produce an error result naming the offending input",
+        "at": "2026-10-14T03:10:33Z"
+      },
+      "decision": {
+        "text": "Anything outside the 19 listed ratings is an error result: CC, C, D/SD, and suffixes such as '(neg)'. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-5",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Interface (CON-interface, CON-errors): function names, input normalisation (case, whitespace, '-' variants) and return shape (result object or throw). The readiness file proposes defaults.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Take the proposed defaults: notchChange(previous, current), wlFromNotches(notches, profile), countryRatingChange({previous, current}); input is trimmed and case-sensitive with ASCII '-'; return is a result object, never a throw.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+        "quote": "Case-sensitive trimmed input, ASCII \"-\".",
+        "at": "2026-10-14T03:10:34Z"
+      },
+      "decision": {
+        "text": "Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: \"downgrade\" | \"upgrade\" | \"unchanged\", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:51Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-6",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "ARC-style, ARC-components, ARC-layer, ARC-stack, ARC-deps: confirm a Node ESM library with no dependencies. The request names no language and CLAUDE.md is the only evidence.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Confirm: Node 18+ ESM library, no dependencies, one component.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+        "quote": "Default: library (CLAUDE.md: pure functions, no I/O).",
+        "at": "2026-10-14T03:10:34Z"
+      },
+      "decision": {
+        "text": "Plain Node.js ESM (.mjs), no dependencies; tests with node --test next to the code under test/.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:51Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-7",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "ARC-data, ARC-integration, DEL-deploy: confirm there is no store, no external call and no deployment (import-only). ARC-ui is settled by the request: 'not about screens'.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Confirm: no store, no external call, no deployment; consumed by import.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/readiness.md",
+        "quote": "Consumed by import from other POC code; no deployment.",
+        "at": "2026-10-14T03:10:34Z"
+      },
+      "decision": {
+        "text": "C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:51Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-8",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "PRD-priority: REQ-06-02 is Should and Ind. 12 is Must. Do they ship together, or does Ind. 12 go first?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Ship both together: they share one scale and one table, and splitting them adds cost for nothing.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "ship together, or Ind. 12 first?",
+        "at": "2026-10-14T03:10:35Z"
+      },
+      "decision": {
+        "text": "REQ-06-02 comes first (Must); REQ-03-12 follows (Should).",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:52Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-9",
+      "kind": "assumption",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Rating scale is the 19-step S&P/Fitch scale AAA to CCC-, taken from the POC's Ind. 10 dropdown (AAA to CCC-).",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: 19-step scale AAA to CCC-.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Rating scale is the S&P/Fitch 19-step scale AAA…CCC−",
+        "at": "2026-10-14T03:10:35Z"
+      },
+      "decision": {
+        "text": "Accept: 19-step scale AAA to CCC-. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-10",
+      "kind": "assumption",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Any caller other than Ind. 12 uses the Ind. 11/13 thresholds. One notch under that rule gives WL0, because the POC states no WL for it.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: under the Ind. 11/13 rule 1 notch gives WL0.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "1 notch under Ind. 11/13 gives WL0 (the POC states no WL for it)",
+        "at": "2026-10-14T03:10:35Z"
+      },
+      "decision": {
+        "text": "Accept: under the Ind. 11/13 rule 1 notch gives WL0. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-11",
+      "kind": "assumption",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "A downgrade is a positive notch count. Only downgrades give WL above 0; upgrades and no change give WL0.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: a downgrade is positive; upgrade and no change give WL0.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Downgrade is a positive notch count; only downgrades give WL>0.",
+        "at": "2026-10-14T03:10:35Z"
+      },
+      "decision": {
+        "text": "Accept: a downgrade is positive; upgrade and no change give WL0. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-12",
+      "kind": "assumption",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "The helper only does the calculation. Fetching ratings and their 12-month history is out of scope.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: calculation only; fetching ratings and history is out of scope.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Fetching or scraping sovereign ratings or their 12-month history",
+        "at": "2026-10-14T03:10:36Z"
+      },
+      "decision": {
+        "text": "Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:52Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-13",
+      "kind": "assumption",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Node 18+ ESM with no dependencies, placed in src/ratings and src/indicators, comes from CLAUDE.md, not from the request.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: Node 18+ ESM, no dependencies, from CLAUDE.md.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "The language and layout above come from CLAUDE.md, not from the request",
+        "at": "2026-10-14T03:10:36Z"
+      },
+      "decision": {
+        "text": "Plain Node.js ESM (.mjs), no dependencies; tests with node --test next to the code under test/.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:53Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-14",
+      "kind": "assumption",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "Invalid, missing or unknown ratings return an error result, never a guessed number. This lets callers fall back to manual entry (REQ-02-08).",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: invalid, missing or unknown ratings give an error result, never a guessed number.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "no numeric result is ever guessed",
+        "at": "2026-10-14T03:10:36Z"
+      },
+      "decision": {
+        "text": "Accept: invalid, missing or unknown ratings give an error result, never a guessed number. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-15",
+      "kind": "assumption",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "I used the out folder directly as the spec folder, as you instructed. The skill's default would be specs/spec-rating-notch-helper/.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: bookkeeping only, no effect on what is built.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Pure functions, no I/O",
+        "at": "2026-10-14T03:10:36Z"
+      },
+      "decision": {
+        "text": "Accept: bookkeeping only, no effect on what is built. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-16",
+      "kind": "decision",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "CAP-1 notch count between two ratings on an ordered scale; downgrade positive, upgrade/same <=0 (REQ-02-02, REQ-06-02)",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept CAP-1 as written.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Same rating → 0; each step down the scale is +1, each step up is −1",
+        "at": "2026-10-14T03:10:37Z"
+      },
+      "decision": {
+        "text": "Accept CAP-1 as written. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-17",
+      "kind": "decision",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "CAP-2 map notch change to WL per indicator profile; Ind.12 profile 1->WL1, 2+->WL2 (REQ-03-12); Ind.11/13 profile 2->WL1, 3+->WL2 (REQ-03-11/13)",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept CAP-2 as written: Ind. 12 1→WL1, 2+→WL2; Ind. 11/13 2→WL1, 3+→WL2.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Ind. 12 profile: 0→WL0, 1→WL1, 2+→WL2.",
+        "at": "2026-10-14T03:10:37Z"
+      },
+      "decision": {
+        "text": "Accept CAP-2 as written: Ind. 12 1→WL1, 2+→WL2; Ind. 11/13 2→WL1, 3+→WL2. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-18",
+      "kind": "decision",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "CAP-3 country rating change indicator: current + 12-months-prior rating in, notch change + WL out; fetching the ratings is NOT in scope (scrape = REQ-02-02 other half)",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept CAP-3: takes both ratings, returns notch change and WL; no fetching.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "the helper holds no state",
+        "at": "2026-10-14T03:10:37Z"
+      },
+      "decision": {
+        "text": "Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:53Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-19",
+      "kind": "decision",
+      "skill": "bmad-spec",
+      "run": 2,
+      "text": "CAP-4 invalid/unknown/missing rating returns explicit error result, never a guessed number (no source states behaviour; analyst must be able to override per A3)",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept CAP-4: explicit error result for missing, unknown or off-scale ratings.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "so the form can fall back to manual entry (REQ-02-08)",
+        "at": "2026-10-14T03:10:37Z"
+      },
+      "decision": {
+        "text": "Accept CAP-4: explicit error result for missing, unknown or off-scale ratings. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:10:54Z"
+      },
+      "batch": 1
+    },
+    {
+      "id": "B-20",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "The error-result shape is unspecified for `notchChange` (returns an integer) and `countryRatingChangeWl` (returns 0, 1 or 2). I assumed `notchCalculator` returns `{ error }` and the other two throw `Error`. Please confirm.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "notchCalculator returns { error: <message naming the offending input> }; notchChange and countryRatingChangeWl, whose return types the human fixed as an integer and 0|1|2, throw an Error naming the offending input. No number is ever guessed.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Invalid input in `notchCalculator` returns `{ error }` naming the input.",
+        "at": "2026-10-14T03:12:35Z"
+      },
+      "decision": {
+        "text": "notchCalculator returns { error: <message naming the offending input> }; notchChange and countryRatingChangeWl, whose return types the human fixed as an integer and 0|1|2, throw an Error naming the offending input. No number is ever guessed. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:12:43Z"
+      },
+      "batch": 2
+    },
+    {
+      "id": "B-21",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "Please confirm `profile` as the third argument of `notchCalculator`.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Confirm: notchCalculator(previous, current, profile), profile required, since B-2 makes the profile required and has no default.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "`notchCalculator` takes `profile` as a third argument",
+        "at": "2026-10-14T03:12:35Z"
+      },
+      "decision": {
+        "text": "Confirm: notchCalculator(previous, current, profile), profile required, since B-2 makes the profile required and has no default. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:12:43Z"
+      },
+      "batch": 2
+    },
+    {
+      "id": "B-22",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "Someone needs to own the correction to the POC text for REQ-06-02. It says BBB+ → BB+ is a 2-notch downgrade giving WL1.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "The PM records the POC text correction as a follow-up in the PR (REQ-06-02 example: BBB+ to BB+ is 3 notches, WL2); this delivery does not edit the POC document.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "someone must own that edit",
+        "at": "2026-10-14T03:12:35Z"
+      },
+      "decision": {
+        "text": "The PM records the POC text correction as a follow-up in the PR (REQ-06-02 example: BBB+ to BB+ is 3 notches, WL2); this delivery does not edit the POC document. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:12:43Z"
+      },
+      "batch": 2
+    },
+    {
+      "id": "B-23",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "{\"decisions\":[\"B-5\",\"B-2\"],\"prior\":\"B-5 gives `notchCalculator(previous, current)` two arguments, but B-2 makes `profile` a required argument.\",\"applied\":\"The spec uses `notchCalculator(previous, current, profile)`, recorded as an assumption.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-24",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "{\"decisions\":[\"B-5\",\"B-17 (CAP-3)\"],\"prior\":\"CAP-3 said the country indicator returns the notch change and the WL. B-5 makes `countryRatingChangeWl` return only 0, 1 or 2.\",\"applied\":\"CAP-3 now returns the WL only. Callers use `notchChange` for the notch count.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-25",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "{\"decisions\":[\"B-2\",\"B-10\"],\"prior\":\"The earlier assumption was that any non-Ind. 12 caller uses the Ind. 11/13 thresholds. B-2 says there is no hidden default.\",\"applied\":\"The default is removed. The profile is required. 1 notch under `ind11-13` still gives WL0.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-26",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "{\"decisions\":[\"B-8\"],\"prior\":\"The POC priorities read as REQ-06-02 Should and Ind. 12 Must. B-8 reverses this: REQ-06-02 is Must and goes first, REQ-03-12 is Should.\",\"applied\":\"The spec has a Delivery order section with the B-8 order.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-27",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 3,
+      "text": "{\"decisions\":[\"B-1\"],\"prior\":\"Constraint A4 says scoring mirrors the Excel dropdown sheet exactly. B-1 rules the POC example wrong.\",\"applied\":\"A4 now has an exception for the BBB+ → BB+ example (3 notches, WL2).\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-28",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "The Reviewer Gate was only partly run. lint_spine.py passed with 0 findings, but I did not dispatch the parallel subagent lenses (rubric walker, web-verification lens, adversarial two-builder lens). They should be run before downstream use.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: the lint passed; the independent review lenses run as the review round after shaping (bmad-review), before the architecture binds the job.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "status: final",
+        "at": "2026-10-14T03:15:07Z"
+      },
+      "decision": {
+        "text": "Accept: the lint passed; the independent review lenses run as the review round after shaping (bmad-review), before the architecture binds the job. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-29",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "Node 18 reached upstream end of life in April 2025 (from my own knowledge, not checked against the web). Should the floor stay at CLAUDE.md's 18+, or be raised to a supported LTS? The decision belongs to the human, and nothing in this design depends on it.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Keep Node 18+ as in CLAUDE.md (the floor the project already states); no code depends on it, so raising it later changes nothing built.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "Node.js (ESM, `node:test`) | 18+ (CLAUDE.md floor; dev machine runs 22.11.0)",
+        "at": "2026-10-14T03:15:07Z"
+      },
+      "decision": {
+        "text": "Keep Node 18+ as in CLAUDE.md (the floor the project already states); no code depends on it, so raising it later changes nothing built. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-30",
+      "kind": "assumption",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "Paradigm is a functional core: a pure-function library in two one-way layers, with src/indicators importing src/ratings and never the reverse. It follows CLAUDE.md and B-5/B-6.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: functional core, two one-way layers, indicators import ratings only.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "dependencies point one way",
+        "at": "2026-10-14T03:15:08Z"
+      },
+      "decision": {
+        "text": "Accept: functional core, two one-way layers, indicators import ratings only. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-31",
+      "kind": "assumption",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "The WL threshold tables live once, in src/ratings/notch.mjs, in a frozen map keyed by 'ind12' and 'ind11-13'. countryRatingChangeWl reads the ind12 entry through an internal export of notch.mjs that is not part of the public interface bound in B-5, so Ind. 12 cannot drift from the calculator.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: thresholds live once in notch.mjs; Ind. 12 reads the ind12 entry through a non-public internal export.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "an internal export of `notch.mjs` that is not part of the public interface listed in the SPEC",
+        "at": "2026-10-14T03:15:08Z"
+      },
+      "decision": {
+        "text": "Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: \"downgrade\" | \"upgrade\" | \"unchanged\", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:24Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-32",
+      "kind": "assumption",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "Validation is strict and shared: only strings exactly equal to one of the 19 RATING_SCALE entries are accepted, with no trimming or case folding. This follows B-3 and B-4.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: strict exact-match validation on the 19 RATING_SCALE strings, no trimming or case folding.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "no trim, no case folding, no suffix or Moody's handling",
+        "at": "2026-10-14T03:15:08Z"
+      },
+      "decision": {
+        "text": "Accept: strict exact-match validation on the 19 RATING_SCALE strings, no trimming or case folding. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-33",
+      "kind": "assumption",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "A success result from notchCalculator never contains `error`, and an error result never contains `wl`. This shape rule is my inference from B-20.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: success results never carry error; error results never carry wl.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "A success result never contains `error`; an error result never contains `wl`.",
+        "at": "2026-10-14T03:15:08Z"
+      },
+      "decision": {
+        "text": "Accept: success results never carry error; error results never carry wl. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-34",
+      "kind": "assumption",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "Node.js 18+ is kept as the floor from CLAUDE.md. I did not web-verify it: no technology beyond Node built-ins is named, and the dev machine runs 22.11.0.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: Node 18+ floor kept, same as B-29.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "18+ (CLAUDE.md floor; dev machine runs 22.11.0)",
+        "at": "2026-10-14T03:15:09Z"
+      },
+      "decision": {
+        "text": "Accept: Node 18+ floor kept, same as B-29. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-35",
+      "kind": "assumption",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "The existing .memlog.md from the spec run was reused and appended to, rather than re-initialised.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept: BMad's working log is reused; it only affects BMad's own notes, not the code.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "companions: [notch-wl-tables.md, readiness.md]",
+        "at": "2026-10-14T03:15:15Z"
+      },
+      "decision": {
+        "text": "Accept: BMad's working log is reused; it only affects BMad's own notes, not the code. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-36",
+      "kind": "assumption",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "The six architecture decisions (AD-1 to AD-6) are all inferred from the inputs, because no human was available.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept AD-1..AD-6 as written; they are inferred from the spec and CLAUDE.md, and I confirm them with the human now.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "binds: [CAP-1, CAP-2, CAP-3, CAP-4]",
+        "at": "2026-10-14T03:15:09Z"
+      },
+      "decision": {
+        "text": "Accept AD-1..AD-6 as written; they are inferred from the spec and CLAUDE.md, and I confirm them with the human now. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-37",
+      "kind": "decision",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "Paradigm: functional core / pure-function library, two layers: ratings (domain primitives) <- indicators (POC rules). indicators may import ratings, never reverse. No I/O anywhere.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "Functional core: pure functions over plain values, no I/O, no state, no module-level mutable data.",
+        "at": "2026-10-14T03:15:09Z"
+      },
+      "decision": {
+        "text": "Accept. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-38",
+      "kind": "decision",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "AD-2 single scale source: RATING_SCALE is the only rating->index mapping; every notch/WL computation goes via notchChange.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "`RATING_SCALE` (frozen array, the 19 ratings AAA..CCC-, best first) in `src/ratings/notch.mjs` is the only source of rating order.",
+        "at": "2026-10-14T03:15:09Z"
+      },
+      "decision": {
+        "text": "Accept. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-39",
+      "kind": "decision",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "AD-3 WL threshold tables live once in notch.mjs (profiles ind12, ind11-13); countryRatingChangeWl reuses ind12, no re-implemented thresholds.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "never its own `if` ladder",
+        "at": "2026-10-14T03:15:10Z"
+      },
+      "decision": {
+        "text": "Accept. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-40",
+      "kind": "decision",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "AD-4 error contract: notchCalculator returns {error}; notchChange & countryRatingChangeWl throw Error naming input. One shared validation; exact match on 19 ratings, no normalisation.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "`notchCalculator` returns `{ error: <message> }` for any validation failure",
+        "at": "2026-10-14T03:15:10Z"
+      },
+      "decision": {
+        "text": "C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-41",
+      "kind": "decision",
+      "skill": "bmad-architecture",
+      "run": 5,
+      "text": "AD-5 sign convention: positive=downgrade; WL>0 only for downgrades.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "WL > 0 only for downgrades; upgrade and unchanged give WL 0.",
+        "at": "2026-10-14T03:15:10Z"
+      },
+      "decision": {
+        "text": "Accept. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:15:25Z"
+      },
+      "batch": 3
+    },
+    {
+      "id": "B-42",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 6,
+      "text": "Should notchCalculator return {error} (B-20) or throw a RangeError (B-40) for invalid input?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Keep the split: notchCalculator returns { error } (its result is an object the form can branch on); notchChange and countryRatingChangeWl throw RangeError because their return types are fixed (integer, 0|1|2).",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Spec throws `RangeError` in `notchChange`/`countryRatingChangeWl` and keeps `{ error }` in `notchCalculator`.",
+        "at": "2026-10-14T03:16:47Z"
+      },
+      "decision": {
+        "text": "Keep the split: notchCalculator returns { error } (its result is an object the form can branch on); notchChange and countryRatingChangeWl throw RangeError because their return types are fixed (integer, 0|1|2). (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:16:58Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-43",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 6,
+      "text": "Case-insensitive matching makes Moody's 'Aaa' fold to 'AAA', yet Moody's notation must be rejected. Is 'Aaa' accepted as AAA or rejected?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept 'Aaa' as AAA: the human chose trimmed, case-insensitive matching (B-40), and 'Aaa' is the only Moody's string that collides with the 19-step scale; every other Moody's string (Baa1 …) is still rejected.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Accept it as AAA or reject it?",
+        "at": "2026-10-14T03:16:48Z"
+      },
+      "decision": {
+        "text": "C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:16:58Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-44",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 6,
+      "text": "Which notchCalculator signature do the other POC parts import: (previous, current) as in B-31, or (previous, current, profile) as in B-21?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Signature is notchCalculator(previous, current, profile) with profile required (no default), as B-2 and B-21 decided; B-31's two-argument form was a listing of the public names, not a decision to drop the profile.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Spec keeps the required third argument.",
+        "at": "2026-10-14T03:16:48Z"
+      },
+      "decision": {
+        "text": "Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: \"downgrade\" | \"upgrade\" | \"unchanged\", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:16:58Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-45",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 6,
+      "text": "{\"decision\":\"B-40\",\"conflicts_with\":[\"B-3\",\"B-4\",\"B-32\",\"B-36 (AD-4 'no normalisation')\"],\"detail\":\"B-40 trims input and ignores case ('bbb+' = 'BBB+'). The earlier decisions required exact match with no trimming or case folding. B-40 is later and is applied; the earlier strictness is superseded on that point.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-46",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 6,
+      "text": "{\"decision\":\"B-40\",\"conflicts_with\":[\"B-20\"],\"detail\":\"B-40 says invalid input is rejected with a RangeError. B-20 has notchCalculator return {error} instead of throwing. The spec uses RangeError for notchChange and countryRatingChangeWl and keeps {error} for notchCalculator.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-47",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 6,
+      "text": "{\"decision\":\"B-31\",\"conflicts_with\":[\"B-2\",\"B-21\"],\"detail\":\"B-31 lists notchCalculator(previous, current) with no profile argument. B-2 and B-21 require a profile with no default. The spec keeps the required third argument until the human decides.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-48",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "Which notchCalculator signature do other POC parts import: (previous, current), as B-31 states, or (previous, current, profile), as B-21/B-2 and AD-3 state? The spine keeps profile required until a human decides.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Keep profile required: notchCalculator(previous, current, profile). B-31's two-argument form is a shorthand; Ind. 11/13 pass 'ind11-13', Ind. 12 uses 'ind12'.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "`notchCalculator` requires `profile`; missing or unknown is an error result.",
+        "at": "2026-10-14T03:18:01Z"
+      },
+      "decision": {
+        "text": "Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: \"downgrade\" | \"upgrade\" | \"unchanged\", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:18:09Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-49",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "Is Moody's 'Aaa' rejected, as B-40 requires, or folded to 'AAA' by the case-insensitive rule? The two cannot both hold, and the validator needs a ruling.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Case-insensitivity wins: 'Aaa' is folded to AAA (it is the same letters as the S&P/Fitch AAA). Every other Moody's notation (Aa1, Baa2, …) stays rejected. Credit Policy owns Moody's mapping later.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "trims the input and matches it case-insensitively against `RATING_SCALE`",
+        "at": "2026-10-14T03:18:01Z"
+      },
+      "decision": {
+        "text": "C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:18:09Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-50",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "For validation failures, does notchCalculator return {error} (B-20/AD-5), or reject with RangeError (B-40)? The spine keeps {error} for notchCalculator and RangeError for notchChange and countryRatingChangeWl.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Keep the per-function contract of AD-5: notchCalculator returns {error}; notchChange and countryRatingChangeWl throw RangeError naming the input.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "`notchCalculator` returns `{ error: <message> }` for any validation failure",
+        "at": "2026-10-14T03:18:01Z"
+      },
+      "decision": {
+        "text": "Keep the per-function contract of AD-5: notchCalculator returns {error}; notchChange and countryRatingChangeWl throw RangeError naming the input. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:18:10Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-51",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "The review lenses (rubric walker, web-verification, adversarial two-builder) are still to run in bmad-review before the architecture binds the job (B-28).",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Yes: run the bmad-review lenses (rubric walker, web-verification, adversarial two-builder) after these decisions go back to BMad, before the architecture binds the job. Process only.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        "quote": "independent review lenses run as bmad-review after shaping, before architecture binds the job",
+        "at": "2026-10-14T03:18:01Z"
+      },
+      "decision": {
+        "text": "Yes: run the bmad-review lenses (rubric walker, web-verification, adversarial two-builder) after these decisions go back to BMad, before the architecture binds the job. Process only. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:18:10Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-52",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "Node 18 is past upstream end of life. It stays as the floor per B-29/B-34, and this was not web-verified.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Accept Node 18+ as the floor, as CLAUDE.md states; no web verification needed for a built-ins-only library.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/.memlog.md",
+        "quote": "Node 18 is past upstream EOL; kept as floor per CLAUDE.md",
+        "at": "2026-10-14T03:18:02Z"
+      },
+      "decision": {
+        "text": "Accept Node 18+ as the floor, as CLAUDE.md states; no web verification needed for a built-ins-only library. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:18:10Z"
+      },
+      "batch": 4
+    },
+    {
+      "id": "B-53",
+      "kind": "conflict",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "B-31 vs B-21/B-2/AD-3: B-31 lists notchCalculator(previous, current) with no profile, while the profile argument is required and has no default. Not applied.",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-54",
+      "kind": "conflict",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "B-40 vs B-20/AD-5: B-40 says rejection with RangeError, while B-20 says notchCalculator returns {error} and does not throw. Resolved per function in the spine, pending human confirmation.",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-55",
+      "kind": "conflict",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "B-40 vs B-3/B-4/B-32/B-36/AD-5 (strict exact match, no normalisation): B-40 supersedes these and was applied.",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-56",
+      "kind": "conflict",
+      "skill": "bmad-architecture",
+      "run": 7,
+      "text": "B-40's case-insensitivity vs its own rejection of Moody's notation: 'Aaa' becomes ambiguous.",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-57",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 8,
+      "text": "Which WL rule does the profile-less notchCalculator use? ind11-13 is assumed, and ind12 is stricter at 1 and 2 notches. Confirm, and confirm the profile selector is dropped entirely.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Confirm: notchCalculator(previous, current) has no profile argument and applies the ind11-13 rule (<=1 notch WL0, 2 WL1, 3+ WL2), as REQ-06-02's own example (2 notches -> WL1) matches it; ind12 stays internal to countryRatingChangeWl.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "REQ-06-02's own example (2 notches → WL1) matches `ind11-13`",
+        "at": "2026-10-14T03:19:50Z"
+      },
+      "decision": {
+        "text": "Confirm: notchCalculator(previous, current) has no profile argument and applies the ind11-13 rule (<=1 notch WL0, 2 WL1, 3+ WL2), as REQ-06-02's own example (2 notches -> WL1) matches it; ind12 stays internal to countryRatingChangeWl. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:20:01Z"
+      },
+      "batch": 5
+    },
+    {
+      "id": "B-58",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 8,
+      "text": "Does Moody's 'Aaa' fold to 'AAA' under the case-insensitive rule, or is it rejected? Ruling C1 does not name it, and the spec folds it.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Confirm: 'Aaa' folds to 'AAA' under the case-insensitive rule (same letters as AAA); every other Moody's notation (Aa1, Baa1, ...) is rejected.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "`Aaa` folds to `AAA` under the case-insensitive rule",
+        "at": "2026-10-14T03:19:51Z"
+      },
+      "decision": {
+        "text": "C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:20:01Z"
+      },
+      "batch": 5
+    },
+    {
+      "id": "B-59",
+      "kind": "conflict",
+      "skill": "bmad-spec",
+      "run": 8,
+      "text": "{\"decision\":\"B-44 / B-48 (notchCalculator(previous, current), no profile)\",\"conflicts_with\":\"B-2 (profile required, no default), B-21 (confirms the three-argument signature), and the earlier B-31 hold that kept the three-argument form\",\"resolution\":\"Applied as stated by the business. The required-profile rule and the missing/unknown-profile error are retired for notchCalculator, and the WL rule inside it is assumed to be ind11-13.\"}",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-60",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 9,
+      "text": "Which WL rule does the profile-less notchCalculator use: ind11-13 (assumed) or ind12? Is the profile selector dropped entirely?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Same as B-57: notchCalculator(previous, current) has no profile argument and applies the ind11-13 rule; ind12 stays internal to countryRatingChangeWl. The profile selector is dropped entirely.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "`notchCalculator` takes no profile and uses the `ind11-13` entry",
+        "at": "2026-10-14T03:21:15Z"
+      },
+      "decision": {
+        "text": "Same as B-57: notchCalculator(previous, current) has no profile argument and applies the ind11-13 rule; ind12 stays internal to countryRatingChangeWl. The profile selector is dropped entirely. (accepted: \"e2e: no prepared answer fits — Michael's proposal accepted\")",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:21:24Z"
+      },
+      "batch": 5
+    },
+    {
+      "id": "B-61",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 9,
+      "text": "Is 'Aaa' accepted as AAA (case-insensitive fold) or rejected as Moody's notation?",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Same as B-58: 'Aaa' folds to 'AAA' under the case-insensitive rule; every other Moody's notation is rejected.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/ARCHITECTURE-SPINE.md",
+        "quote": "\"Aaa\"` folds to `AAA` by the case-insensitive rule",
+        "at": "2026-10-14T03:21:16Z"
+      },
+      "decision": {
+        "text": "C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:21:24Z"
+      },
+      "batch": 5
+    },
+    {
+      "id": "B-62",
+      "kind": "conflict",
+      "skill": "bmad-architecture",
+      "run": 9,
+      "text": "B-44/B-48 vs B-2/B-21 and the former AD-3: those required a profile argument with no default, and the new ruling drops it. The ruling is applied as stated. AD-3 is rewritten with its ID kept, the 'hidden default profile' prevention and the error result for a missing or unknown profile are retired, and AD-4's WL wording now covers both tables. This supersedes the earlier hold on B-31.",
+      "needs_human": false,
+      "status": "noted"
+    },
+    {
+      "id": "B-63",
+      "kind": "question",
+      "skill": "bmad-spec",
+      "run": 10,
+      "text": "B-58/B-61 do not say whether Moody's 'Aaa' is rejected. It case-folds to 'AAA' under the case-insensitive rule, so the spec still accepts it as AAA (an assumption). Confirm, or rule that it is rejected.",
+      "needs_human": true,
+      "status": "decided",
+      "proposal": {
+        "text": "Keep the case-insensitive rule: 'Aaa' (and 'aaa') folds to AAA and is accepted. Every other Moody's rating carries a digit and is rejected. Tests cover 'Aaa' → AAA explicitly.",
+        "file": ".work/JOB-20261014-0507-rating-notch-helper/bmad/out/SPEC.md",
+        "quote": "Every other Moody's rating carries a digit and is rejected.",
+        "at": "2026-10-14T03:22:44Z"
+      },
+      "decision": {
+        "text": "C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive (\"bbb+\" = \"BBB+\"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.",
+        "by": "human: e2e-human 2026-10-14",
+        "at": "2026-10-14T03:22:50Z"
+      }
+    },
+    {
+      "id": "B-64",
+      "kind": "question",
+      "skill": "bmad-architecture",
+      "run": 11,
+      "text": "Is Moody's 'Aaa' accepted as AAA through the case-insensitive fold, or rejected as Moody's notation? B-58/B-61 give no explicit ruling on this string. The spine keeps the fold and lists the question under Deferred.",
+      "needs_human": true,
+      "status": "open",
+      "proposal": {
+        "text": "Keep the fold: 'Aaa' is accepted as AAA through the case-insensitive match, and every other Moody's rating stays rejected. The spine's AD-5 already works this way and the rest of the helper is unaffected; Credit Policy can overrule it later in one place (the validator).",
+        "file": "ARCHITECTURE-SPINE.md",
+        "quote": "\"Aaa\"` folds to `AAA` by the case-insensitive rule",
+        "at": "2026-10-14T03:23:54Z"
+      }
+    }
+  ],
+  "reviews": [],
+  "batches": [
+    {
+      "n": 1,
+      "items": [
+        "B-1",
+        "B-2",
+        "B-3",
+        "B-4",
+        "B-5",
+        "B-6",
+        "B-7",
+        "B-8",
+        "B-9",
+        "B-10",
+        "B-11",
+        "B-12",
+        "B-13",
+        "B-14",
+        "B-15",
+        "B-16",
+        "B-17",
+        "B-18",
+        "B-19"
+      ],
+      "skills": [
+        "bmad-spec"
+      ],
+      "done": true
+    },
+    {
+      "n": 2,
+      "items": [
+        "B-20",
+        "B-21",
+        "B-22"
+      ],
+      "skills": [
+        "bmad-spec"
+      ],
+      "done": true
+    },
+    {
+      "n": 3,
+      "items": [
+        "B-28",
+        "B-29",
+        "B-30",
+        "B-31",
+        "B-32",
+        "B-33",
+        "B-34",
+        "B-35",
+        "B-36",
+        "B-37",
+        "B-38",
+        "B-39",
+        "B-40",
+        "B-41"
+      ],
+      "skills": [
+        "bmad-spec",
+        "bmad-architecture"
+      ],
+      "done": true
+    },
+    {
+      "n": 4,
+      "items": [
+        "B-42",
+        "B-43",
+        "B-44",
+        "B-48",
+        "B-49",
+        "B-50",
+        "B-51",
+        "B-52"
+      ],
+      "skills": [
+        "bmad-spec",
+        "bmad-architecture"
+      ],
+      "done": true
+    },
+    {
+      "n": 5,
+      "items": [
+        "B-57",
+        "B-58",
+        "B-60",
+        "B-61"
+      ],
+      "skills": [
+        "bmad-spec",
+        "bmad-architecture"
+      ],
+      "done": true
+    }
+  ]
+}

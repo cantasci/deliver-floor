@@ -42,6 +42,24 @@ the business had written it down.** (The prepared answers now carry it: `HUMAN_A
 **It cost more:** +$1.85 (+30 %) and about twice the time; the human was asked more (26 items instead of 16), though each
 came pre-drafted.
 
+## An idea instead of a specification (runs 65–68)
+
+The same two features as a one-paragraph request (`JOB-idea.md`: no requirements table, no contract); the scripted human knows
+the business's answers (`HUMAN_ANSWERS-idea.json`).
+
+| | Run 65 — control, shaping off | Runs 66–68 — shaped |
+| --- | --- | --- |
+| Delivered | yes — 47/49, $6.54 | no: 66 never ended (one question asked four times); 67 lost BMad's session to a tool timeout; 68 converged but ran out of the harness's human rounds with one item open |
+| Hidden oracle | 3/5 — missed C1 (input normalisation never asked) and C2 (an indicator argument, default Indicator 12, against the contract) | — (not delivered) |
+| Human decisions | 17 readiness questions | **69** ledger decisions in run 68 |
+| The specification, graded against C1–C8 | well written and testable (10 ACs, ~60 pinned values) — but wrong on C1, C2, C6 and the signature | thinner (no ACs, ~10 examples, one arithmetic slip) — but right on C1, C2, C6, C8 and the signature |
+
+**Reading it:** on an idea, BMad asks what the readiness review does not, and that is where the product went wrong without it.
+But sending everything it says to the human made shaping too heavy to finish. Since then: only what shapes the product goes
+to the human, the rest is Michael's with the human able to overrule; flagged proposals are decided one by one; a repeated
+question shows its earlier answer; the update chain is bounded; BMad's session survives a tool timeout. That combination has
+not run live yet ([OPEN](../../OPEN.md) S2).
+
 ## Reading it
 
 On a request that already names its requirements and its contract, shaping turns the gaps into a written, reviewed and

@@ -1,0 +1,189 @@
+# gate: T-01  attempt: 1  2026-10-14T03:24:59Z
+ok    on job/JOB-20261014-0507-rating-notch-helper--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/unit-notch.test.mjs"] (+ QA tests ["test/ratings/qa-notch.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/unit-notch.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE
+    # Subtest: is the 19-step scale, best first
+    ok 1 - is the 19-step scale, best first
+      ---
+      duration_ms: 0.451209
+      ...
+    # Subtest: is frozen and cannot be extended
+    ok 2 - is frozen and cannot be extended
+      ---
+      duration_ms: 0.232583
+      ...
+    # Subtest: exports are functions
+    ok 3 - exports are functions
+      ---
+      duration_ms: 0.043
+      ...
+    1..3
+ok 1 - RATING_SCALE
+  ---
+  duration_ms: 1.060625
+  type: 'suite'
+  ...
+# Subtest: notchChange
+    # Subtest: downgrades are positive integers
+    ok 1 - downgrades are positive integers
+      ---
+      duration_ms: 0.134167
+      ...
+    # Subtest: upgrades are negative
+    ok 2 - upgrades are negative
+      ---
+      duration_ms: 0.040792
+      ...
+    # Subtest: equal ratings give +0, never -0
+    ok 3 - equal ratings give +0, never -0
+      ---
+      duration_ms: 0.043708
+      ...
+    # Subtest: is antisymmetric over all pairs
+    ok 4 - is antisymmetric over all pairs
+      ---
+      duration_ms: 0.527292
+      ...
+    # Subtest: rejects invalid ratings in either position with RangeError
+    ok 5 - rejects invalid ratings in either position with RangeError
+      ---
+      duration_ms: 0.373834
+      ...
+    # Subtest: rejects missing arguments with RangeError
+    ok 6 - rejects missing arguments with RangeError
+      ---
+      duration_ms: 0.123625
+      ...
+    # Subtest: does not call user-defined coercion on invalid input
+    ok 7 - does not call user-defined coercion on invalid input
+      ---
+      duration_ms: 0.153917
+      ...
+    1..7
+ok 2 - notchChange
+  ---
+  duration_ms: 1.598084
+  type: 'suite'
+  ...
+# Subtest: notchCalculator
+    # Subtest: default indicator (12) examples
+    ok 1 - default indicator (12) examples
+      ---
+      duration_ms: 0.085042
+      ...
+    # Subtest: returns a plain object with exactly three keys
+    ok 2 - returns a plain object with exactly three keys
+      ---
+      duration_ms: 0.042833
+      ...
+    # Subtest: notches is never -0
+    ok 3 - notches is never -0
+      ---
+      duration_ms: 0.078875
+      ...
+    # Subtest: Ind. 12 thresholds
+    ok 4 - Ind. 12 thresholds
+      ---
+      duration_ms: 0.035625
+      ...
+    # Subtest: Ind. 11 and 13 thresholds
+    ok 5 - Ind. 11 and 13 thresholds
+      ---
+      duration_ms: 0.049667
+      ...
+    # Subtest: Ind. 11/13 examples
+    ok 6 - Ind. 11/13 examples
+      ---
+      duration_ms: 0.107292
+      ...
+    # Subtest: indicator 12, undefined and omitted are equivalent
+    ok 7 - indicator 12, undefined and omitted are equivalent
+      ---
+      duration_ms: 0.853542
+      ...
+    # Subtest: rejects invalid indicators even when WL would be 0
+    ok 8 - rejects invalid indicators even when WL would be 0
+      ---
+      duration_ms: 0.132833
+      ...
+    # Subtest: rejects invalid ratings with every valid indicator
+    ok 9 - rejects invalid ratings with every valid indicator
+      ---
+      duration_ms: 0.783959
+      ...
+    # Subtest: rejects missing arguments with RangeError
+    ok 10 - rejects missing arguments with RangeError
+      ---
+      duration_ms: 0.036208
+      ...
+    # Subtest: invalid rating together with invalid indicator still RangeError
+    ok 11 - invalid rating together with invalid indicator still RangeError
+      ---
+      duration_ms: 0.029125
+      ...
+    1..11
+ok 3 - notchCalculator
+  ---
+  duration_ms: 2.337959
+  type: 'suite'
+  ...
+# Subtest: purity
+    # Subtest: results are synchronous and repeatable
+    ok 1 - results are synchronous and repeatable
+      ---
+      duration_ms: 0.062833
+      ...
+    # Subtest: RATING_SCALE is unchanged after all calls
+    ok 2 - RATING_SCALE is unchanged after all calls
+      ---
+      duration_ms: 0.028125
+      ...
+    # Subtest: source has no imports, require, eval or new Function
+    ok 3 - source has no imports, require, eval or new Function
+      ---
+      duration_ms: 1.04175
+      ...
+    1..3
+ok 4 - purity
+  ---
+  duration_ms: 1.169542
+  type: 'suite'
+  ...
+# Subtest: JSDoc (AC-10)
+    # Subtest: notchChange has @param, @returns, @throws {RangeError}
+    ok 1 - notchChange has @param, @returns, @throws {RangeError}
+      ---
+      duration_ms: 0.172625
+      ...
+    # Subtest: notchCalculator documents optional indicator 11|12|13 default 12
+    ok 2 - notchCalculator documents optional indicator 11|12|13 default 12
+      ---
+      duration_ms: 0.085042
+      ...
+    # Subtest: RATING_SCALE block states type, order and accepted symbols
+    ok 3 - RATING_SCALE block states type, order and accepted symbols
+      ---
+      duration_ms: 0.065625
+      ...
+    1..3
+ok 5 - JSDoc (AC-10)
+  ---
+  duration_ms: 0.3605
+  type: 'suite'
+  ...
+1..5
+# tests 27
+# suites 5
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 72.974333
+ok    verify passed

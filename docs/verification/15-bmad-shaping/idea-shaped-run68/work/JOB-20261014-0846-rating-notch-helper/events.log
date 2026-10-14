@@ -1,0 +1,181 @@
+2026-10-14T06:46:56Z	new	Rating notch helper
+2026-10-14T06:47:03Z	phase	shaping
+2026-10-14T06:47:11Z	shape	BMad 6.12.2 installed (outside git: _bmad/, .claude/skills/bmad-*/)
+2026-10-14T06:47:15Z	shape	run 01-help started
+2026-10-14T06:47:52Z	shape	run 01-help: complete (0 new ledger item(s))
+2026-10-14T06:47:55Z	shape	run 02-create-spec started
+2026-10-14T06:49:40Z	shape	run 02-create-spec: complete (18 new ledger item(s))
+2026-10-14T06:49:59Z	shape-propose	B-1: The POC example is wrong: compute BBB+ to BB+ on the standard scale (3 notches, WL 2); keep it out of the passing tests and record it as a follow-up for Credit Policy.
+2026-10-14T06:50:00Z	shape-propose	B-2: The caller names the indicator (11, 12 or 13); the helper has no default profile.
+2026-10-14T06:50:00Z	shape-propose	B-3: Out of scope for this helper because ratings come in as input; record Q2 as a follow-up for whoever supplies the ratings.
+2026-10-14T06:50:00Z	shape-propose	B-4: Fetching and scraping are a later delivery, as BMad assumed.
+2026-10-14T06:50:00Z	shape-propose	B-5: S&P/Fitch scale only, including CC, C and D; Moody's notation is rejected as UNKNOWN_RATING.
+2026-10-14T06:50:01Z	shape-propose	B-6: Ship WL 0 at 1 notch for Ind. 11 as an assumption, kept in one table so Credit Policy can change it in one place; follow-up to confirm.
+2026-10-14T06:50:01Z	shape-propose	B-7: Library only: no CLI, no API, imported from src/.
+2026-10-14T06:50:01Z	shape-propose	B-8: Accept: a positive notch change is a downgrade, and an upgrade or no change gives WL 0.
+2026-10-14T06:50:01Z	shape-propose	B-9: Accept: ratings and WL mapping in src/ratings/, the Ind. 12 evaluator in src/indicators/.
+2026-10-14T06:50:02Z	shape-propose	B-10: Accept RatingError with codes UNKNOWN_RATING, INVALID_INPUT and UNKNOWN_INDICATOR.
+2026-10-14T06:50:02Z	shape-propose	B-11: Accept: trimmed, case-insensitive input, Unicode minus counts as a minus, and outlooks, NR/WR and Moody's notation are rejected.
+2026-10-14T06:50:02Z	shape-propose	B-12: Accept the 22-grade S&P/Fitch default scale, passed as data, with the internal scale as its first 19 grades.
+2026-10-14T06:50:02Z	shape-propose	B-13: Accept WL 0 at exactly 1 notch for Ind. 11 and 13, as in B-6.
+2026-10-14T06:50:03Z	shape-propose	B-14: Accept: the caller names the indicator, with no default.
+2026-10-14T06:50:03Z	shape-propose	B-15: Accept: the caller supplies the rating from 12 months ago, so there is no date logic.
+2026-10-14T06:50:03Z	shape-propose	B-16: Accept: no fetching, scraping or UI in this delivery.
+2026-10-14T06:50:03Z	shape-propose	B-17: Accept: the fetch half of REQ-02-02 is out of scope.
+2026-10-14T06:50:04Z	shape-propose	B-18: Accept: no screens or UI.
+2026-10-14T06:50:04Z	phase	awaiting_clarification
+2026-10-14T06:50:13Z	clarify	B-4: Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).
+2026-10-14T06:50:13Z	clarify	B-5: C1 stands: only the 19-step S&P-style scale in this slice; anything else is rejected with a RangeError.
+2026-10-14T06:50:14Z	clarify	B-11: C1: the 19 S&P/Fitch steps AAA … CCC- only. Input is trimmed and case-insensitive ("bbb+" = "BBB+"); anything else — another notation (Moody's), an outlook suffix, a Unicode minus, unrated, a non-string — is rejected with a RangeError.
+2026-10-14T06:50:15Z	clarify	B-16: Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).
+2026-10-14T06:50:15Z	clarify	B-17: Only REQ-06-02 (the notch calculator helper) and REQ-03-12 (Indicator 12, country rating change). Fetching ratings from a public source, screens, persistence and every other indicator are out of scope; REQ-03-13 matters only for the thresholds of the calculator's WL (C2).
+2026-10-14T06:50:16Z	clarify	B-18: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-14T06:50:16Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T06:50:32Z	phase	shaping
+2026-10-14T07:03:09Z	shape	run 03-update-spec started
+2026-10-14T07:04:22Z	shape	run 03-update-spec: complete (13 new ledger item(s))
+2026-10-14T07:04:36Z	shape-propose	B-19: CC, C and D are out for this slice: only the 19-step scale is valid and they are rejected as UNKNOWN_RATING.
+2026-10-14T07:04:36Z	shape-propose	B-20: Accept: RatingError extends RangeError, so both the RangeError rule and the three error codes hold.
+2026-10-14T07:04:37Z	shape-propose	B-21: Accept direction values 'downgrade', 'upgrade' and 'none'.
+2026-10-14T07:04:37Z	shape-propose	B-22: Record as a follow-up for Credit Policy to confirm BBB+ to BB+ is 3 notches, WL 2, and correct the POC; keep it out of the passing tests.
+2026-10-14T07:04:37Z	shape-propose	B-23: Record as a follow-up for Credit Policy to confirm WL 0 at 1 notch for Ind. 11 and 13; the table is the one place to change.
+2026-10-14T07:04:37Z	shape-propose	B-24: Record as a follow-up for whoever supplies the ratings; out of scope for this helper.
+2026-10-14T07:04:42Z	phase	awaiting_clarification
+2026-10-14T07:04:48Z	clarify	B-21: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-14T07:04:49Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:05:02Z	phase	shaping
+2026-10-14T07:05:03Z	shape	run 04-update-spec started
+2026-10-14T07:05:50Z	shape	run 04-update-spec: complete (2 new ledger item(s))
+2026-10-14T07:06:00Z	shape-propose	B-32: Export the function as notchHelper (not notchCalculator); direction is 'downgrade', 'upgrade' or 'none'.
+2026-10-14T07:06:01Z	phase	awaiting_clarification
+2026-10-14T07:06:06Z	clarify	B-32: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-14T07:06:16Z	phase	shaping
+2026-10-14T07:06:19Z	shape	run 05-create-architecture started
+2026-10-14T07:07:50Z	agent	general-purpose a7e5c6ed38ed31da2: **Verdict:** the spine is sound and unusually tight. It has one stale tech claim and a few gaps a delivery team would trip on. I did not run Node 18; the Node 1
+2026-10-14T07:07:53Z	agent	general-purpose aa94d2dbeec091a6b: Review of ARCHITECTURE-SPINE.md against SPEC.md and scale-and-wl-mapping.md. Each pair below is two units that both follow every AD and still build incompatibly
+2026-10-14T07:08:33Z	shape	run 05-create-architecture: partial (24 new ledger item(s))
+2026-10-14T07:08:54Z	shape-propose	B-34: Canonical name is notchHelper (spec and companion use it); drop notchCalculator, no alias.
+2026-10-14T07:08:54Z	shape-propose	B-35: Keep the Node floor at CLAUDE.md's 18+ (stated 18.6+ for describe/it); no engines field. Raising it is a project decision outside this job.
+2026-10-14T07:08:54Z	shape-propose	B-36: Accept direction values downgrade | upgrade | none as in AD-4.
+2026-10-14T07:08:54Z	shape-propose	B-37: Record as a follow-up for Credit Policy (BBB+ to BB+); not a passing test.
+2026-10-14T07:08:55Z	shape-propose	B-38: Keep WL 0 at 1 notch for Ind. 11 and 13 as an assumption; follow-up for Credit Policy.
+2026-10-14T07:08:55Z	shape-propose	B-39: Record as a follow-up (Q2 country rating source); out of scope, nothing built.
+2026-10-14T07:08:55Z	shape-propose	B-40: Accept the functional-core library paradigm.
+2026-10-14T07:08:55Z	shape-propose	B-41: Accept: notchHelper/countryRatingChange take objects, notchChange positional; Ind. fixed at 12.
+2026-10-14T07:08:55Z	shape-propose	B-42: Accept frozen-array scale, rank = 0-based index, validation of non-undefined scale.
+2026-10-14T07:08:56Z	shape-propose	B-43: Accept validation order previous, current, indicator, scale.
+2026-10-14T07:08:56Z	shape-propose	B-44: Accept the single frozen WL table.
+2026-10-14T07:08:56Z	shape-propose	B-45: Accept the hand-written safe message formatter.
+2026-10-14T07:08:56Z	shape-propose	B-46: Accept: no node: imports in src, no memoization, guarded by a grep test.
+2026-10-14T07:08:57Z	shape-propose	B-47: Accept helpers/fixtures outside test/ and the stated test layout.
+2026-10-14T07:08:57Z	shape-propose	B-48: Accept: no deployment; npm test is the only gate.
+2026-10-14T07:08:57Z	shape-propose	B-49: Accept the build order.
+2026-10-14T07:08:57Z	shape-propose	B-50: Accept 18.6+ (consistent with CLAUDE.md 18+ in practice).
+2026-10-14T07:08:58Z	shape-propose	B-51: Informational (how BMad reviewed); nothing built. Accept.
+2026-10-14T07:08:58Z	shape-propose	B-52: Informational; the implementation's test run on the installed Node verifies discovery. Accept.
+2026-10-14T07:08:58Z	shape-propose	B-53: Accept paradigm and layers.
+2026-10-14T07:08:58Z	shape-propose	B-54: Accept scale as injected data, default 19-step frozen.
+2026-10-14T07:08:59Z	shape-propose	B-55: Accept one WL table, no default indicator.
+2026-10-14T07:08:59Z	shape-propose	B-56: Accept RatingError extends RangeError with the three codes.
+2026-10-14T07:08:59Z	shape-propose	B-57: Accept signed notches, downgrade positive.
+2026-10-14T07:09:02Z	phase	awaiting_clarification
+2026-10-14T07:09:11Z	clarify	B-34: Other parts of the POC import exactly these. src/ratings/notch.mjs: RATING_SCALE (the 19 ratings, best first); notchChange(previous, current) → integer, positive = downgrade, negative = upgrade, 0 = unchanged; notchCalculator(previous, current) → { notches, direction: "downgrade" | "upgrade" | "unchanged", wl }, notches signed like notchChange. src/indicators/countryRating.mjs: countryRatingChangeWl(previous, current) → 0 | 1 | 2, built on notchChange.
+2026-10-14T07:09:11Z	clarify	B-36: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-14T07:09:12Z	clarify	B-52: Plain Node.js ESM (.mjs), no dependencies; tests with node --test next to the code under test/.
+2026-10-14T07:09:13Z	clarify	B-53: C8 stands: 'displayed' is met by the returned { notches, direction, wl }; the POC screens are built later by other parts. No UI, CLI or printed output in this slice.
+2026-10-14T07:09:13Z	clarify	B-57: notchCalculator(...).notches is signed exactly like notchChange: downgrade positive, upgrade negative (BB → BBB is -3); direction says the same in words.
+2026-10-14T07:09:13Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:09:24Z	phase	shaping
+2026-10-14T07:09:27Z	shape	run 06-update-spec started
+2026-10-14T07:10:31Z	shape	run 06-update-spec: complete (4 new ledger item(s))
+2026-10-14T07:10:42Z	shape-propose	B-58: Confirm: notchCalculator(previous, current) takes no indicator and returns {notches, direction, wl} with wl by the Ind. 12 profile; other indicators go through wlFromNotches(indicator, notchChange(previous, current)). The object-style notchHelper and countryRatingChange are dropped; Ind. 12 is countryRatingChangeWl(previous, current).
+2026-10-14T07:10:46Z	phase	awaiting_clarification
+2026-10-14T07:10:51Z	clarify	B-58: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-14T07:11:06Z	phase	shaping
+2026-10-14T07:11:06Z	shape	run 07-update-architecture started
+2026-10-14T07:12:22Z	shape	run 07-update-architecture: partial (6 new ledger item(s))
+2026-10-14T07:12:35Z	shape-propose	B-62: No default indicator, as the human decided in B-2: notchCalculator takes options.indicator (11, 12 or 13) as required, and a missing or other value throws UNKNOWN_INDICATOR. The Ind. 12 default is dropped.
+2026-10-14T07:12:39Z	phase	awaiting_clarification
+2026-10-14T07:12:46Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:12:59Z	phase	shaping
+2026-10-14T07:13:02Z	shape	run 08-update-spec started
+2026-10-14T07:13:47Z	shape	run 08-update-spec: complete (6 new ledger item(s))
+2026-10-14T07:14:01Z	shape-propose	B-68: Accept: options is { indicator, scale? }; a missing or non-object options throws UNKNOWN_INDICATOR.
+2026-10-14T07:14:01Z	shape-propose	B-69: Same as the answered B-1: BBB+ to BB+ is 3 notches, WL 2; keep it out of the passing tests and list it as a follow-up for Credit Policy.
+2026-10-14T07:14:01Z	shape-propose	B-70: Same as the answered B-3: Q2 is out of scope here; list it as a follow-up for whoever supplies the ratings.
+2026-10-14T07:14:02Z	phase	awaiting_clarification
+2026-10-14T07:14:07Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:14:20Z	phase	shaping
+2026-10-14T07:14:23Z	shape	run 09-update-architecture started
+2026-10-14T07:15:06Z	shape	run 09-update-architecture: complete (3 new ledger item(s))
+2026-10-14T07:15:20Z	shape	run 10-review started
+2026-10-14T07:16:23Z	shape	run 10-review: complete — ready-with-concerns (7 new ledger item(s))
+2026-10-14T07:16:45Z	shape-decide	B-77: A missing, null, array or any non-object options throws UNKNOWN_INDICATOR; AD-6 is corrected to match the spec and B-68
+2026-10-14T07:16:45Z	shape-decide	B-78: Validation of all arguments precedes any result; with several faults the reported code is not contractual and tests cover single-fault inputs only; AD-7 drops the claimed order
+2026-10-14T07:16:46Z	shape-decide	B-79: An injected scale is accepted when rankOf's rules hold (array, non-empty, no duplicates, canonical entries); grades beyond the 19 are allowed, a frozen array is not required and the scale is never mutated; the 19-step rule applies to the default RATING_SCALE only
+2026-10-14T07:16:46Z	shape-decide	B-80: The purity test matches whole identifiers (word-boundary regex, comments and strings excluded) for Date, Math.random, process, fs, console
+2026-10-14T07:16:46Z	shape-decide	B-81: The WL-values constraint cites REQ-03-11/12/13, not 'A4'
+2026-10-14T07:16:46Z	shape-decide	B-82: No .gitkeep removal and no README change in this job; both are outside the spec's scope
+2026-10-14T07:16:47Z	shape-decide	B-83: docs/POC_Requirements_v0.2_EN.md is added to the sources as the origin of the REQ numbers and examples
+2026-10-14T07:16:51Z	shape	run 11-update-spec started
+2026-10-14T07:17:59Z	shape	run 11-update-spec: complete (8 new ledger item(s))
+2026-10-14T07:18:10Z	shape-propose	B-84: Accept BMad's reading: canonical entries of an injected scale are trimmed upper-case strings
+2026-10-14T07:18:11Z	shape-propose	B-85: Build with 3 notches / WL 2 for BBB+ → BB+ as the spec states; the POC correction is a follow-up for Credit Policy, listed in the PR, nothing blocks delivery
+2026-10-14T07:18:11Z	shape-propose	B-86: Build with WL 0 at exactly 1 notch for Ind. 11 and 13 as the spec assumes; the table is the one place to change; confirmation is a PR follow-up
+2026-10-14T07:18:11Z	shape-propose	B-87: Out of scope for this library; record Q2 as a follow-up for whoever supplies the ratings
+2026-10-14T07:18:12Z	phase	awaiting_clarification
+2026-10-14T07:18:20Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:18:34Z	phase	shaping
+2026-10-14T07:18:37Z	shape	run 12-update-architecture started
+2026-10-14T07:19:20Z	shape	run 12-update-architecture: complete (5 new ledger item(s))
+2026-10-14T07:19:35Z	shape-propose	B-92: Accept: the SPEC and companion already agree with the spine (non-object options -> UNKNOWN_INDICATOR; no .gitkeep or README change); no artifact change needed.
+2026-10-14T07:19:39Z	phase	awaiting_clarification
+2026-10-14T07:19:44Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:19:59Z	phase	shaping
+2026-10-14T07:20:03Z	shape	run 13-update-spec started
+2026-10-14T07:20:43Z	shape	run 13-update-spec: complete (0 new ledger item(s))
+2026-10-14T07:20:50Z	shape	run 14-update-architecture started
+2026-10-14T07:21:20Z	shape	run 14-update-architecture: complete (0 new ledger item(s))
+2026-10-14T07:21:23Z	shape	run 15-review started
+2026-10-14T07:23:01Z	shape	run 15-review: complete — ready-with-concerns (13 new ledger item(s))
+2026-10-14T07:23:24Z	shape-decide	B-97: Replace the passing example with BBB+ -> BBB- (2 notches, Ind. 11 WL 1); BBB+ -> BB+ stays out of passing tests.
+2026-10-14T07:23:24Z	shape-decide	B-100: Use countryRating.test.mjs everywhere, matching the source file countryRating.mjs.
+2026-10-14T07:23:24Z	shape-decide	B-101: State in the spec that notchCalculator results are frozen plain objects, as AD-6 says.
+2026-10-14T07:23:25Z	shape-decide	B-102: Add test rows: non-integer notches, indicator as string '12', bad entries in an injected scale, injected scale with CC, Ind. 11 at n >= 3.
+2026-10-14T07:23:25Z	shape-decide	B-103: Purity/layering tests check import specifiers by parsing import lines and fail on I/O module imports; no regex stripping of comments or strings.
+2026-10-14T07:23:25Z	shape-decide	B-104: Test helpers and fixtures live in test/helpers/ (not matched by *.test.mjs).
+2026-10-14T07:23:25Z	shape-decide	B-105: Answer the remaining checklist items as 'none / not applicable' with a one-line reason: pure in-memory library, no data, no users, no I/O.
+2026-10-14T07:23:26Z	shape-decide	B-106: Scope npm test to test/**/*.test.mjs so worktree copies under .work/ are not run.
+2026-10-14T07:23:26Z	shape-decide	B-107: Note in follow-ups that the exact 19 steps are inferred from AAA -> CCC- in REQ-03-10; Credit Policy to confirm.
+2026-10-14T07:23:26Z	shape-decide	B-108: Fix the layer line: watchlist imports only errors; notch imports scale and watchlist.
+2026-10-14T07:23:27Z	shape-decide	B-109: State that wlFromNotches and RatingError are importable public names.
+2026-10-14T07:23:27Z	shape-propose	B-98: Withdraw B-12: the default scale is the 19-step AAA…CCC-; CC, C, D are rejected unless a scale is injected.
+2026-10-14T07:23:27Z	shape-propose	B-99: Tell the other POC parts: call notchCalculator(previous, current, {indicator}); two-arg calls throw UNKNOWN_INDICATOR.
+2026-10-14T07:23:31Z	phase	awaiting_clarification
+2026-10-14T07:23:37Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:23:49Z	phase	shaping
+2026-10-14T07:23:52Z	shape	run 16-update-spec started
+2026-10-14T07:25:04Z	shape	run 16-update-spec: complete (10 new ledger item(s))
+2026-10-14T07:25:22Z	shape-propose	B-110: Accept: leave the npm test script form to the implementer; the only requirement is that exactly the test/**/*.test.mjs files run.
+2026-10-14T07:25:22Z	shape-propose	B-111: Accept: keep countryRating.test.mjs (as in the architecture doc); no rename.
+2026-10-14T07:25:22Z	shape-propose	B-112: Accept the 19-step default scale AAA..CCC- as the working assumption; Credit Policy confirmation is a follow-up listed in the PR, not a blocker.
+2026-10-14T07:25:22Z	shape-propose	B-113: Accept: follow the standard scale (BBB+ -> BB+ = 3 notches, WL 2) and keep the POC example out of passing tests; Credit Policy confirms as a follow-up.
+2026-10-14T07:25:23Z	shape-propose	B-114: Accept: out of scope (no source selection per segment); Q2 recorded as a follow-up for whoever supplies the ratings.
+2026-10-14T07:25:27Z	phase	awaiting_clarification
+2026-10-14T07:25:34Z	clarify	B-110: Plain Node.js ESM (.mjs), no dependencies; tests with node --test next to the code under test/.
+2026-10-14T07:25:34Z	clarify	B-111: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-14T07:25:35Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T07:25:48Z	phase	shaping
+2026-10-14T09:31:14Z	shape	run 17-update-architecture started
+2026-10-14T09:32:00Z	shape	run 17-update-architecture: partial (8 new ledger item(s))
+2026-10-14T09:32:27Z	shape-propose	B-120: The build card that adds the scripts changes package.json's test script to the scoped glob; no one else edits it.
+2026-10-14T09:32:27Z	shape-propose	B-121: Have BMad align the SPEC and companion to the test file name countryRating.test.mjs in its next update.
+2026-10-14T09:32:28Z	shape-propose	B-122: Have BMad carry the BBB+ -> BBB- example, the new test rows and the 19-step note into the SPEC and companion in its next update.
+2026-10-14T09:32:31Z	phase	awaiting_clarification
+2026-10-14T09:32:37Z	clarify	B-120: Plain Node.js ESM (.mjs), no dependencies; tests with node --test next to the code under test/.
+2026-10-14T09:32:37Z	clarify	proposals: e2e: no prepared answer fits — Michael's proposal accepted
+2026-10-14T09:32:50Z	phase	shaping
+2026-10-14T09:32:53Z	shape	run 18-update-spec started
+2026-10-14T09:33:38Z	shape	run 18-update-spec: complete (2 new ledger item(s))
+2026-10-14T09:33:50Z	shape-propose	B-128: B-106 stands: npm test is scoped to test/**/*.test.mjs so .work/ worktree copies are not run; plain 'node --test' in the spec means the tests under test/ and is satisfied by that scoped command.
+2026-10-14T09:33:54Z	phase	awaiting_clarification

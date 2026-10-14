@@ -1,0 +1,212 @@
+{
+  "id": "JOB-20261014-0507-rating-notch-helper",
+  "title": "Rating notch helper",
+  "request": "Requirements: /Users/cantasci/Desktop/Projects/side-projects/skills-shop/examples/watchlist-poc/JOB-idea.md\n\nRating notch helper for the Watchlist tool\n\nOur credit analysts work out by hand how many notches a client's or a country's rating has moved and what Watchlist level\nthat gives. We would like the system to do it for them: the notch calculator and the country rating change indicator from\nthe POC (docs/POC_Requirements_v0.2_EN.md in the repo). Other parts of the POC will use it; this is not about screens.",
+  "created": "2026-10-14T03:07:09Z",
+  "repo": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/idea-control/idea/repo",
+  "phase": "done",
+  "stack": [
+    "node"
+  ],
+  "roles": [
+    {
+      "role": "ba",
+      "agent": "business-analyst",
+      "why": "always"
+    },
+    {
+      "role": "backend-lead",
+      "agent": "ecc:architect",
+      "why": "\"the notch calculator and the country rating change indicator\" — domain logic"
+    },
+    {
+      "role": "backend",
+      "agent": "backend-dev",
+      "why": "builds the pure rating/indicator functions (src/ratings, src/indicators)"
+    },
+    {
+      "role": "qa",
+      "agent": "qa-tester",
+      "why": "always"
+    },
+    {
+      "role": "reviewer",
+      "agent": "ecc:typescript-reviewer",
+      "why": "stack node/javascript (package.json, CLAUDE.md: plain Node.js ESM)"
+    },
+    {
+      "role": "blind",
+      "agent": "ecc:code-reviewer",
+      "why": "WL scoring (REQ-03-12 1 notch → WL=1; 2+ → WL=2) is the core flow and can fail at P0/P1"
+    }
+  ],
+  "assumptions": [
+    "Stack is Node.js (CLAUDE.md: plain Node.js 18+ ESM, no npm dependencies); pure functions without I/O in src/ratings and src/indicators"
+  ],
+  "base_branch": "main",
+  "branch": "job/JOB-20261014-0507-rating-notch-helper",
+  "integration_worktree": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/idea-control/idea/repo/.work/JOB-20261014-0507-rating-notch-helper/wt/_integration",
+  "gates": {
+    "plan": null
+  },
+  "verify_all": {
+    "result": "PASS",
+    "head": "bd19da56de3c68303e740293ddab7c6faacdf6a8",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/idea-control/idea/repo/.work/JOB-20261014-0507-rating-notch-helper/gates/verify-all-063230.log",
+    "at": "2026-10-14T04:32:30Z"
+  },
+  "settings": {
+    "base_branch": "auto",
+    "dispatch": "subagent",
+    "max_parallel": 2,
+    "qa_early": true,
+    "max_attempts": 2,
+    "gates": {
+      "plan": false
+    },
+    "verify_full": "node --test",
+    "qa_verify_full": true,
+    "test_design": {
+      "risk": true
+    },
+    "review": {
+      "blind": "risk"
+    },
+    "light": {
+      "max_cards": 2
+    },
+    "upstream": {
+      "engine": "off",
+      "bmad_version": "6.12.2",
+      "review_rounds": 2,
+      "model": "",
+      "timeout_min": 20
+    },
+    "merge_verify": true,
+    "keep_awake": true,
+    "checkpoints": true,
+    "ports": {},
+    "record_job": true,
+    "worktree_setup": "",
+    "worktree_exclude": [
+      "node_modules",
+      ".venv",
+      ".env",
+      ".claude/settings.local.json"
+    ],
+    "gate_timeout": 1800,
+    "stop_guard_max": 5,
+    "munder": {
+      "hive_root": "",
+      "claude_command": "claude",
+      "model": "sonnet",
+      "seat_timeout_minutes": 5,
+      "token_cap": 0,
+      "app_command": ""
+    },
+    "merge_mode": "local",
+    "push_branches": "auto",
+    "tracker": {
+      "kind": "local",
+      "columns": {},
+      "jira": {
+        "project": "",
+        "issue_type": "Task",
+        "epic_type": "Epic",
+        "labels": [
+          "deliver"
+        ],
+        "api_version": "3"
+      }
+    },
+    "knowledge": {
+      "repo": "",
+      "branch": ""
+    },
+    "commit": {
+      "convention": "plain",
+      "merge_message": "",
+      "ai_attribution": false,
+      "role_in_message": false,
+      "convention_source": "the history: 0 of the last 2 commits are Conventional Commits — no convention"
+    },
+    "roles": {}
+  },
+  "pr": null,
+  "shipped": true,
+  "delivery": {
+    "mode": "local",
+    "commit": "a9a11c3d04568fd30f2b4863d45ce9ad2bcd06a2",
+    "at": "2026-10-14T04:34:07Z"
+  },
+  "checkpoint": {
+    "phase": "integrating",
+    "merged": 2,
+    "events": 93,
+    "at": "2026-10-14T04:32:16Z"
+  },
+  "baseline": {
+    "result": "PASS",
+    "head": "fcb35abd17ea398178224484aa3064c669f2e509",
+    "command": "node --test",
+    "log": "/private/tmp/claude-502/-Users-cantasci-Desktop-Projects-side-projects-skills-shop/0c0ab0d6-f540-4c24-a870-568f823e7be7/scratchpad/idea-control/idea/repo/.work/JOB-20261014-0507-rating-notch-helper/gates/baseline-051346.log",
+    "at": "2026-10-14T03:13:46Z"
+  },
+  "frozen": {
+    "readiness_sha256": "6ac9d706d4be8d4049829748a44107f8efc8ada1dbea62edf85901767224ebf3",
+    "at": "2026-10-14T03:13:47Z"
+  },
+  "pm_decisions": [
+    {
+      "at": "2026-10-14T03:16:47Z",
+      "what": "OQ-1: notchCalculator(previous, current, indicator?) with indicator 11|12|13, default 12",
+      "why": "Keeps the two-argument call of CON-interface working and honours X-calc-mapping (caller names the indicator); 12 is the in-scope Must indicator"
+    },
+    {
+      "at": "2026-10-14T03:19:26Z",
+      "what": "Drop README card T-03; AC-10 narrowed to JSDoc",
+      "why": "README.md and test/docs are outside the frozen watchlist-core paths and docs has no component; frozen readiness cannot change, so the README section goes to a follow-up"
+    }
+  ],
+  "followups": [
+    {
+      "text": "Add a README section on the rating notch helper (scale, sign convention, Ind.12 and Ind.11/13 WL mappings, RangeError rules, corrected REQ-06-02 example BBB+ -> BB+ = 3 notches WL=2, C1 business review note). Needs a docs component in the architecture.",
+      "card": "",
+      "evidence": "",
+      "at": "2026-10-14T03:19:26Z"
+    },
+    {
+      "text": "Business-unit review (C1/A4) of the WL tables vs the Excel dropdown sheet before production use",
+      "card": "",
+      "evidence": "",
+      "at": "2026-10-14T04:34:04Z"
+    },
+    {
+      "text": "README section (DEL-docs): scale, sign convention, WL mappings, RangeError rules; needs a docs component",
+      "card": "",
+      "evidence": "",
+      "at": "2026-10-14T04:34:04Z"
+    },
+    {
+      "text": "Rename QA tests that use card-spec numbers as AC-n (collide with plan AC ids)",
+      "card": "T-01",
+      "evidence": "",
+      "at": "2026-10-14T04:34:05Z"
+    }
+  ],
+  "waivers": [
+    {
+      "id": "NFR-compliance",
+      "why": "Code mirrors the recorded rules; the business-unit review (C1/A4) is a human step outside this job and is listed as a follow-up before production use",
+      "at": "2026-10-14T04:34:03Z"
+    }
+  ],
+  "knowledge_published": {
+    "head": "9405ebdec3eaf59d70aa1c186fffbc021554ac30",
+    "shared_pr": ""
+  },
+  "record_published": {
+    "head": "a14809a5f443b4cdcfa0e09f5f8d33dea4aa5ca0",
+    "path": ".deliver/jobs/JOB-20261014-0507-rating-notch-helper"
+  }
+}
