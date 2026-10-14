@@ -564,8 +564,8 @@ cmd_next() {
   fi
   # shaping: BMad's path, the decisions with the human, its review — the readiness review reads the result
   if [[ $phase == awaiting_clarification ]] && shaping_job && [[ "$(shape_status | jq -r .next)" != done ]]; then
-    local ask; ask="$(jq -r '.ledger[] | select(.status=="open" and .needs_human) | "ASK     human: \(.id) — \(.text[0:160])\(if .repeat_of then "  · asked before as \(.repeat_of | join(", ")): rule on exactly this" else "" end)\(if .proposal then "  · Michael proposes: \(.proposal.text[0:140])" else "" end)"' "$JOB_DIR/shaping.json")"
-    if [[ -n $ask ]]; then printf '%s\n' "$ask"; echo "        record each: dl clarify <id> \"<the human's decision>\" · all of Michael's proposals at once: dl clarify proposals \"<the human's words>\""
+    local ask; ask="$(jq -r '.ledger[] | select(.status=="open" and .needs_human) | "ASK     human: \(.id)\(if (.proposal.confidence == "low") or .repeat_of then " ⚠ decide on its own" else "" end) — \(.text[0:160])\(if .repeat_of then "  · asked before as \(.repeat_of | join(", ")): rule on exactly this" else "" end)\(if .proposal then "  · Michael proposes (\(.proposal.confidence // "?")): \(.proposal.text[0:140])" else "" end)\(if .proposal.concern then "  · his concern: \(.proposal.concern[0:140])" else "" end)"' "$JOB_DIR/shaping.json")"
+    if [[ -n $ask ]]; then printf '%s\n' "$ask"; echo "        record each: dl clarify <id> \"<the human's decision>\" · Michael's unflagged proposals at once: dl clarify proposals \"<the human's words>\" (⚠ items are decided on their own)"
     else echo "PHASE   dl phase shaping  (every decision taken — they go back to BMad: dl shape run)"; fi
     return 0
   fi
@@ -583,7 +583,7 @@ cmd_next() {
         help|create|update|review) echo "SHAPE   dl shape run  (BMad: $nx$(jq -r 'if .skill then " " + .skill else "" end' <<<"$ss") — dl writes its prompt; you start it and read what it returns)" ;;
         decide)
           jq -r '.pm[]? | "DECIDE  (PM) \(.) — dl shape decide \(.) \"<decision>\" \"<rationale>\" --file <BMad artifact> --quote \"<its words>\""' <<<"$ss"
-          jq -r '.unproposed[]? | "PROPOSE \(.) — dl shape propose \(.) \"<your proposal>\" --file <BMad artifact> --quote \"<its words>\""' <<<"$ss"
+          jq -r '.unproposed[]? | "PROPOSE \(.) — dl shape propose \(.) \"<your proposal>\" --file <BMad artifact> --quote \"<its words>\" --confidence high|low [--concern \"<what could make it wrong>\"]"' <<<"$ss"
           [[ "$(jq '(.human // []) | length' <<<"$ss")" -gt 0 && "$(jq '(.unproposed // []) | length' <<<"$ss")" == 0 ]] \
             && echo "PHASE   dl phase awaiting_clarification  (the human decides $(jq '.human | length' <<<"$ss") item(s), each with your proposal)"
           echo "        dl shape ledger open — what BMad said, item by item" ;;
@@ -1084,12 +1084,12 @@ cmd_shape() {
     wait) shape_wait ;;
     ledger) shaping_job || refuse 1 "nothing has been shaped yet"; node "$BIN_DIR/bmad.mjs" ledger "$JOB_DIR" ${1:+"$1"} ;;
     propose|decide)
-      local pos=() file="" quote="" out
-      while [[ $# -gt 0 ]]; do case $1 in --file) file=${2:-}; shift 2 ;; --quote) quote=${2:-}; shift 2 ;; *) pos+=("$1"); shift ;; esac; done
+      local pos=() file="" quote="" conf="" concern="" out
+      while [[ $# -gt 0 ]]; do case $1 in --file) file=${2:-}; shift 2 ;; --quote) quote=${2:-}; shift 2 ;; --confidence) conf=${2:-}; shift 2 ;; --concern) concern=${2:-}; shift 2 ;; *) pos+=("$1"); shift ;; esac; done
       [[ "$(phase_now)" == shaping || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "the ledger is decided while shaping (now: $(phase_now))"
       [[ -n ${pos[0]:-} && -n ${pos[1]:-} && -n $file && -n $quote && ( $sub == propose || -n ${pos[2]:-} ) ]] \
-        || die "usage: dl shape propose <id> \"<proposal>\" --file <BMad artifact> --quote \"<its words>\" · dl shape decide <id> \"<decision>\" \"<rationale>\" --file … --quote …"
-      if [[ $sub == propose ]]; then out="$(node "$BIN_DIR/bmad.mjs" propose "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" 2>&1)" || refuse 1 "${out#bmad: }"
+        || die "usage: dl shape propose <id> \"<proposal>\" --file <BMad artifact> --quote \"<its words>\" --confidence high|low [--concern \"<what could make it wrong>\"] · dl shape decide <id> \"<decision>\" \"<rationale>\" --file … --quote …"
+      if [[ $sub == propose ]]; then out="$(node "$BIN_DIR/bmad.mjs" propose "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" "$conf" "$concern" 2>&1)" || refuse 1 "${out#bmad: }"
       else out="$(node "$BIN_DIR/bmad.mjs" decide "$JOB_DIR" "${pos[0]}" "${pos[1]}" "$file" "$quote" "${pos[2]}" 2>&1)" || refuse 1 "${out#bmad: }"; fi
       log_event "shape-$sub" "${pos[0]}: ${pos[1]}"; reset_stop_guard; echo "$out"
       [[ "$(phase_now)" == awaiting_clarification ]] && node "$BIN_DIR/bmad.mjs" questions "$JOB_DIR" > "$JOB_DIR/QUESTIONS.md"

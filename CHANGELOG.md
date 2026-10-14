@@ -44,6 +44,12 @@ before a card is cut** — by default only for a request that is not a specifica
   tool limit — its wait counted loops, not time — and the timeout's signal took BMad's session along (`nohup` is not enough).
   BMad now runs in a process session of its own (`setsid`), and a call waits at most seven minutes by the clock;
   `dl shape wait` picks the run up in the same session or the next.
+- **Michael warns, the human decides.** Live, most wrong decisions were proposals accepted as they stood, all at once — one
+  against the human's own earlier ruling. A proposal now carries its confidence (`dl shape propose … --confidence high|low`,
+  a low one with `--concern`: what could make it wrong, the alternative); a question BMad asks again needs that concern too.
+  A low proposal, a question asked again and a high or critical finding are flagged: `QUESTIONS.md` and `dl next` put them
+  first, with the earlier decision, and `dl clarify proposals` does not accept them — the human decides each on its own.
+  The PR marks them ⚠.
 - **Shaping ends.** On an idea (live run 66) every BMad update raised a question about the decisions it had just applied — the
   same one four times — and shaping never finished. A question about something already decided now shows the human their
   earlier answer ("asked before as B-n"); the decisions go back to the same artifacts at most `upstream.reask_rounds` (2)

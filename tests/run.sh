@@ -2149,19 +2149,28 @@ contains "…and what it assumed" "$out" "assumption: Input is trimmed and upper
 contains "dl next: Michael proposes a decision for each, on BMad's words" "$("$DL" next)" "PROPOSE B-1"
 contains "the human is not asked before every item has a proposal" "$("$DL" phase awaiting_clarification 2>&1)" "propose a decision for each first"
 SPEC=".work/$SJN/bmad/out/specs/spec-x/SPEC.md"
-contains "a proposal stands on a BMad artifact, not on the request" "$("$DL" shape propose B-1 "WL 0" --file ".work/$SJN/bmad/inputs/request.md" --quote "plain Node ESM" 2>&1)" "is not a BMad artifact of this job"
-contains "…on words that are in it" "$("$DL" shape propose B-1 "WL 0" --file "$SPEC" --quote "a WL of zero" 2>&1)" "quote not found in"
-expect_ok "Michael proposes B-1, quoting the spec" "$DL" shape propose B-1 "WL 0 for a 1-notch downgrade" --file "$SPEC" --quote "Callers get the WL of a downgrade"
+contains "a proposal says how sure Michael is" "$("$DL" shape propose B-1 "WL 0" --file "$SPEC" --quote "Plain Node ESM" 2>&1)" "say how sure you are: --confidence high | low"
+contains "…a low one, what could make it wrong" "$("$DL" shape propose B-1 "WL 0" --file "$SPEC" --quote "Plain Node ESM" --confidence low 2>&1)" "says what could make it wrong and the alternative"
+contains "a proposal stands on a BMad artifact, not on the request" "$("$DL" shape propose B-1 "WL 0" --file ".work/$SJN/bmad/inputs/request.md" --quote "plain Node ESM" --confidence high 2>&1)" "is not a BMad artifact of this job"
+contains "…on words that are in it" "$("$DL" shape propose B-1 "WL 0" --file "$SPEC" --quote "a WL of zero" --confidence high 2>&1)" "quote not found in"
+contains "Michael proposes B-1 and warns the human: BMad's sources do not state it" "$("$DL" shape propose B-1 "WL 0 for a 1-notch downgrade" --file "$SPEC" --quote "Callers get the WL of a downgrade" --confidence low --concern "only BMad's inference: the POC gives no WL for one notch; Indicator 12 says WL 1" 2>&1)" "flagged for the human to decide on its own: Michael is not sure"
 contains "Michael alone decides nothing that changes what is built" "$("$DL" shape decide B-2 "19 steps" "the POC's dropdown" --file "$SPEC" --quote "Plain Node ESM" 2>&1)" "is decided with the human"
-"$DL" shape propose B-2 "19 steps, AAA to CCC-: no CC, C or D" --file "$SPEC" --quote "Plain Node ESM" >/dev/null
-"$DL" shape propose B-3 "accept as BMad wrote it" --file "$SPEC" --quote "Plain Node ESM" >/dev/null
+"$DL" shape propose B-2 "19 steps, AAA to CCC-: no CC, C or D" --file "$SPEC" --quote "Plain Node ESM" --confidence high >/dev/null
+"$DL" shape propose B-3 "accept as BMad wrote it" --file "$SPEC" --quote "Plain Node ESM" --confidence high >/dev/null
 expect_ok "every item proposed → the human decides" "$DL" phase awaiting_clarification
-grep -q "## B-2 — decision (bmad-spec)" "$SJ/QUESTIONS.md" && grep -q "Michael proposes:\*\* 19 steps" "$SJ/QUESTIONS.md" && ok "QUESTIONS.md: what BMad said, with Michael's proposal and BMad's words" || bad "QUESTIONS.md: $(head -20 "$SJ/QUESTIONS.md")"
-contains "dl next asks the human, each with the proposal" "$("$DL" next)" "ASK     human: B-2 — Scale has 22 steps including CC, C and D  · Michael proposes: 19 steps"
+grep -q "### B-2 — decision (bmad-spec)" "$SJ/QUESTIONS.md" && grep -q "Michael proposes\*\* (high confidence): 19 steps" "$SJ/QUESTIONS.md" && ok "QUESTIONS.md: what BMad said, with Michael's proposal, his confidence and BMad's words" || bad "QUESTIONS.md: $(head -20 "$SJ/QUESTIONS.md")"
+sed -n '/^## Decide each of these on its own (1)/,/^## Michael is confident/p' "$SJ/QUESTIONS.md" | grep -q "⚠ Michael is not sure: only BMad's inference" \
+  && ok "…the flagged item first, on its own, with his concern" || bad "QUESTIONS.md sections: $(grep '^##' "$SJ/QUESTIONS.md")"
+contains "dl next asks the human, each with the proposal" "$("$DL" next)" "ASK     human: B-2 — Scale has 22 steps including CC, C and D  · Michael proposes (high): 19 steps"
+contains "…and marks what is to be decided on its own" "$("$DL" next)" "ASK     human: B-1 ⚠ decide on its own"
 contains "an unattended session cannot decide for the human" "$(DELIVER_HEADLESS=1 "$DL" clarify B-1 "yes" 2>&1)" "is the human's decision"
 contains "the shaping goes on only once the human decided" "$("$DL" phase shaping 2>&1)" "the human has not decided B-1 B-2 B-3 yet"
 expect_ok "the human decides B-2 in their words" "$DL" clarify B-2 "19 steps, AAA to CCC-, nothing below"
-contains "…and accepts Michael's other proposals at once" "$("$DL" clarify proposals "agreed" 2>&1)" "B-3: decided by the human"
+out="$("$DL" clarify proposals "agreed" 2>&1)"
+contains "…accepts Michael's confident proposals at once" "$out" "B-3: decided by the human"
+contains "…but not the one he flagged: the human decides it on its own" "$out" "not accepted — Michael flagged them; decide each on its own"
+contains "…shaping waits for it" "$("$DL" phase shaping 2>&1)" "the human has not decided B-1 yet"
+expect_ok "the human decides B-1 on its own" "$DL" clarify B-1 "WL 0 for one notch: Indicator 13 starts at two"
 contains "dl next: back to BMad" "$("$DL" next)" "PHASE   dl phase shaping"
 expect_ok "awaiting_clarification → shaping" "$DL" phase shaping
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
@@ -2172,7 +2181,7 @@ contains "…what it changed against its own decisions is noted for the PR" "$ou
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 contains "bmad-architecture: built on the settled spec; its questions and assumptions to the ledger" "$out" "question: Relative import or a published package?"
 SPINE=".work/$SJN/bmad/out/planning-artifacts/architecture/arch-x/ARCHITECTURE-SPINE.md"
-for i in $("$DL" shape status | jq -r '.unproposed[]'); do "$DL" shape propose "$i" "relative imports, Node 22" --file "$SPINE" --quote "Exported functions do no I/O" >/dev/null; done
+for i in $("$DL" shape status | jq -r '.unproposed[]'); do "$DL" shape propose "$i" "relative imports, Node 22" --file "$SPINE" --quote "Exported functions do no I/O" --confidence high >/dev/null; done
 "$DL" phase awaiting_clarification >/dev/null && "$DL" clarify proposals "fine" >/dev/null && "$DL" phase shaping >/dev/null
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"; out2="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 [[ $out == *"update-spec — complete"* && $out2 == *"update-architecture — complete"* ]] && ok "a decision goes to every artifact BMad made, in its order (a spec decision can move the architecture)" || bad "batch: $out | $out2"
@@ -2181,7 +2190,9 @@ contains "BMad reviews its own work (bmad-review)" "$out" "its review: ready-wit
 contains "…a finding that changes nothing built is the PM's" "$("$DL" next)" "DECIDE  (PM) B-"
 PMI="$("$DL" shape status | jq -r '.pm[0]')"; HI="$("$DL" shape status | jq -r '.human[0]')"
 expect_ok "Michael decides it, with his reason and BMad's words" "$DL" shape decide "$PMI" "reword AD-1" "wording only" --file "$SPINE" --quote "Pure functions only"
-"$DL" shape propose "$HI" "normalise U+2212 to a hyphen-minus" --file "$SPEC" --quote "Callers get the signed notch change" >/dev/null && "$DL" phase awaiting_clarification >/dev/null && "$DL" clarify "$HI" "normalise it" >/dev/null && "$DL" phase shaping >/dev/null
+"$DL" shape propose "$HI" "normalise U+2212 to a hyphen-minus" --file "$SPEC" --quote "Callers get the signed notch change" --confidence high >/dev/null && "$DL" phase awaiting_clarification >/dev/null
+contains "a high finding of BMad's review is never accepted with the rest" "$("$DL" clarify proposals "ok" 2>&1)" "every open proposal is flagged"
+"$DL" clarify "$HI" "normalise it" >/dev/null && "$DL" phase shaping >/dev/null
 for k in 1 2 3; do PATH="$SHB:$PATH" "$DL" shape run >/dev/null 2>&1; done
 contains "a second review after the decisions; ready → shaping is finished" "$("$DL" next)" "PHASE   dl phase readiness  (shaping finished: BMad's reviews ready-with-concerns, ready)"
 "$DL" jobset '.stack=["javascript"] | .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"x"},{"role":"backend","agent":"backend-dev","why":"x"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:code-reviewer","why":"x"}]' >/dev/null
@@ -2256,7 +2267,7 @@ for k in 1 2 3; do   # every update asks about what it was just told, in other w
   if [[ $k == 1 ]]; then
     node "$BM" questions "$CJ" > "$CJ/QUESTIONS.md"
     jq -e '.ledger[] | select(.id=="B-2") | .repeat_of == ["B-1"]' "$CJ/shaping.json" >/dev/null && ok "a question about what was decided is marked as asked before (B-2 → B-1)" || bad "repeat_of: $(jq -c '.ledger[1]' "$CJ/shaping.json")"
-    grep -q 'Asked before as B-1\*\* — decided: "the rule: B-1"' "$CJ/QUESTIONS.md" && ok "…QUESTIONS.md shows the human their earlier answer and asks for a ruling on exactly this" || bad "QUESTIONS.md: $(grep -A3 '## B-2' "$CJ/QUESTIONS.md")"
+    grep -q '⚠ asked before as B-1 — decided by you: "the rule: B-1"' "$CJ/QUESTIONS.md" && ok "…QUESTIONS.md shows the human their earlier answer and asks for a ruling on exactly this" || bad "QUESTIONS.md: $(grep -A3 '## B-2' "$CJ/QUESTIONS.md")"
   fi
   cvdecide
 done

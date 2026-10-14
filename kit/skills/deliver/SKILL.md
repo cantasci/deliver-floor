@@ -151,16 +151,21 @@ they follow from what BMad wrote.
 3. **The ledger is decided with the human, on what BMad said** (`"$DL" shape ledger open`). Nothing BMad decided binds by
    itself — seen: it called its spec "complete" with ten decisions of its own, three against the business.
    - For every item that changes what is built (a question, an assumption, a decision of BMad's, a blocked step, a review
-     finding with needs_human), write **your proposal**, standing on BMad's own words:
-     `"$DL" shape propose B-n "<what you propose>" --file <the BMad artifact> --quote "<its words>"`. Never the request:
-     `dl` refuses a file outside BMad's output folder and a quote that is not in it. Read the artifact; when BMad named
-     options, take the one its own text supports and say why.
+     finding with needs_human), write **your proposal**, standing on BMad's own words, and **how sure you are**:
+     `"$DL" shape propose B-n "<what you propose>" --file <the BMad artifact> --quote "<its words>" --confidence high|low [--concern "<what could make it wrong, the alternative>"]`.
+     Never the request: `dl` refuses a file outside BMad's output folder and a quote that is not in it.
+     **Check each proposal against every decision already taken** (`dl shape ledger`) — above all the human's. A proposal
+     that contradicts one is wrong; one that rests only on BMad's own inference (an assumption, a decision of its own, a
+     convention) is `low`, with your concern. You warn the human; you never decide for them — seen live: proposals accepted
+     as they stood, one against the human's own earlier ruling, made most of the wrong decisions. `dl` flags a low proposal,
+     a question BMad asks again and a high or critical finding: the human decides each of those on its own.
    - A finding that changes nothing built (needs_human false: wording, consistency, test detail) is yours:
      `"$DL" shape decide B-n "<decision>" "<rationale>" --file … --quote …`.
    - Then `"$DL" phase awaiting_clarification` (refused until every item has your proposal) and ask the human —
-     interactive: all at once, each with BMad's words and your proposal (AskUserQuestion, your proposal as the first option;
-     "accept all of Michael's proposals" is an answer); record **their words**: `"$DL" clarify B-n "<answer>"` or
-     `"$DL" clarify proposals "<their words>"`. Headless: `QUESTIONS.md` is written; stop.
+     interactive: **the flagged items one by one first** (AskUserQuestion: BMad's words, your proposal, your concern — and
+     the earlier decision when BMad asks again), then the rest at once ("accept all of Michael's proposals" is an answer for
+     those only); record **their words**: `"$DL" clarify B-n "<answer>"` or `"$DL" clarify proposals "<their words>"`
+     (it accepts unflagged proposals only). Headless: `QUESTIONS.md` is written, flagged items first; stop.
    - `"$DL" phase shaping` once every item is decided — the decisions go back to BMad (`dl shape run`: its update, on every
      artifact it made), then it reviews them (bmad-review, `settings.upstream.review_rounds`); new findings come back to step 3.
 4. `dl next` says `ROLES … PHASE dl phase readiness` when shaping is finished. Set the stack and the roles **from BMad's

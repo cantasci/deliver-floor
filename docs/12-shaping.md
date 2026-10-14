@@ -47,6 +47,9 @@ what the business had decided (a 22-step rating scale, "unavailable" instead of 
 - **The decisions go back to BMad** — an update on every artifact it made (a spec decision can move the architecture), with
   what BMad said and what was decided. What it changes against its own earlier decisions is listed in the PR.
 - **It reviews its own work** — `bmad-review`, `upstream.review_rounds` times (2), after the decisions.
+- **Michael warns; the human decides.** Every proposal carries Michael's confidence; a low one says what could make it
+  wrong. A low proposal, a question BMad asks again and a high or critical finding are flagged — listed first, with the
+  earlier decision, and never accepted in "accept all of Michael's proposals": the human decides each on its own.
 - **It ends.** A question BMad asks about something already decided is shown with the earlier answer ("asked before as
   B-n"), so the human rules on exactly that. And the decisions go back to the same artifacts at most
   `upstream.reask_rounds` times (2) before BMad makes something new or reviews; past that they bind through the ledger.

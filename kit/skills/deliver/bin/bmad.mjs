@@ -21,7 +21,7 @@
 //   node bmad.mjs finish <job dir> <rc> <seconds>              read the run's result, record it, extract the ledger (JSON)
 //   node bmad.mjs abandon <job dir>                            forget a run that never finished
 //   node bmad.mjs ledger <job dir> [open]                      the ledger (text)
-//   node bmad.mjs propose <job dir> <id> "<text>" <file> "<quote>"     Michael's proposal, standing on a BMad artifact
+//   node bmad.mjs propose <job dir> <id> "<text>" <file> "<quote>" high|low ["<concern>"]   Michael's proposal on a BMad artifact
 //   node bmad.mjs decide <job dir> <id> "<text>" <file> "<quote>" "<rationale>"   Michael alone — only what needs no human
 //   node bmad.mjs answer <job dir> <id|proposals> <who> "<answer>"     the human's decision (dl clarify)
 //   node bmad.mjs gap <job dir> "<readiness id>" "<what is missing>"   the readiness review found BMad's output silent on it
@@ -350,13 +350,32 @@ const item = (s, id) => {
   return i;
 };
 
-export function propose(jobDir, id, text, file, quote) {
+// Live runs 62–66: most wrong decisions were proposals accepted as they stood — the human accepted them all at once, and
+// Michael had not said which he was unsure of (one contradicted the human's own earlier ruling). So a proposal carries its
+// confidence; a low one says what could make it wrong. Such an item — and one BMad asks again, and a high or critical
+// finding — is flagged: the human decides it on its own, never in "accept all of Michael's proposals".
+export function attentionOf(s, i) {
+  const why = [];
+  if (i.proposal?.confidence === "low") why.push(`Michael is not sure: ${i.proposal.concern}`);
+  for (const id of i.repeat_of ?? []) {
+    const was = s.ledger.find((x) => x.id === id);
+    if (was?.decision) why.push(`asked before as ${id} — decided${/^human/.test(was.decision.by) ? " by you" : ""}: "${String(was.decision.text).slice(0, 160)}"`);
+  }
+  if (i.kind === "finding" && /^(high|critical)$/i.test(i.severity ?? "")) why.push(`a ${i.severity} finding of BMad's review`);
+  return why;
+}
+export function propose(jobDir, id, text, file, quote, confidence, concern) {
   const s = loadShaping(jobDir), i = item(s, id);
   if (!String(text ?? "").trim()) throw new Error("say what you propose");
+  if (!["high", "low"].includes(confidence)) throw new Error("say how sure you are: --confidence high | low (low when only BMad's own words support it, or it may contradict something already decided)");
+  if (confidence === "low" && !String(concern ?? "").trim()) throw new Error("a low-confidence proposal says what could make it wrong and the alternative: --concern \"…\"");
+  if (i.repeat_of?.length && confidence === "high" && !String(concern ?? "").trim())
+    throw new Error(`${id} asks again about ${i.repeat_of.join(", ")}, already decided — say how your proposal fits that decision: --concern "…" (or --confidence low)`);
   const e = artifactQuote(jobDir, file, quote); if (e) throw new Error(e);
-  i.proposal = { text, file, quote, at: now() };
+  i.proposal = { text, file, quote, confidence, ...(String(concern ?? "").trim() ? { concern: String(concern).trim() } : {}), at: now() };
   save(jobDir, s);
-  return `${id}: proposed — "${text}"`;
+  const att = attentionOf(s, i);
+  return `${id}: proposed (${confidence} confidence) — "${text}"${att.length ? `\n  flagged for the human to decide on its own: ${att.join(" · ")}` : ""}`;
 }
 export function decide(jobDir, id, text, file, quote, rationale) {
   const s = loadShaping(jobDir), i = item(s, id);
@@ -370,12 +389,15 @@ export function decide(jobDir, id, text, file, quote, rationale) {
 export function answer(jobDir, id, who, text) {
   const s = loadShaping(jobDir);
   if (!String(text ?? "").trim()) throw new Error("the answer is empty");
-  const targets = id === "proposals" ? s.ledger.filter((i) => i.status === "open" && i.needs_human && i.proposal) : [item(s, id)];
-  if (!targets.length) throw new Error("no open item has a proposal to accept");
+  const open = s.ledger.filter((i) => i.status === "open" && i.needs_human && i.proposal);
+  const targets = id === "proposals" ? open.filter((i) => !attentionOf(s, i).length) : [item(s, id)];
+  const flagged = id === "proposals" ? open.filter((i) => attentionOf(s, i).length) : [];
+  if (!targets.length) throw new Error(flagged.length ? `every open proposal is flagged — decide each on its own: ${flagged.map((i) => `dl clarify ${i.id} "<your decision>"`).join(" · ")}` : "no open item has a proposal to accept");
   for (const i of targets)
     Object.assign(i, { status: "decided", decision: { text: id === "proposals" ? `${i.proposal.text} (accepted: "${text}")` : text, by: `human: ${who} ${now().slice(0, 10)}`, at: now() } });
   save(jobDir, s);
-  return targets.map((i) => `${i.id}: decided by the human`).join("\n");
+  return targets.map((i) => `${i.id}: decided by the human`).join("\n") +
+    (flagged.length ? `\nnot accepted — Michael flagged them; decide each on its own (dl clarify <id> "<your decision>"):\n${flagged.map((i) => `  ${i.id}: ${attentionOf(s, i).join(" · ")}`).join("\n")}` : "");
 }
 export function gap(jobDir, rid, text) {
   const s = loadShaping(jobDir);
@@ -391,24 +413,26 @@ export function ledgerText(jobDir, onlyOpen) {
   const s = loadShaping(jobDir);
   return s.ledger.filter((i) => !onlyOpen || i.status === "open").map((i) =>
     `${i.id} [${i.status}${i.status === "open" ? (i.needs_human ? " · with the human" : " · PM") : ""}] ${i.kind}${i.skill ? ` (${i.skill})` : ""}${i.severity ? ` ${i.severity}` : ""}: ${i.text}` +
-    (i.proposal ? `\n    proposal: ${i.proposal.text}  [${i.proposal.file}: "${i.proposal.quote.slice(0, 80)}"]` : "") +
+    (i.proposal ? `\n    proposal (${i.proposal.confidence ?? "?"}): ${i.proposal.text}  [${i.proposal.file}: "${i.proposal.quote.slice(0, 80)}"]${i.proposal.concern ? `\n    concern: ${i.proposal.concern}` : ""}` : "") +
     (i.decision ? `\n    decided (${i.decision.by}): ${i.decision.text}` : "")).join("\n");
 }
 
 export function questions(jobDir) {
   const s = loadShaping(jobDir), j = job(jobDir);
+  const open = humanOpen(s), flagged = open.filter((i) => attentionOf(s, i).length), plain = open.filter((i) => !attentionOf(s, i).length);
   const lines = [`# Decisions before the work can start — ${j.id ?? ""}`, "",
     "BMad shaped this request. Below is what it decided, assumed, asked or found; nothing it wrote binds until you decide.",
-    "Michael's proposal stands on BMad's own words (quoted). Answer each in a terminal — `dl clarify <id> \"<your decision>\"` —",
-    "or accept all of Michael's proposals at once: `dl clarify proposals \"<your words>\"`.", ""];
-  for (const i of humanOpen(s)) {
-    lines.push(`## ${i.id} — ${i.kind}${i.skill ? ` (${i.skill})` : ""}${i.severity ? `, ${i.severity}` : ""}`, "", i.text, "");
-    for (const id of i.repeat_of ?? []) {
-      const was = s.ledger.find((x) => x.id === id);
-      if (was?.decision) lines.push(`- **Asked before as ${id}** — decided: "${was.decision.text}". BMad says it still does not settle this: rule on exactly what it asks.`);
-    }
-    if (i.repeat_of?.length) lines.push("");
-    if (i.proposal) lines.push(`- **Michael proposes:** ${i.proposal.text}`, `  _BMad's words:_ "${i.proposal.quote}" (${i.proposal.file})`, "");
+    "Michael's proposal stands on BMad's own words (quoted). Answer each in a terminal: `dl clarify <id> \"<your decision>\"`.", ""];
+  const entry = (i) => {
+    lines.push(`### ${i.id} — ${i.kind}${i.skill ? ` (${i.skill})` : ""}${i.severity ? `, ${i.severity}` : ""}`, "", i.text, "");
+    for (const w of attentionOf(s, i)) lines.push(`- ⚠ ${w}`);
+    if (attentionOf(s, i).length) lines.push("");
+    if (i.proposal) lines.push(`- **Michael proposes** (${i.proposal.confidence ?? "?"} confidence): ${i.proposal.text}`, `  _BMad's words:_ "${i.proposal.quote}" (${i.proposal.file})`, "");
+  };
+  if (flagged.length) { lines.push(`## Decide each of these on its own (${flagged.length}) — Michael flags them`, ""); flagged.forEach(entry); }
+  if (plain.length) {
+    lines.push(`## Michael is confident in these (${plain.length})`, "", "Accept all of them at once — `dl clarify proposals \"<your words>\"` (flagged items are not included) — or answer any one on its own.", "");
+    plain.forEach(entry);
   }
   return lines.join("\n");
 }
@@ -469,7 +493,7 @@ export function report(jobDir) {
   const decided = s.ledger.filter((i) => i.status === "decided");
   if (decided.length) {
     out.push("| Id | From | BMad said | Decision | By |", "| --- | --- | --- | --- | --- |");
-    for (const i of decided) out.push(`| ${i.id} | ${i.kind}${i.skill ? ` · ${i.skill}` : ""} | ${esc(i.text).slice(0, 220)} | ${esc(i.decision.text).slice(0, 220)} | ${/^human/.test(i.decision.by) ? "the human" : "Michael"} |`);
+    for (const i of decided) out.push(`| ${i.id}${i.proposal?.confidence === "low" || i.repeat_of?.length ? " ⚠" : ""} | ${i.kind}${i.skill ? ` · ${i.skill}` : ""} | ${esc(i.text).slice(0, 220)} | ${esc(i.decision.text).slice(0, 220)} | ${/^human/.test(i.decision.by) ? "the human" : "Michael"} |`);
     out.push("");
   }
   const noted = s.ledger.filter((i) => i.kind === "conflict");
@@ -492,7 +516,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     else if (cmd === "finish") print(finish(jobDir, a[0], a[1]));
     else if (cmd === "abandon") { const s = loadShaping(jobDir); delete s.running; save(jobDir, s); print("abandoned"); }
     else if (cmd === "ledger") print(ledgerText(jobDir, a[0] === "open") || "(the ledger is empty)");
-    else if (cmd === "propose") print(propose(jobDir, a[0], a[1], a[2], a[3]));
+    else if (cmd === "propose") print(propose(jobDir, a[0], a[1], a[2], a[3], a[4], a[5]));
     else if (cmd === "decide") print(decide(jobDir, a[0], a[1], a[2], a[3], a[4]));
     else if (cmd === "answer") print(answer(jobDir, a[0], a[1], a[2]));
     else if (cmd === "gap") print(gap(jobDir, a[0], a[1]));
