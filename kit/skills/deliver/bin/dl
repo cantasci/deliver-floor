@@ -564,7 +564,7 @@ cmd_next() {
   fi
   # shaping: BMad's path, the decisions with the human, its review — the readiness review reads the result
   if [[ $phase == awaiting_clarification ]] && shaping_job && [[ "$(shape_status | jq -r .next)" != done ]]; then
-    local ask; ask="$(jq -r '.ledger[] | select(.status=="open" and .needs_human) | "ASK     human: \(.id) — \(.text[0:160])\(if .proposal then "  · Michael proposes: \(.proposal.text[0:140])" else "" end)"' "$JOB_DIR/shaping.json")"
+    local ask; ask="$(jq -r '.ledger[] | select(.status=="open" and .needs_human) | "ASK     human: \(.id) — \(.text[0:160])\(if .repeat_of then "  · asked before as \(.repeat_of | join(", ")): rule on exactly this" else "" end)\(if .proposal then "  · Michael proposes: \(.proposal.text[0:140])" else "" end)"' "$JOB_DIR/shaping.json")"
     if [[ -n $ask ]]; then printf '%s\n' "$ask"; echo "        record each: dl clarify <id> \"<the human's decision>\" · all of Michael's proposals at once: dl clarify proposals \"<the human's words>\""
     else echo "PHASE   dl phase shaping  (every decision taken — they go back to BMad: dl shape run)"; fi
     return 0
@@ -980,8 +980,9 @@ cmd_context() {
 # back to BMad (its update), it reviews again; the readiness review reads the result and planning freezes it all.
 shaping_on() { [[ "$(setting upstream.engine)" == bmad && "$(jq -r '.track // "full"' "$JOBJ")" == full ]]; }
 shaping_job() { [[ -f $JOB_DIR/shaping.json ]]; }
-shape_rounds() { local r; r="$(setting upstream.review_rounds)"; echo "${r:-2}"; }
-shape_status() { if shaping_job; then node "$BIN_DIR/bmad.mjs" status "$JOB_DIR" "$(shape_rounds)"; else echo '{"next":"install"}'; fi; }
+shape_rounds() { local r q; r="$(setting upstream.review_rounds)"; q="$(setting upstream.reask_rounds)"; echo "${r:-2} ${q:-2}"; }
+# shellcheck disable=SC2046   # two numbers: the review rounds and the update chain's limit
+shape_status() { if shaping_job; then node "$BIN_DIR/bmad.mjs" status "$JOB_DIR" $(shape_rounds); else echo '{"next":"install"}'; fi; }
 shape_install() {
   [[ "$(phase_now)" == shaping ]] || refuse 1 "BMad is installed in the shaping phase (dl phase shaping; now: $(phase_now))"
   local ver; ver="$(setting upstream.bmad_version)"; ver=${ver:-6.12.2}
@@ -1011,7 +1012,8 @@ shape_run() {
   [[ "$(phase_now)" == shaping ]] || refuse 1 "BMad runs in the shaping phase (now: $(phase_now))"
   if [[ "$(shape_status | jq -r .next)" == running ]]; then shape_wait; return; fi
   local r name prompt log model mode=${PERMISSION_MODE:-auto}
-  r="$(node "$BIN_DIR/bmad.mjs" start "$JOB_DIR" "$(shape_rounds)" 2>&1)" || refuse 1 "${r#bmad: }"
+  # shellcheck disable=SC2046
+  r="$(node "$BIN_DIR/bmad.mjs" start "$JOB_DIR" $(shape_rounds) 2>&1)" || refuse 1 "${r#bmad: }"
   name="$(jq -r .name <<<"$r")"; prompt="$(jq -r .prompt <<<"$r")"; log="$(jq -r .log <<<"$r")"; model="$(setting upstream.model)"
   # Its own session, not a subagent of Michael's: BMad's skills run their reviewers as subagents, which a subagent cannot start.
   # The hooks know it by DELIVER_SHAPING: it writes only its output folder, runs no dl and does not commit. Detached, so a long

@@ -41,6 +41,10 @@ what the business had decided (a 22-step rating scale, "unavailable" instead of 
 - **The decisions go back to BMad** — an update on every artifact it made (a spec decision can move the architecture), with
   what BMad said and what was decided. What it changes against its own earlier decisions is listed in the PR.
 - **It reviews its own work** — `bmad-review`, `upstream.review_rounds` times (2), after the decisions.
+- **It ends.** A question BMad asks about something already decided is shown with the earlier answer ("asked before as
+  B-n"), so the human rules on exactly that. And the decisions go back to the same artifacts at most
+  `upstream.reask_rounds` times (2) before BMad makes something new or reviews; past that they bind through the ledger.
+  Seen live on an idea (run 66): every update raised a question about what it was just told — the same one four times.
 - **Frozen at planning** — BMad's artifacts and the ledger are hashed with `readiness.json`; a change stops every step until
   the human reopens it (`/deliver:unfreeze`).
 - **Traced to the cards** — the readiness review settles items from BMad's words (`bmad: <artifact>` + quote, `shape: B-n`);
@@ -56,6 +60,7 @@ what the business had decided (a 22-step rating scale, "unavailable" instead of 
 | `upstream.engine` | `"off"` | `"bmad"` shapes every full-path job (a light-path job is not shaped) |
 | `upstream.bmad_version` | `"6.12.2"` | the release `dl shape install` installs; `bin/bmad.mjs` reads its formats |
 | `upstream.review_rounds` | `2` | how often `bmad-review` runs after the decisions; `0` for none |
+| `upstream.reask_rounds` | `2` | how often the decisions go back to the same artifacts before BMad makes something new or reviews; past it they bind through the ledger, listed in the PR |
 | `upstream.model` | `""` | the model of BMad's sessions (`claude --model`) |
 | `upstream.timeout_min` | `20` | a BMad session that runs longer is stopped and counted as failed |
 

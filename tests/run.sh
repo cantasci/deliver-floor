@@ -2212,6 +2212,50 @@ contains "a job without the setting is not shaped" "$("$DL" shape status 2>&1)" 
 [[ "$("$DL" next)" != *shaping* ]] && ok "…its intake goes to the readiness review as before" || bad "next: $("$DL" next)"
 cd "$R"
 
+echo "shaping converges: a question BMad asks again shows what was decided; the update chain has a limit (live run 66 never ended)"
+CV="$TMP/converge"; mkdir -p "$CV/.work/JOB-c" && CJ="$CV/.work/JOB-c" && BM="$SDIR/bin/bmad.mjs"
+jq -n --arg r "$CV" '{id:"JOB-20261014-0900-c", title:"c", request:"an idea", repo:$r, stack:[]}' > "$CJ/job.json"
+node "$BM" init "$CJ" 6.12.2 >/dev/null && node "$BM" installed "$CJ" 6.12.2 >/dev/null
+cvrun() { # cvrun '<result text>' [file to touch] — one fake BMad run: start, write what it wrote, finish
+  local n; n="$(node "$BM" start "$CJ" 2 2 | jq -r .name)"
+  [[ -n ${2:-} ]] && { mkdir -p "$(dirname "$CJ/bmad/out/$2")"; echo "$n $RANDOM" >> "$CJ/bmad/out/$2"; }
+  jq -n --arg r "$1" '{result:$r,total_cost_usd:0.1}' > "$CJ/bmad/runs/$n.json"; node "$BM" finish "$CJ" 0 5 >/dev/null
+}
+cvdecide() { for i in $(node "$BM" status "$CJ" 2 2 | jq -r '(.human // [])[]'); do node "$BM" answer "$CJ" "$i" e2e "the rule: $i" >/dev/null; done; }
+cvrun '```json
+{"sequence":[{"skill":"bmad-spec","intent":"create","why":"x"}],"skipped":[]}
+```'
+cvrun '```json
+{"status":"complete","open_questions":["Does the case-insensitive rule fold Moody'"'"'s Aaa to AAA, or is Aaa rejected?"]}
+```' specs/s/SPEC.md
+cvdecide
+for k in 1 2 3; do   # every update asks about what it was just told, in other words
+  [[ "$(node "$BM" status "$CJ" 2 2 | jq -r .next)" == update ]] || break
+  cvrun '```json
+{"status":"complete","open_questions":["Is Moody'"'"'s Aaa folded to AAA under the case-insensitive rule or rejected? B-1 gives no explicit ruling (round '"$k"')"]}
+```' specs/s/SPEC.md
+  if [[ $k == 1 ]]; then
+    node "$BM" questions "$CJ" > "$CJ/QUESTIONS.md"
+    jq -e '.ledger[] | select(.id=="B-2") | .repeat_of == ["B-1"]' "$CJ/shaping.json" >/dev/null && ok "a question about what was decided is marked as asked before (B-2 → B-1)" || bad "repeat_of: $(jq -c '.ledger[1]' "$CJ/shaping.json")"
+    grep -q 'Asked before as B-1\*\* — decided: "the rule: B-1"' "$CJ/QUESTIONS.md" && ok "…QUESTIONS.md shows the human their earlier answer and asks for a ruling on exactly this" || bad "QUESTIONS.md: $(grep -A3 '## B-2' "$CJ/QUESTIONS.md")"
+  fi
+  cvdecide
+done
+[[ "$(jq '[.runs[] | select(.step=="update")] | length' "$CJ/shaping.json")" == 2 ]] && ok "the update chain stops after upstream.reask_rounds (2) — it no longer asks forever" || bad "updates: $(jq -c '[.runs[] | .name]' "$CJ/shaping.json")"
+contains "…shaping goes on to BMad's review" "$(node "$BM" status "$CJ" 2 2 | jq -r .next)" "review"
+contains "…what was decided past the limit binds through the ledger, and the PR says so" "$(node "$BM" report "$CJ")" "Decided after BMad's last update** (binding through the ledger, not written into its artifacts — the update chain reached its limit): B-3"
+cvrun '```json
+{"findings":[],"verdict":"ready-with-concerns"}
+```'
+contains "after the review the chain starts again: B-3 goes into the artifacts" "$(node "$BM" status "$CJ" 2 2 | jq -c '[.next, .newBatch]')" '["update",true]'
+cvrun '```json
+{"status":"complete","open_questions":[]}
+```' specs/s/SPEC.md
+cvrun '```json
+{"findings":[],"verdict":"ready"}
+```'
+contains "…its second review, and shaping ends — at most (made + reviewed) × reask_rounds updates" "$(node "$BM" status "$CJ" 2 2 | jq -r .next)" "done"
+
 unset DELIVER_KNOWLEDGE; rm -f "$DELIVER_HOME/config.json"   # the install tests check what the installer writes there
 echo "install / uninstall"
 INST="$HERE/scripts/install.sh"

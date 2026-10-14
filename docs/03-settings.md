@@ -34,6 +34,7 @@ human accepts it with `/deliver:reseal <reason>`.
 | `upstream.engine` | `"off"` | `"bmad"`: the BMad Method shapes every full-path job before the readiness review — it chooses its path and writes the specification headless; Michael decides what it decided, assumed, asked or found with you; the result is frozen with the readiness decisions ([12-shaping](12-shaping.md)) |
 | `upstream.bmad_version` | `"6.12.2"` | The BMad release `dl shape install` installs (outside git) |
 | `upstream.review_rounds` | `2` | How often `bmad-review` reviews BMad's artifacts after the decisions; `0` for none |
+| `upstream.reask_rounds` | `2` | How often the decisions go back to the same BMad artifacts before it makes something new or reviews; past it they bind through the shaping ledger (listed in the PR) |
 | `upstream.model` | `""` | The model of BMad's sessions; empty: Claude Code's default |
 | `upstream.timeout_min` | `20` | A BMad session that runs longer is stopped and counted as a failed run |
 | `light.max_cards` | `2` | The light path (`dl track light`: a small change inside existing code — fewer readiness items, the BA cuts the cards, no Lead) plans at most this many cards; more → `dl track full` |

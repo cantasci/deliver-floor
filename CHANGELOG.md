@@ -33,6 +33,10 @@ before a card is cut** (`settings.upstream.engine: "bmad"`, off by default — [
   holding it and `dl` gives it to BMad's session only.
 - **A usage-limit wait reads the clock** (`run-headless.sh`): macOS does not count a sleeping machine in `sleep`, so a closed
   lid stretched a 194-minute wait by an hour (live run 62). It now naps at most five minutes and looks at the time.
+- **Shaping ends.** On an idea (live run 66) every BMad update raised a question about the decisions it had just applied — the
+  same one four times — and shaping never finished. A question about something already decided now shows the human their
+  earlier answer ("asked before as B-n"); the decisions go back to the same artifacts at most `upstream.reask_rounds` (2)
+  times before BMad makes something new or reviews, then bind through the ledger, listed in the PR.
 - Measured live against the same request unshaped ([the comparison](docs/verification/15-bmad-shaping/COMPARISON.md)): the
   same product, every open point with a proposal on BMad's words, a traced specification and architecture — for +30 % cost
   and about twice the time. `tests/e2e-live.sh shaped` with `E2E_SHAPING=off` is that control.

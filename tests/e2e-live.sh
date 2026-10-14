@@ -123,7 +123,7 @@ fi
 # matched by topic, recorded with dl clarify as a person in a terminal would — and the run resumes. A question no
 # prepared answer matches fails the scenario: a real person would have to answer it.
 human_rounds() { local J=$1 JJ=$1/job.json round
-for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SHAPED_SC == 1 ]] && echo 8 || echo 3)}"); do
+for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SHAPED_SC == 1 ]] && echo 12 || echo 3)}"); do
   [[ "$(jq -r .phase "$JJ")" == awaiting_clarification ]] || break
   step "4.$round · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
   [[ $SC != incomplete ]] && log "note: the $SC request still raised question(s) — recorded below; answering them is the human's job"

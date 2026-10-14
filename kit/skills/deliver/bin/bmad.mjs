@@ -15,8 +15,8 @@
 //
 //   node bmad.mjs init <job dir> <version>                     shaping.json + the input package
 //   node bmad.mjs installed <job dir> <version>                record the install (dl shape install ran npx)
-//   node bmad.mjs status <job dir> [rounds]                    the next step (JSON): install | help | decide | update | create | review | done
-//   node bmad.mjs start <job dir> [rounds]                     prepare the next BMad run: prompt file + snapshot (JSON)
+//   node bmad.mjs status <job dir> [rounds] [reask]            the next step (JSON): install | help | decide | update | create | review | done
+//   node bmad.mjs start <job dir> [rounds] [reask]             prepare the next BMad run: prompt file + snapshot (JSON)
 //   node bmad.mjs finish <job dir> <rc> <seconds>              read the run's result, record it, extract the ledger (JSON)
 //   node bmad.mjs abandon <job dir>                            forget a run that never finished
 //   node bmad.mjs ledger <job dir> [open]                      the ledger (text)
@@ -102,7 +102,16 @@ const humanOpen = (s) => s.ledger.filter((i) => i.status === "open" && i.needs_h
 const pmOpen = (s) => s.ledger.filter((i) => i.status === "open" && !i.needs_human);
 const unsent = (s) => s.ledger.filter((i) => i.status === "decided" && i.batch == null);
 
-export function status(jobDir, rounds = 2) {
+// How often the decisions go back to the same artifacts before BMad has made something new or reviewed: seen live on an idea
+// (run 66), each update raised a question about the decisions just applied, the same one four times, and shaping never ended.
+// Past the limit, what is decided binds through the ledger (source "shape: B-n") and is listed in the PR as such.
+const chainLength = (s) => {
+  const anchor = Math.max(0, ...s.runs.filter((r) => (r.step === "create" || r.step === "review") && usable(r)).map((r) => r.n));
+  return s.batches.filter((b) => (s.runs.find((r) => r.step === "update" && r.batch === b.n)?.n ?? Infinity) > anchor).length;
+};
+export const ledgerOnly = (s) => unsent(s).filter((i) => i.kind !== "gap");
+
+export function status(jobDir, rounds = 2, reask = 2) {
   const s = loadShaping(jobDir);
   if (!s) return { next: "init" };
   if (s.running) return { next: "running", run: s.running };
@@ -117,7 +126,8 @@ export function status(jobDir, rounds = 2) {
     const todo = batch.skills.find((k) => !s.runs.some((r) => r.step === "update" && r.skill === k && r.batch === batch.n && usable(r)));
     if (todo) return { next: "update", skill: todo, batch: batch.n, attempts: s.runs.filter((r) => r.step === "update" && r.skill === todo && r.batch === batch.n && !usable(r)).length };
   }
-  if (unsent(s).length && created(s).length) return { next: "update", skill: created(s)[0], batch: (s.batches.at(-1)?.n ?? 0) + 1, newBatch: true, attempts: 0 };
+  if (unsent(s).length && created(s).length && (chainLength(s) < reask || unsent(s).some((i) => i.kind === "gap")))
+    return { next: "update", skill: created(s)[0], batch: (s.batches.at(-1)?.n ?? 0) + 1, newBatch: true, attempts: 0 };
   const todo = s.plan.sequence.map((x) => x.skill).find((k) => !created(s).includes(k));
   if (todo) return { next: "create", skill: todo, attempts: failed("create", todo) };
   const lastChange = Math.max(0, ...s.runs.filter((r) => (r.step === "create" || r.step === "update") && usable(r)).map((r) => r.n));
@@ -185,8 +195,8 @@ ${decided.length ? `Decisions taken so far (by the business with the PM) — che
 
 const memlogs = (dir) => Object.fromEntries(Object.keys(snapshot(dir)).filter((p) => p.endsWith(".memlog.md")).map((p) => [p, read(p)]));
 
-export function start(jobDir, rounds = 2) {
-  const s = loadShaping(jobDir), st = status(jobDir, rounds), d = dirs(jobDir);
+export function start(jobDir, rounds = 2, reask = 2) {
+  const s = loadShaping(jobDir), st = status(jobDir, rounds, reask), d = dirs(jobDir);
   if (!["help", "create", "update", "review"].includes(st.next)) throw new Error(`nothing for BMad to run now (next: ${st.next})`);
   if ((st.attempts ?? 0) >= 3) throw new Error(`BMad's ${st.next}${st.skill ? ` ${st.skill}` : ""} gave no usable result 3 times — tell the human (the runs: ${rel(jobDir, d.runs)})`);
   const n = s.runs.length + 1, name = `${String(n).padStart(2, "0")}-${st.next}${st.skill ? `-${st.skill.replace(/^bmad-/, "")}` : ""}`;
@@ -215,6 +225,18 @@ export function lastJson(text) {
   return null;
 }
 const MEMTAG = /^\s*-\s*\((decision|assumption|question)\)\s*(.+)$/;
+// A question BMad asks about something already decided: the ids it names (it often cites them), or the same words.
+const words = (t) => new Set(norm(t).split(/[^a-z0-9']+/).filter((w) => w.length > 3));
+function repeatOf(s, text) {
+  const decided = s.ledger.filter((i) => i.status === "decided" && i.kind !== "gap");
+  const named = [...String(text).matchAll(/\bB-(\d+)\b/g)].map((m) => `B-${m[1]}`).filter((id) => decided.some((i) => i.id === id));
+  const w = words(text);
+  const alike = decided.filter((i) => (i.kind === "question" || i.kind === "finding") && w.size >= 4 && (() => {
+    const v = words(i.text); let both = 0; for (const x of w) if (v.has(x)) both++;
+    return both / Math.min(w.size, v.size) >= 0.6;
+  })()).map((i) => i.id);
+  return [...new Set([...named, ...alike])];
+}
 const asText = (x) => (typeof x === "string" ? x : x?.text ?? x?.question ?? x?.assumption ?? x?.finding ?? x?.description ?? JSON.stringify(x));
 
 export function finish(jobDir, rc, seconds) {
@@ -230,6 +252,7 @@ export function finish(jobDir, rc, seconds) {
   const add = (kind, text, extra = {}) => {
     const t = String(text ?? "").trim();
     if (!t || s.ledger.some((i) => i.kind === kind && norm(i.text) === norm(t))) return;
+    if (kind === "question" || kind === "finding") { const rep = repeatOf(s, t); if (rep.length) extra = { ...extra, repeat_of: rep }; }
     s.ledger.push({ id: `B-${s.ledger.length + 1}`, kind, skill: r.skill ?? null, run: r.n, text: t, needs_human: kind !== "conflict",
       status: kind === "conflict" ? "noted" : "open", ...extra });
   };
@@ -359,6 +382,11 @@ export function questions(jobDir) {
     "or accept all of Michael's proposals at once: `dl clarify proposals \"<your words>\"`.", ""];
   for (const i of humanOpen(s)) {
     lines.push(`## ${i.id} — ${i.kind}${i.skill ? ` (${i.skill})` : ""}${i.severity ? `, ${i.severity}` : ""}`, "", i.text, "");
+    for (const id of i.repeat_of ?? []) {
+      const was = s.ledger.find((x) => x.id === id);
+      if (was?.decision) lines.push(`- **Asked before as ${id}** — decided: "${was.decision.text}". BMad says it still does not settle this: rule on exactly what it asks.`);
+    }
+    if (i.repeat_of?.length) lines.push("");
     if (i.proposal) lines.push(`- **Michael proposes:** ${i.proposal.text}`, `  _BMad's words:_ "${i.proposal.quote}" (${i.proposal.file})`, "");
   }
   return lines.join("\n");
@@ -425,6 +453,8 @@ export function report(jobDir) {
   }
   const noted = s.ledger.filter((i) => i.kind === "conflict");
   if (noted.length) out.push("**What BMad changed against its own earlier decisions:**", "", ...noted.map((i) => `- ${i.text}`), "");
+  const after = ledgerOnly(s);
+  if (after.length) out.push(`**Decided after BMad's last update** (binding through the ledger, not written into its artifacts — the update chain reached its limit): ${after.map((i) => i.id).join(", ")}`, "");
   return out.join("\n");
 }
 
@@ -435,8 +465,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     if (!jobDir || !existsSync(join(jobDir, "job.json"))) throw new Error("usage: bmad.mjs <command> <job dir> …");
     if (cmd === "init") print(init(jobDir, a[0]));
     else if (cmd === "installed") { const s = loadShaping(jobDir); s.installed = { version: a[0], at: now() }; save(jobDir, s); print("installed"); }
-    else if (cmd === "status") print(status(jobDir, Number(a[0] ?? 2)));
-    else if (cmd === "start") print(start(jobDir, Number(a[0] ?? 2)));
+    else if (cmd === "status") print(status(jobDir, Number(a[0] ?? 2), Number(a[1] ?? 2)));
+    else if (cmd === "start") print(start(jobDir, Number(a[0] ?? 2), Number(a[1] ?? 2)));
     else if (cmd === "finish") print(finish(jobDir, a[0], a[1]));
     else if (cmd === "abandon") { const s = loadShaping(jobDir); delete s.running; save(jobDir, s); print("abandoned"); }
     else if (cmd === "ledger") print(ledgerText(jobDir, a[0] === "open") || "(the ledger is empty)");

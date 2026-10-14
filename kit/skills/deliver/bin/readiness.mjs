@@ -122,8 +122,8 @@ function shapingError(i, job) {
   if (!b && !l) return undefined;
   const s = loadShaping(job.dir);
   if (!s) return "this job was not shaped with BMad (no shaping.json) — quote the request, a standard, or ask the human";
-  const rounds = job.settings?.upstream?.review_rounds ?? 2;
-  if (shapingStatus(job.dir, rounds).next !== "done") return "shaping is not finished: BMad's artifacts bind once every ledger item is decided and its review is done (dl next)";
+  const rounds = job.settings?.upstream?.review_rounds ?? 2, reask = job.settings?.upstream?.reask_rounds ?? 2;
+  if (shapingStatus(job.dir, rounds, reask).next !== "done") return "shaping is not finished: BMad's artifacts bind once every ledger item is decided and its review is done (dl next)";
   if (l) {
     const it = s.ledger.find((x) => x.id === l[1]);
     if (!it || it.status !== "decided") return `${l[1]} is not a decision of the shaping ledger (dl shape ledger)`;
