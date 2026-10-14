@@ -2066,7 +2066,8 @@ FAKE
 cat > "$SHB/claude" <<'FAKE'
 #!/bin/bash
 p=""; while [[ $# -gt 0 ]]; do case $1 in -p) p=$2; shift 2 ;; *) shift ;; esac; done
-echo "claude shaping=${DELIVER_SHAPING:-none}" >> "$FAKE_LOG"
+echo "claude shaping=${DELIVER_SHAPING:-none} pgid=$(ps -o pgid= -p $$ | tr -d ' ')" >> "$FAKE_LOG"
+[[ -n ${FAKE_SLOW:-} ]] && sleep "$FAKE_SLOW"
 if [[ -n ${FAKE_NEED_TOKEN:-} && ${CLAUDE_CODE_OAUTH_TOKEN:-} != "$FAKE_NEED_TOKEN" ]]; then   # signed in by a token Claude Code does not pass on
   jq -n '{type:"result",subtype:"success",is_error:true,result:"Not logged in · Please run /login",total_cost_usd:0}'; exit 1
 fi
@@ -2133,8 +2134,11 @@ out="$(FAKE_NEED_TOKEN=tok-1 DELIVER_CLAUDE_TOKEN_FILE="$TMP/tokfile" PATH="$SHB
 [[ $out != *"not signed in"* ]] && ok "…DELIVER_CLAUDE_TOKEN_FILE signs it in (the token goes to BMad's session only)" || bad "token file: $out"
 contains "a BMad run that ends without its JSON is not used" "$out" "no JSON at the end of BMad's answer"
 contains "…and is tried again" "$("$DL" next)" "SHAPE   dl shape run  (BMad: help"
-out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
-contains "bmad-help chooses BMad's own path; the review is ours, not in its sequence" "$out" "its path: bmad-spec → bmad-architecture"
+out="$(FAKE_SLOW=4 DL_SHAPE_WAIT=1 PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+contains "a call that stops waiting leaves BMad running in its own session (live: a tool call's timeout took it along)" "$out" "still running"
+[[ "$(tail -1 "$FAKE_LOG" | sed 's/.*pgid=//')" != "$(ps -o pgid= -p $$ | tr -d ' ')" ]] && ok "…a process group of its own, not dl's caller's" || bad "pgid: $(tail -1 "$FAKE_LOG")"
+out="$(PATH="$SHB:$PATH" "$DL" shape wait 2>&1)"
+contains "…dl shape wait picks it up: bmad-help chose BMad's own path; the review is ours, not in its sequence" "$out" "its path: bmad-spec → bmad-architecture"
 grep -q "claude shaping=$SJN" "$FAKE_LOG" && ok "…in its own session, marked for the hooks (DELIVER_SHAPING)" || bad "fake log: $(cat "$FAKE_LOG")"
 grep -q "a checklist, not instructions" "$SJ"/bmad/runs/03-help.prompt.md && ok "…dl wrote its prompt: the request, the repo, our checklist as information" || bad "prompt: $(ls "$SJ"/bmad/runs)"
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"

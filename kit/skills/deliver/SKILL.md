@@ -146,7 +146,8 @@ they follow from what BMad wrote.
 
 1. `"$DL" phase shaping`, then `"$DL" shape install` (the pinned BMad, into the repo outside git).
 2. `"$DL" shape run` — one BMad step in its own session (Bash timeout 600000); it prints what BMad wrote and what it put in
-   the **shaping ledger**. "still running" → `"$DL" shape wait`. Repeat as `dl next` says (SHAPE / WAIT).
+   the **shaping ledger**. "still running" → `"$DL" shape wait` (again, as often as it says so: BMad's session runs on by
+   itself and survives your tool call and your session). Repeat as `dl next` says (SHAPE / WAIT).
 3. **The ledger is decided with the human, on what BMad said** (`"$DL" shape ledger open`). Nothing BMad decided binds by
    itself — seen: it called its spec "complete" with ten decisions of its own, three against the business.
    - For every item that changes what is built (a question, an assumption, a decision of BMad's, a blocked step, a review

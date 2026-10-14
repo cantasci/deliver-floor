@@ -1016,33 +1016,37 @@ shape_run() {
   r="$(node "$BIN_DIR/bmad.mjs" start "$JOB_DIR" $(shape_rounds) 2>&1)" || refuse 1 "${r#bmad: }"
   name="$(jq -r .name <<<"$r")"; prompt="$(jq -r .prompt <<<"$r")"; log="$(jq -r .log <<<"$r")"; model="$(setting upstream.model)"
   # Its own session, not a subagent of Michael's: BMad's skills run their reviewers as subagents, which a subagent cannot start.
-  # The hooks know it by DELIVER_SHAPING: it writes only its output folder, runs no dl and does not commit. Detached, so a long
-  # run outlives this tool call; dl shape wait picks it up.
+  # The hooks know it by DELIVER_SHAPING: it writes only its output folder, runs no dl and does not commit. In a process session
+  # of its own (setsid): seen live, Michael's tool call hit its 10-minute limit and the signal took BMad's session with it —
+  # nohup is not enough. It outlives the call and Michael's whole session; dl shape wait picks it up.
   # Claude Code does not pass its own token to the commands it runs: signed in by a token in the environment, the BMad session
   # gets it from DELIVER_CLAUDE_TOKEN_FILE (a /login of this machine needs nothing)
   local tokf=${DELIVER_CLAUDE_TOKEN_FILE:-}; [[ -z $tokf || -r $tokf ]] || refuse 1 "DELIVER_CLAUDE_TOKEN_FILE ($tokf) is not readable"
-  nohup bash -c 'cd "$1" && { [[ -z $9 ]] || export CLAUDE_CODE_OAUTH_TOKEN="$(tr -d "[:space:]" < "$9")"; } && DELIVER_SHAPING="$2" claude -p "$(cat "$3")" --permission-mode "$4" --output-format json ${5:+--model "$5"} < /dev/null > "$6" 2> "$7"; echo $? > "$8"' \
-    _ "$ROOT" "$JOB" "$prompt" "$mode" "$model" "$log" "${log%.json}.err" "${log%.json}.rc" "$tokf" > /dev/null 2>&1 &
+  local detach=(nohup)
+  if command -v setsid >/dev/null; then detach=(setsid nohup)
+  elif command -v perl >/dev/null; then detach=(perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV or die "exec: $!"' -- nohup); fi
+  "${detach[@]}" bash -c 'cd "$1" && { [[ -z $9 ]] || export CLAUDE_CODE_OAUTH_TOKEN="$(tr -d "[:space:]" < "$9")"; } && DELIVER_SHAPING="$2" claude -p "$(cat "$3")" --permission-mode "$4" --output-format json ${5:+--model "$5"} < /dev/null > "$6" 2> "$7"; echo $? > "$8"' \
+    _ "$ROOT" "$JOB" "$prompt" "$mode" "$model" "$log" "${log%.json}.err" "${log%.json}.rc" "$tokf" > /dev/null 2>&1 < /dev/null &
   echo $! > "$JOB_DIR/bmad/runs/.pid"; date +%s > "$JOB_DIR/bmad/runs/.started"
   log_event shape "run $name started"
   echo "BMad: $name — started in its own session"
   shape_wait
 }
 shape_wait() {
-  local st name rcf pid t0 lim waited=0 rc out max=${DL_SHAPE_WAIT:-540}   # one call stays inside a tool call's 10 minutes
+  local st name rcf pid t0 lim rc out w0 max=${DL_SHAPE_WAIT:-420}   # by the clock: one call stays well inside a tool call's 10 minutes
   st="$(shape_status)"
   [[ "$(jq -r .next <<<"$st")" == running ]] || { echo "no BMad run in progress — next: $(jq -r .next <<<"$st") (dl next)"; return 0; }
   name="$(jq -r .run.name <<<"$st")"; rcf="$JOB_DIR/bmad/runs/$name.rc"
   pid="$(cat "$JOB_DIR/bmad/runs/.pid" 2>/dev/null || true)"; t0="$(cat "$JOB_DIR/bmad/runs/.started" 2>/dev/null || date +%s)"
-  lim="$(setting upstream.timeout_min)"; lim=$(( ${lim:-20} * 60 ))
+  lim="$(setting upstream.timeout_min)"; lim=$(( ${lim:-20} * 60 )); w0=$(date +%s)
   while [[ ! -f $rcf ]]; do
     if [[ -n $pid ]] && ! kill -0 "$pid" 2>/dev/null; then sleep 1; [[ -f $rcf ]] || echo 1 > "$rcf"; break; fi   # gone without a status
     if (( $(date +%s) - t0 > lim )); then
       pkill -P "$pid" 2>/dev/null || true; kill "$pid" 2>/dev/null || true; echo 124 > "$rcf"
       echo "BMad: $name stopped after $(( lim / 60 )) min (settings.upstream.timeout_min)" >&2; break
     fi
-    if (( waited >= max )); then echo "BMad: $name still running ($(( ($(date +%s) - t0) / 60 )) min) — dl shape wait"; return 0; fi
-    sleep 2; waited=$((waited + 2))
+    if (( $(date +%s) - w0 >= max )); then echo "BMad: $name still running ($(( ($(date +%s) - t0) / 60 )) min, in its own session) — dl shape wait"; return 0; fi
+    sleep 2
   done
   rc="$(cat "$rcf")"
   out="$(node "$BIN_DIR/bmad.mjs" finish "$JOB_DIR" "$rc" "$(( $(date +%s) - t0 ))" 2>&1)" || refuse 1 "${out#bmad: }"

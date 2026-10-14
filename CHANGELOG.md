@@ -33,6 +33,10 @@ before a card is cut** (`settings.upstream.engine: "bmad"`, off by default — [
   holding it and `dl` gives it to BMad's session only.
 - **A usage-limit wait reads the clock** (`run-headless.sh`): macOS does not count a sleeping machine in `sleep`, so a closed
   lid stretched a 194-minute wait by an hour (live run 62). It now naps at most five minutes and looks at the time.
+- **BMad's session survives the call that started it.** Live (run 66, again): `dl shape run` outlasted Claude Code's 10-minute
+  tool limit — its wait counted loops, not time — and the timeout's signal took BMad's session along (`nohup` is not enough).
+  BMad now runs in a process session of its own (`setsid`), and a call waits at most seven minutes by the clock;
+  `dl shape wait` picks the run up in the same session or the next.
 - **Shaping ends.** On an idea (live run 66) every BMad update raised a question about the decisions it had just applied — the
   same one four times — and shaping never finished. A question about something already decided now shows the human their
   earlier answer ("asked before as B-n"); the decisions go back to the same artifacts at most `upstream.reask_rounds` (2)
