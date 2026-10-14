@@ -7,7 +7,14 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
 ## 0.17.0 — 2026-10-13
 
 **Shaping with the BMad Method: BMad writes the specification, Michael decides what it said with you, and it is frozen
-before a card is cut** (`settings.upstream.engine: "bmad"`, off by default — [docs/12-shaping](docs/12-shaping.md))
+before a card is cut** — by default only for a request that is not a specification yet (`settings.upstream.engine: "auto"`;
+[docs/12-shaping](docs/12-shaping.md))
+- **`auto`, the default.** A request that states fewer than two of requirement ids, acceptance criteria and a contract is
+  shaped; one that states them goes straight to the readiness review. Code decides by those signals (`bmad.mjs needs`); `dl
+  next`, the event log and the PR say which and why. `"bmad"` shapes every full-path job, `"off"` none. Why: measured live,
+  shaping a specified request gave the same product for 30 % more; on a one-paragraph idea BMad caught the product decisions
+  the readiness review did not ask about (input normalisation, the calculator's thresholds, its signature). doctor reports
+  BMad's prerequisites as notes under auto, as failures under bmad.
 - **A new phase, `shaping`**, between intake and the readiness review (full path only). `dl shape install` puts the pinned
   BMad (`upstream.bmad_version`, 6.12.2) into the repo outside git; `dl shape run` starts one BMad step in its own headless
   session. **BMad is fed, not steered:** `bin/bmad.mjs` writes every prompt — the request, the repo, the standards, the

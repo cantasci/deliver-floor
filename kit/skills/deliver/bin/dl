@@ -570,10 +570,10 @@ cmd_next() {
     return 0
   fi
   case $phase in
-    intake)   if shaping_on; then echo "INTAKE  dl phase shaping — BMad shapes the request before the readiness review (settings.upstream.engine: bmad); the stack and the roles follow from its artifacts"
-              else echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)"; fi
-              [[ "$(jq -r '.track // "full"' "$JOBJ")" == full ]] && jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null \
+    intake)   [[ "$(jq -r '.track // "full"' "$JOBJ")" == full ]] && jq -e '(.stack // []) | length > 0' "$JOBJ" >/dev/null \
                 && echo "TRIAGE  a small change inside existing code? dl track light \"<why>\" --quote \"<the request's words>\" (fewer readiness items, the BA cuts ≤ $(light_max) card(s), no Leads$(shaping_on && echo ", no shaping")) — else the full path, as now"
+              if shaping_on; then echo "INTAKE  dl phase shaping — BMad shapes the request before the readiness review$([[ "$(setting upstream.engine)" == auto ]] && echo " ($(shape_why))"); the stack and the roles follow from its artifacts"
+              else echo "INTAKE  detect stack, pick roles from roles.yaml (dl jobset '.roles=[…]'), then: dl phase readiness (generates the role cards)$([[ "$(setting upstream.engine)" == auto && "$(jq -r '.track // "full"' "$JOBJ")" == full ]] && echo " · not shaped: $(shape_why)")"; fi
               true ;;
     shaping)
       local ss nx; ss="$(shape_status)"; nx="$(jq -r .next <<<"$ss")"
@@ -764,6 +764,9 @@ cmd_phase() {
       awaiting_pr_merge) refuse 1 "awaiting_pr_merge is set by: dl ship" ;;
       done) [[ "$(jq -r '.shipped // false' "$JOBJ")" == true ]] || refuse 1 "the job is not delivered yet — dl ship (and, for a PR, its merge: dl pr)" ;;
     esac
+  fi
+  if [[ $cur == intake && $p != intake && $p != aborted && "$(setting upstream.engine)" == auto && "$(jq -r '.track // "full"' "$JOBJ")" == full ]]; then
+    log_event shape-auto "$(shaping_on && echo shaped || echo "not shaped"): $(shape_why)"
   fi
   case $p in # entering a waiting phase asks the question afresh
     awaiting_plan_approval) jq_inplace "$JOBJ" '.gates.plan = null' ;;
@@ -978,7 +981,17 @@ cmd_context() {
 # it. What it decided, assumed, asked or found is the shaping ledger: Michael decides each WITH the human, on what BMad said
 # (dl shape propose, then dl clarify); on his own only what changes nothing that is built (dl shape decide). The decisions go
 # back to BMad (its update), it reviews again; the readiness review reads the result and planning freezes it all.
-shaping_on() { [[ "$(setting upstream.engine)" == bmad && "$(jq -r '.track // "full"' "$JOBJ")" == full ]]; }
+# engine bmad: every full-path job is shaped; auto (the default): only a request that is not a specification yet — fewer than
+# two of requirement ids, acceptance criteria and a contract (bmad.mjs needs); off: none. A light-path job is never shaped.
+shaping_on() {
+  [[ "$(jq -r '.track // "full"' "$JOBJ")" == full ]] || return 1
+  case "$(setting upstream.engine)" in
+    bmad) return 0 ;;
+    auto) node "$BIN_DIR/bmad.mjs" needs "$JOB_DIR" >/dev/null 2>&1 ;;
+    *) return 1 ;;
+  esac
+}
+shape_why() { node "$BIN_DIR/bmad.mjs" needs "$JOB_DIR" 2>/dev/null | jq -r .reason; }
 shaping_job() { [[ -f $JOB_DIR/shaping.json ]]; }
 shape_rounds() { local r q; r="$(setting upstream.review_rounds)"; q="$(setting upstream.reask_rounds)"; echo "${r:-2} ${q:-2}"; }
 # shellcheck disable=SC2046   # two numbers: the review rounds and the update chain's limit
@@ -1110,7 +1123,11 @@ report_context() {
 }
 report_shaping() {
   grep -q '<!-- deliver:shaping -->' "$JOB_DIR/report.md" && return 0
-  shaping_job || return 0
+  if ! shaping_job; then   # auto, and not shaped: say why, so the human can ask for it next time (upstream.engine bmad)
+    [[ "$(setting upstream.engine)" == auto && "$(jq -r '.track // "full"' "$JOBJ")" == full ]] || return 0
+    printf '\n<!-- deliver:shaping -->\n## Not shaped\n\nupstream.engine auto: %s. To have BMad shape such a request anyway: upstream.engine "bmad".\n' "$(shape_why)" >> "$JOB_DIR/report.md"
+    return 0
+  fi
   printf '\n<!-- deliver:shaping -->\n%s\n' "$(node "$BIN_DIR/bmad.mjs" report "$JOB_DIR")" >> "$JOB_DIR/report.md"
 }
 report_waivers() {

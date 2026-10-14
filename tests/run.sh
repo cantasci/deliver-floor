@@ -9,9 +9,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # resolved: macOS links /var and /tmp into /private
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
-# The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) — they run without them, as a
-# user who turned them off would; their own section runs with the kit's defaults. Removed before "install / uninstall".
-mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"}}' > "$DELIVER_HOME/config.json"
+# The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) and shaping (auto since 0.17.0)
+# — they run without them, as a user who turned them off would; their own sections run with the kit's defaults or set them.
+# Removed before "install / uninstall".
+mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"}}' > "$DELIVER_HOME/config.json"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO HIVE_ROOT CLAUDE_PROJECT_DIR
 
@@ -2213,6 +2214,20 @@ contains "agents cannot run the shaping" "$(shk '{"tool_input":{"command":"dl sh
 contains "nobody edits the ledger but dl" "$(shk "{\"tool_input\":{\"command\":\"jq . x > $SJ/shaping.json\"},\"cwd\":\"$SHR\"}" "" bash-guard)" "the shaping ledger and BMad's artifacts are written by dl and by BMad only"
 NS="$TMP/notshaped"; mkdir -p "$NS" && cd "$NS" && git init -q -b main && echo '{"dispatch":"subagent"}' > .deliver.json && git add -A && git commit -qm i && "$DL" new "Plain" "A job as before" >/dev/null
 contains "a job without the setting is not shaped" "$("$DL" shape status 2>&1)" "shaping is off"
+# auto (the kit's default): shape only what is not a specification yet — fewer than two of requirement ids, acceptance
+# criteria and a contract. Measured live: same product for 30 % more on a specification; decisions caught on an idea.
+[[ "$(jq -r .upstream.engine "$SDIR/config.json")" == auto ]] && ok "the kit's default is upstream.engine auto" || bad "default: $(jq -c .upstream "$SDIR/config.json")"
+AU="$TMP/auto"; mkdir -p "$AU" && cd "$AU" && git init -q -b main && jq -n '{dispatch:"subagent", upstream:{engine:"auto"}}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "Idea" "Our analysts work out rating moves by hand; we would like the system to do it. Other parts will use it." >/dev/null
+contains "auto: an idea (no requirements, no acceptance criteria, no contract) is shaped" "$("$DL" next)" "INTAKE  dl phase shaping — BMad shapes the request before the readiness review (the request states no requirement ids, acceptance criteria or contract — BMad shapes it first)"
+"$DL" phase shaping >/dev/null && grep -q $'\tshape-auto\tshaped: the request states no requirement ids' "$(ls -d .work/JOB-*)/events.log" && ok "…the decision is in the event log" || bad "events: $(grep shape-auto .work/JOB-*/events.log)"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup >/dev/null 2>&1
+"$DL" new "Spec" "$(cat "$HERE/examples/watchlist-poc/JOB.md")" >/dev/null
+contains "…a specification (requirement ids, acceptance criteria, a contract) is not" "$("$DL" next)" "not shaped: the request states requirement ids, acceptance criteria, and a contract — a specification already, not shaped"
+contains "…and shaping it is refused" "$("$DL" phase shaping 2>&1)" "shaping is off for this job"
+AJ="$AU/.work/$(cat .work/ACTIVE)"
+contains "…bmad.mjs needs answers no (exit 3), with its reason" "$(node "$SDIR/bin/bmad.mjs" needs "$AJ" | jq -r .shape; node "$SDIR/bin/bmad.mjs" needs "$AJ" >/dev/null; echo "rc=$?")" "false
+rc=3"
 [[ "$("$DL" next)" != *shaping* ]] && ok "…its intake goes to the readiness review as before" || bad "next: $("$DL" next)"
 cd "$R"
 

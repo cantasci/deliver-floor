@@ -13,6 +13,7 @@
 // Files (in the job dir): bmad/inputs/ (what BMad is given) · bmad/out/ (BMad's output folder) · bmad/runs/<n>-<step>.*
 // (prompt, raw result, stderr) · shaping.json (plan, runs, ledger, reviews, batches).
 //
+//   node bmad.mjs needs <job dir>                              upstream.engine "auto": does the request need shaping? (JSON; exit 0 = yes)
 //   node bmad.mjs init <job dir> <version>                     shaping.json + the input package
 //   node bmad.mjs installed <job dir> <version>                record the install (dl shape install ran npx)
 //   node bmad.mjs status <job dir> [rounds] [reask]            the next step (JSON): install | help | decide | update | create | review | done
@@ -64,6 +65,26 @@ function snapshot(dir) {
   };
   walk(dir);
   return out;
+}
+
+// ── auto: shape only what is not a specification yet ───────────────────────────────────────────────────────────────────
+// Measured live: on a request that named its requirements, acceptance criteria and contract, shaping gave the same product
+// for 30 % more (runs 62/64); on a one-paragraph idea it caught decisions the readiness review alone missed (runs 65/66).
+// A request that states at least two of the three is a specification; anything less is shaped. Code decides, by these signals.
+export function needsShaping(jobDir) {
+  const t = String(job(jobDir).request ?? "");
+  const signals = {
+    requirements: /\b(REQ|FR|NFR|US|UC)-\d+/.test(t) || /^\s*\|[^\n]*\b(req(uirement)?s?\b|req id)[^\n]*\|/im.test(t),
+    acceptance: /\bgiven\b[^\n]*\bwhen\b|acceptance criteria|\bAC-\d+/i.test(t),
+    contract: /^#+\s*(contract|api|interface)\b/im.test(t) || /`[A-Za-z_][\w.]*\([^`)]*\)`/.test(t),
+  };
+  const name = { requirements: "requirement ids", acceptance: "acceptance criteria", contract: "a contract" };
+  const list = (ks, and) => ks.map((k) => name[k]).join(ks.length > 2 ? ", " : ` ${and} `).replace(/, ([^,]+)$/, `, ${and} $1`);
+  const have = Object.keys(signals).filter((k) => signals[k]), miss = Object.keys(signals).filter((k) => !signals[k]);
+  const shape = have.length < 2;
+  return { shape, signals, reason: shape
+    ? `${have.length ? `the request states ${list(have, "and")} but no ${list(miss, "or")}` : "the request states no requirement ids, acceptance criteria or contract"} — BMad shapes it first`
+    : `the request states ${list(have, "and")}${miss.length ? ` (no ${list(miss, "or")})` : ""} — a specification already, not shaped` };
 }
 
 // ── the input package ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -463,7 +484,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const print = (v) => console.log(typeof v === "string" ? v : JSON.stringify(v, null, 2));
   try {
     if (!jobDir || !existsSync(join(jobDir, "job.json"))) throw new Error("usage: bmad.mjs <command> <job dir> …");
-    if (cmd === "init") print(init(jobDir, a[0]));
+    if (cmd === "needs") { const r = needsShaping(jobDir); print(r); process.exit(r.shape ? 0 : 3); }
+    else if (cmd === "init") print(init(jobDir, a[0]));
     else if (cmd === "installed") { const s = loadShaping(jobDir); s.installed = { version: a[0], at: now() }; save(jobDir, s); print("installed"); }
     else if (cmd === "status") print(status(jobDir, Number(a[0] ?? 2), Number(a[1] ?? 2)));
     else if (cmd === "start") print(start(jobDir, Number(a[0] ?? 2), Number(a[1] ?? 2)));

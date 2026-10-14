@@ -1,7 +1,13 @@
 # 12 — Shaping with the BMad Method
 
-A request is often not a specification. With `settings.upstream.engine: "bmad"` the BMad Method shapes it before the readiness
-review: it chooses its own path, writes the specification headless and reviews it. Everything it decides goes to you, with
+A request is often not a specification. When it is not, the BMad Method shapes it before the readiness review — by default
+(`settings.upstream.engine: "auto"`): a request that states fewer than two of **requirement ids**, **acceptance criteria** and
+**a contract** is shaped; one that states them is a specification already and goes straight to the readiness review. `dl next`
+says which, and why; the PR says so too. `"bmad"` shapes every full-path job, `"off"` none; a light-path job is never shaped.
+Why auto: measured live, shaping a specified request gave the same product for 30 % more ([comparison](verification/15-bmad-shaping/COMPARISON.md));
+on a one-paragraph idea it caught the product decisions the readiness review alone did not ask about.
+
+When it shapes, BMad it chooses its own path, writes the specification headless and reviews it. Everything it decides goes to you, with
 Michael's proposal; what you decide goes back to BMad, and the result is frozen with the readiness decisions before a card is
 cut. Compatible with the BMad Method (MIT, [bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)); not an
 official BMad product.
@@ -57,7 +63,7 @@ what the business had decided (a 22-step rating scale, "unavailable" instead of 
 
 | Key | Default | |
 | --- | --- | --- |
-| `upstream.engine` | `"off"` | `"bmad"` shapes every full-path job (a light-path job is not shaped) |
+| `upstream.engine` | `"auto"` | `"auto"`: shape a request that is not a specification yet (fewer than two of requirement ids, acceptance criteria, a contract) · `"bmad"`: every full-path job · `"off"`: none. A light-path job is never shaped |
 | `upstream.bmad_version` | `"6.12.2"` | the release `dl shape install` installs; `bin/bmad.mjs` reads its formats |
 | `upstream.review_rounds` | `2` | how often `bmad-review` runs after the decisions; `0` for none |
 | `upstream.reask_rounds` | `2` | how often the decisions go back to the same artifacts before BMad makes something new or reviews; past it they bind through the ledger, listed in the PR |
