@@ -19,6 +19,8 @@
 #                 shapes it — its own path, the ledger decided with the human (HUMAN_ANSWERS.json by topic; an item no answer
 #                 fits takes Michael's proposal, counted), its update and review — frozen, then delivered; the hidden oracle
 #                 judges whether the shaped specification was the right one (S1)
+#     idea        an idea, not a specification (JOB-idea.md: one paragraph, no requirements table, no contract) — shaped as
+#                 above; its human knows the business's answers (HUMAN_ANSWERS-idea.json: scope, contract, C1–C8) (S2)
 #   E2E_SHAPING=off      the shaped scenario without shaping: the same request, the readiness review alone (the control run)
 #   E2E_FALLBACK=recommended   a readiness question no prepared answer fits takes the BA's (recommended) option — the same
 #                        policy as "Michael's proposal accepted" in a shaped run, so the two compare; each is logged
@@ -33,7 +35,7 @@ set -uo pipefail
 # grep -q exits on the first match; under pipefail the producer then dies of SIGPIPE and the pipe fails at random. gq reads to EOF.
 gq() { grep "$@" >/dev/null; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SC="${1:?usage: e2e-live.sh complete|incomplete|parallel|models|light|shaped [work dir]}"
+SC="${1:?usage: e2e-live.sh complete|incomplete|parallel|models|light|shaped|idea [work dir]}"
 EXN=watchlist-poc; EX="$HERE/examples/$EXN"
 case $SC in
   complete)   REQ="$EX/JOB.md";            ORACLE=watchlist.oracle.test.mjs ;;
@@ -42,8 +44,11 @@ case $SC in
   models)     REQ="$EX/JOB-models.md";     ORACLE=models.oracle.test.mjs ;;
   light)      REQ="$EX/JOB-light.md";      ORACLE=light.oracle.test.mjs ;;
   shaped)     REQ="$EX/JOB-shaped.md";     ORACLE=watchlist.oracle.test.mjs ;;
+  idea)       REQ="$EX/JOB-idea.md";       ORACLE=watchlist.oracle.test.mjs ;;
   *) echo "unknown scenario: $SC" >&2; exit 2 ;;
 esac
+ANSWERS="$ANSWERS"; [[ $SC == idea ]] && ANSWERS="$EX/HUMAN_ANSWERS-idea.json"   # what the scenario's human knows
+SHAPED_SC=0; [[ $SC == shaped || $SC == idea ]] && SHAPED_SC=1
 W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; W="$(cd "$W/$SC" && pwd)"
 export ISO_HOME="$W/home"; mkdir -p "$ISO_HOME"
 . "$HERE/tests/lib-isolated-claude.sh"
@@ -80,7 +85,7 @@ if [[ -n ${E2E_FRESH_REPO:-} ]]; then
   mkdir -p "$ISO_HOME/.deliver" && echo '{"dispatch":"subagent"}' > "$ISO_HOME/.deliver/config.json"
   [[ ! -f $SB/.deliver.json ]] && ok "fresh repo: no .deliver.json; ~/.deliver/config.json says dispatch subagent" || bad "sandbox wrote a .deliver.json"
 else iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null; fi
-if [[ $SC == shaped ]]; then   # shaping on; the POC document the request names is in the repo
+if [[ $SHAPED_SC == 1 ]]; then   # shaping on; the POC document the request names is in the repo
   mkdir -p "$SB/docs" && cp "$EX/POC_Requirements_v0.2_EN.md" "$SB/docs/"
   [[ ${E2E_SHAPING:-on} == off ]] || { jq '.upstream = {engine: "bmad", review_rounds: 2}' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"; }
   git -C "$SB" add -A && git -C "$SB" commit -qm "shaping with the BMad Method; the POC document" && log "upstream.engine = bmad; docs/POC_Requirements_v0.2_EN.md in the repo"
@@ -118,7 +123,7 @@ fi
 # matched by topic, recorded with dl clarify as a person in a terminal would — and the run resumes. A question no
 # prepared answer matches fails the scenario: a real person would have to answer it.
 human_rounds() { local J=$1 JJ=$1/job.json round
-for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SC == shaped ]] && echo 8 || echo 3)}"); do
+for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SHAPED_SC == 1 ]] && echo 8 || echo 3)}"); do
   [[ "$(jq -r .phase "$JJ")" == awaiting_clarification ]] || break
   step "4.$round · Michael asked — the human answers each question (HUMAN_ANSWERS.json, recorded with dl clarify), the run resumes"
   [[ $SC != incomplete ]] && log "note: the $SC request still raised question(s) — recorded below; answering them is the human's job"
@@ -127,7 +132,7 @@ for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SC == shaped ]] && echo 8 || ech
   # prepared answer fits; the rest takes Michael's proposal — counted, since a real person would read each one.
   if [[ -f $J/shaping.json ]] && jq -e '[.ledger[] | select(.status=="open" and .needs_human)] | length > 0' "$J/shaping.json" >/dev/null; then
     while IFS=$'\t' read -r id q; do
-      ans="$(node "$HERE/tests/pick-answer.mjs" "$EX/HUMAN_ANSWERS.json" "$q" 2>/dev/null)"
+      ans="$(node "$HERE/tests/pick-answer.mjs" "$ANSWERS" "$q" 2>/dev/null)"
       if [[ -n $ans ]]; then iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "$ans" > /dev/null && ok "answered $id from HUMAN_ANSWERS — $(cut -c1-90 <<<"$q")"; fi
     done < <(jq -r '.ledger[] | select(.status=="open" and .needs_human) | [.id, .text] | @tsv' "$J/shaping.json")
     n="$(jq '[.ledger[] | select(.status=="open" and .needs_human)] | length' "$J/shaping.json")"
@@ -139,9 +144,9 @@ for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SC == shaped ]] && echo 8 || ech
     run_rounds | sed 's/^/    /'; continue
   fi
   while IFS=$'\t' read -r id q; do
-    ans="$(node "$HERE/tests/pick-answer.mjs" "$EX/HUMAN_ANSWERS.json" "$q" "$id" 2>/dev/null)"
+    ans="$(node "$HERE/tests/pick-answer.mjs" "$ANSWERS" "$q" "$id" 2>/dev/null)"
     if [[ $id == "${E2E_MISMATCH:-}" && ! -f $W/.mismatched ]]; then   # R2: the first answer is about something else
-      ans="$(jq -r '.[] | select(.topic | startswith("what '"'"'displayed'"'"' means")) | .answer' "$EX/HUMAN_ANSWERS.json")"; touch "$W/.mismatched"
+      ans="$(jq -r '.[] | select(.topic | startswith("what '"'"'displayed'"'"' means")) | .answer' "$ANSWERS")"; touch "$W/.mismatched"
       log "    (R2) answering $id on purpose with an unrelated answer: ${ans:0:90}"
     fi
     # E2E_FALLBACK=recommended — the same policy as the shaped run's "Michael's proposal accepted": no prepared answer fits →
@@ -214,7 +219,7 @@ else bad "hidden oracle FAILED (oracle.log)"; grep -E '✖|AssertionError|expect
 TL="$(node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$J" --json 2>/dev/null)"
 if [[ -n $TL ]]; then
   node "$HERE/kit/skills/deliver/bin/timeline.mjs" "$J" > "$W/timeline.txt" 2>/dev/null
-  jm="$(jq -r .total_min <<<"$TL")"; max="${E2E_MAX_MIN:-$([[ $SC == shaped ]] && echo 45 || echo 15)}"
+  jm="$(jq -r .total_min <<<"$TL")"; max="${E2E_MAX_MIN:-$([[ $SHAPED_SC == 1 ]] && echo 45 || echo 15)}"
   awk -v a="$jm" -v b="$max" 'BEGIN { exit !(a <= b) }' && ok "the job took $jm min (≤ $max; timeline.txt)" \
     || { bad "the job took $jm min (> $max) — where it went: $(jq -r '[.phases[] | "\(.phase) \(.min)"] | join(", ")' <<<"$TL"); busiest: $(jq -r '.seats[0] | "\(.who) \(.busy_min) min"' <<<"$TL") (timeline.txt)"; }
 fi
@@ -298,7 +303,7 @@ if [[ "$(jq -r '.settings.test_design.risk // false' "$JJ")" == true ]]; then
   grep -q $'\tagent\tecc:code-reviewer' "$J/events.log" && log "blind agent runs: $(grep -c $'\tagent\tecc:code-reviewer' "$J/events.log")"
 fi
 
-if [[ $SC == shaped && ${E2E_SHAPING:-on} != off ]]; then
+if [[ $SHAPED_SC == 1 && ${E2E_SHAPING:-on} != off ]]; then
   step "S1 · shaped with the BMad Method"
   SHJ="$J/shaping.json"
   chk "the job was shaped (shaping.json)" test -f "$SHJ"
