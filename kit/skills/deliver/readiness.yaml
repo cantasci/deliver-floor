@@ -163,8 +163,7 @@ items:
     q: "How and where is it deployed or consumed; feature flags; rollback; migration order?"
   - id: DEL-inputs
     area: always
-    ask: human
-    q: "What must a person provide before the work can run — credentials, API keys, accounts, sandbox access, licences, a .env file? For each one: what it is, the absolute path where the human puts it (outside the repo, or git-ignored on the base branch), where the code reads it, its variable names (never values), one read-only check (e.g. a GET that reports only the HTTP status) and which work needs it — written to readiness.json → inputs. None → n_a (the request's words, or the human's)."
+    q: "Does the work need something only a person can provide — credentials, API keys, accounts, sandbox access, licences, a .env file? Only with evidence: the request names a service or account to call, or the repo reads a secret (an .env.example, a config that reads an env var, a client that needs a key). No such evidence → n_a, with the evidence you checked as its source (e.g. 'no .env.example, no env reads in src/'). A .env file is never needed by default. For each input that is needed: what it is, the evidence (`evidence`: the request's words or the file that reads it), the absolute path where the human puts it (outside the repo, or git-ignored on the base branch), where the code reads it, its variable names (never values), one read-only check (e.g. a GET that reports only the HTTP status) and which work needs it — readiness.json → inputs. Michael asks the human for each one at the start; only the cards that name it (card.inputs) wait for it."
   - id: DEL-docs
     area: always
     q: "Documentation, changelog or runbook updates required?"

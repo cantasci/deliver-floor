@@ -245,7 +245,7 @@ export function check(jobDir) {
     ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} | ${c.owner} | ${c.reviewer} | ${c.verify ? `\`${c.verify}\`` : "the whole suite (verify_full)"} |`), "",
     ...(rawInputs.length ? ["## Inputs only a person can provide (checked by dl input check; a card that needs one waits for it)", "",
       "| Input | What | Where the human puts it | Read by the code at | Keys | Check | For |", "| --- | --- | --- | --- | --- | --- | --- |",
-      ...rawInputs.map((i) => `| ${i.id} | ${i.what} | \`${i.file}\` | ${i.link ? `\`${i.link}\`` : "—"} | ${(i.keys ?? []).join(", ") || "—"} | ${i.check ? "yes" : "—"} | ${i.for ?? ""} |`), ""] : [])].join("\n");
+      ...rawInputs.map((i) => `| ${i.id} | ${i.what} | \`${i.file}\` | ${i.link ? `\`${i.link}\`` : "—"} | ${(i.keys ?? []).join(", ") || "—"} | ${i.check ? `\`${i.check}\`` : "—"} | ${i.for ?? ""} |`), ""] : [])].join("\n");
   writeFileSync(join(jobDir, "readiness.md"), md);
   // Every input not provided yet is its own question, first: seen live, a card started without the .env.local it needed.
   const checks = job.input_checks ?? {}, deferred = job.input_deferred ?? {};
@@ -255,6 +255,8 @@ export function check(jobDir) {
       "Put each one where it says (never paste a secret into the chat), then tell Michael: dl input check checks it.", "",
       ...missing.flatMap((i) => [`### ${i.id} — ${i.what}`, "", `- put it at \`${i.file}\`${i.keys?.length ? ` with ${i.keys.join(", ")}` : ""}`,
         ...(i.link ? [`- the code reads it at \`${i.link}\` (dl links it into every worktree)`] : []), ...(i.for ? [`- needed for: ${i.for}`] : []),
+        ...(i.evidence ? [`- why it is needed: ${i.evidence}`] : []),
+        ...(i.check ? [`- dl checks it with this command, run with your values (only an HTTP status is reported) — say so if it must not run: \`${i.check}\``] : []),
         ...(checks[i.id] ? [`- last check: ${checks[i.id].detail}`] : []), ""])] : []),
     ...(openBusiness.length ? ["Answer each question in a terminal (or tell Michael):  dl clarify <id> \"<answer>\"", ""] : []),
     ...openBusiness.flatMap((i) => [`## ${i.id}`, "", i.question, ...(i.options?.length ? ["", ...i.options.map((o) => `- ${o}`)] : []),

@@ -72,6 +72,7 @@ if (!report && projCfg && projCfg.commit?.ai_attribution !== true) {
 
 // ── every session ───────────────────────────────────────────────────────────────────────────────────────────────────
 if (!has("git")) warn.push("git is missing — install git");
+if (!has("perl", ["-e", "1"])) warn.push(`perl is missing — dl stops hung test runs with it (macOS has no timeout(1)) — ${win ? "it comes with Git for Windows" : platform() === "darwin" ? "it comes with macOS" : "apt install perl"}`);
 if (!has("jq")) warn.push(`jq is missing — ${win ? "winget install jqlang.jq" : platform() === "darwin" ? "brew install jq" : "apt install jq"}`);
 if (Number(process.versions.node.split(".")[0]) < 18) warn.push(`node ${process.versions.node} — /deliver needs Node 18+`);
 if (win && !findBash()) warn.push("Git Bash not found — install Git for Windows (dl and the guards run in bash), or set CLAUDE_CODE_GIT_BASH_PATH");

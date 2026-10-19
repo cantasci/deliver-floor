@@ -5,7 +5,9 @@
 //   "inputs": [{"id":"IN-1", "what":"Mambu sandbox API key", "file":"/Users/me/.config/watchlist/.env.local",
 //               "link":".env.local", "keys":["MAMBU_API_KEY","MAMBU_BASE_URL"],
 //               "check":"curl -s -o /dev/null -w '%{http_code}' -H \"apikey: $MAMBU_API_KEY\" \"$MAMBU_BASE_URL/api/users/me\"",
-//               "for":"the customer service's live mapping (its integration tests)"}]
+//               "for":"the customer service's live mapping (its integration tests)",
+//               "evidence":"services/customer/mambu.py reads MAMBU_API_KEY"}]
+// evidence — why the work needs it: the request's words or the file that reads it. Asked for only then — never by default
 // file  — where the human puts it: an absolute path, outside the repo or git-ignored in it (never committed)
 // link  — where the code reads it, repo-relative: dl links it into every card, QA and integration worktree (git-ignored there)
 // keys  — the variables the file must give a value (KEY=value lines); their values are never printed
@@ -42,6 +44,8 @@ export function shapeErrors(raw, items) {
     if (seen.has(id)) errors.push(`${id}: duplicate id`);
     seen.add(id);
     if (!String(i?.what ?? "").trim()) errors.push(`${id}: 'what' says what the human provides (e.g. "Mambu sandbox API key")`);
+    // asked for only when the work needs it (the user's rule: an .env file is not required by default)
+    if (!String(i?.evidence ?? "").trim()) errors.push(`${id}: 'evidence' says why the work needs it — the request's words, or the file that reads it (e.g. "src/mambu/client.py reads MAMBU_API_KEY"); no evidence, no input`);
     if (!isAbsolute(home(i?.file))) errors.push(`${id}: 'file' is the absolute path where the human puts it (outside the repo, or git-ignored in it)`);
     if (i?.link !== undefined && (typeof i.link !== "string" || !i.link.trim() || isAbsolute(i.link) || i.link.split("/").includes("..")))
       errors.push(`${id}: 'link' is the repo-relative path the code reads it from (e.g. ".env.local")`);

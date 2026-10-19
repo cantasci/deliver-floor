@@ -4,6 +4,29 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.18.0 — 2026-10-20
+
+**What the last live jobs taught, in `dl`** (watchlist-poc v0.3 and the job before it)
+- **Inputs only a person can provide** (a key, an account, a `.env` file): asked for only when the work needs it — the
+  readiness item `DEL-inputs` lists each with its evidence (the request's words or the file that reads it), never by
+  default. Michael asks for each at the start, with the read-only check `dl` will run; `dl input check` checks it without
+  ever printing a value; the human may defer it (`dl input defer`, theirs only). Only the cards that name it
+  (`card.inputs`) wait for it — the rest of the job goes on. A provided input is linked into each worktree where the code
+  reads it, only where git ignores it. Seen live: a card needed `.env.local`, nobody asked, and the key was first used on the
+  last day (401).
+- **Hung runs are stopped:** every test run of `dl` (gate, QA, the suite after a merge, stack tests, baseline, verify-all)
+  has a time limit (`suite_timeout_min`, default 3 × the baseline) and is stopped with all it started — STALLED, with a FIX
+  line. Seen live: hung suites held the merge lane until a person killed them, five times in one job. Needs `perl`.
+- **When the suite runs** (`suite_runs`): `card` (default), `batch` (merges back to back share one run — chosen by itself when
+  the baseline takes more than 10 min), `end` (only at the start and in verify-all). verify-all names the merged cards its
+  failures point to.
+- **Deadlocks seen live, removed:** QA's commits after a failed gate count as QA's; a card cannot be blocked while QA's
+  commits are unrecorded; `dl qa` asks for the join first; `dl wt rm` removes the QA worktree too; `dl card continue`
+  builds a continuation card from the live board; `dl card set T-xx …` is accepted; a scope failure prints the one command
+  that fixes it; a lockfile changed by a merge runs `worktree_setup` again in the integration worktree.
+- **Caught earlier:** two pytest modules of one name (no `__init__.py`) at the gate and at QA; a `verify` that runs QA's tests
+  (inside `qa_scope`) is a board error; `git stash` is refused in job worktrees.
+
 ## 0.17.0 — 2026-10-13
 
 **Shaping with the BMad Method: BMad writes the specification, Michael decides what it said with you, and it is frozen

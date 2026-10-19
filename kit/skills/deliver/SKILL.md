@@ -210,6 +210,10 @@ PROJECT ARCHITECTURE: <abs path to <repo>/.deliver/knowledge/architecture.md (a 
    code and its tests — cards' `scope` and `qa_scope` must fit inside them once frozen)? Send the BA back with what is
    missing. Then write the JSON to `.work/<job>/readiness.json` and run `"$DL" readiness` (writes `readiness.md` and
    `QUESTIONS.md`); fix every ERROR it lists (a missing item, a decision without a source, an architecture gap).
+   **Inputs** (`DEL-inputs`, `readiness.json → inputs`): only what the work needs, with its evidence — never a `.env` by
+   default. Ask the human for each one at the start (AskUserQuestion, one per input, the exact path; never into the chat), with
+   the `check` command `dl` will run with their values; then `"$DL" input check`. It cannot come now → their decision:
+   `dl input defer IN-n "<their words>"` (only they can run it). Only the cards that name it (`card.inputs`) wait for it.
    The architecture decides the roles: every component's owner (`backend`, `frontend`, `mobile`, `database`) and reviewer
    (`reviewer-java`, `reviewer-go`, …) must be on the job — add them with `dl jobset`, then `"$DL" phase readiness` again to
    regenerate the role cards. Several devs of one role in parallel: `"count": N` on the role (seats role#1…#N).

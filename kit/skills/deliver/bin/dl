@@ -428,27 +428,6 @@ tracker() { # tracker sync [card] [--event text] | note <card> <author> <text> |
   echo "dl: warning — tracker: $out" >&2; return 0
 }
 
-# dep_setup <worktree> [card | --locks <lockfile> …] — a Node lockfile folder of the repo (e2e/, frontend/ …) without node_modules
-# in that worktree gets them: in a card worktree the folders the card's scope or commands name, in the integration worktree
-# all; --locks reinstalls those (a merge changed them). Live job: new card worktrees had none in e2e/ — dl qa failed with
-# MODULE_NOT_FOUND (@playwright/test); stack tests in the integration worktree ran on stale ones after a lockfile changed.
-dep_setup() {
-  [[ "$(setting worktree_deps)" == false ]] && return 0
-  local dir=$1 card=${2:-} lock d cmd force=0 names="" locks
-  if [[ $card == --locks ]]; then shift 2; locks="$(printf '%s\n' "$@")"; force=1; card=""
-  else locks="$(git -C "$dir" ls-files -- package-lock.json '*/package-lock.json' pnpm-lock.yaml '*/pnpm-lock.yaml' yarn.lock '*/yarn.lock' 2>/dev/null | awk -F/ 'NF<=3')"; fi
-  [[ -n $card ]] && names="$(card_get "$card" '[(.scope // [])[], (.qa_scope // [])[], .verify, .qa_verify, .stack_verify] | map(select(. != null)) | join(" ")')"
-  while IFS= read -r lock; do
-    [[ -n $lock ]] || continue
-    d="$(dirname "$lock")"
-    [[ $force -eq 0 && -d $dir/$d/node_modules ]] && continue
-    [[ -z $card || $d == . || " $names" == *"$d/"* || " $names" == *" $d "* || " $names" == *"cd $d"* ]] || continue
-    case ${lock##*/} in package-lock.json) cmd="npm ci" ;; pnpm-lock.yaml) cmd="pnpm install --frozen-lockfile" ;; yarn.lock) cmd="yarn install --frozen-lockfile" ;; *) continue ;; esac
-    command -v "${cmd%% *}" >/dev/null || continue
-    { echo "# $(now) $dir/$d: $cmd"; (cd "$dir/$d" && $cmd); } >> "$JOB_DIR/setup.log" 2>&1 || echo "dl: warning — $cmd failed in $dir/$d, see $JOB_DIR/setup.log" >&2
-  done <<<"$locks"
-  return 0
-}
 run_setup() { # per-worktree setup command (node_modules, etc.), then the inputs and the dependencies its tests need
   local dir=$1 cmd; cmd="$(setting worktree_setup)"
   link_inputs "$dir"
@@ -456,7 +435,6 @@ run_setup() { # per-worktree setup command (node_modules, etc.), then the inputs
     (cd "$dir" && ROOT="$ROOT" bash -c "$cmd") >> "$JOB_DIR/setup.log" 2>&1 \
       || echo "dl: warning — worktree_setup failed in $dir, see $JOB_DIR/setup.log" >&2
   fi
-  dep_setup "$dir" "${2:-}"
 }
 
 table() { # tab-separated stdin → aligned columns (no dependency on `column`)
@@ -778,14 +756,6 @@ cmd_next() {
         done
       fi
       jq -r '.cards[] | select(.state=="running") | "WAIT    \(.id) (agent running)"' "$BOARD"
-      # an agent running long is asked why — interactive only (live job: every long run was a whole-suite run nested in a test,
-      # a hung teardown or a verify of the wrong scope, found only when someone asked)
-      if [[ ${DELIVER_HEADLESS:-} != 1 ]]; then
-        local pm; pm="$(setting agent_ping_min)"
-        jq -r --argjson m "${pm:-20}" '.cards[] | select(.state=="running") | ((.assignments // [])[-1].at // "") as $a | select($a != "")
-          | ((now - ($a | fromdateiso8601)) / 60 | floor) as $age | select($age >= $m)
-          | "PING    \(.id) has run \($age) min — ask its agent what it is waiting on (SendMessage; on the floor: its seat); long runs were whole-suite runs nested in a test, a hung teardown, a verify of the wrong scope"' "$BOARD"
-      fi
       jq -r --argjson max "$(setting max_attempts)" '.cards[] | select(.state=="ready" and .attempts >= $max) | "BLOCK   \(.id) (no attempts left: dl card \(.id) state blocked)"' "$BOARD"
       # a component whose suite failed on the job branch right after its last merge (dl integrate) — fixed by the next merge into it
       jq -r '[.cards[] | select(.merge_check) | {id, m: .merge_check}] | group_by(.m.component) | map(max_by(.m.n)) | .[] | select(.m.result == "FAIL" or .m.result == "STALLED")
@@ -870,8 +840,10 @@ cmd_phase() {
         ! context_unproposed || refuse 1 "the human confirmed the project's architecture — write it down first: dl context propose <the confirmed file> ($JOB_DIR/context.draft.md with their answers); dl ship commits it with this PR"
         baseline_holds
         local bsec; bsec="$(jq -r '.baseline.seconds // 0' "$JOBJ")"
-        if (( bsec > 600 )) && [[ -z "$(setting suite_runs)" ]]; then
-          refuse 1 "the whole suite took $(( bsec / 60 )) min on the job branch (baseline). By default it runs again at every QA pass and after every merge (suite_runs card) — measured live: hours of merge lane for one job. Ask the human now, at the start, when it runs: card (every QA pass and merge: a break is named at once), batch (merges back to back share one run) or end (only at the start and in verify-all: fastest; a break is found late). Record their answer: dl jobset '.settings.suite_runs=\"card|batch|end\"' (for later jobs: suite_runs in .deliver.json), then dl phase planning again — the baseline is not run twice"
+        if (( bsec > 600 )) && [[ -z "$(setting suite_runs)" ]]; then   # a slow suite: merges back to back share one run
+          jq_inplace "$JOBJ" '.settings.suite_runs = "batch"'
+          log_event settings "suite_runs batch: the baseline took $(( bsec / 60 )) min (card would run it at every QA pass and merge)"
+          echo "note: the whole suite took $(( bsec / 60 )) min — suite_runs is batch for this job (merges back to back share one run). card runs it at every merge; end only at the start and in verify-all (a break is found late). Change it: dl jobset '.settings.suite_runs=\"card|end\"'" >&2
         fi ;;
       awaiting_plan_approval)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
@@ -1996,16 +1968,11 @@ dl_merge() {
   subj="merge $w${key:+ ($key)} - $low"   # ASCII only: cut to the header limit (100) without splitting a character
   if [[ $conv == conventional ]]; then msgs+=("chore: ${subj:0:93}" "chore(deliver): ${subj:0:84}" "Merge $what${key:+ ($key)}: $title")
   else msgs+=("Merge $what${key:+ ($key)}: $title" "chore: ${subj:0:93}"); fi
-  local try first=1
   for m in ${msgs[@]+"${msgs[@]}"}; do
-    for try in 1 2; do   # the first message twice: a commit-msg hook that refused once passed the same message again (live job, T-115)
-      if out="$(git_locked -C "$dir" merge --no-ff -q -m "$m$trailer" "$br" 2>&1)"; then return 0; fi
-      if [[ -n "$(git -C "$dir" diff --name-only --diff-filter=U 2>/dev/null)" ]]; then git_locked -C "$dir" merge --abort 2>/dev/null || true; return 3; fi
-      git_locked -C "$dir" merge --abort 2>/dev/null || true
-      last="$out"; log_event merge-refused "$what: \"$m\" — $(tr '\n' ' ' <<<"$out" | cut -c1-160)"
-      [[ $first -eq 1 && $try -eq 1 ]] || break
-    done
-    first=0
+    if out="$(git_locked -C "$dir" merge --no-ff -q -m "$m$trailer" "$br" 2>&1)"; then return 0; fi
+    if [[ -n "$(git -C "$dir" diff --name-only --diff-filter=U 2>/dev/null)" ]]; then git_locked -C "$dir" merge --abort 2>/dev/null || true; return 3; fi
+    git_locked -C "$dir" merge --abort 2>/dev/null || true
+    last="$out"; log_event merge-refused "$what: \"$m\" — $(tr '\n' ' ' <<<"$out" | cut -c1-160)"
   done
   printf '%s\n' "$last" >&2
   return 5
@@ -2138,8 +2105,11 @@ cmd_integrate() {
     log_event integrate "$card REFUSED by the repo's commit rules"; merge_refused_msg "$card" "integrate $card"; exit 5
   fi
   card_set "$card" '(.cards[] | select(.id==$id)).state="merged"'
-  local locks; locks="$(git -C "$IWT" diff --name-only HEAD^1 HEAD 2>/dev/null | grep -E '(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$' || true)"
-  [[ -n $locks ]] && dep_setup "$IWT" --locks $locks
+  # a merge that changed a lockfile: the integration worktree's dependencies are stale — the project's own worktree_setup runs
+  # again there (live job: stack tests ran on old node_modules after a lockfile changed)
+  if git -C "$IWT" diff --name-only HEAD^1 HEAD 2>/dev/null | grep -Eq '(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|uv\.lock|poetry\.lock|Pipfile\.lock|Gemfile\.lock|go\.sum|Cargo\.lock|composer\.lock)$'; then
+    run_setup "$IWT"; log_event setup "$card changed a lockfile: worktree_setup ran again in the integration worktree"
+  fi
   local path="$JOB_DIR/wt/$card"; [[ -d $path ]] && git_locked -C "$ROOT" worktree remove --force "$path"
   reset_stop_guard; log_event integrate "$card merged"
   tracker sync "$card" --event "merged into $JOB_BRANCH"

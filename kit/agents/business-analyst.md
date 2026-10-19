@@ -85,7 +85,11 @@ whether the database is owned separately, that is an `open` item — do not pick
 
 Return **only** this JSON:
 `{"items":[{"id":"…","status":"decided|n_a|open","answer":"…","source":"…","quote":"…","question":"…","options":["…"],"impact":"…","owner":"business|pm"}],
-  "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":["services/orders/src/","services/orders/test/"],"owner":"backend","reviewer":"reviewer-java","verify":"cd services/orders && ./gradlew test","notes":"…"}]}}`
+  "architecture":{"style":"monolith|modular-monolith|microservices|library|…","components":[{"id":"orders-svc","kind":"service|bff|app|web|mobile|library|worker|db|infra","stack":["java","spring-boot"],"path":["services/orders/src/","services/orders/test/"],"owner":"backend","reviewer":"reviewer-java","verify":"cd services/orders && ./gradlew test","notes":"…"}]},
+  "inputs":[{"id":"IN-1","what":"…","evidence":"<the request's words, or the file that reads it>","file":"/abs/path","link":".env.local","keys":["API_KEY"],"check":"<one read-only command; its last output line an HTTP status>","for":"…"}]}`
+`inputs` (DEL-inputs) lists what only a person can provide — only with evidence that the work needs it: the request names
+the service, or a repo file reads the key. No evidence → DEL-inputs is n_a with what you checked as its source; never ask for
+a .env file by default. Never a value: names of keys only; the human puts the file there.
 
 ### PLAN — from the request to plan.md
 You also get readiness.md: every decision in it is binding (cite its id where it shapes a criterion).
