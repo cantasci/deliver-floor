@@ -27,15 +27,19 @@ case $phase in executing|integrating) ;; *) exit 0 ;; esac
 cp="$(jq -r '.checkpoint.events // -1' "$jf")"
 [[ $cp -ge 0 && $cp == "$(wc -l < "$root/.work/$job/events.log" 2>/dev/null | tr -d ' ')" ]] && exit 0
 
-open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$bf")"
+# a ready card that waits for an input only the human can provide (card.inputs, dl input check) is the human's to unblock:
+# Michael may stop when nothing else is open — dl next asks them for it first thing
+open="$(jq --slurpfile j "$jf" '[.cards[] | select(.state | IN("ready","running","review"))
+  | select(.state != "ready" or all((.inputs // [])[]; . as $i | ($j[0].input_checks[$i].ok // false)))] | length' "$bf")"
 [[ $open -gt 0 ]] || exit 0
 
 # Waiting for running agents is fine where they report back on their own: Munder Difflin floor workers (inbox) and
 # background agents of an interactive session (task notifications). Headless runs dispatch in the foreground.
 if [[ "$(jq -r '.settings.dispatch // "subagent"' "$jf")" == munder || ${DELIVER_HEADLESS:-} != 1 ]]; then
   # actionable = a card in review, or a ready card whose dependencies are all merged
-  actionable="$(jq '. as $b | [.cards[] | select(.state=="review" or (.state=="ready" and
-      all((.depends_on // [])[]; . as $d | ([$b.cards[] | select(.id==$d) | .state] | first) == "merged")))] | length' "$bf")"
+  actionable="$(jq --slurpfile j "$jf" '. as $b | [.cards[] | select(.state=="review" or (.state=="ready" and
+      all((.depends_on // [])[]; . as $d | ([$b.cards[] | select(.id==$d) | .state] | first) == "merged")
+      and all((.inputs // [])[]; . as $i | ($j[0].input_checks[$i].ok // false))))] | length' "$bf")"
   [[ $actionable -eq 0 ]] && exit 0   # only running agents/workers left: they report back on their own
   # Agents already at work (dispatched in this session, not yet back — the last 90 minutes of the event log) report back
   # on their own: Michael may wait for them even with cards in review, since those cards' QA or review may be what runs.

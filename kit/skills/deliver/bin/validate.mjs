@@ -98,6 +98,30 @@ for (const c of cards) {
   }
 }
 
+// A card's verify runs the dev's unit tests — never tests inside its own qa_scope: QA's commit for the card changes them, and
+// the gate runs verify before QA's tests join, so the gate fails and the join is refused (live job, T-75: a deadlock, a
+// continuation card). Those tests go in qa_verify.
+const pathTokens = (cmd) => String(cmd ?? "").split(/[\s;&|()]+/).map((t) => t.replace(/^['"]|['"]$/g, "").replace(/::.*$/, ""))
+  .filter((t) => t && !t.startsWith("-") && !t.includes("=") && (t.includes("/") || /\.(py|[cm]?[jt]sx?|java|kt|go|rb|rs|php|swift|dart)$/.test(t)));
+for (const c of cards) {
+  if (c.state === "archived" || c.state === "merged" || !Array.isArray(c.qa_scope)) continue;
+  const hit = pathTokens(c.verify).filter((t) => c.qa_scope.some((q) => { try { const re = globToRegExp(q); return re.test(t) || re.test(`${t.replace(/\/$/, "")}/x.test.js`); } catch { return false; } }));
+  if (hit.length) errors.push(`${c.id}: verify runs ${hit.join(", ")}, inside its qa_scope — those are QA's tests: the gate runs verify before QA's tests join, so a change QA makes there deadlocks the card. Run them in qa_verify; verify runs the dev's unit tests`);
+}
+
+// What only a person can provide (readiness.json → inputs, dl input): a card whose code or tests need one names it in
+// card.inputs, and waits for it — seen live: a card ran without the .env.local it needed.
+let inputIds = null;
+try { const r = JSON.parse(readFileSync(join(dir, "readiness.json"), "utf8")); inputIds = Array.isArray(r) ? [] : (r.inputs ?? []).map((i) => i.id); } catch { /* no readiness yet */ }
+for (const c of cards) {
+  if (c.inputs === undefined) continue;
+  if (!Array.isArray(c.inputs)) { errors.push(`${c.id}: 'inputs' is an array of input ids (["IN-1"])`); continue; }
+  for (const i of c.inputs) if (inputIds && !inputIds.includes(i)) errors.push(`${c.id}: input ${i} is not in readiness.json → inputs (${inputIds.join(", ") || "none"})`);
+}
+for (const i of inputIds ?? [])
+  if (!cards.some((c) => c.state !== "archived" && (c.inputs ?? []).includes(i)))
+    warnings.push(`${i} (readiness inputs) is named by no card — give it to the cards whose code or tests use it ("inputs": ["${i}"]), so they wait for it`);
+
 // Every card belongs to one component of the frozen architecture: its scope lives in the component's path and its
 // role is the component's owner (QA-only cards: role "qa").
 let arch = null;
