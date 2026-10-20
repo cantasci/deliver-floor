@@ -25,6 +25,9 @@
 #                                  (.deliver/knowledge/architecture.md): drafted from the repo, confirmed once, then quoted
 #   dl waive <NFR-id> "<why>"      a non-functional requirement that is not PASS at closing ships knowingly (listed in the PR)
 #   dl clarify <id> "<answer>"     record the human's answer to an open business question (human only)
+#   dl input [list] | check [IN-n …] | defer <IN-n> "<the human's words>"   what only a person can provide (credentials, a
+#                                  .env file — readiness DEL-inputs): checked without showing a value, linked into every
+#                                  worktree; a card that needs one waits for it (defer: the human's decision, human only)
 #   dl decide <id> "<decision>" "<rationale>"   the PM closes an open implementation-detail item (owner pm)
 #   dl unfreeze "<reason>"         (human, terminal only) reopen the decisions frozen at planning
 #   dl abort "<why>"               (human: /deliver:abort) stop the active job — seats home, worktrees and ACTIVE cleared
@@ -47,7 +50,9 @@
 #   dl pm-decide "<what>" "<why>" [card]   after the start the human is not asked: your decision, logged, listed in the PR
 #   dl card <card> retry           human-granted: attempts=0 and state=ready (after guidance)
 #   dl card <card> set <field> <value> "<reason>"   change a ready/blocked card's contract (validated, logged, history)
-#   dl card add <card.json> "<reason>"              add a card (e.g. a fix card) — gets the next id, validated, logged
+#   dl card add <card.json> "<reason>"              add a card in planning — gets the next id, validated, logged
+#   dl fix open "<finding>" [--from <source>]       after the start: a fix (F-n) — the Lead cuts it, the BA specs it
+#   dl fix add F-n | list                           the Lead's cards with the BA's specs onto the board
 #   dl gate <card>                 mechanical gate: right branch, clean tree, commits, in scope, verify passes
 #   dl qa <card> pass|fail "<summary>"   record the QA/Test verdict on the card's acceptance criteria
 #                                  (needs a passed gate on the current commit)
@@ -178,7 +183,7 @@ seal_settled() { seal_ok "$1" || with_lock "$(basename "$1")" seal_ok "$1"; }
 check_seals() {
   seal_settled "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
   case "$(jq -r .phase "$JOBJ")" in intake|shaping|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
-  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and accepts it with /deliver:reseal <reason>"
+  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl fix). A human inspects the change and accepts it with /deliver:reseal <reason>"
 }
 jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
 git_locked() { with_lock git git "$@"; }
@@ -221,6 +226,80 @@ gate_holds() { # gate_holds <card> <head>
   [[ "$(card_get "$1" .gate.result)" == PASS ]] || return 1
   [[ $g == "$2" ]] && return 0
   git -C "$ROOT" merge-base --is-ancestor "$g" "$2" 2>/dev/null && [[ -z "$(outside "$g" "$2" "$(card_get "$1" '.qa_scope // []')")" ]]
+}
+
+# run_timed <seconds> <command> — bash -c <command> in its own process group; past <seconds> the whole group is stopped
+# (TERM, then KILL) and it returns 124. Portable (macOS has no timeout(1)): Perl's alarm. Seen live: hung suites — nested
+# whole-suite runs, a teardown that never returned — held the merge lane until the human killed them, five times in one job;
+# Michael may not kill processes himself. dl stops its own runs.
+run_timed() {
+  perl -e 'my $t = shift; my $pid = fork; die "fork: $!" unless defined $pid;
+    if (!$pid) { setpgrp(0, 0); exec @ARGV or exit 127 }
+    local $SIG{ALRM} = sub { kill "TERM", -$pid; sleep 3; kill "KILL", -$pid; waitpid($pid, 0); exit 124 };
+    alarm $t; waitpid($pid, 0); my $s = $?; alarm 0;
+    exit($s & 127 ? 128 + ($s & 127) : $s >> 8)' "$1" bash -c "$2"
+}
+# suite_timeout → the seconds a suite run (a QA pass's suite, the suite after a merge, stack tests, verify-all) may take before
+# dl stops it as STALLED: settings.suite_timeout_min, else 3 × the baseline's time (at least 20 min), else 60 min
+suite_timeout() {
+  local m b; m="$(setting suite_timeout_min)"
+  [[ -n $m ]] && { echo $(( m * 60 )); return 0; }
+  b="$(jq -r '.baseline.seconds // 0' "$JOBJ")"
+  (( b > 0 )) && { echo $(( b * 3 > 1200 ? b * 3 : 1200 )); return 0; }
+  echo 3600
+}
+# suite_runs → when the whole (or the component's) suite runs besides the baseline and verify-all (settings.suite_runs):
+#   card  — at every QA pass (on the card's commit) and after every merge (on the job branch): a break is named at once
+#   batch — at every QA pass; after a merge only when no other card of that component is ready to merge too — merges back
+#           to back share one run (live job: four fix merges into one service each ran its 13–20 min suite, 1.5 h of lane)
+#   end   — only at the start (baseline) and the end (verify-all): the fastest lane; a break is found late, and verify-all
+#           names the cards whose files its failures point to
+suite_runs() { local r; r="$(setting suite_runs)"; case $r in batch|end) echo "$r" ;; *) echo card ;; esac; }
+
+# qa_mark <card> [jq list of heads] — the newest commit recorded as QA's on the card: dl qa, dl qa-join, or QA's commits
+# after a failed gate (qa_fix) — the next gate compares QA's tests from there
+qa_mark() {
+  local best="" h
+  for h in $(card_get "$1" "${2:-[.qa.head, .qa_join.head, .qa_fix.head]} | map(select(. != null and . != \"\")) | join(\" \")"); do
+    if [[ -z $best ]] || git -C "$ROOT" merge-base --is-ancestor "$best" "$h" 2>/dev/null; then best=$h; fi
+  done
+  echo "$best"
+}
+# qa_unrecorded <card> → "<from>..<to>" when the card branch has commits since QA's last record (or the gate) that changed only
+# QA's tests — QA's round, not recorded yet; empty otherwise
+qa_unrecorded() {
+  local card=$1 qh gh hb base br
+  br="$(card_get "$card" '.branch // ""')"; [[ -n $br ]] || return 0
+  qh="$(qa_mark "$card" '[.qa.head, .qa_fix.head]')"; gh="$(card_get "$card" '.gate.head // ""')"
+  hb="$(git -C "$ROOT" rev-parse -q --verify "refs/heads/$br" 2>/dev/null || true)"
+  base="$qh"; [[ -n $base ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null || base="$gh"
+  if [[ -n $hb && -n $base && $hb != "$base" ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null \
+     && [[ -n "$(git -C "$ROOT" diff --name-only "$base" "$hb")" && -z "$(outside "$base" "$hb" "$(card_get "$card" '.qa_scope // []')")" ]]; then
+    echo "${base:0:9}..${hb:0:9}"
+  fi
+  return 0
+}
+qa_unrecorded_msg() { # what to do with QA's unrecorded commits: after a failed gate the gate takes them, else dl qa records them
+  if [[ "$(card_get "$1" '.gate.result // ""')" == FAIL ]]; then
+    echo "$1 has QA commits after its failed gate ($2 changed only QA tests) — run the gate again first: dl gate $1 (it takes them as QA's; no attempt is used, and when QA's tests were what failed it, it passes without the dev)"
+  else
+    echo "$1 has QA commits that are not recorded yet ($2 changed only QA tests) — record QA's round first: dl qa $1 pass|fail \"<AC results>\", then send the card on"
+  fi
+}
+
+# py_clash <worktree> <added file> … — "<added>\t<other>" per Python test module whose name another one has, both outside
+# packages (bin/pyclash.mjs): pytest's default import mode collects only one of them
+py_clash() {
+  local wt=$1; shift
+  [[ $# -gt 0 ]] || return 0
+  { git -C "$wt" ls-tree -r --name-only HEAD; git -C "$wt" ls-tree -r --name-only "$JOB_BRANCH"; } 2>/dev/null | sort -u | node "$BIN_DIR/pyclash.mjs" "$wt" "$@" || true
+}
+# added_py <worktree> <qa_scope> dev|qa — the .py files the card adds, the dev's (outside qa_scope) or QA's (inside it)
+added_py() {
+  local all dev; all="$(git -C "$1" diff --no-renames --name-only --diff-filter=A "$JOB_BRANCH...HEAD" -- '*.py' 2>/dev/null)"
+  [[ -n $all ]] || return 0
+  dev="$(node "$BIN_DIR/scope.mjs" "$2" <<<"$all")"
+  if [[ $3 == dev ]]; then printf '%s\n' "$dev" | sed '/^$/d'; else comm -23 <(sort <<<"$all") <(sort <<<"$dev") | sed '/^$/d'; fi
 }
 
 # card_lock <card | integration> <what> — one gate, QA run or QA join per card at a time: they share the card worktree, and a
@@ -351,11 +430,13 @@ tracker() { # tracker sync [card] [--event text] | note <card> <author> <text> |
   echo "dl: warning — tracker: $out" >&2; return 0
 }
 
-run_setup() { # per-worktree setup command (node_modules, etc.)
+run_setup() { # per-worktree setup command (node_modules, etc.), then the inputs and the dependencies its tests need
   local dir=$1 cmd; cmd="$(setting worktree_setup)"
-  [[ -n $cmd ]] || return 0
-  (cd "$dir" && ROOT="$ROOT" bash -c "$cmd") >> "$JOB_DIR/setup.log" 2>&1 \
-    || echo "dl: warning — worktree_setup failed in $dir, see $JOB_DIR/setup.log" >&2
+  link_inputs "$dir"
+  if [[ -n $cmd ]]; then
+    (cd "$dir" && ROOT="$ROOT" bash -c "$cmd") >> "$JOB_DIR/setup.log" 2>&1 \
+      || echo "dl: warning — worktree_setup failed in $dir, see $JOB_DIR/setup.log" >&2
+  fi
 }
 
 table() { # tab-separated stdin → aligned columns (no dependency on `column`)
@@ -536,8 +617,9 @@ cmd_status() {
 
 # Cards that may be dispatched now: ready, every dependency merged, attempts left.
 ready_ids() {
-  jq -r --argjson max "$(setting max_attempts)" '. as $b | .cards[] | select(.state=="ready")
+  jq -r --argjson max "$(setting max_attempts)" --slurpfile j "$JOBJ" '. as $b | .cards[] | select(.state=="ready")
     | select(.attempts < $max)
+    | select(all((.inputs // [])[]; . as $i | ($j[0].input_checks[$i].ok // false)))
     | select(all((.depends_on // [])[]; . as $d
         | ([$b.cards[] | select(.id==$d) | .state] | first // "missing") == "merged"))
     | .id' "$BOARD"
@@ -561,6 +643,15 @@ cmd_next() {
     elif context_unproposed; then echo "CONTEXT the human confirmed the architecture: dl context propose <the confirmed file> ($JOB_DIR/context.draft.md with their answers) — before planning"
     elif [[ $crc -eq 1 && ! -f $JOB_DIR/context.md ]]; then echo "CONTEXT the project architecture is out of date ($(grep -m1 '^ERROR' <<<"$cx" | cut -c7-140)) — the readiness review confirms the change; dl context propose <updated file>"
     fi
+  fi
+  # what only the human can provide, first line, every time until it is there (seen live: a card ran without its .env.local)
+  if [[ $phase =~ ^(readiness|awaiting_clarification|planning|awaiting_plan_approval|executing|integrating)$ ]]; then
+    local iid iwhat ifile idet idef iwait
+    while IFS=$'\x1f' read -r iid iwhat ifile idet idef iwait; do
+      [[ -z $iid ]] && continue
+      if [[ $idef == 1 ]]; then [[ -z $iwait ]] || echo "INPUT   $iid $iwhat — deferred by the human; waiting: $iwait. Remind them at every milestone (what waits, until when, the fallback); once it is there: dl input check $iid"
+      else echo "INPUT   $iid $iwhat — $idet${iwait:+ · waiting: $iwait}. Ask the human for it (their one question after the start): put it at $ifile, never into the chat; then: dl input check $iid"; fi
+    done < <(inputs_missing)
   fi
   # shaping: BMad's path, the decisions with the human, its review — the readiness review reads the result
   if [[ $phase == awaiting_clarification ]] && shaping_job && [[ "$(shape_status | jq -r .next)" != done ]]; then
@@ -617,6 +708,14 @@ cmd_next() {
       max_par="$(setting max_parallel)"
       running="$(jq '[.cards[] | select(.state=="running")] | length' "$BOARD")"
       local maxa; maxa="$(setting max_attempts)"
+      # a merged card's stack tests, the moment the cards they need are merged (stack_after) — never left for the end, and
+      # first: before the merges waiting in the lane (live job: STACK lines waited an hour behind a chain of fix merges)
+      local sdue sid sres shead jh; sdue="$(stack_due)"; jh="$(branch_head "$JOB_BRANCH")"
+      while IFS=$'\x1f' read -r sid sres shead; do
+        [[ -z $sid ]] && continue
+        if [[ $sres == FAIL && $shead == "$jh" ]]; then echo "FIX     $sid's stack tests fail on the job branch ($(card_get "$sid" .stack.log)) — a fix card now: dl fix open \"<finding>\" --from <source>; once it is merged: dl stack-test $sid"
+        else echo "STACK   dl stack-test $sid  (the cards its stack tests need are merged — run them now, not at the end)"; fi
+      done <<<"$sdue"
       jq -r '.cards[] | select(.state=="review") | [.id, (.branch//""), (.gate.result//""), (.gate.head//""), (.qa.verdict//""), (.qa.head//""), (.review.verdict//""), (.review.head//""), (.attempts|tostring)] | join("\u001f")' "$BOARD" |
         while IFS=$'\x1f' read -r id br gres ghead qv qhead rv rhead att; do   # \x1f: a tab separator would merge empty fields
           local head; head="$(branch_head "$br")"
@@ -658,26 +757,31 @@ cmd_next() {
             || echo "QA-WRITE $qid  (QWT=\$(dl wt qa $qid) → the QA role writes the tests from the spec now, while the dev builds; commits; does not run them yet)"
         done
       fi
+      local fid fd
+      for fid in $(jq -r '(.fixes // [])[] | select(.state == "open") | .id' "$JOBJ"); do
+        fd="$(fix_dir "$fid")"
+        if [[ ! -s $fd/cards.json ]]; then
+          echo "FIX-CUT $fid — the Lead of its area cuts the fix card(s): MODE: FIX (SKILL.md) with $fd/finding.md → its JSON array to $fd/cards.json"
+        elif jq -e --arg d "$fd" 'all(.[]; (.tmp_id // "") != "")' "$fd/cards.json" >/dev/null 2>&1 \
+             && [[ -n "$(jq -r '.[].tmp_id' "$fd/cards.json" | while read -r t; do [[ -s $fd/$t.md ]] || echo "$t"; done)" ]]; then
+          echo "FIX-SPEC $fid — the BA specs the Lead's cards: MODE: CARD SPECS with $fd/cards.json → $fd/<tmp_id>.md each"
+        else echo "FIX-ADD $fid — dl fix add $fid"; fi
+      done
       jq -r '.cards[] | select(.state=="running") | "WAIT    \(.id) (agent running)"' "$BOARD"
       jq -r --argjson max "$(setting max_attempts)" '.cards[] | select(.state=="ready" and .attempts >= $max) | "BLOCK   \(.id) (no attempts left: dl card \(.id) state blocked)"' "$BOARD"
-      # a merged card's stack tests, the moment the cards they need are merged (stack_after) — never left for the end
-      local sdue sid sres shead jh; sdue="$(stack_due)"; jh="$(branch_head "$JOB_BRANCH")"
-      while IFS=$'\x1f' read -r sid sres shead; do
-        [[ -z $sid ]] && continue
-        if [[ $sres == FAIL && $shead == "$jh" ]]; then echo "FIX     $sid's stack tests fail on the job branch ($(card_get "$sid" .stack.log)) — a fix card now: dl card add <card.json> \"<why>\"; once it is merged: dl stack-test $sid"
-        else echo "STACK   dl stack-test $sid  (the cards its stack tests need are merged — run them now, not at the end)"; fi
-      done <<<"$sdue"
       # a component whose suite failed on the job branch right after its last merge (dl integrate) — fixed by the next merge into it
-      jq -r '[.cards[] | select(.merge_check) | {id, m: .merge_check}] | group_by(.m.component) | map(max_by(.m.n)) | .[] | select(.m.result == "FAIL")
-        | "FIX     the \(.m.component) suite fails on the job branch since \(.id) merged (\(.m.log)) — a fix card in \(.m.component) now: dl card add <card.json> \"<why>\""' "$BOARD"
+      jq -r '[.cards[] | select(.merge_check) | {id, m: .merge_check}] | group_by(.m.component) | map(max_by(.m.n)) | .[] | select(.m.result == "FAIL" or .m.result == "STALLED")
+        | "FIX     the \(.m.component) suite \(if .m.result == "STALLED" then "did not finish (dl stopped it)" else "fails" end) on the job branch since \(.id)\(if .m.batch then " and " + (.m.batch | join(" ")) else "" end) merged (\(.m.log)) — a fix card in \(.m.component) now: dl fix open \"<finding>\" --from <source>"' "$BOARD"
       local open; open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$BOARD")"
       local busy=0; { [[ -n ${r// /} || $running -gt 0 || -n $sdue ]] || jq -e '.cards[] | select(.state=="review")' "$BOARD" >/dev/null; } && busy=1
       if [[ $open -eq 0 && -z $sdue ]] && ! jq -e '.cards[] | select(.state=="blocked")' "$BOARD" >/dev/null; then
         echo "PHASE   dl phase integrating"
       elif [[ $busy -eq 0 ]]; then
         # Nothing moves on its own: Michael decides about every blocked card — the human is not asked after the start.
-        jq -r '.cards[] | select(.state=="blocked") | "DECIDE  (PM) blocked \(.id): \((.notes[-1].note) // "no note") (split → dl card add <card.json> \"<why>\" then dl card \(.id) state archived \"<why>\" | drop → dl card \(.id) state archived \"<why it is not delivered>\") — goes into the PR"' "$BOARD"
-        jq -r '.cards[] | select(.state=="ready") | "STUCK   \(.id) waits on unmerged dependencies: \(.depends_on|join(","))"' "$BOARD"
+        jq -r '.cards[] | select(.state=="blocked") | "DECIDE  (PM) blocked \(.id): \((.notes[-1].note) // "no note") (split → dl fix open \"<finding>\" --from <source> then dl card \(.id) state archived \"<why>\" | drop → dl card \(.id) state archived \"<why it is not delivered>\") — goes into the PR"' "$BOARD"
+        jq -r --slurpfile j "$JOBJ" '.cards[] | select(.state=="ready") | [(.inputs // [])[] | select(. as $i | ($j[0].input_checks[$i].ok // false) | not)] as $mi
+          | if ($mi | length) > 0 then "STUCK   \(.id) waits for what only the human can provide: \($mi | join(", ")) (INPUT above)"
+            else "STUCK   \(.id) waits on unmerged dependencies: \(.depends_on|join(","))" end' "$BOARD"
         [[ $open -eq 0 ]] && echo "PHASE   dl phase integrating  (once you have split or dropped the blocked cards)"
         true
       fi ;;
@@ -732,6 +836,12 @@ cmd_phase() {
         fi ;;
       planning)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || refuse 1 "the selected roles are not valid — fix job.roles (dl jobset), see roles.yaml"
+        # what only the human can provide is there before anything is planned — or they decided the work goes on without it
+        if inputs_any; then
+          input_check >&2 || true
+          local imiss; imiss="$(inputs_missing | awk -F$'\x1f' '$5 == "0" {printf "%s %s (%s) — the human puts it at %s; ", $1, $2, $4, $3}')"
+          [[ -z $imiss ]] || refuse 1 "an input only the human can provide is missing: ${imiss}ask for each one now, as its own question (QUESTIONS.md lists them; never ask them to paste it into the chat), then: dl input check. It cannot come now? Record their decision: dl input defer <IN-n> \"<their words: until when, what happens without it>\" — the cards that need it wait for it"
+        fi
         local rr=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >&2 || rr=$?
         # (bash 3.2 — macOS — cannot parse a case statement inside $( ): the message is chosen first)
         local why="readiness.json is incomplete (dl readiness)"
@@ -740,7 +850,13 @@ cmd_phase() {
         [[ $rr -eq 0 ]] || refuse 1 "the requirements are not ready: $why"
         # seen live: the human confirmed the architecture and it was never written down — the next job would ask again
         ! context_unproposed || refuse 1 "the human confirmed the project's architecture — write it down first: dl context propose <the confirmed file> ($JOB_DIR/context.draft.md with their answers); dl ship commits it with this PR"
-        baseline_holds ;;
+        baseline_holds
+        local bsec; bsec="$(jq -r '.baseline.seconds // 0' "$JOBJ")"
+        if (( bsec > 600 )) && [[ -z "$(setting suite_runs)" ]]; then   # a slow suite: merges back to back share one run
+          jq_inplace "$JOBJ" '.settings.suite_runs = "batch"'
+          log_event settings "suite_runs batch: the baseline took $(( bsec / 60 )) min (card would run it at every QA pass and merge)"
+          echo "note: the whole suite took $(( bsec / 60 )) min — suite_runs is batch for this job (merges back to back share one run). card runs it at every merge; end only at the start and in verify-all (a break is found late). Change it: dl jobset '.settings.suite_runs=\"card|end\"'" >&2
+        fi ;;
       awaiting_plan_approval)
         node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
@@ -756,7 +872,7 @@ cmd_phase() {
         [[ $cur == executing || $cur == integrating ]] || refuse 1 "integrating comes after executing (now: $cur)"
         [[ -z "$(stack_due)" ]] || refuse 1 "stack tests have not passed on the job branch: $(stack_due | cut -d$'\x1f' -f1 | tr '\n' ' ')— run each now (dl stack-test <card>); a failure gets a fix card now, not at the end"
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
-          || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl card add …) or drop it (dl card <id> state archived \"<reason>\")" ;;
+          || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl fix open \"<what is left>\" --from blocked: the Lead cuts, the BA specs) or drop it (dl card <id> state archived \"<reason>\")" ;;
       closing)
         [[ $cur == integrating ]] || refuse 1 "only from integrating (now: $cur)"
         [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS ]] && verified_head "$(branch_head "$JOB_BRANCH")" \
@@ -924,7 +1040,7 @@ cmd_track() {
     node -e 'const n=(t)=>String(t).toLowerCase().replace(/[\u2018\u2019]/g,"\x27").replace(/[\u201c\u201d]/g,"\x22").replace(/\s+/g," ").trim(); const [r,q]=process.argv.slice(1); process.exit(q.split(/\s*(?:…|\.\.\.)\s*/).map(n).filter(Boolean).every((f)=>n(r).includes(f))?0:1)' "$(jq -r .request "$JOBJ")" "$quote" \
       || refuse 1 "the quote is not in the request: \"${quote:0:80}\" — quote its exact words"
   else
-    [[ " intake readiness awaiting_clarification planning " == *" $cur "* ]] || refuse 1 "work has started (phase $cur): the job stays on its path — more work is a card (dl card add), within the frozen decisions"
+    [[ " intake readiness awaiting_clarification planning " == *" $cur "* ]] || refuse 1 "work has started (phase $cur): the job stays on its path — more work is a fix card (dl fix open: the Lead cuts it, the BA specs it), within the frozen decisions"
   fi
   if [[ $to == full && $cur == planning ]]; then   # back to the readiness review: the light decisions stay, the skipped items are answered
     cp "$JOB_DIR/readiness.json" "$JOB_DIR/readiness.light.json"
@@ -1137,6 +1253,86 @@ report_waivers() {
     jq -r '.waivers[] | "- **\(.id)** — _\(.why)_ (\(.at))"' "$JOBJ"; } >> "$JOB_DIR/report.md"
 }
 
+# ---- inputs only a person can provide (readiness DEL-inputs → readiness.json inputs; bin/inputs.mjs) ----------------------
+# Seen live: a card needed .env.local, nobody asked for it at the start, the work began without it, the key was first used
+# on the last day (401) and four cards were deferred. Every input is asked for at the start, checked by dl (the file is
+# there, never committed, gives its keys, one read-only call — only its status is shown), and linked into the worktrees;
+# a card that needs one (card.inputs) is not assigned while it is missing.
+inputs_any() { [[ -f $JOB_DIR/readiness.json ]] && jq -e '(.inputs // []) | length > 0' "$JOB_DIR/readiness.json" >/dev/null 2>&1; }
+# inputs_missing → "<id>\x1f<what>\x1f<file>\x1f<last check>\x1f<deferred 0|1>\x1f<open cards that need it>" per input not provided
+inputs_missing() {
+  inputs_any || return 0
+  local b=/dev/null; [[ -f $BOARD ]] && b=$BOARD
+  jq -r --slurpfile j "$JOBJ" --slurpfile b "$b" '(.inputs // [])[] | .id as $i | select(($j[0].input_checks[$i].ok // false) | not)
+    | [$i, .what, .file, ($j[0].input_checks[$i].detail // "not checked yet"), (if ($j[0].input_deferred // {})[$i] then "1" else "0" end),
+       ([($b[0].cards // [])[] | select((.inputs // []) | index($i)) | select(.state | IN("ready","running","review","blocked")) | .id] | join(" "))]
+    | join("\u001f")' "$JOB_DIR/readiness.json"
+}
+# input_check [IN-n …] — checks them (all by default), records the result (job.json input_checks), prints one line each,
+# links the provided ones into the worktrees; 1 when one is missing or fails
+input_check() {
+  inputs_any || return 0
+  local out; out="$(node "$BIN_DIR/inputs.mjs" check "$JOB_DIR" "$@")" || return 2
+  jq_inplace "$JOBJ" --argjson r "$out" --arg t "$(now)" '.input_checks = ((.input_checks // {}) + ($r | map({key: .id, value: {ok, detail, at: $t}}) | from_entries))'
+  jq -r '.[] | "\(if .ok then "ok     " else "MISSING" end) \(.id) \(.what) — \(.detail)"' <<<"$out"
+  link_inputs_all
+  jq -e 'all(.ok)' <<<"$out" >/dev/null
+}
+# link_inputs <worktree> — each provided input with a "link": the file, where the code reads it, in that worktree (a symlink
+# the worktree's .gitignore covers; never one git would see)
+link_inputs() {
+  inputs_any || return 0
+  local dir=$1 id file link
+  while IFS=$'\x1f' read -r id file link; do
+    [[ -n $link && -f $file ]] || continue
+    [[ -e $dir/$link || -L $dir/$link ]] && continue
+    mkdir -p "$(dirname "$dir/$link")" && ln -s "$file" "$dir/$link" || continue
+    git -C "$dir" check-ignore -q -- "$link" 2>/dev/null \
+      || { rm -f "$dir/$link"; echo "dl: warning — $link is not git-ignored in $dir: $id is not linked there (the human adds it to .gitignore on the base branch)" >&2; }
+  done < <(jq -r --slurpfile j "$JOBJ" '(.inputs // [])[] | select($j[0].input_checks[.id].ok // false)
+            | [.id, (.file | sub("^~"; env.HOME)), (.link // "")] | join("\u001f")' "$JOB_DIR/readiness.json")
+}
+link_inputs_all() { local d; for d in "$IWT" "$JOB_DIR"/wt/*; do [[ -d $d ]] && link_inputs "$d"; done; return 0; }
+cmd_input() { # dl input [list] | check [IN-n …] | defer <IN-n> "<the human's words>"
+  load_job
+  local sub=${1:-list}; [[ $# -gt 0 ]] && shift
+  if ! inputs_any; then echo "no inputs: nothing only a person can provide (readiness DEL-inputs)"; return 0; fi
+  case $sub in
+    list)
+      jq -r --slurpfile j "$JOBJ" '(.inputs // [])[] | [.id, .what, .file,
+          (if $j[0].input_checks[.id].ok then "ok" elif ($j[0].input_deferred // {})[.id] then "deferred by the human" else "MISSING" end),
+          ($j[0].input_checks[.id].detail // "not checked yet")] | @tsv' "$JOB_DIR/readiness.json" | table ;;
+    check)
+      local rc=0; input_check "$@" || rc=$?
+      if [[ $rc -eq 0 ]]; then log_event input-check "${*:-all} provided"; reset_stop_guard
+      else
+        log_event input-check "${*:-all}: missing or failing"
+        local iid _w ifile _d _f iwait
+        while IFS=$'\x1f' read -r iid _w ifile _d _f iwait; do
+          [[ -n $iid ]] && echo "        $iid: the human puts it at $ifile (never into the chat)${iwait:+ — waiting: $iwait}"
+        done < <(inputs_missing)
+      fi
+      return $rc ;;
+    defer) # the human's decision that the work goes on without it for now: the cards that need it wait
+      human_only "deferring an input (dl input defer)"
+      local id=${1:-} words=${2:-}
+      [[ -n $id && -n $words ]] || die 'usage: dl input defer <IN-n> "<the human'"'"'s words: why it cannot come now, until when, what happens without it>"'
+      jq -e --arg i "$id" '(.inputs // []) | any(.id == $i)' "$JOB_DIR/readiness.json" >/dev/null || die "no such input: $id"
+      jq_inplace "$JOBJ" --arg i "$id" --arg w "$words" --arg t "$(now)" '.input_deferred = ((.input_deferred // {}) + {($i): {"words":$w,"at":$t}})'
+      log_event input-defer "$id: $words"
+      echo "$id deferred by the human — every card that needs it (card.inputs) waits until: dl input check $id" ;;
+    *) die 'usage: dl input [list] | check [IN-n …] | defer <IN-n> "<the human'"'"'s words>"' ;;
+  esac
+}
+report_inputs() {
+  grep -q '<!-- deliver:inputs -->' "$JOB_DIR/report.md" && return 0
+  inputs_any || return 0
+  { printf '\n<!-- deliver:inputs -->\n## Inputs only a person could provide\n\nAsked for at the start, checked by dl (never their values).\n\n| Input | What | Status |\n| --- | --- | --- |\n'
+    jq -r --slurpfile j "$JOBJ" '(.inputs // [])[] | "| \(.id) | \(.what) | \(if $j[0].input_checks[.id].ok then "provided — \($j[0].input_checks[.id].detail)"
+        elif ($j[0].input_deferred // {})[.id] then "**not provided** — deferred by the human: _\($j[0].input_deferred[.id].words)_"
+        else "**not provided** — \($j[0].input_checks[.id].detail // "never checked")" end) |"' "$JOB_DIR/readiness.json"; } >> "$JOB_DIR/report.md"
+}
+
 cmd_decide() {
   load_job
   local id=${1:-} decision=${2:-} why=${3:-}; [[ -n $id && -n $decision && -n $why ]] || die 'usage: dl decide <id> "<decision>" "<rationale>"'
@@ -1311,6 +1507,7 @@ _wt_reserve_locked() { # runs in a subshell under the "assign" lock; exits non-z
 cmd_wt() {
   load_job
   local sub=${1:-} card=${2:-} flag=${3:-}; [[ -n $card ]] || die "usage: dl wt add|qa|rm <card> [--resume]"
+  local qa_only=0; [[ $sub == rm && $card == *-qa ]] && { card=${card%-qa}; qa_only=1; }   # dl wt rm T-05-qa
   card_exists "$card"
   local path="$JOB_DIR/wt/$card" branch
   # The card branch carries the tracker key when there is one (Jira links branches by key), and never changes once made.
@@ -1323,12 +1520,11 @@ cmd_wt() {
       assert_frozen
       # QA's work is recorded before anyone else touches the card: commits that changed only QA tests since QA's last record
       # (or since the gate) would otherwise be counted as the dev's at the next gate.
-      local qh gh hb base; qh="$(card_get "$card" '.qa.head // ""')"; gh="$(card_get "$card" '.gate.head // ""')"
-      hb="$(git -C "$ROOT" rev-parse -q --verify "refs/heads/$branch" 2>/dev/null || true)"
-      base="$qh"; [[ -n $base ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null || base="$gh"
-      if [[ -n $hb && -n $base && $hb != "$base" ]] && git -C "$ROOT" merge-base --is-ancestor "$base" "$hb" 2>/dev/null \
-         && [[ -n "$(git -C "$ROOT" diff --name-only "$base" "$hb")" && -z "$(outside "$base" "$hb" "$(card_get "$card" '.qa_scope // []')")" ]]; then
-        refuse 1 "$card has QA commits that are not recorded yet (${base:0:9}..${hb:0:9} changed only QA tests) — record QA's round first: dl qa $card pass|fail \"<AC results>\", then send the card on"
+      local unrec; unrec="$(qa_unrecorded "$card")"
+      [[ -z $unrec ]] || refuse 1 "$(qa_unrecorded_msg "$card" "$unrec")"
+      local need ic; need="$(card_get "$card" '(.inputs // []) | join(" ")')"
+      if [[ -n $need && $flag != --resume ]] && ! ic="$(input_check $need)"; then
+        refuse 1 "$card needs what only the human can provide (no attempt was used):"$'\n'"$(grep -v '^ok' <<<"$ic")"$'\n'"Ask the human now — the one question after the start: put it at the path named (never into the chat); then dl input check, and assign $card"
       fi
       local prev; prev="$(card_get "$card" '{state, attempts, seat}')"
       _wt_reserve "$card" "$flag" || exit $?
@@ -1338,7 +1534,7 @@ cmd_wt() {
           [[ $flag == --resume ]] || card_set "$card" '(.cards[] | select(.id==$id)) |= (. + $p | .assignments |= .[:-1])' --argjson p "$prev"
           die "could not create the worktree for $card — assignment rolled back"
         fi
-        run_setup "$path"
+        run_setup "$path" "$card"
       fi
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.worktree=$p | .branch=$b)' --arg p "$path" --arg b "$branch"
       push_card "$card"
@@ -1357,23 +1553,29 @@ cmd_wt() {
       if [[ ! -d $qpath ]]; then
         if git -C "$ROOT" show-ref --verify --quiet "refs/heads/$qbr"; then git_locked -C "$ROOT" worktree add -q "$qpath" "$qbr"
         else git_locked -C "$ROOT" worktree add -q -b "$qbr" "$qpath" "$JOB_BRANCH"; fi || die "could not create the QA worktree for $card"
-        run_setup "$qpath"
+        run_setup "$qpath" "$card"
         log_event qa-start "$card → QA writes its tests in $qpath (branch $qbr) while the dev builds"
       fi
       echo "$qpath" ;;
-    rm)
-      [[ -d $path ]] && git_locked -C "$ROOT" worktree remove --force "$path"
-      log_event "wt-rm" "$card"; echo "removed: $path (branch kept: $branch)"
+    rm) # the card's worktree and its QA worktree (live job: dl wt rm T-05 left wt/T-05-qa with half-written tests)
+      if [[ $qa_only -eq 0 && -d $path ]]; then git_locked -C "$ROOT" worktree remove --force "$path"; echo "removed: $path (branch kept: $branch)"; fi
+      if [[ -d $path-qa ]]; then git_locked -C "$ROOT" worktree remove --force "$path-qa"; echo "removed: $path-qa (branch kept: $branch-qa)"; fi
+      log_event "wt-rm" "$card$([[ $qa_only -eq 1 ]] && echo " (QA worktree)")"
       ;;
     *) die "usage: dl wt add|qa|rm <card> [--resume]" ;;
   esac
 }
 
-CARD_FIELDS="title context verify qa_verify scope qa_scope acceptance depends_on component stack_verify stack_after"
+CARD_FIELDS="title context verify qa_verify scope qa_scope acceptance depends_on component stack_verify stack_after inputs"
 cmd_card_add() { # dl card add <card.json> "<reason>"
   local file=${1:-} reason=${2:-}
   [[ -f $file && -n $reason ]] || die 'usage: dl card add <card.json> "<reason>"'
   [[ "$(phase_now)" =~ ^(planning|awaiting_plan_approval|executing|integrating)$ ]] || refuse 1 "cards are added in planning/executing/integrating (now: $(phase_now))"
+  # once work has started a card is cut the way planning cuts them: the Lead cuts it, the BA specs it (the user's rule —
+  # live job: Michael wrote fix and continuation cards himself, and the roles were bypassed). dl fix open → dl fix add.
+  if [[ "$(phase_now)" =~ ^(executing|integrating)$ && -z ${DL_ADD_VIA:-} ]]; then
+    refuse 1 "work has started: a new card goes through the planning roles — dl fix open \"<the finding>\" --from <T-xx|merge-check|stack|verify-all|review|blocked>; the Lead cuts it, the BA specs it (dl next says each step), then dl fix add F-n"
+  fi
   local id; id="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
   cp "$BOARD" "$BOARD.bak"
   jq_inplace "$BOARD" --slurpfile c "$file" --arg id "$id" --arg r "$reason" --arg t "$(now)" \
@@ -1384,9 +1586,68 @@ cmd_card_add() { # dl card add <card.json> "<reason>"
   rm -f "$BOARD.bak"; log_event card-add "$id: $reason"; tracker open; echo "$id"
 }
 
+# A fix while the board is active is cut the way planning cuts cards: the finding (F-n) → the Lead of its area cuts the card(s)
+# (MODE: FIX) → the BA specs them (MODE: CARD SPECS) → dl fix add. Michael orchestrates; he does not write the cards.
+#   .work/<job>/out/fix-F-n/cards.json   the Lead's JSON array (tmp ids, as in planning)
+#   .work/<job>/out/fix-F-n/<tmp_id>.md  the BA's spec of each, with its acceptance criteria and test design
+fix_dir() { echo "$JOB_DIR/out/fix-$1"; }
+cmd_fix() {
+  load_job
+  local sub=${1:-list}; [[ $# -gt 0 ]] && shift
+  case $sub in
+    open) # dl fix open "<finding>" [--from <source>]
+      local finding=${1:-} from=""; shift || true
+      [[ ${1:-} == --from ]] && from=${2:-}
+      [[ -n $finding ]] || die 'usage: dl fix open "<the finding: what fails, where, the evidence>" [--from T-xx|merge-check|stack|verify-all|review|blocked]'
+      [[ "$(phase_now)" =~ ^(executing|integrating)$ ]] || refuse 1 "a fix is opened while the board is active (executing/integrating — now: $(phase_now)); in planning the Lead cuts every card"
+      local id; id="F-$(( $(jq '(.fixes // []) | length' "$JOBJ") + 1 ))"
+      mkdir -p "$(fix_dir "$id")"; printf '%s\n' "$finding" > "$(fix_dir "$id")/finding.md"
+      jq_inplace "$JOBJ" --arg i "$id" --arg f "$finding" --arg s "$from" --arg t "$(now)" '.fixes = ((.fixes // []) + [{"id":$i,"finding":$f,"from":$s,"state":"open","at":$t}])'
+      log_event fix-open "$id${from:+ ($from)}: $finding"
+      echo "$id opened — the Lead cuts it (dl next: FIX-CUT $id); its JSON array goes to $(fix_dir "$id")/cards.json" ;;
+    add) # dl fix add F-n — the Lead's cards with the BA's specs onto the board
+      local id=${1:-}; [[ $id =~ ^F-[0-9]+$ ]] || die "usage: dl fix add F-n"
+      jq -e --arg i "$id" '(.fixes // []) | any(.id == $i and .state == "open")' "$JOBJ" >/dev/null || refuse 1 "$id is not an open fix (dl fix list)"
+      local d cards n i tmp spec nid ids="" map="{}"; d="$(fix_dir "$id")"; cards="$d/cards.json"
+      [[ -f $cards ]] && jq -e 'type == "array" and length > 0 and all(.[]; (.tmp_id // "") != "")' "$cards" >/dev/null 2>&1 \
+        || refuse 1 "$id has no cards from the Lead yet: $cards — the Lead's JSON array (MODE: FIX), each card with its tmp_id"
+      n="$(jq length "$cards")"
+      for ((i = 0; i < n; i++)); do
+        tmp="$(jq -r ".[$i].tmp_id" "$cards")"; spec="$d/$tmp.md"
+        [[ -s $spec ]] || refuse 1 "$id: no spec from the BA for $tmp ($spec) — MODE: CARD SPECS with the cards of $cards; a card is cut by the Lead and specced by the BA, as in planning"
+      done
+      for ((i = 0; i < n; i++)); do   # ids first: depends_on / stack_after may name the fix's own tmp ids
+        nid="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 + '"$i"' | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
+        map="$(jq -c --arg t "$(jq -r ".[$i].tmp_id" "$cards")" --arg n "$nid" '. + {($t): $n}' <<<"$map")"
+      done
+      for ((i = 0; i < n; i++)); do
+        tmp="$(jq -r ".[$i].tmp_id" "$cards")"; nid="$(jq -r --arg t "$tmp" '.[$t]' <<<"$map")"
+        cp "$d/$tmp.md" "$JOB_DIR/specs/$nid.md"
+        jq --argjson m "$map" --arg f "$id" ".[$i] | .depends_on = ((.depends_on // []) | map(\$m[.] // .))
+            | (if .stack_after then .stack_after |= map(\$m[.] // .) else . end) | .fix = \$f | del(.tmp_id)" "$cards" > "$d/$tmp.card.json"
+        # the agent of the card's role and the reviewers its component's other cards have, as planning gives them
+        jq --argjson roles "$(jq -c '.roles // []' "$JOBJ")" --slurpfile b "$BOARD" '. as $c
+            | .agent = (.agent // ([$roles[] | select(.role == $c.role) | .agent] | first))
+            | .reviewers = (.reviewers // ([$b[0].cards[] | select(.component == $c.component and .reviewers) | .reviewers] | first))
+            | with_entries(select(.value != null))' "$d/$tmp.card.json" > "$d/$tmp.card.json.t" && mv "$d/$tmp.card.json.t" "$d/$tmp.card.json"
+        local got; got="$(DL_ADD_VIA=fix cmd_card_add "$d/$tmp.card.json" "$id ($tmp): $(head -c 160 "$d/finding.md" | tr '\n' ' ')" 2>&1)" \
+          || { rm -f "$JOB_DIR/specs/$nid.md"; echo "$got" >&2; refuse 1 "$id: the Lead's card $tmp is invalid — nothing more added; the Lead fixes it (cards added so far:${ids:- none})"; }
+        got="$(tail -1 <<<"$got")"; [[ $got == "$nid" ]] || { rm -f "$JOB_DIR/specs/$nid.md"; echo "$got" >&2; refuse 1 "$id: $tmp was not added (cards added so far:${ids:- none})"; }
+        ids="$ids $nid"
+      done
+      jq_inplace "$JOBJ" --arg i "$id" --arg c "${ids# }" --arg t "$(now)" '.fixes |= map(if .id == $i then . + {"state":"added","cards":($c | split(" ")),"added_at":$t} else . end)'
+      log_event fix-add "$id →${ids}"
+      echo "$id →${ids}" ;;
+    list) jq -r '(.fixes // [])[] | [.id, .state, (.from // ""), ((.cards // []) | join(" ")), .finding[0:100]] | @tsv' "$JOBJ" | table ;;
+    *) die 'usage: dl fix open "<finding>" [--from <source>] | add F-n | list' ;;
+  esac
+}
+
 cmd_card() {
   load_job
   [[ ${1:-} == add ]] && { cmd_card_add "${@:2}"; return; }
+  # dl card set T-xx … is dl card T-xx set … (live job: the id after set was refused, and the wt add that followed burned an attempt)
+  [[ ${1:-} =~ ^(set|state|note|retry|continue)$ && ${2:-} =~ ^T-[0-9]+$ ]] && set -- "$2" "$1" "${@:3}"
   local card=${1:-} what=${2:-} val=${3:-}
   [[ -n $card && -n $what ]] || die "usage: dl card <card> state <state> [\"<reason>\"] | note \"<text>\" | retry"
   card_exists "$card"
@@ -1400,6 +1661,10 @@ cmd_card() {
         *\>running) refuse 1 "running is set only by: dl wt add $card" ;;
         *) refuse 1 "$card: $cur → $val is not a valid transition" ;;
       esac
+      if [[ $val == blocked ]]; then
+        local unrec; unrec="$(qa_unrecorded "$card")"
+        [[ -z $unrec ]] || refuse 1 "$(qa_unrecorded_msg "$card" "$unrec") — blocking it first deadlocks it (seen live: dl wt add refuses QA's unrecorded commits, and a blocked card cannot record them)"
+      fi
       # After the start the human is not asked again: dropping a card is Michael's decision, with its reason, in the PR.
       if [[ $val == archived ]] && after_start; then
         [[ -n ${4:-} ]] || refuse 1 "archiving $card is your decision as PM — give the reason: dl card $card state archived \"<why it is not delivered>\""
@@ -1431,12 +1696,44 @@ cmd_card() {
       fi
       rm -f "$BOARD.bak"; log_event card-set "$card.$field = $(jq -c . <<<"$json" | cut -c1-120) — $reason"
       tracker note "$card" michael "changed $field: $reason"; echo "$card.$field updated" ;;
+    continue) # a continuation card built from the live board (live job: one from a stale copy lost a widened scope — an attempt)
+      local why=$val
+      [[ -n $why ]] || die 'usage: dl card <card> continue "<why it goes on in a new card>"'
+      [[ $cur == blocked || $cur == ready ]] || refuse 1 "$card is $cur — block it first (dl card $card state blocked + note), then continue it"
+      [[ "$(phase_now)" =~ ^(executing|integrating)$ ]] || refuse 1 "a card is continued during execution (now: $(phase_now))"
+      local br devc="" qac="" c tmp nid pre spec
+      br="$(card_get "$card" '.branch // ""')"
+      if [[ -n $br ]] && git -C "$ROOT" show-ref --verify --quiet "refs/heads/$br"; then
+        # whose commits: one that changed only qa_scope files is QA's, any other the dev's (merges are not carried)
+        for c in $(git -C "$ROOT" rev-list --reverse --no-merges "$JOB_BRANCH..$br"); do
+          if [[ -z "$(outside "$c^" "$c" "$(card_get "$card" '.qa_scope // []')")" ]]; then qac+="${c:0:12} "; else devc+="${c:0:12} "; fi
+        done
+      fi
+      pre="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
+      tmp="$JOB_DIR/.continue-$card.json"; spec="$JOB_DIR/specs/$card.md"
+      jq --arg id "$card" --arg why "$why" --arg dev "${devc% }" --arg qa "${qac% }" '.cards[] | select(.id==$id)
+        | {title, role, agent, component, context, verify, qa_verify, scope, qa_scope, acceptance, depends_on, reviewers, inputs, stack_verify, stack_after}
+        | with_entries(select(.value != null)) | .continues = $id
+        | .context = "Continues \($id): \($why).\(if $dev != "" then " The dev carries its work over with: git cherry-pick \($dev)." else "" end)\(if $qa != "" then " QA carries its tests over with: git cherry-pick \($qa)." else "" end) " + .context' "$BOARD" > "$tmp"
+      [[ -f $spec ]] && { printf '> Continues %s: %s\n\n' "$card" "$why"; cat "$spec"; } > "$JOB_DIR/specs/$pre.md"
+      if ! nid="$(DL_ADD_VIA=continue cmd_card_add "$tmp" "continues $card: $why" | tail -1)"; then rm -f "$tmp" "$JOB_DIR/specs/$pre.md"; exit 1; fi
+      rm -f "$tmp"
+      card_set "$card" '(.cards[] | select(.id==$id)) |= (.state="archived" | .continued_by=$n)' --arg n "$nid"
+      # the cards that waited for it wait for its continuation; its stack tests' cards likewise
+      jq_inplace "$BOARD" --arg o "$card" --arg n "$nid" --arg t "$(now)" '.cards |= map(
+          if ((.depends_on // []) | index($o)) and (.state | IN("ready","blocked")) then .depends_on |= map(if . == $o then $n else . end)
+             | .history = ((.history // []) + [{"at":$t,"by":"michael","field":"depends_on","change":"\($o) continues as \($n)"}]) else . end
+          | if ((.stack_after // []) | index($o)) and .state != "archived" then .stack_after |= map(if . == $o then $n else . end) else . end)'
+      reset_stop_guard; log_event state "$card=archived (continues as $nid)"; tracker sync "$card" --event "continued as $nid"
+      pm_decision "$card continues as $nid" "$why" "$card"
+      echo "$card → archived; continues as $nid (ready: its contract as on the board now${devc:+; dev commits $devc}${qac:+; QA commits $qac})"
+      echo "$nid" ;;
     retry)
       human_only "granting a blocked card new attempts (dl card retry)"
       [[ $cur == blocked || $cur == ready ]] || refuse 1 "retry is for blocked cards (now: $cur)"
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.attempts=0 | .state="ready")'
       reset_stop_guard; log_event retry "$card (human-granted)"; tracker sync "$card" --event "retry granted by the human"; echo "$card → ready, attempts reset" ;;
-    *) die "unknown field: $what" ;;
+    *) die "unknown field: $what (dl card <card> state | note | set | continue | retry)" ;;
   esac
 }
 
@@ -1447,7 +1744,18 @@ cmd_gate() {
   local wt verify attempt branch scope log head fail=0 tmo
   wt="$(card_get "$card" .worktree)"; verify="$(card_get "$card" .verify)"; attempt="$(card_get "$card" .attempts)"
   branch="$(card_get "$card" .branch)"; scope="$(card_get "$card" '.scope')"
-  local qscope qverify qhead; qscope="$(card_get "$card" '.qa_scope // []')"; qverify="$(card_get "$card" '.qa_verify // ""')"; qhead="$(card_get "$card" '.qa.head // .qa_join.head // ""')"
+  local qscope qverify qhead; qscope="$(card_get "$card" '.qa_scope // []')"; qverify="$(card_get "$card" '.qa_verify // ""')"
+  # QA's commits after a failed gate, with no dev sent since (the same attempt), that change only QA's tests: QA fixed its own
+  # tests (QA-RUN) — they are QA's round, not the dev's change. Live job, T-04: such a commit could be recorded nowhere (dl qa
+  # needs a passed gate, the next gate counted it as the dev's, dl wt add refused it unrecorded) and the card was replaced.
+  local pg pres pat ch; pg="$(card_get "$card" '.gate.head // ""')"; pres="$(card_get "$card" '.gate.result // ""')"; pat="$(card_get "$card" '.gate.attempt // -1')"
+  ch="$(git -C "$wt" rev-parse HEAD 2>/dev/null || true)"
+  if [[ $pres == FAIL && -n $pg && -n $ch && $pg != "$ch" && $pat == "$attempt" && $(jq length <<<"$qscope") -gt 0 ]] \
+     && git -C "$ROOT" merge-base --is-ancestor "$pg" "$ch" 2>/dev/null && [[ -z "$(outside "$pg" "$ch" "$qscope")" ]]; then
+    card_set "$card" '(.cards[] | select(.id==$id)).qa_fix = {"head":$h,"after_gate":$g,"at":$t}' --arg h "$ch" --arg g "$pg" --arg t "$(now)"
+    log_event qa-fix "$card: QA's commits after the failed gate (${pg:0:9}..${ch:0:9}, qa_scope only) taken as QA's"
+  fi
+  qhead="$(qa_mark "$card")"
   local k v hint
   for k in verify qa_verify; do   # a command that cannot pass on this Node is fixed before it costs the card an attempt
     v="$(card_get "$card" ".$k // \"\"")"
@@ -1475,6 +1783,8 @@ cmd_gate() {
     out="$(git -C "$wt" diff --no-renames --name-only "$JOB_BRANCH...HEAD" | node "$BIN_DIR/scope.mjs" "$(jq -c --argjson q "$qscope" '. + $q' <<<"$scope")")"
     if [[ -n $out ]]; then
       while IFS= read -r f; do echo "FAIL  out-of-scope file: $f"; done <<<"$out"; fail=1
+      # widened one gate log at a time, three cards burned their attempts (live job): every file at once, or none
+      echo "      → if they belong to $card, widen once for all of them (block it, then): dl card $card set scope '$(printf '%s\n' "$out" | jq -R . | jq -sc --argjson s "$scope" '$s + .')' \"<why>\" — a QA test goes to qa_scope instead"
     else echo "ok    all changes within scope $(jq -c . <<<"$scope") (+ QA tests $(jq -c . <<<"$qscope"))"; fi
     # The QA tests (qa_scope) belong to the QA role: the dev must not write or change them.
     local devfrom="$JOB_BRANCH"; [[ -n $qhead ]] && git -C "$wt" merge-base --is-ancestor "$qhead" HEAD 2>/dev/null && devfrom="$qhead"
@@ -1493,6 +1803,13 @@ cmd_gate() {
       touched="${touched%$'\n'}"
       if [[ -n $touched ]]; then while IFS= read -r f; do echo "FAIL  the dev changed a QA test (qa_scope belongs to the QA role): $f"; done <<<"$touched"; fail=1
       else echo "ok    QA tests untouched by the dev"; fi
+    fi
+
+    # Python test modules with one name in two folders without __init__.py: the suite fails collection once both are in (live
+    # job: unit/ and integration/ both had export_v03_support.py)
+    local clash; clash="$(py_clash "$wt" $(added_py "$wt" "$qscope" dev))"
+    if [[ -n $clash ]]; then
+      while IFS=$'\t' read -r f o; do echo "FAIL  test module name clash: $f has the name of $o (neither folder has __init__.py) — pytest's default import mode collects only one: rename yours after its folder (e.g. unit_<name>.py)"; done <<<"$clash"; fail=1
     fi
 
     # Commit hygiene: no AI attribution in the delivered history (settings.commit.ai_attribution=false, the default);
@@ -1524,13 +1841,16 @@ cmd_gate() {
     fi
 
     echo "----- verify: $verify"
-    local runner=(bash -c "$verify")
-    command -v timeout >/dev/null && runner=(timeout "$tmo" bash -c "$verify")
-    if (cd "$wt" && test_env "$card" && "${runner[@]}") 2>&1; then echo "ok    verify passed"; else echo "FAIL  verify failed (exit $?)"; fail=1; fi
+    local vrc=0; (cd "$wt" && test_env "$card" && run_timed "$tmo" "$verify") 2>&1 || vrc=$?
+    if [[ $vrc -eq 0 ]]; then echo "ok    verify passed"
+    elif [[ $vrc -eq 124 ]]; then echo "FAIL  verify failed: it did not finish in $(( tmo / 60 )) min (settings.gate_timeout) and was stopped — a hung test, or a test that runs the whole suite (verify runs this card's tests only)"; fail=1
+    else echo "FAIL  verify failed (exit $vrc)"; fail=1; fi
     if [[ -n $qhead && -n $qverify ]]; then # after a QA round the dev's fix must also make the QA tests pass
       echo "----- qa_verify (QA's integration/e2e tests): $qverify"
-      local qr=(bash -c "$qverify"); command -v timeout >/dev/null && qr=(timeout "$tmo" bash -c "$qverify")
-      if (cd "$wt" && test_env "$card" && "${qr[@]}") 2>&1; then echo "ok    QA tests pass"; else echo "FAIL  verify failed: QA tests (exit $?)"; fail=1; fi
+      local qrc=0; (cd "$wt" && test_env "$card" && run_timed "$tmo" "$qverify") 2>&1 || qrc=$?
+      if [[ $qrc -eq 0 ]]; then echo "ok    QA tests pass"
+      elif [[ $qrc -eq 124 ]]; then echo "FAIL  verify failed: QA tests did not finish in $(( tmo / 60 )) min and were stopped"; fail=1
+      else echo "FAIL  verify failed: QA tests (exit $qrc)"; fail=1; fi
     fi
   } > "$log" 2>&1 || true
   grep -q '^FAIL' "$log" && fail=1
@@ -1568,6 +1888,26 @@ cmd_qa() {
   if [[ $verdict == pass && "$(setting test_design.risk)" == true ]]; then
     local qmiss; qmiss="$(node "$BIN_DIR/risk.mjs" qa "$JOB_DIR" "$card" "$summary" 2>&1)" || refuse 1 "$card: the QA verdict is incomplete —"$'\n'"$qmiss"
   fi
+  # QA wrote its tests in its own worktree (dl wt qa) and they are not on the card yet: "no QA tests" would be the wrong lead
+  # (live job, T-87: a second QA agent was sent, and the worktree rebuilt at the cost of an attempt)
+  if [[ -z "$(card_get "$card" '.qa_join.head // ""')" && -z "$(card_get "$card" '.qa.head // ""')" ]] \
+     && git -C "$ROOT" show-ref --verify --quiet "refs/heads/$br-qa" && [[ $(git -C "$ROOT" rev-list --count "$JOB_BRANCH..$br-qa") -gt 0 ]]; then
+    refuse 1 "QA's tests for $card are on its QA branch ($br-qa), not on the card yet — join them first: dl qa-join $card, then dl qa"
+  fi
+  # stack tests named by file: the file is there (live job: T-54's stack spec was never written, T-59's had another name)
+  if [[ $verdict == pass ]]; then
+    local stok smiss=""
+    for stok in $(card_get "$card" '.stack_verify // ""'); do
+      stok="${stok%\"}"; stok="${stok#\"}"; stok="${stok%\'}"; stok="${stok#\'}"
+      [[ $stok == */* && $stok =~ \.(py|[cm]?[jt]sx?|rb|go|java|kt)$ && $stok != *[\*\?\[]* ]] || continue
+      git -C "$wt" cat-file -e "HEAD:$stok" 2>/dev/null || smiss+="$stok "
+    done
+    [[ -z $smiss ]] || refuse 1 "$card's stack_verify names ${smiss}— not in the card's commit. QA writes the stack tests under exactly that name (check it lists them: e.g. npx playwright test <file> --list), or fix stack_verify: dl card $card set stack_verify \"<command>\" \"<why>\""
+  fi
+  if [[ $verdict == pass ]]; then
+    local qclash; qclash="$(py_clash "$wt" $(added_py "$wt" "$qscope" qa))"
+    [[ -z $qclash ]] || refuse 1 "QA's test modules clash by name with others (no __init__.py in either folder — pytest's default import mode collects only one): $(tr '\t\n' '~ ' <<<"$qclash" | sed 's/~/ ↔ /g')— QA renames its own after its folder (e.g. integration_<name>.py); record: dl qa $card fail \"<what>\""
+  fi
   if [[ $(jq length <<<"$qscope") -gt 0 ]]; then
     local stray; stray="$(outside "$g" "$head" "$qscope")"
     [[ -z $stray ]] || refuse 1 "since the gate, files outside qa_scope changed: $(tr '\n' ' ' <<<"$stray")— QA writes only integration/e2e tests"
@@ -1580,7 +1920,8 @@ cmd_qa() {
       echo "# qa_verify passed in the gate on this same commit (${head:0:12}) — not run twice: $(card_get "$card" .gate.log)" > "$qlog"
     else
       t0=$(date +%s)
-      { echo "# qa_verify: $qverify"; (cd "$wt" && test_env "$card" && bash -c "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
+      local gto; gto="$(setting gate_timeout)"
+      { echo "# qa_verify: $qverify"; (cd "$wt" && test_env "$card" && run_timed "${gto:-1800}" "$qverify") 2>&1; } > "$qlog" 2>&1 || qres=FAIL
       qsec=$(( $(date +%s) - t0 ))
       if [[ $verdict == pass && $qres == FAIL ]]; then show_tail 25 "$qlog" < "$qlog"; refuse 1 "QA reports pass but its tests fail (qa_verify) — see $qlog"; fi
     fi
@@ -1594,9 +1935,11 @@ cmd_qa() {
   local full comp suite="whole suite (verify_full)"; full="$(setting verify_full)"; comp="$(card_get "$card" '.component // ""')"
   local csuite=""; [[ -n $comp && -f $JOB_DIR/readiness.json ]] && csuite="$(jq -r --arg c "$comp" '[.architecture.components[]? | select(.id==$c) | .verify // empty][0] // ""' "$JOB_DIR/readiness.json")"
   [[ -n $csuite ]] && { full="$csuite"; suite="$comp component's suite (architecture)"; }
-  if [[ $verdict == pass && -n $full && "$(setting qa_verify_full)" != false ]]; then
-    local flog="${qlog%.log}-full.log"; t0=$(date +%s)
-    { echo "# the $suite on $card's commit (dev + QA tests together): $full"; (cd "$wt" && test_env "$card" && bash -c "$full") 2>&1; } > "$flog" 2>&1 || qres=FAIL
+  if [[ $verdict == pass && -n $full && "$(setting qa_verify_full)" != false && "$(suite_runs)" != end ]]; then
+    local flog="${qlog%.log}-full.log" frc=0 fto; t0=$(date +%s); fto="$(suite_timeout)"
+    { echo "# the $suite on $card's commit (dev + QA tests together): $full"; (cd "$wt" && test_env "$card" && run_timed "$fto" "$full") 2>&1; } > "$flog" 2>&1 || frc=$?
+    [[ $frc -eq 0 ]] || qres=FAIL
+    [[ $frc -eq 124 ]] && echo "STALLED: the $suite did not finish in $(( fto / 60 )) min (settings.suite_timeout_min) — dl stopped it" >> "$flog"
     fsec=$(( $(date +%s) - t0 ))
     [[ -z "$(git -C "$wt" status --porcelain)" ]] || { echo "the $suite left changes in the card worktree:" >>"$flog"; git -C "$wt" status --porcelain >>"$flog"; git -C "$wt" checkout -q -- . 2>/dev/null; git -C "$wt" clean -fdq 2>/dev/null; qres=FAIL; }
     [[ $qres == FAIL ]] && { show_tail 25 "$flog" < "$flog"; refuse 1 "QA reports pass, but the $suite fails on $card's commit with the dev's and QA's tests together — see $flog. Often two test files or helpers with the same module name; the one in qa_scope is QA's to rename, any other goes back to the dev. Record: dl qa $card fail \"<what failed>\""; }
@@ -1836,6 +2179,11 @@ cmd_integrate() {
     log_event integrate "$card REFUSED by the repo's commit rules"; merge_refused_msg "$card" "integrate $card"; exit 5
   fi
   card_set "$card" '(.cards[] | select(.id==$id)).state="merged"'
+  # a merge that changed a lockfile: the integration worktree's dependencies are stale — the project's own worktree_setup runs
+  # again there (live job: stack tests ran on old node_modules after a lockfile changed)
+  if git -C "$IWT" diff --name-only HEAD^1 HEAD 2>/dev/null | grep -Eq '(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|uv\.lock|poetry\.lock|Pipfile\.lock|Gemfile\.lock|go\.sum|Cargo\.lock|composer\.lock)$'; then
+    run_setup "$IWT"; log_event setup "$card changed a lockfile: worktree_setup ran again in the integration worktree"
+  fi
   local path="$JOB_DIR/wt/$card"; [[ -d $path ]] && git_locked -C "$ROOT" worktree remove --force "$path"
   reset_stop_guard; log_event integrate "$card merged"
   tracker sync "$card" --event "merged into $JOB_BRANCH"
@@ -1845,17 +2193,40 @@ cmd_integrate() {
   # blamed that card — and four fix cards followed). Without a component suite nothing runs here: verify-all is the check.
   local comp msuite; comp="$(card_get "$card" '.component // ""')"
   msuite=""; [[ -n $comp && -f $JOB_DIR/readiness.json ]] && msuite="$(jq -r --arg c "$comp" '[.architecture.components[]? | select(.id==$c) | .verify // empty][0] // ""' "$JOB_DIR/readiness.json")"
-  if [[ -n $msuite && "$(setting merge_verify)" != false ]]; then
-    local mlog="$JOB_DIR/gates/$card-merged-$(date +%H%M%S).log" mres=FAIL t0 mh; t0=$(date +%s); mh="$(branch_head "$JOB_BRANCH")"
-    { echo "# the $comp suite on $JOB_BRANCH right after $card merged (${mh:0:12}): $msuite"; (cd "$IWT" && test_env integration && bash -c "$msuite") 2>&1; } > "$mlog" 2>&1 && mres=PASS
+  # suite_runs batch: another card of this component is ready to merge right now — the suite runs once, after the last of them
+  local partner=""
+  if [[ -n $msuite && "$(suite_runs)" == batch ]]; then
+    local pid pbr ph
+    for pid in $(jq -r --arg c "$comp" --arg id "$card" '.cards[] | select(.state=="review" and .component==$c and .id!=$id and .qa.verdict=="pass" and .review.verdict=="approve") | .id' "$BOARD"); do
+      pbr="$(card_get "$pid" .branch)"; ph="$(branch_head "$pbr")"
+      [[ "$(card_get "$pid" .qa.head)" == "$ph" && "$(card_get "$pid" .review.head)" == "$ph" ]] && gate_holds "$pid" "$ph" && { partner=$pid; break; }
+    done
+  fi
+  if [[ -n $partner ]]; then
+    card_set "$card" '(.cards[] | select(.id==$id)).merge_check = {"result":"DEFERRED","component":$c,"head":$h,"n":([.cards[] | select(.state=="merged")] | length),"with":$p,"at":$t}' \
+      --arg c "$comp" --arg h "$(branch_head "$JOB_BRANCH")" --arg p "$partner" --arg t "$(now)"
+    log_event merge-check "$card DEFERRED ($comp suite: $partner merges next — suite_runs batch)"
+    echo "later: the $comp suite runs once $partner merges too (suite_runs batch) — integrate it next: dl integrate $partner"
+  elif [[ -n $msuite && "$(setting merge_verify)" != false && "$(suite_runs)" != end ]]; then
+    local mlog="$JOB_DIR/gates/$card-merged-$(date +%H%M%S).log" mres=FAIL t0 mh mrc=0 mto; t0=$(date +%s); mh="$(branch_head "$JOB_BRANCH")"; mto="$(suite_timeout)"
+    { echo "# the $comp suite on $JOB_BRANCH right after $card merged (${mh:0:12}): $msuite"; (cd "$IWT" && test_env integration && run_timed "$mto" "$msuite") 2>&1; } > "$mlog" 2>&1 || mrc=$?
+    [[ $mrc -eq 0 ]] && mres=PASS
+    [[ $mrc -eq 124 ]] && { mres=STALLED; echo "STALLED: the $comp suite did not finish in $(( mto / 60 )) min (settings.suite_timeout_min) — dl stopped it" >> "$mlog"; }
+    # the cards merged into this component since its suite last ran (suite_runs batch) share the result
+    local batch; batch="$(jq -r --arg c "$comp" '[.cards[] | select(.merge_check.component == $c and .merge_check.result == "DEFERRED") | .id] | join(" ")' "$BOARD")"
     [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "the $comp suite left changes in the integration worktree:" >>"$mlog"; git -C "$IWT" status --porcelain >>"$mlog"; git -C "$IWT" checkout -q -- . 2>/dev/null; git -C "$IWT" clean -fdq 2>/dev/null; mres=FAIL; }
     card_set "$card" '(.cards[] | select(.id==$id)).merge_check = {"result":$r,"component":$c,"head":$h,"seconds":($s|tonumber),"log":$l,"n":([.cards[] | select(.state=="merged")] | length),"at":$t}' \
       --arg r "$mres" --arg c "$comp" --arg h "$mh" --arg s "$(( $(date +%s) - t0 ))" --arg l "$mlog" --arg t "$(now)"
-    log_event merge-check "$card $mres ($comp suite)"; tracker note "$card" integrate "the $comp suite on $JOB_BRANCH after the merge: $mres"
-    if [[ $mres == PASS ]]; then echo "ok    the $comp suite passes on $JOB_BRANCH after the merge"
+    [[ -n $batch ]] && card_set "$card" '(.cards[] | select(.id==$id)).merge_check.batch = ($b | split(" "))' --arg b "$batch"
+    for pid in $batch; do card_set "$pid" '(.cards[] | select(.id==$id)).merge_check.result = $r' --arg r "$mres"; done
+    log_event merge-check "$card $mres ($comp suite${batch:+, with $batch})"; tracker note "$card" integrate "the $comp suite on $JOB_BRANCH after the merge: $mres"
+    if [[ $mres == PASS ]]; then echo "ok    the $comp suite passes on $JOB_BRANCH after the merge${batch:+ (with $batch)}"
+    elif [[ $mres == STALLED ]]; then
+      echo "STALLED: the $comp suite did not finish in $(( mto / 60 )) min on $JOB_BRANCH after $card${batch:+ and $batch} merged — dl stopped it ($mlog). The lane goes on: never wait for it, never ask the human to kill it."
+      echo "A hung test or a whole-suite run nested in a test: a fix card in component $comp now (dl fix open \"<finding>\" --from <source>); a cause outside this job: dl followup."
     else
-      echo "BROKEN: the $comp suite fails on $JOB_BRANCH right after $card merged — see $mlog"; show_tail 20 "$mlog" < "$mlog"
-      echo "$card is the cause: open a fix card in component $comp now (dl card add <card.json> \"<why>\"), before other $comp cards are blamed for it."
+      echo "BROKEN: the $comp suite fails on $JOB_BRANCH right after $card${batch:+ and $batch} merged — see $mlog"; show_tail 20 "$mlog" < "$mlog"
+      echo "${batch:+One of }$card${batch:+ $batch} is the cause: open a fix card in component $comp now (dl fix open \"<finding>\" --from <source>), before other $comp cards are blamed for it."
     fi
   fi
 }
@@ -1876,10 +2247,13 @@ run_baseline() {
     log_event baseline "no verify_full yet — nothing to run"; echo "baseline: no verify_full yet (a repo without a suite) — nothing to run"; return 0
   fi
   log="$JOB_DIR/gates/baseline-$(date +%H%M%S).log"; mkdir -p "$JOB_DIR/gates"
-  { echo "# baseline: $cmd on $JOB_BRANCH at ${head:0:12}, before any card"; (cd "$IWT" && test_env integration && bash -c "$cmd") 2>&1; } > "$log" 2>&1 && result=PASS
+  local t0 brc=0 bto; t0=$(date +%s); bto="$(setting suite_timeout_min)"; bto=$(( ${bto:-90} * 60 ))
+  { echo "# baseline: $cmd on $JOB_BRANCH at ${head:0:12}, before any card"; (cd "$IWT" && test_env integration && run_timed "$bto" "$cmd") 2>&1; } > "$log" 2>&1 || brc=$?
+  [[ $brc -eq 0 ]] && result=PASS
+  [[ $brc -eq 124 ]] && echo "STALLED: verify_full did not finish in $(( bto / 60 )) min and was stopped" >> "$log"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; git -C "$IWT" checkout -q -- . 2>/dev/null; git -C "$IWT" clean -fdq 2>/dev/null; result=FAIL; }
-  jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" '.baseline = {"result":$r,"head":$h,"command":$c,"log":$l,"at":$t}'
-  log_event baseline "$result ($cmd)"; echo "baseline: $result  ($cmd · log: $log)"
+  jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" --arg sec "$(( $(date +%s) - t0 ))" '.baseline = {"result":$r,"head":$h,"command":$c,"log":$l,"seconds":($sec|tonumber),"at":$t}'
+  log_event baseline "$result ($cmd, $(( ($(date +%s) - t0) / 60 )) min)"; echo "baseline: $result  ($cmd · $(( ($(date +%s) - t0) / 60 )) min · log: $log)"
   [[ $result == PASS ]] || { show_tail 25 "$log" < "$log"; return 1; }
 }
 baseline_holds() {
@@ -1892,18 +2266,35 @@ baseline_holds() {
 }
 cmd_baseline() { load_job; run_baseline; }
 
+# blame_log <log> — the merged cards whose scope or qa_scope holds a file the failing log names: where a fix card starts
+blame_log() {
+  local files; files="$(grep -oE '[A-Za-z0-9_./-]+\.(py|[cm]?[jt]sx?|java|kt|go|rb|rs|php|swift|dart|cs)' "$1" 2>/dev/null | sed 's|^\./||' | sort -u | awk 'NR<=200')"
+  [[ -n $files ]] || return 0
+  printf '%s\n' "$files" | node -e '
+    const fs = require("fs"), files = fs.readFileSync(0, "utf8").split("\n").filter(Boolean);
+    import(process.argv[2]).then(({ globToRegExp }) => {
+      const board = JSON.parse(fs.readFileSync(process.argv[1], "utf8")), hits = new Map();
+      for (const c of board.cards.filter((c) => c.state === "merged"))
+        for (const f of files) if ([...(c.scope ?? []), ...(c.qa_scope ?? [])].some((g) => { try { return globToRegExp(g).test(f); } catch { return false; } }))
+          hits.set(c.id, [...(hits.get(c.id) ?? []), f]);
+      for (const [id, fs_] of hits) console.log(`LIKELY  ${id} — the failures name ${fs_.slice(0, 3).join(", ")}${fs_.length > 3 ? " …" : ""}`);
+    });' "$BOARD" "$BIN_DIR/scope.mjs" || true
+}
+
 cmd_verify_all() {
   load_job; card_lock integration verify-all
   local cmd log head; cmd="$(setting verify_full)"; log="$JOB_DIR/gates/verify-all-$(date +%H%M%S).log"
   [[ -n $cmd ]] || refuse 1 "verify_full is not set — it follows the stack (ARC-stack): record the full test command with dl jobset '.settings.verify_full=\"<command>\"' (and in .deliver.json for the next jobs)"
   head="$(branch_head "$JOB_BRANCH")"
   echo "verify_full: $cmd  (log: $log)"
-  local result=FAIL
-  if (cd "$IWT" && test_env integration && bash -c "$cmd") > "$log" 2>&1; then result=PASS; fi
+  local result=FAIL vto vrc=0; vto="$(suite_timeout)"
+  (cd "$IWT" && test_env integration && run_timed "$vto" "$cmd") > "$log" 2>&1 || vrc=$?
+  [[ $vrc -eq 0 ]] && result=PASS
+  [[ $vrc -eq 124 ]] && echo "STALLED: verify_full did not finish in $(( vto / 60 )) min (settings.suite_timeout_min) — dl stopped it" >> "$log"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; result=FAIL; }
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg t "$(now)" '.verify_all = {"result":$r,"head":$h,"log":$l,"at":$t}'
   reset_stop_guard; log_event verify-all "$result"
-  if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; exit 1; fi
+  if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; blame_log "$log"; exit 1; fi
 }
 
 # Stack tests: a card's tests that need other cards' work (an e2e flow across services) run on the job branch as soon as the
@@ -1932,7 +2323,10 @@ cmd_stack_test() {
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] \
     || refuse 1 "the integration worktree has uncommitted changes — nothing may be written there by hand (git -C $IWT status)"
   local head log result=FAIL t0 sec; head="$(branch_head "$JOB_BRANCH")"; log="$JOB_DIR/gates/$card-stack-$(date +%H%M%S).log"; t0=$(date +%s)
-  { echo "# stack tests of $card on $JOB_BRANCH ${head:0:12}: $cmd"; (cd "$IWT" && test_env integration && bash -c "$cmd") 2>&1; } > "$log" 2>&1 && result=PASS
+  local src=0 sto; sto="$(suite_timeout)"
+  { echo "# stack tests of $card on $JOB_BRANCH ${head:0:12}: $cmd"; (cd "$IWT" && test_env integration && run_timed "$sto" "$cmd") 2>&1; } > "$log" 2>&1 || src=$?
+  [[ $src -eq 0 ]] && result=PASS
+  [[ $src -eq 124 ]] && echo "STALLED: the stack tests did not finish in $(( sto / 60 )) min and were stopped" >> "$log"
   sec=$(( $(date +%s) - t0 ))
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "the stack tests left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; git -C "$IWT" checkout -q -- . 2>/dev/null; git -C "$IWT" clean -fdq 2>/dev/null; result=FAIL; }
   card_set "$card" '(.cards[] | select(.id==$id)) |= (.stack = {"result":$r,"head":$h,"seconds":($sec|tonumber),"log":$l,"at":$t}
@@ -1941,7 +2335,7 @@ cmd_stack_test() {
   reset_stop_guard; log_event stack-test "$card $result"; tracker note "$card" stack-test "$result on the job branch ($(basename "$log"))"
   if [[ $result == PASS ]]; then echo "STACK PASSED: $card  (log: $log)"; return 0; fi
   echo "STACK FAILED: $card  (log: $log)"; show_tail 30 "$log" < "$log"
-  echo "Open a fix card now (dl card add <card.json> \"<why>\"); once it is merged, dl stack-test $card again."
+  echo "Open a fix card now (dl fix open \"<finding>\" --from <source>); once it is merged, dl stack-test $card again."
   exit 1
 }
 
@@ -1974,7 +2368,7 @@ cmd_ship() {
       || refuse 1 "report.md does not account for every decided non-functional requirement (readiness NFR-*) — its \"## Non-functional requirements\" table: | NFR-x | PASS / CONCERNS / FAIL | evidence |"$'\n'"$nfrerr"
   fi
   knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
-  report_shaping; report_decisions; report_waivers; report_contract_changes; report_context; report_lessons; report_followups
+  report_shaping; report_inputs; report_decisions; report_waivers; report_contract_changes; report_context; report_lessons; report_followups
   job_record_publish; head="$(branch_head "$JOB_BRANCH")"
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
@@ -2545,7 +2939,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review fix integrate verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -2724,6 +3118,7 @@ main() {
     validate) cmd_validate ;;
     roles) cmd_roles ;;
     readiness) cmd_readiness ;;
+    input) cmd_input "$@" ;;
     track) cmd_track "$@" ;;
     shape) cmd_shape "$@" ;;
     context) cmd_context "$@" ;;
@@ -2741,6 +3136,7 @@ main() {
     ready) cmd_ready ;;
     wt) cmd_wt "$@" ;;
     card) cmd_card "$@" ;;
+    fix) cmd_fix "$@" ;;
     gate) cmd_gate "$@" ;;
     qa) cmd_qa "$@" ;;
     qa-join) cmd_qa_join "$@" ;;

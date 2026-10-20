@@ -6,7 +6,9 @@
 //                  "question": "…", "options": ["…"], "impact": "…" } … ],
 //     "architecture": { "style": "microservices", "components": [
 //        { "id": "orders-svc", "kind": "service", "stack": ["java","spring-boot"], "path": "services/orders/",
-//          "owner": "backend", "reviewer": "reviewer-java", "verify": "cd services/orders && ./gradlew test", "notes": "…" } … ] } }
+//          "owner": "backend", "reviewer": "reviewer-java", "verify": "cd services/orders && ./gradlew test", "notes": "…" } … ] },
+//     "inputs": [ { "id": "IN-1", "what": "…", "file": "/abs/path", "link": ".env.local", "keys": ["…"], "check": "…" } … ] }
+// inputs: what only a person can provide (DEL-inputs: credentials, keys, accounts, a .env file) — see inputs.mjs.
 // architecture is the frozen technical frame: every card belongs to one component; its stack decides the dev's
 // skills and the reviewer. `verify` (optional) runs the component's own whole suite from the repo root: a QA pass runs it
 // instead of verify_full. Once the job is planned, readiness.json is frozen (dl checks its hash on every step).
@@ -29,6 +31,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseYaml, loadCatalog } from "./roles.mjs";
 import { collect } from "./knowledge.mjs";
 import { loadShaping, status as shapingStatus, dirs as bmadDirs } from "./bmad.mjs";
+import { shapeErrors as inputErrors } from "./inputs.mjs";
 
 const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const catalog = () => parseYaml(readFileSync(join(SKILL_DIR, "readiness.yaml"), "utf8"), "readiness.yaml").items ?? [];
@@ -205,6 +208,9 @@ export function check(jobDir) {
     if (!/\b(over|instead of|rather than|vs\.?|versus|alternative|considered)\b/i.test(why)) errors.push("ARC-stack decided by the PM must name the alternatives it weighed (\"… over Node.js because …\")");
   }
   errors.push(...checkArchitecture(job, architecture).map((e) => `architecture: ${e}`));
+  let rawInputs = [];
+  try { const r = JSON.parse(readFileSync(file, "utf8")); rawInputs = Array.isArray(r) ? [] : r.inputs ?? []; } catch { /* reported above */ }
+  errors.push(...inputErrors(rawInputs, items).map((e) => `inputs: ${e}`));
   // Back from the light path (dl track full in planning): what was frozen there stays as it was; only the skipped items are new.
   const light = join(jobDir, "readiness.light.json");
   if (existsSync(light)) {
@@ -236,10 +242,23 @@ export function check(jobDir) {
     ...items.map((i) => `| **${i.id}** ${q(i)} | ${i.status} | ${(i.status === "open" ? "❓ " + i.question : i.answer ?? "").replace(/\n/g, " ")} | ${(i.source ?? "").replace(/\n/g, " ")} |`), "",
     "## Architecture (frozen once the job is planned)", "", `Style: ${architecture?.style ?? "—"}`, "",
     "| Component | Kind | Stack | Path | Owner (dev role) | Reviewer | Suite at a QA pass |", "| --- | --- | --- | --- | --- | --- | --- |",
-    ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} | ${c.owner} | ${c.reviewer} | ${c.verify ? `\`${c.verify}\`` : "the whole suite (verify_full)"} |`), ""].join("\n");
+    ...(architecture?.components ?? []).map((c) => `| ${c.id} | ${c.kind} | ${(c.stack ?? []).join(", ")} | ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} | ${c.owner} | ${c.reviewer} | ${c.verify ? `\`${c.verify}\`` : "the whole suite (verify_full)"} |`), "",
+    ...(rawInputs.length ? ["## Inputs only a person can provide (checked by dl input check; a card that needs one waits for it)", "",
+      "| Input | What | Where the human puts it | Read by the code at | Keys | Check | For |", "| --- | --- | --- | --- | --- | --- | --- |",
+      ...rawInputs.map((i) => `| ${i.id} | ${i.what} | \`${i.file}\` | ${i.link ? `\`${i.link}\`` : "—"} | ${(i.keys ?? []).join(", ") || "—"} | ${i.check ? `\`${i.check}\`` : "—"} | ${i.for ?? ""} |`), ""] : [])].join("\n");
   writeFileSync(join(jobDir, "readiness.md"), md);
-  const qs = openBusiness.length ? [`# Questions before the work can start — ${job.id}`, "",
-    "Answer each one in a terminal (or tell Michael):  dl clarify <id> \"<answer>\"", "",
+  // Every input not provided yet is its own question, first: seen live, a card started without the .env.local it needed.
+  const checks = job.input_checks ?? {}, deferred = job.input_deferred ?? {};
+  const missing = rawInputs.filter((i) => !checks[i.id]?.ok && !deferred[i.id]);
+  const qs = openBusiness.length || missing.length ? [`# Questions before the work can start — ${job.id}`, "",
+    ...(missing.length ? ["## Inputs only you can provide — the work that needs them does not start without them", "",
+      "Put each one where it says (never paste a secret into the chat), then tell Michael: dl input check checks it.", "",
+      ...missing.flatMap((i) => [`### ${i.id} — ${i.what}`, "", `- put it at \`${i.file}\`${i.keys?.length ? ` with ${i.keys.join(", ")}` : ""}`,
+        ...(i.link ? [`- the code reads it at \`${i.link}\` (dl links it into every worktree)`] : []), ...(i.for ? [`- needed for: ${i.for}`] : []),
+        ...(i.evidence ? [`- why it is needed: ${i.evidence}`] : []),
+        ...(i.check ? [`- dl checks it with this command, run with your values (only an HTTP status is reported) — say so if it must not run: \`${i.check}\``] : []),
+        ...(checks[i.id] ? [`- last check: ${checks[i.id].detail}`] : []), ""])] : []),
+    ...(openBusiness.length ? ["Answer each question in a terminal (or tell Michael):  dl clarify <id> \"<answer>\"", ""] : []),
     ...openBusiness.flatMap((i) => [`## ${i.id}`, "", i.question, ...(i.options?.length ? ["", ...i.options.map((o) => `- ${o}`)] : []),
       ...(i.impact ? ["", `_Why it matters:_ ${i.impact}`] : []), ""])].join("\n") : "";
   writeFileSync(join(jobDir, "QUESTIONS.md"), qs);

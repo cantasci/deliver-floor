@@ -28,6 +28,13 @@ DL="$HERE/kit/skills/deliver/bin/dl"
 bedit() { # bedit <board.json> '<jq>' — a fixture edit made outside dl, accepted by "the human" with dl reseal
   local f=$1; jq "$2" "$f" > "$f.t" && mv "$f.t" "$f"; "$DL" reseal "test fixture edit: $2" >/dev/null
 }
+fix_card() { # fix_card <card.json> "<finding>" — a fix after the start, as the roles cut it: dl fix open, the Lead's card, the BA's spec, dl fix add
+  local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"; [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
+  local f; f="$("$DL" fix open "$2" --from test 2>&1 | grep -o '^F-[0-9]*')" || { echo "fix open failed"; return 1; }
+  jq '[. + {tmp_id:"X1"}]' "$1" > "$jd/out/fix-$f/cards.json"
+  printf '## Acceptance criteria\n1. Given %s, when fixed, then it passes\n\n## Test design\nAC-1 P2 unit\n' "$2" > "$jd/out/fix-$f/X1.md"
+  "$DL" fix add "$f" 2>&1 | sed 's/^F-[0-9]* → *//'
+}
 ready_all() { # ready_all [<id> open] — the BA's readiness review: every applicable item decided (one left open if asked)
   local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"
   [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
@@ -35,6 +42,7 @@ ready_all() { # ready_all [<id> open] — the BA's readiness review: every appli
   local q; q="$(jq -r '.request | gsub("\\s+"; " ") | .[0:24]' "$jd/job.json")"
   node "$HERE/kit/skills/deliver/bin/readiness.mjs" applicable "$jd" | jq --arg o "${1:-}" --arg spec "${SPECIALISTS:-}" --arg q "$q" --argjson arch "${ARCH:-null}" '{items: [.[] | if .id == $o
      then {id, status:"open", owner:"business", question:("Which option for " + .id + "?"), options:["a","b"]}
+     elif .id == "DEL-inputs" then {id, status:"n_a", answer:"nothing only a person can provide", source:"test fixture: no .env.example, no env reads"}
      elif ($spec != "1" and (.id == "UX-a11y" or .id == "NFR-performance" or .id == "DEL-docs")) then {id, status:"n_a", answer:"not part of this fixture", source:"test fixture"}
      else {id, status:"decided", answer:"test decision", source:"the request", quote:$q} end],
      architecture: ($arch // {style:"library", components:[{id:"app", kind:"library", stack:["generic"], path:".", owner:"backend", reviewer:"reviewer"}]})}' > "$jd/readiness.json"
@@ -923,9 +931,28 @@ jq -e '.cards[0].history[-1] | .field=="verify" and .reason=="package.json is op
 expect_fail 1 "an invalid change is reverted" "$DL" card T-01 set scope '["**"]' "too broad"
 [[ "$(jq -c '.cards[0].scope' "$TJ/board.json")" == '["src/**"]' ]] && ok "…and the board is unchanged" || bad "revert"
 jq -n '{title:"fix",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["lib/**"],qa_scope:["it2/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: y"],context:"fix"}' > "$TMP/fix.json"
-contains "dl card add gives the next id" "$("$DL" card add "$TMP/fix.json" "verify-all found a gap" 2>&1)" "T-02"
+contains "after the start dl card add is refused: a new card goes through the planning roles" "$("$DL" card add "$TMP/fix.json" "x" 2>&1)" "a new card goes through the planning roles"
+FX="$("$DL" fix open "the verify-all run fails in lib/" --from verify-all 2>&1)"; contains "dl fix open opens F-1" "$FX" "F-1 opened"
+FXD="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"; [[ -d $FXD ]] || FXD="$PWD/.work/$(cat .work/ACTIVE)"; FXD="$FXD/out/fix-F-1"
+contains "dl next: the Lead cuts it first (FIX-CUT)" "$("$DL" next)" "FIX-CUT F-1"
+contains "dl fix add is refused without the Lead's cards" "$("$DL" fix add F-1 2>&1)" "F-1 has no cards from the Lead yet"
+jq '[. + {tmp_id:"X1"}, (. + {tmp_id:"X2", title:"fix part 2", scope:["lib2/**"], qa_scope:["it4/**"], depends_on:["X1"]})]' "$TMP/fix.json" > "$FXD/cards.json"
+contains "dl next: then the BA specs them (FIX-SPEC)" "$("$DL" next)" "FIX-SPEC F-1"
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$FXD/X1.md"
+contains "…every card: dl fix add is refused while one has no spec" "$("$DL" fix add F-1 2>&1)" "no spec from the BA for X2"
+printf '## Acceptance criteria\nGiven a, when b, then d\n' > "$FXD/X2.md"
+contains "dl next: then FIX-ADD" "$("$DL" next)" "FIX-ADD F-1 — dl fix add F-1"
+contains "dl fix add puts both on the board with the next ids" "$("$DL" fix add F-1 2>&1)" "F-1 → T-02 T-03"
+TJB="$(dirname "$FXD")/../board.json"
+[[ "$(jq -c '[.cards[] | select(.id=="T-03") | .depends_on, .fix, (.agent != null)]' "$TJB")" == '[["T-02"],"F-1",true]' && -f "$(dirname "$FXD")/../specs/T-03.md" ]] \
+  && ok "…the fix's tmp ids become T-ids in depends_on, each card names its fix, has its role's agent and its spec" || bad "fix cards: $(jq -c '.cards[] | select(.id=="T-03")' "$TJB")"
+contains "dl fix list shows the fix and the cards it became" "$("$DL" fix list)" "T-02 T-03"
+"$DL" card T-03 state archived "test: replaced" >/dev/null 2>&1
+contains "dl card continue still adds its continuation card after the start (not a fix: same scope, same spec)" "$("$DL" card T-02 continue "test: goes on" 2>&1)" "T-04"
+"$DL" card T-02 state archived "test: replaced" >/dev/null 2>&1; "$DL" card T-04 state archived "test: replaced" >/dev/null 2>&1
+contains "after the start a fix card is cut by the roles and gets the next id (dl fix open → Lead → BA → dl fix add)" "$(fix_card "$TMP/fix.json" "verify-all found a gap")" "T-05"
 jq -n '{title:"bad",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["it/**"],qa_scope:["it3/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: z"],context:"x"}' > "$TMP/bad.json"
-out="$("$DL" card add "$TMP/bad.json" "dev edits QA tests" 2>&1)"; contains "a dev card reaching another card's QA tests is rejected" "$out" "QA tests belong to the QA role"
+out="$(fix_card "$TMP/bad.json" "dev edits QA tests" 2>&1)"; contains "a dev card reaching another card's QA tests is rejected" "$out" "QA tests belong to the QA role"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "tracker: jira (contract stub of Jira REST v3) — statuses, comments, branch links"
@@ -1317,26 +1344,26 @@ contains "sync-md re-ingests without duplicates" "$out" "3 document(s) ingested 
 echo "QA pass runs the whole suite: tests that pass alone can break it together (seen live: two sovereign_support.py helpers)"
 QF="$TMP/qafull"; mkdir -p "$QF" && cd "$QF" && git init -q -b main
 # verify_full stands in for pytest: two test modules with the same name in one run break it (each set alone passes)
-jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"test -z \"$(find test -name \"*.py\" | sed \"s#.*/##\" | sort | uniq -d)\""}' > .deliver.json
+jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"test -z \"$(find test -name \"*.mjs\" | sed \"s#.*/##\" | sort | uniq -d)\""}' > .deliver.json
 git add -A && git commit -qm i
 "$DL" new "QA full" "x" >/dev/null 2>&1; QJ="$QF/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.stack=["python"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:python-reviewer"}]' >/dev/null
 "$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
 printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$QJ/specs/T-01.md"
 jq -n '{cards:[{id:"T-01",title:"fetcher",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**","test/unit/**"],qa_scope:["test/it/**"],
-  verify:"test -f test/unit/sovereign_support.py",qa_verify:"test -f test/it/sovereign_support.py",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$QJ/board.json"
+  verify:"test -f test/unit/sovereign_support.mjs",qa_verify:"test -f test/it/sovereign_support.mjs",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$QJ/board.json"
 "$DL" phase executing >/dev/null; WQ="$("$DL" wt add T-01)"
-mkdir -p "$WQ/src" "$WQ/test/unit" && echo x > "$WQ/src/fetcher.py" && echo 'def h(): return 1' > "$WQ/test/unit/sovereign_support.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01: fetcher"
+mkdir -p "$WQ/src" "$WQ/test/unit" && echo x > "$WQ/src/fetcher.mjs" && echo 'def h(): return 1' > "$WQ/test/unit/sovereign_support.mjs" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01: fetcher"
 "$DL" gate T-01 >/dev/null 2>&1
-mkdir -p "$WQ/test/it" && echo 'def h(): return 2' > "$WQ/test/it/sovereign_support.py" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01 QA: it"
+mkdir -p "$WQ/test/it" && echo 'def h(): return 2' > "$WQ/test/it/sovereign_support.mjs" && git -C "$WQ" add -A && git -C "$WQ" commit -qm "T-01 QA: it"
 out="$("$DL" qa T-01 pass "AC-1 pass" 2>&1)"
 contains "a QA pass is refused when the whole suite fails with the dev's and QA's tests together" "$out" "the whole suite (verify_full) fails on T-01's commit with the dev's and QA's tests together"
 contains "…and says what to look for and whose file it is" "$out" "the one in qa_scope is QA's to rename"
 [[ "$(jq -r '.cards[0].qa.verdict // "none"' "$QJ/board.json")" == none ]] && ok "…no pass was recorded" || bad "qa recorded: $(jq -c '.cards[0].qa' "$QJ/board.json")"
 ls "$QJ"/gates/T-01-qa-*-full.log >/dev/null 2>&1 && ok "…the suite's log is kept beside the QA log" || bad "no full-suite log"
-contains "a QA fail is recorded as before (the suite is run for a pass)" "$("$DL" qa T-01 fail "the suite breaks: two sovereign_support.py" 2>&1)" "qa: T-01 fail"
-git -C "$WQ" mv test/it/sovereign_support.py test/it/it_support.py && git -C "$WQ" commit -qm "T-01 QA: rename the helper"
-sed_qv='(.cards[0].qa_verify) = "test -f test/it/it_support.py"'; bedit "$QJ/board.json" "$sed_qv"
+contains "a QA fail is recorded as before (the suite is run for a pass)" "$("$DL" qa T-01 fail "the suite breaks: two sovereign_support.mjs" 2>&1)" "qa: T-01 fail"
+git -C "$WQ" mv test/it/sovereign_support.mjs test/it/it_support.mjs && git -C "$WQ" commit -qm "T-01 QA: rename the helper"
+sed_qv='(.cards[0].qa_verify) = "test -f test/it/it_support.mjs"'; bedit "$QJ/board.json" "$sed_qv"
 contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "qa: T-01 pass"
 [[ "$(jq -r '[.cards[0].gate.seconds, .cards[0].qa.seconds, .cards[0].qa.suite_seconds] | map(type) | join(",")' "$QJ/board.json")" == number,number,number ]] \
   && ok "the gate, QA's run and the whole suite each record how long they took" || bad "durations: $(jq -c '.cards[0] | {g: .gate.seconds, q: .qa.seconds, s: .qa.suite_seconds}' "$QJ/board.json")"
@@ -1426,7 +1453,7 @@ contains "…recorded on the card with the job branch commit" "$(jq -r '.cards[0
 contains "…and dl next asks for a fix card now" "$("$DL" next)" "FIX     T-01's stack tests fail on the job branch"
 jq -n '{title:"fix b",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["src/b/**"],qa_scope:["it/b/**"],
   verify:"test ! -e src/b/broken",qa_verify:"test -f it/b/t",acceptance:["AC-1: x"],context:"remove what broke T-01'"'"'s stack tests"}' > "$TMP/stfix.json"
-contains "the fix card is added" "$("$DL" card add "$TMP/stfix.json" "T-01's stack tests fail after T-02" 2>&1)" "T-03"
+contains "the fix card is added (the Lead's card, the BA's spec)" "$(fix_card "$TMP/stfix.json" "T-01's stack tests fail after T-02")" "T-03"
 W3="$("$DL" wt add T-03)"; git -C "$W3" rm -q src/b/broken && git -C "$W3" commit -qm "T-03: fix b" && "$DL" gate T-03 >/dev/null 2>&1
 echo t2 > "$W3/it/b/t2" && git -C "$W3" add -A && git -C "$W3" commit -qm "T-03 QA: b" && "$DL" qa T-03 pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review T-03 approve ok >/dev/null 2>&1
 expect_ok "…and merged" "$DL" integrate T-03
@@ -1524,6 +1551,62 @@ out="$("$DL" baseline 2>&1)"
 contains "dl baseline runs it again once the base is fixed — the job branch takes the fix (fast-forward, no card yet)" "$out" "baseline: PASS"
 [[ "$(git rev-parse "$(jq -r .branch "$BJ/job.json")")" == "$(git rev-parse main)" ]] && ok "…the job branch is at the fixed base" || bad "job branch not fast-forwarded"
 expect_ok "…and planning goes ahead" "$DL" phase planning
+echo "inputs: asked for only when the work needs them; only the cards that name one wait for it (0.18)"
+IP="$TMP/inputs"; SEC="$TMP/secrets"; mkdir -p "$IP" "$SEC" && cd "$IP" && git init -q -b main
+printf '.env.local\n' > .gitignore; echo '{"dispatch":"subagent","merge_mode":"local","verify_full":"true"}' > .deliver.json; git add -A && git commit -qm i
+"$DL" new "Inputs" "Call the payments sandbox" >/dev/null 2>&1; IJ="$IP/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all
+[[ "$(jq -r '.items[] | select(.id=="DEL-inputs") | .status' "$IJ/readiness.json")" == n_a ]] && "$DL" readiness >/dev/null 2>&1 \
+  && ok "no evidence, no input: DEL-inputs is n/a with what was checked — the human is not asked (an .env file is never needed by default)" || bad "DEL-inputs n/a refused: $("$DL" readiness 2>&1 | grep -i input)"
+jq --arg f "$SEC/.env.local" '.items |= map(if .id=="DEL-inputs" then {id, status:"decided", answer:"a sandbox key", source:"the request", quote:"Call the payments sandbox"} else . end)
+  | .inputs=[{id:"IN-1", what:"payments sandbox API key", file:$f, link:"conf/sandbox.env", keys:["API_KEY"], check:"echo 200", for:"T-01"}]' "$IJ/readiness.json" > "$IJ/r.json" && mv "$IJ/r.json" "$IJ/readiness.json"
+contains "an input without evidence is refused: no evidence, no input" "$("$DL" readiness 2>&1)" "IN-1: 'evidence' says why the work needs it"
+jq '.inputs[0].evidence = "src/pay.mjs reads API_KEY"' "$IJ/readiness.json" > "$IJ/r.json" && mv "$IJ/r.json" "$IJ/readiness.json"
+"$DL" readiness >/dev/null 2>&1
+contains "QUESTIONS.md asks for it first, with why and the check dl will run with the human's values" "$(cat "$IJ/QUESTIONS.md")" "dl checks it with this command, run with your values"
+contains "…and the evidence" "$(cat "$IJ/QUESTIONS.md")" "why it is needed: src/pay.mjs reads API_KEY"
+printf 'API_KEY=s3cr3t-value-77\n' > "$SEC/.env.local"; chmod 600 "$SEC/.env.local"
+contains "a link the repo does not ignore is refused (the link would be committed)" "$("$DL" input check 2>&1)" "conf/sandbox.env (where the code reads it) is not git-ignored"
+jq '.inputs[0].link = ".env.local"' "$IJ/readiness.json" > "$IJ/r.json" && mv "$IJ/r.json" "$IJ/readiness.json"
+printf 'API_KEY=\n' > "$SEC/.env.local"
+contains "a key without a value is caught" "$("$DL" input check 2>&1)" "no value for API_KEY"
+rm -f "$SEC/.env.local"
+contains "planning waits while a needed input is neither provided nor deferred" "$("$DL" phase planning 2>&1)" "an input only the human can provide is missing: IN-1"
+contains "agents cannot defer an input" "$(printf '%s' '{"tool_input":{"command":"dl input defer IN-1 x"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+contains "…nor a headless session" "$(printf '%s' '{"tool_input":{"command":"dl input defer IN-1 x"},"cwd":"/"}' | DELIVER_HEADLESS=1 "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+expect_ok "the human defers it (it is not required to start)" "$DL" input defer IN-1 "the key comes Monday; the live card waits"
+expect_ok "…and planning goes ahead" "$DL" phase planning
+for c in T-01 T-02; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$IJ/specs/$c.md"; done
+jq -n '{cards:[{id:"T-01",title:"live mapping",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["it/T-01/**"],verify:"test -f src/pay.mjs",qa_verify:"test -d it/T-01",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[],inputs:["IN-1"]},
+  {id:"T-02",title:"offline part",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["lib/**"],qa_scope:["it/T-02/**"],verify:"test -f lib/off.mjs",qa_verify:"test -d it/T-02",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$IJ/board.json"
+"$DL" phase executing >/dev/null
+out="$("$DL" wt add T-01 2>&1)"; contains "only the card that names the input waits for it (no attempt used)" "$out" "T-01 needs what only the human can provide (no attempt was used)"
+[[ "$(jq -r '.cards[0].attempts' "$IJ/board.json")" == 0 ]] && ok "…its attempts are untouched" || bad "attempt used"
+W2I="$("$DL" wt add T-02 2>&1)"; [[ -d $W2I ]] && ok "the card that does not need it is assigned as usual" || bad "T-02: $W2I"
+contains "dl next asks the human for it" "$("$DL" next)" "INPUT   IN-1"
+printf 'API_KEY=s3cr3t-value-77\n' > "$SEC/.env.local"; chmod 600 "$SEC/.env.local"
+out="$("$DL" input check 2>&1)"; contains "once the human puts it there the check passes" "$out" "ok      IN-1"
+[[ $out != *s3cr3t-value-77* && "$("$DL" input list 2>&1)" != *s3cr3t-value-77* && "$(cat "$IJ/job.json" "$IJ/events.log")" != *s3cr3t-value-77* ]] && ok "…its value is printed and recorded nowhere" || bad "the secret leaked"
+W1I="$("$DL" wt add T-01 2>&1)"
+[[ -L $W1I/.env.local && "$(readlink "$W1I/.env.local")" == "$SEC/.env.local" && -z "$(git -C "$W1I" status --porcelain)" ]] && ok "…the card is assigned with the input linked where the code reads it, ignored by git" || bad "link: $(ls -la "$W1I" 2>&1 | head -5)"
+cd "$HERE"
+
+echo "suite and test runs stop when they hang; pytest module-name clashes; git stash; verify inside qa_scope (0.18)"
+eval "$(sed -n '/^run_timed() {/,/^}/p' "$DL")"
+t0=$(date +%s); run_timed 2 'sleep 40 & sleep 41'; rc=$?
+[[ $rc == 124 && $(( $(date +%s) - t0 )) -lt 15 ]] && ok "a run past its limit is stopped and says 124 (STALLED) — portable, no timeout(1) needed" || bad "run_timed: rc=$rc"
+sleep 1; [[ "$(ps -eo args | grep -c '^sleep 4[01]$')" == 0 ]] && ok "…with everything it started" || bad "children left running"
+run_timed 5 'exit 3'; [[ $? == 3 ]] && ok "…and passes a run's own exit code through" || bad "exit code lost"
+PCL="$(printf 'svc/tests/unit/x_support.py\nsvc/tests/integration/x_support.py\nsvc/tests/unit/test_a.py\n' | node "$HERE/kit/skills/deliver/bin/pyclash.mjs" "$TMP" svc/tests/integration/x_support.py)"
+contains "two pytest modules of one name without __init__.py are a clash (seen in two live jobs)" "$PCL" "svc/tests/integration/x_support.py"$'\t'"svc/tests/unit/x_support.py"
+[[ -z "$(printf 'svc/tests/unit/__init__.py\nsvc/tests/integration/__init__.py\nsvc/tests/unit/x_support.py\nsvc/tests/integration/x_support.py\n' | node "$HERE/kit/skills/deliver/bin/pyclash.mjs" "$TMP" svc/tests/integration/x_support.py)" ]] \
+  && ok "…but not inside packages (__init__.py)" || bad "pyclash in packages"
+contains "git stash is refused in a job worktree, for its own agent too (its stash list is shared by every worktree)" "$(printf '%s' "$(jq -n '{tool_input:{command:"git stash"},cwd:"/r/.work/JOB-1/wt/T-01",agent_id:"a1"}')" | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+contains "…git stash list is fine (an agent in its card worktree)" "$(printf '%s' "$(jq -n '{tool_input:{command:"git stash list"},cwd:"/r/.work/JOB-1/wt/T-01",agent_id:"a1"}')" | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=0"
+VQ="$TMP/vq"; mkdir -p "$VQ" && jq -n '{cards:[{id:"T-01",title:"a",role:"backend",agent:"backend-dev",state:"ready",depends_on:[],scope:["src/**"],qa_scope:["test/it/**"],verify:"node --test test/it/a.test.mjs",qa_verify:"node --test test/it/",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$VQ/board.json"
+contains "a verify that runs QA's tests (inside qa_scope) is an error: it deadlocks the card" "$(node "$HERE/kit/skills/deliver/bin/validate.mjs" "$VQ/board.json" 2>&1)" "inside its qa_scope"
+
 echo "knowledge: lessons with what happened, into the project (and the shared repo) through the job's PR; a topic seen thrice becomes a standard"
 SB="$TMP/shared.git"; git init -q --bare -b main "$SB"; SW="$TMP/shared-w"; git clone -q "$SB" "$SW" 2>/dev/null
 mkdir -p "$SW/standards" && printf -- '---\napplies_to: [dev]\n---\n# Observability\n## Must\n- Log with the request id.\n' > "$SW/standards/observability.md"

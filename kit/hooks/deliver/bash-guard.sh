@@ -59,6 +59,14 @@ if [[ -z "$(hk .agent_id)" ]] && ! is_floor_seat && grep -Eq '(^|[^[:alnum:]_-])
   fi
 fi
 
+# git stash in a job worktree: the stash list belongs to the whole repo, shared by every worktree — a pop in one card's
+# worktree took another card's stash (live job: T-12 and T-64 swapped their uncommitted work). Commit, or ask Michael.
+if grep -Eq '(^|[^[:alnum:]_-])git[[:space:]]([^;&|]*[[:space:]])?stash([[:space:]]|$)' <<<"$cmd" \
+   && ! grep -Eq 'stash[[:space:]]+(list|show)([[:space:]]|$)' <<<"$cmd" \
+   && { grep -Eq '\.work/[^[:space:]]*/wt/' <<<"$cmd" || [[ "$(hkp .cwd)" == */.work/JOB-*/wt/* ]]; }; then
+  deny "no git stash in a job worktree: the stash list is shared by every worktree of the repo, and a pop can take another card's work (seen live). Commit your work in progress on your card branch instead."
+fi
+
 grep -Eq 'rm[[:space:]]+-[[:alpha:]]*[rR][[:alpha:]]*[[:space:]]+([^;&|]*[[:space:]])?[^[:space:]]*\.work(/|[[:space:]]|$)' <<<"$cmd" \
   && deny ".work/ must not be deleted — job state lives there. Use 'dl cleanup'."
 
@@ -80,10 +88,10 @@ if [[ -n ${DELIVER_SHAPING:-} ]]; then
   grep -Eq '(^|[^[:alnum:]_-])git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?(commit|push|merge|rebase|reset|checkout|switch)([[:space:]]|$)' <<<"$cmd" \
     && deny "a BMad session writes its artifacts only; it does not change the repo's history."
 fi
-if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|stack-test|checkpoint|track|waive|context[[:space:]]+(draft|propose)|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|md-wait|cleanup|shape)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|input|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|stack-test|checkpoint|track|waive|context[[:space:]]+(draft|propose)|ship|approve|reject|md-dispatch|md-hire|md-reseat|md-send|md-done|md-release|md-inbox|md-wait|cleanup|shape)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
-if grep -Eq "${dl_re}(approve|reject|clarify)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(approve|reject|clarify|input[[:space:]]+defer)([[:space:]]|$)" <<<"$cmd"; then
   [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write the question down (APPROVAL.md / QUESTIONS.md) and stop; the human answers with /deliver:approve | /deliver:reject | /deliver:answer."
 fi
 grep -Eq "${dl_re}(unfreeze|reseal|dispatch|abort|tracker[[:space:]]+switch)([[:space:]]|$)" <<<"$cmd" \

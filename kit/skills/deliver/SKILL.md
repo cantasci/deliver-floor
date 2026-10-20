@@ -48,7 +48,7 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 
 1. Only `dl` changes card state, records gates/QA/reviews, merges and ships. Only you call `dl`.
    `job.json` is never written by hand (`dl jobset`), and once `dl phase executing` ran neither is `board.json` — not with
-   Write, not with a script: `dl card <id> set …` (ready/blocked cards) or `dl card add …`. A running card's contract does not
+   Write, not with a script: `dl card <id> set …` (ready/blocked cards) or, after the start, a fix (`dl fix open` — **Fix cards**). A running card's contract does not
    change; extra detail goes into the dispatch prompt. Finish the board (acceptance lines from the specs included) before
    `dl validate` and `dl phase executing`.
 2. Every card is **assigned by you** (`dl wt add`) to the agent of its role. Product code is written only by that dev agent, only in its card worktree.
@@ -77,8 +77,9 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    refuses it. Each role's round is **recorded before the card moves on**: QA's commits (new tests, or a fix to a test of
    theirs that contradicted the spec) are recorded with `dl qa` before anyone else is sent to the card — `dl wt add` refuses
    while QA's commits are unrecorded. A conflict with the job branch is the dev's to resolve, after re-dispatch.
-10. **A defect found in work already merged — product code or a test — is fixed by a card** (`dl card add`, with what was
-   found), never by a standing instruction you repeat in later prompts. A defect outside the job's scope (an agent's
+10. **A defect found in work already merged — product code or a test — is fixed by a card**, cut the way planning cuts cards
+   (**Fix cards**, below: `dl fix open` → the Lead cuts it → the BA specs it → `dl fix add`), never by a card you write
+   yourself and never by a standing instruction you repeat in later prompts. A defect outside the job's scope (an agent's
    report, a reviewer's note) is recorded, not dropped: `"$DL" followup "<finding>" --card T-xx` — the PR lists it.
 11. Every commit follows the repo's commit convention (`settings.commit.convention`, detected; your role cards give the
    format). `dl`'s own merges follow it too and go through the repo's hooks — never around them.
@@ -210,6 +211,10 @@ PROJECT ARCHITECTURE: <abs path to <repo>/.deliver/knowledge/architecture.md (a 
    code and its tests — cards' `scope` and `qa_scope` must fit inside them once frozen)? Send the BA back with what is
    missing. Then write the JSON to `.work/<job>/readiness.json` and run `"$DL" readiness` (writes `readiness.md` and
    `QUESTIONS.md`); fix every ERROR it lists (a missing item, a decision without a source, an architecture gap).
+   **Inputs** (`DEL-inputs`, `readiness.json → inputs`): only what the work needs, with its evidence — never a `.env` by
+   default. Ask the human for each one at the start (AskUserQuestion, one per input, the exact path; never into the chat), with
+   the `check` command `dl` will run with their values; then `"$DL" input check`. It cannot come now → their decision:
+   `dl input defer IN-n "<their words>"` (only they can run it). Only the cards that name it (`card.inputs`) wait for it.
    The architecture decides the roles: every component's owner (`backend`, `frontend`, `mobile`, `database`) and reviewer
    (`reviewer-java`, `reviewer-go`, …) must be on the job — add them with `dl jobset`, then `"$DL" phase readiness` again to
    regenerate the role cards. Several devs of one role in parallel: `"count": N` on the role (seats role#1…#N).
@@ -451,10 +456,10 @@ OUTPUT — only JSON: {"findings":[{"file":"…","line":0,"issue":"…","shows":
    decision (`dl pm-decide`), and integrate again. Every commit follows the repo's convention (`settings.commit.convention`,
    detected at `dl new`); its hooks are never skipped.
    `BROKEN` after `MERGED` (the card's component suite fails on the job branch right after the merge; `dl next`: FIX): that
-   card is the cause — have the Lead cut a fix card in that component now (`"$DL" card add`), naming it; a later card's QA
+   card is the cause — open a fix in that component now (**Fix cards**: `"$DL" fix open "<finding>" --from merge-check`), naming it; a later card's QA
    failure in that component is not that card's fault until the fix is merged.
 5. **Stack tests** — `dl next` says `STACK dl stack-test T-xx` the moment a card and the cards its stack tests need
-   (`stack_after`) are merged: run it then, not at the end. A failure (`FIX`) gets a fix card now (`"$DL" card add`), and the
+   (`stack_after`) are merged: run it then, not at the end. A failure (`FIX`) gets a fix card now (**Fix cards**, `--from stack`), and the
    stack test runs again once it is merged. `dl phase integrating` is refused while one is due or failing.
 
 ## Blocked
@@ -467,11 +472,41 @@ the same session and you continue that agent (**Resume**).
 A card is blocked when `dl` refuses another attempt or a dev returns `stuck`:
 `"$DL" card T-xx state blocked` + `"$DL" card T-xx note "<one-line reason>"`. Keep every other card moving.
 You do **not** ask the human (invariant 7). When `dl next` says DECIDE, decide each blocked card yourself:
-- **split / re-plan** it: the Lead cuts smaller or different card(s) → `"$DL" card add <card.json> "<why>"`, then retire the old
+- **split / re-plan** it: a fix (**Fix cards**, `--from blocked`) — the Lead cuts smaller or different card(s), the BA specs them,
+  `dl fix add`; then retire the old
   one → `"$DL" card T-xx state archived "<why it was replaced>"`;
 - **drop** it: `"$DL" card T-xx state archived "<why it is not delivered>"`, and re-plan or drop its dependents the same way.
 Each is recorded with its reason and listed in the PR. Frozen readiness is never edited by you; if a frozen decision makes a
 card impossible, that card is dropped or re-planned inside the decision — and the PR says so.
+
+## Fix cards — while the board is active, cut as in planning
+
+You orchestrate a fix; you do not write its card. After the start `dl card add` is refused; a new card comes only through:
+
+1. `"$DL" fix open "<the finding: what fails, where, the evidence>" --from <T-xx|merge-check|stack|verify-all|review|blocked>`
+   → `F-n`, its finding in `.work/<job>/out/fix-F-n/finding.md`.
+2. `dl next`: `FIX-CUT F-n` — the Lead of the finding's area cuts the card(s):
+
+```text
+MODE: FIX — cut the card(s) that fix this finding, the same way you cut cards in planning.
+ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/<lead role>.md>
+FINDING: <.work/<job>/out/fix-F-n/finding.md>
+PLAN: <full plan.md>   READINESS (binding decisions): <abs path to .work/<job>/readiness.md>
+BOARD: <the cards it touches, from dl status --full: their scope, qa_scope, verify, state>
+REPO: <absolute repo root, the job branch: what is merged>
+The same rules as in planning. Also: the old tests that pin the behaviour the fix changes go into its scope and verify; a fix
+to QA's own tests is a qa-role card; depends_on may name merged cards (T-ids) or your other fix cards (tmp ids).
+OUTPUT — only a JSON array, as in planning: [{"tmp_id":"X1","title":"…","role":"…","component":"…", …}]
+```
+
+   Write its answer to `.work/<job>/out/fix-F-n/cards.json`.
+3. `FIX-SPEC F-n` — the BA specs them: `MODE: CARD SPECS` with those cards (and the finding), one spec per tmp id with its
+   acceptance criteria and test design → `.work/<job>/out/fix-F-n/<tmp_id>.md`.
+4. `FIX-ADD F-n` — `"$DL" fix add F-n`: the cards get their T-ids (tmp ids in depends_on rewritten), the agent of their role
+   and the reviewers of their component, their specs move to `specs/`, and `dl validate` checks them — an invalid card goes
+   back to the Lead. `dl fix list` shows every fix and the cards it became; the PR lists them.
+
+`dl card continue` is not a fix: it carries the same contract to a new card (mechanical). A changed contract is a fix.
 
 ## Phase 5 — Integration + job QA (`integrating`)
 
