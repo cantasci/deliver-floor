@@ -4,6 +4,14 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.18.1 — 2026-10-20
+
+- Tests for what 0.18.0 left untested: `suite_runs` batch (merges back to back share one run) and end (no suite after a
+  merge), a suite that hangs after a merge (STALLED, and the FIX line), the lockfile rerun of `worktree_setup`, verify-all
+  naming the merged cards its failures point to, QA's commits after a failed gate (`qa_fix`), `dl qa` asking for the join
+  first, the block refusal while QA's commits are unrecorded, `dl wt rm` removing the QA worktree.
+- `suite_timeout_min` may be a fraction of a minute (`0.5` is 30 s).
+
 ## 0.18.0 — 2026-10-20
 
 **Fix cards go through the planning roles.** Once the board is active, Michael no longer writes a card himself:
