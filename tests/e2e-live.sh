@@ -106,7 +106,7 @@ if [[ ${E2E_INJECT:-} == regression ]]; then
   cat > "$SB/.git/hooks/post-merge" <<HOOK
 #!/bin/sh
 # e2e fault injection (disclosed in report.md): once, on the job branch, after the merge that brings the rating scale
-case "\$(git symbolic-ref --short HEAD 2>/dev/null)" in job/*) ;; *) exit 0 ;; esac
+case "\$(git symbolic-ref --short HEAD 2>/dev/null)" in job/*--*) exit 0 ;; job/*) ;; *) exit 0 ;; esac   # job/<JOB>--T-xx is a card branch
 f=src/ratings/notch.mjs; [ -f "\$f" ] || exit 0
 perl -0pi -e 's/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/\$4BB+\$5\$3\$1BBB-\$2/' "\$f"
 if git diff --quiet -- "\$f"; then echo "no injection: the scale does not list BBB-, BB+ side by side" >> "$W/injected.log"; exit 0; fi
