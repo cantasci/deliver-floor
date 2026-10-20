@@ -1402,6 +1402,67 @@ contains "…the merge itself stands" "$out" "MERGED: T-01"
 contains "…the check is kept on the card" "$(jq -r '.cards[0].merge_check | "\(.result) \(.component)"' "$QJ/board.json")" "FAIL app"
 contains "…and dl next asks for a fix card in that component now" "$("$DL" next)" "FIX     the app suite fails on the job branch since T-01 merged"
 rm -f "$HOME/app-suite"; cd "$R"
+echo "When the suite runs (suite_runs batch/end), a hung suite after a merge, a lockfile merge, verify-all's blame, dl wt rm of QA's worktree"
+SR="$TMP/suiteruns"; mkdir -p "$SR" && cd "$SR" && git init -q -b main
+jq -n '{dispatch:"subagent", merge_mode:"local", worktree_setup:"pwd >> \"$HOME/setup-runs\"",
+  verify_full:"if test -e \"$HOME/vf-fail\"; then echo \"FAILED src/a/x.py::test_x\"; exit 1; fi"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "suite runs" "x" >/dev/null 2>&1; SRJ="$SR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"if test -e \"$HOME/suite-hang\"; then sleep 30; fi; echo run >> \"$HOME/app-suite-runs\""}]}' ready_all
+"$DL" phase planning >/dev/null
+for c in T-01 T-02 T-03 T-04 T-05 T-06; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$SRJ/specs/$c.md"; done
+srcard() { jq -n --arg id "$1" --arg d "$2" '{id:$id,title:$d,role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/\($d)/**"],qa_scope:["it/\($d)/**"],
+  verify:"test -f src/\($d)/f",qa_verify:"test -f it/\($d)/t",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}'; }
+jq -n --argjson a "$(srcard T-01 a)" --argjson b "$(srcard T-02 b)" --argjson c "$(srcard T-03 c)" --argjson d "$(srcard T-04 d)" --argjson e "$(srcard T-05 e)" --argjson f "$(srcard T-06 f)" \
+  '{cards:[$a, $b, ($c | .scope += ["package-lock.json"]), $d, $e, ($f | .qa_verify = "test -f it/f/t && test ! -e it/f/bad")]}' > "$SRJ/board.json"
+"$DL" phase executing >/dev/null
+srprep() { # srprep <card> <dir> [extra file at the root] — dev, gate, QA pass, review: ready to integrate
+  local w; w="$("$DL" wt add "$1")"; mkdir -p "$w/src/$2" "$w/it/$2" && echo x > "$w/src/$2/f" && { [[ -z ${3:-} ]] || echo '{}' > "$w/$3"; }
+  git -C "$w" add -A && git -C "$w" commit -qm "$1: $2" && "$DL" gate "$1" >/dev/null 2>&1 && echo t > "$w/it/$2/t" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: $2" \
+    && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review "$1" approve ok >/dev/null 2>&1
+}
+"$DL" jobset '.settings.suite_runs="batch"' >/dev/null
+srprep T-01 a && srprep T-02 b || bad "T-01/T-02 not ready to merge"
+rm -f "$HOME/app-suite-runs"
+out="$("$DL" integrate T-01 2>&1)"
+contains "suite_runs batch: another card of the component is ready to merge — the suite waits for it" "$out" "later: the app suite runs once T-02 merges too (suite_runs batch)"
+[[ ! -e $HOME/app-suite-runs ]] && ok "…and did not run" || bad "the suite ran for T-01"
+out="$("$DL" integrate T-02 2>&1)"
+contains "…it runs once after the last of them, and says so" "$out" "the app suite passes on"
+[[ "$(wc -l < "$HOME/app-suite-runs" | tr -d ' ')" == 1 && "$(jq -c '[(.cards[0].merge_check.result), (.cards[1].merge_check.batch)]' "$SRJ/board.json")" == '["PASS",["T-01"]]' ]] \
+  && ok "…one run for two merges; both cards share its result" || bad "batch: runs=$(cat "$HOME/app-suite-runs" 2>/dev/null | wc -l) $(jq -c '[.cards[0].merge_check, .cards[1].merge_check]' "$SRJ/board.json")"
+srprep T-03 c package-lock.json || bad "T-03 not ready to merge"
+SRIW="$(jq -r .integration_worktree "$SRJ/job.json")"; n0="$(grep -cx "$SRIW" "$HOME/setup-runs")"
+touch "$HOME/suite-hang"; "$DL" jobset '.settings.suite_timeout_min=0.05' >/dev/null
+t0=$(date +%s); out="$("$DL" integrate T-03 2>&1)"
+contains "a suite that hangs after a merge is stopped (STALLED) — the lane goes on" "$out" "STALLED: the app suite did not finish"
+(( $(date +%s) - t0 < 25 )) && ok "…within its limit (suite_timeout_min, a fraction of a minute here), not the suite's 30 s" || bad "STALLED took $(( $(date +%s) - t0 )) s"
+contains "…dl next asks for a fix card in that component" "$("$DL" next)" "FIX     the app suite did not finish (dl stopped it) on the job branch since T-03 merged"
+[[ "$(grep -cx "$SRIW" "$HOME/setup-runs")" == $(( n0 + 1 )) ]] && ok "a merge that changed a lockfile runs worktree_setup again in the integration worktree" || bad "setup runs in $SRIW: $n0 → $(grep -cx "$SRIW" "$HOME/setup-runs")"
+rm -f "$HOME/suite-hang" "$HOME/app-suite-runs"; "$DL" jobset '.settings.suite_runs="end" | del(.settings.suite_timeout_min)' >/dev/null
+srprep T-04 d || bad "T-04 not ready to merge"
+out="$("$DL" integrate T-04 2>&1)"
+[[ $out == *"MERGED: T-04"* && $out != *"app suite"* && ! -e $HOME/app-suite-runs && "$(jq -r '.cards[3].merge_check // "none"' "$SRJ/board.json")" == none ]] \
+  && ok "suite_runs end: no suite after a merge" || bad "end: $out"
+W5="$("$DL" wt add T-05)"; Q5="$("$DL" wt qa T-05)"
+out="$("$DL" wt rm T-05 2>&1)"
+[[ ! -d $W5 && ! -d $Q5 && $out == *"removed: $Q5"* ]] && ok "dl wt rm removes the card's QA worktree too (live job: half-written tests left behind)" || bad "wt rm: $out"
+W6="$("$DL" wt add T-06)"; mkdir -p "$W6/src/f" && echo x > "$W6/src/f/f" && git -C "$W6" add -A && git -C "$W6" commit -qm "T-06: f"
+"$DL" gate T-06 >/dev/null 2>&1; mkdir -p "$W6/it/f" && echo t > "$W6/it/f/t" && echo b > "$W6/it/f/bad" && git -C "$W6" add -A && git -C "$W6" commit -qm "T-06 QA: tests"
+"$DL" qa T-06 fail "AC-1 fail: it/f/bad" >/dev/null 2>&1; W6="$("$DL" wt add T-06 2>&1 | tail -1)"
+echo y >> "$W6/src/f/f" && git -C "$W6" commit -qam "T-06: dev fix"
+expect_fail 1 "a gate that fails on QA's own wrong test" "$DL" gate T-06
+A6="$(jq -r '.cards[5].attempts' "$SRJ/board.json")"
+git -C "$W6" rm -q it/f/bad && git -C "$W6" commit -qm "T-06 QA: drop the wrong test"
+out="$("$DL" gate T-06 2>&1)"
+[[ "$(jq -r '.cards[5].qa_fix.after_gate // ""' "$SRJ/board.json")" != "" && "$(jq -r '.cards[5].gate.result' "$SRJ/board.json")" == PASS && "$(jq -r '.cards[5].attempts' "$SRJ/board.json")" == "$A6" ]] \
+  && ok "QA's commits after a failed gate (qa_scope only) are QA's: the next gate takes them and passes, no new dev attempt" || bad "qa_fix: $out $(jq -c '.cards[5] | {qa_fix, g: .gate, attempts}' "$SRJ/board.json")"
+contains "…and the event log says so" "$(cat "$SRJ/events.log")" "taken as QA's"
+touch "$HOME/vf-fail"; out="$("$DL" verify-all 2>&1)"
+contains "verify-all names the merged cards whose files its failures point to" "$out" "LIKELY  T-01 — the failures name src/a/x.py"
+[[ $out != *"LIKELY  T-02"* ]] && ok "…and only those" || bad "blame: $out"
+rm -f "$HOME/vf-fail" "$HOME/setup-runs"; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
 ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "stack" "x" >/dev/null 2>&1; SJ="$ST/.work/$(cat .work/ACTIVE)"
@@ -1762,6 +1823,7 @@ mkdir -p "$WQ/src" && echo a > "$WQ/src/a" && git -C "$WQ" add src && git -C "$W
 contains "QA's tests join only after the gate" "$("$DL" qa-join T-01 2>&1)" "T-01 is running"
 "$DL" gate T-01 >/dev/null
 contains "after the gate dl next says QA-JOIN" "$("$DL" next)" "QA-JOIN dl qa-join T-01"
+contains "dl qa before the join asks for the join first (live job: a second QA agent was sent)" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "join them first: dl qa-join T-01, then dl qa"
 echo x > "$QW/src/b" && git -C "$QW" add src && git -C "$QW" commit -qm "T-01 QA: oops"
 contains "QA's branch may change only qa_scope" "$("$DL" qa-join T-01 2>&1)" "changed files outside qa_scope: src/b"
 [[ ! -e $QJ/.card-lock-T-01 ]] && ok "…a refused dl gives the card back (no lock left behind)" || bad "lock left after a refusal"
@@ -1772,6 +1834,7 @@ out="$("$DL" qa-join T-01 2>&1)"; contains "dl qa-join merges QA's tests into th
 [[ -f $WQ/it/t && ! -d $QW ]] && ok "…the tests are in the card worktree, QA's worktree is gone" || bad "after join: $(ls "$WQ")"
 contains "after the join no QA agent is asked for: dl runs QA's tests itself at dl qa" "$("$DL" next)" "QA      dl qa T-01 pass"
 contains "…QA's commits must be recorded before the card goes back to the dev" "$("$DL" wt add T-01 2>&1)" "has QA commits that are not recorded yet"
+contains "…and before it is blocked (blocking first deadlocked a live card)" "$("$DL" card T-01 state blocked "x" 2>&1)" "blocking it first deadlocks it"
 sleep 60 & LKP=$!; mkdir "$QJ/.card-lock-T-01" && echo $LKP > "$QJ/.card-lock-T-01/pid" && echo "gate T-01" > "$QJ/.card-lock-T-01/what"
 contains "a second gate on a card is refused while one runs (live run: T-37 gated twice at once, the second failed the first)" "$("$DL" gate T-01 2>&1)" "T-01 is busy: dl gate T-01 is running"
 contains "…QA on that card too" "$("$DL" qa T-01 pass "AC-1 pass" 2>&1)" "T-01 is busy"

@@ -241,9 +241,10 @@ run_timed() {
 }
 # suite_timeout → the seconds a suite run (a QA pass's suite, the suite after a merge, stack tests, verify-all) may take before
 # dl stops it as STALLED: settings.suite_timeout_min, else 3 × the baseline's time (at least 20 min), else 60 min
+min_to_s() { awk -v m="$1" 'BEGIN { s = int(m * 60 + 0.5); print (s < 1 ? 1 : s) }'; }   # 0.5 → 30 (a minute may be a fraction)
 suite_timeout() {
   local m b; m="$(setting suite_timeout_min)"
-  [[ -n $m ]] && { echo $(( m * 60 )); return 0; }
+  [[ -n $m ]] && { min_to_s "$m"; return 0; }
   b="$(jq -r '.baseline.seconds // 0' "$JOBJ")"
   (( b > 0 )) && { echo $(( b * 3 > 1200 ? b * 3 : 1200 )); return 0; }
   echo 3600
@@ -2247,7 +2248,7 @@ run_baseline() {
     log_event baseline "no verify_full yet — nothing to run"; echo "baseline: no verify_full yet (a repo without a suite) — nothing to run"; return 0
   fi
   log="$JOB_DIR/gates/baseline-$(date +%H%M%S).log"; mkdir -p "$JOB_DIR/gates"
-  local t0 brc=0 bto; t0=$(date +%s); bto="$(setting suite_timeout_min)"; bto=$(( ${bto:-90} * 60 ))
+  local t0 brc=0 bto; t0=$(date +%s); bto="$(min_to_s "$(setting suite_timeout_min)")"; [[ -n "$(setting suite_timeout_min)" ]] || bto=5400
   { echo "# baseline: $cmd on $JOB_BRANCH at ${head:0:12}, before any card"; (cd "$IWT" && test_env integration && run_timed "$bto" "$cmd") 2>&1; } > "$log" 2>&1 || brc=$?
   [[ $brc -eq 0 ]] && result=PASS
   [[ $brc -eq 124 ]] && echo "STALLED: verify_full did not finish in $(( bto / 60 )) min and was stopped" >> "$log"
