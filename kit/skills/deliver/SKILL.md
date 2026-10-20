@@ -500,8 +500,10 @@ OUTPUT — only a JSON array, as in planning: [{"tmp_id":"X1","title":"…","rol
 ```
 
    Write its answer to `.work/<job>/out/fix-F-n/cards.json`.
-3. `FIX-SPEC F-n` — the BA specs them: `MODE: CARD SPECS` with those cards (and the finding), one spec per tmp id with its
-   acceptance criteria and test design → `.work/<job>/out/fix-F-n/<tmp_id>.md`.
+3. `FIX-SPEC F-n` — the BA specs them: `MODE: CARD SPECS` as in planning, with `CARDS:` those cards and `FINDING:` the
+   finding. The BA writes no files: it answers with one spec per card under `=== <tmp_id> ===` lines — split the answer there
+   and write each part, as it is, to `.work/<job>/out/fix-F-n/<tmp_id>.md` (live run 70: the BA was asked to write the file
+   itself, refused by its role card, and answered with the text).
 4. `FIX-ADD F-n` — `"$DL" fix add F-n`: the cards get their T-ids (tmp ids in depends_on rewritten), the agent of their role
    and the reviewers of their component, their specs move to `specs/`, and `dl validate` checks them — an invalid card goes
    back to the Lead. `dl fix list` shows every fix and the cards it became; the PR lists them.

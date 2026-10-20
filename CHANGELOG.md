@@ -4,6 +4,13 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.18.2 — 2026-10-20
+
+- Fix cards, live (run 70, [docs/verification/16-fix-cards-live](docs/verification/16-fix-cards-live/README.md)): a
+  regression injected on the job branch went merge-check FAIL → `dl fix open` → the Lead's card → the BA's spec →
+  `dl fix add` → merged, delivered. One gap it showed is fixed in `SKILL.md`: the BA answers a fix's specs as text under
+  `=== <tmp_id> ===` lines and Michael writes them (it was asked to write the file and could not).
+
 ## 0.18.1 — 2026-10-20
 
 - Tests for what 0.18.0 left untested: `suite_runs` batch (merges back to back share one run) and end (no suite after a
