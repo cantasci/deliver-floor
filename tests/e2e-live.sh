@@ -29,6 +29,9 @@
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
 #   E2E_MISMATCH=<readiness id>  the human first answers that item with an unrelated answer: Michael must not build on it,
 #                                must ask it again (still the start), and deliver after the right answer (R2)
+#   E2E_INJECT=regression        fault injection, disclosed in the report: a git post-merge hook breaks the rating scale on the
+#                                job branch once, right after the merge that brings it (BBB- and BB+ swapped) — a finding after
+#                                the start: Michael opens a fix, the Lead cuts it, the BA specs it, dl fix add (F23)
 #   E2E_MAX_ATTEMPTS=1           one attempt per card: a review change blocks a card; Michael must decide it himself — split
 #                                or drop, recorded and listed in the PR — and ask nothing (R3). No blocked card = not exercised
 set -uo pipefail
@@ -98,6 +101,19 @@ fi
 if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
   git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"
+fi
+if [[ ${E2E_INJECT:-} == regression ]]; then
+  cat > "$SB/.git/hooks/post-merge" <<HOOK
+#!/bin/sh
+# e2e fault injection (disclosed in report.md): once, on the job branch, after the merge that brings the rating scale
+case "\$(git symbolic-ref --short HEAD 2>/dev/null)" in job/*) ;; *) exit 0 ;; esac
+f=src/ratings/notch.mjs; [ -f "\$f" ] || exit 0
+perl -0pi -e 's/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/\$4BB+\$5\$3\$1BBB-\$2/' "\$f"
+if git diff --quiet -- "\$f"; then echo "no injection: the scale does not list BBB-, BB+ side by side" >> "$W/injected.log"; exit 0; fi
+rm -f "\$0"; git commit -q -am "refactor: tidy the rating scale"
+echo "injected at \$(git rev-parse HEAD) on \$(git symbolic-ref --short HEAD), after \$(git log -1 --format=%s HEAD^)" >> "$W/injected.log"
+HOOK
+  chmod +x "$SB/.git/hooks/post-merge"; log "fault injection (E2E_INJECT=regression): a post-merge hook swaps BBB- and BB+ on the job branch once"
 fi
 iso_env "$HERE/scripts/doctor.sh" "$SB" > "$W/doctor.log" 2>&1 && ok "doctor: $(tail -1 "$W/doctor.log")" || bad "doctor: $(tail -1 "$W/doctor.log")"
 DL="$ISO_HOME/.claude/skills/deliver/bin/dl"
@@ -358,6 +374,27 @@ if [[ $SC == light ]]; then
     "$HERE/scripts/check-oracle.sh" "$SB" main "$EXN" light.oracle.test.mjs > /dev/null 2>&1 && ok "…and the first change still passes its oracle" || bad "the second change broke the first"
     cp "$J2/readiness.md" "$W/readiness2.md" 2>/dev/null; cp "$J2/report.md" "$W/job-report2.md" 2>/dev/null; cp "$J2/events.log" "$W/events2.log" 2>/dev/null
   else bad "no second job was created"; fi
+fi
+step "0.18 · inputs only when the work needs them"
+chk "DEL-inputs: no input asked for by default (a .env file is never needed unless the work reads it)" jq -e '(.items // .) | map(select(.id=="DEL-inputs")) | .[0].status == "n_a" or ((.[0].inputs // []) | length == 0)' "$J/readiness.json"
+! grep -qiE '\.env|api key' "$J/QUESTIONS.md" 2>/dev/null && ok "…and the human was not asked for a .env file or a key" || bad "the human was asked for an input: $(grep -iE '\.env|api key' "$J/QUESTIONS.md" | head -2)"
+if [[ ${E2E_INJECT:-} == regression ]]; then
+  step "F23 · a finding after the start goes through the Lead and the BA (fault injected, disclosed)"
+  if [[ -s $W/injected.log ]]; then log "injection: $(cat "$W/injected.log")"; else bad "the injection did not happen (no merge brought the scale)"; fi
+  if gq '^injected' "$W/injected.log" 2>/dev/null; then
+    chk "Michael opened a fix (dl fix open)" gq $'\tfix-open\t' "$J/events.log"
+    log "fixes: $(jq -c '[.fixes[]? | {id, from, state, cards, finding: .finding[0:120]}]' "$JJ")"
+    chk "…and added it from the Lead's cards with the BA's specs (dl fix add)" gq $'\tfix-add\t' "$J/events.log"
+    fc="$(jq -r '[.cards[] | select(.fix) | .id] | join(" ")' "$B")"
+    [[ -n $fc ]] && ok "fix card(s) on the board: $fc" || bad "no card names a fix"
+    for c in $fc; do
+      [[ -f $J/specs/$c.md && -f "$J/out/fix-$(jq -r --arg id "$c" '.cards[] | select(.id==$id) | .fix' "$B")/cards.json" ]] && ok "$c: the Lead's card (out/fix-…/cards.json) and the BA's spec (specs/$c.md)" || bad "$c: no Lead card file or no spec"
+    done
+    lead="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | grep -c 'MODE: FIX')"; ba="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | grep -c 'MODE: CARD SPECS')"
+    [[ $lead -gt 0 ]] && ok "the Lead was asked in MODE: FIX (transcripts: $lead)" || bad "no MODE: FIX prompt in the transcripts"
+    [[ $ba -gt 0 ]] && ok "the BA was asked for card specs (transcripts: $ba)" || bad "no MODE: CARD SPECS prompt in the transcripts"
+    grep -E $'\t(fix-open|fix-add|merge-check|verify-all)\t' "$J/events.log" | sed 's/^/    /' >> "$REP"
+  fi
 fi
 cost="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | jq -s '[.[] | select(.type=="result") | .total_cost_usd // 0] | add // 0')"
 step "result"
