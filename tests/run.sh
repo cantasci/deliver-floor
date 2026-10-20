@@ -28,6 +28,13 @@ DL="$HERE/kit/skills/deliver/bin/dl"
 bedit() { # bedit <board.json> '<jq>' — a fixture edit made outside dl, accepted by "the human" with dl reseal
   local f=$1; jq "$2" "$f" > "$f.t" && mv "$f.t" "$f"; "$DL" reseal "test fixture edit: $2" >/dev/null
 }
+fix_card() { # fix_card <card.json> "<finding>" — a fix after the start, as the roles cut it: dl fix open, the Lead's card, the BA's spec, dl fix add
+  local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"; [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
+  local f; f="$("$DL" fix open "$2" --from test 2>&1 | grep -o '^F-[0-9]*')" || { echo "fix open failed"; return 1; }
+  jq '[. + {tmp_id:"X1"}]' "$1" > "$jd/out/fix-$f/cards.json"
+  printf '## Acceptance criteria\n1. Given %s, when fixed, then it passes\n\n## Test design\nAC-1 P2 unit\n' "$2" > "$jd/out/fix-$f/X1.md"
+  "$DL" fix add "$f" 2>&1 | sed 's/^F-[0-9]* → *//'
+}
 ready_all() { # ready_all [<id> open] — the BA's readiness review: every applicable item decided (one left open if asked)
   local jd; jd="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"
   [[ -d $jd ]] || jd="$PWD/.work/$(cat .work/ACTIVE)"
@@ -924,9 +931,28 @@ jq -e '.cards[0].history[-1] | .field=="verify" and .reason=="package.json is op
 expect_fail 1 "an invalid change is reverted" "$DL" card T-01 set scope '["**"]' "too broad"
 [[ "$(jq -c '.cards[0].scope' "$TJ/board.json")" == '["src/**"]' ]] && ok "…and the board is unchanged" || bad "revert"
 jq -n '{title:"fix",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["lib/**"],qa_scope:["it2/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: y"],context:"fix"}' > "$TMP/fix.json"
-contains "dl card add gives the next id" "$("$DL" card add "$TMP/fix.json" "verify-all found a gap" 2>&1)" "T-02"
+contains "after the start dl card add is refused: a new card goes through the planning roles" "$("$DL" card add "$TMP/fix.json" "x" 2>&1)" "a new card goes through the planning roles"
+FX="$("$DL" fix open "the verify-all run fails in lib/" --from verify-all 2>&1)"; contains "dl fix open opens F-1" "$FX" "F-1 opened"
+FXD="$(dirname "$(dirname "$(git rev-parse --git-common-dir)")")/.work/$(cat .work/ACTIVE)"; [[ -d $FXD ]] || FXD="$PWD/.work/$(cat .work/ACTIVE)"; FXD="$FXD/out/fix-F-1"
+contains "dl next: the Lead cuts it first (FIX-CUT)" "$("$DL" next)" "FIX-CUT F-1"
+contains "dl fix add is refused without the Lead's cards" "$("$DL" fix add F-1 2>&1)" "F-1 has no cards from the Lead yet"
+jq '[. + {tmp_id:"X1"}, (. + {tmp_id:"X2", title:"fix part 2", scope:["lib2/**"], qa_scope:["it4/**"], depends_on:["X1"]})]' "$TMP/fix.json" > "$FXD/cards.json"
+contains "dl next: then the BA specs them (FIX-SPEC)" "$("$DL" next)" "FIX-SPEC F-1"
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$FXD/X1.md"
+contains "…every card: dl fix add is refused while one has no spec" "$("$DL" fix add F-1 2>&1)" "no spec from the BA for X2"
+printf '## Acceptance criteria\nGiven a, when b, then d\n' > "$FXD/X2.md"
+contains "dl next: then FIX-ADD" "$("$DL" next)" "FIX-ADD F-1 — dl fix add F-1"
+contains "dl fix add puts both on the board with the next ids" "$("$DL" fix add F-1 2>&1)" "F-1 → T-02 T-03"
+TJB="$(dirname "$FXD")/../board.json"
+[[ "$(jq -c '[.cards[] | select(.id=="T-03") | .depends_on, .fix, (.agent != null)]' "$TJB")" == '[["T-02"],"F-1",true]' && -f "$(dirname "$FXD")/../specs/T-03.md" ]] \
+  && ok "…the fix's tmp ids become T-ids in depends_on, each card names its fix, has its role's agent and its spec" || bad "fix cards: $(jq -c '.cards[] | select(.id=="T-03")' "$TJB")"
+contains "dl fix list shows the fix and the cards it became" "$("$DL" fix list)" "T-02 T-03"
+"$DL" card T-03 state archived "test: replaced" >/dev/null 2>&1
+contains "dl card continue still adds its continuation card after the start (not a fix: same scope, same spec)" "$("$DL" card T-02 continue "test: goes on" 2>&1)" "T-04"
+"$DL" card T-02 state archived "test: replaced" >/dev/null 2>&1; "$DL" card T-04 state archived "test: replaced" >/dev/null 2>&1
+contains "after the start a fix card is cut by the roles and gets the next id (dl fix open → Lead → BA → dl fix add)" "$(fix_card "$TMP/fix.json" "verify-all found a gap")" "T-05"
 jq -n '{title:"bad",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["it/**"],qa_scope:["it3/**"],verify:"test -d .",qa_verify:"test -d .",acceptance:["AC-1: z"],context:"x"}' > "$TMP/bad.json"
-out="$("$DL" card add "$TMP/bad.json" "dev edits QA tests" 2>&1)"; contains "a dev card reaching another card's QA tests is rejected" "$out" "QA tests belong to the QA role"
+out="$(fix_card "$TMP/bad.json" "dev edits QA tests" 2>&1)"; contains "a dev card reaching another card's QA tests is rejected" "$out" "QA tests belong to the QA role"
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null; cd "$R"
 
 echo "tracker: jira (contract stub of Jira REST v3) — statuses, comments, branch links"
@@ -1427,7 +1453,7 @@ contains "…recorded on the card with the job branch commit" "$(jq -r '.cards[0
 contains "…and dl next asks for a fix card now" "$("$DL" next)" "FIX     T-01's stack tests fail on the job branch"
 jq -n '{title:"fix b",role:"backend",agent:"backend-dev",component:"app",depends_on:[],scope:["src/b/**"],qa_scope:["it/b/**"],
   verify:"test ! -e src/b/broken",qa_verify:"test -f it/b/t",acceptance:["AC-1: x"],context:"remove what broke T-01'"'"'s stack tests"}' > "$TMP/stfix.json"
-contains "the fix card is added" "$("$DL" card add "$TMP/stfix.json" "T-01's stack tests fail after T-02" 2>&1)" "T-03"
+contains "the fix card is added (the Lead's card, the BA's spec)" "$(fix_card "$TMP/stfix.json" "T-01's stack tests fail after T-02")" "T-03"
 W3="$("$DL" wt add T-03)"; git -C "$W3" rm -q src/b/broken && git -C "$W3" commit -qm "T-03: fix b" && "$DL" gate T-03 >/dev/null 2>&1
 echo t2 > "$W3/it/b/t2" && git -C "$W3" add -A && git -C "$W3" commit -qm "T-03 QA: b" && "$DL" qa T-03 pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review T-03 approve ok >/dev/null 2>&1
 expect_ok "…and merged" "$DL" integrate T-03

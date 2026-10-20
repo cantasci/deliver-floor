@@ -6,6 +6,13 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
 
 ## 0.18.0 — 2026-10-20
 
+**Fix cards go through the planning roles.** Once the board is active, Michael no longer writes a card himself:
+`dl fix open "<finding>" --from <source>` opens F-n, the Lead cuts its card(s) (MODE: FIX, the planning card format with
+tmp ids), the Business Analyst writes each spec (MODE: CARD SPECS), and `dl fix add F-n` puts them on the board with the
+next ids, their role's agent and their component's reviewers. `dl next` names each step (FIX-CUT, FIX-SPEC, FIX-ADD);
+`dl card add` after the start is refused; `dl fix list` shows each fix and the cards it became. `dl card continue` stays
+as it was (same scope, same spec). Seen live: Michael wrote fix cards with no Lead and no BA.
+
 **What the last live jobs taught, in `dl`** (watchlist-poc v0.3 and the job before it)
 - **Inputs only a person can provide** (a key, an account, a `.env` file): asked for only when the work needs it — the
   readiness item `DEL-inputs` lists each with its evidence (the request's words or the file that reads it), never by

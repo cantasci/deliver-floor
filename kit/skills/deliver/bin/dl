@@ -50,7 +50,9 @@
 #   dl pm-decide "<what>" "<why>" [card]   after the start the human is not asked: your decision, logged, listed in the PR
 #   dl card <card> retry           human-granted: attempts=0 and state=ready (after guidance)
 #   dl card <card> set <field> <value> "<reason>"   change a ready/blocked card's contract (validated, logged, history)
-#   dl card add <card.json> "<reason>"              add a card (e.g. a fix card) — gets the next id, validated, logged
+#   dl card add <card.json> "<reason>"              add a card in planning — gets the next id, validated, logged
+#   dl fix open "<finding>" [--from <source>]       after the start: a fix (F-n) — the Lead cuts it, the BA specs it
+#   dl fix add F-n | list                           the Lead's cards with the BA's specs onto the board
 #   dl gate <card>                 mechanical gate: right branch, clean tree, commits, in scope, verify passes
 #   dl qa <card> pass|fail "<summary>"   record the QA/Test verdict on the card's acceptance criteria
 #                                  (needs a passed gate on the current commit)
@@ -181,7 +183,7 @@ seal_settled() { seal_ok "$1" || with_lock "$(basename "$1")" seal_ok "$1"; }
 check_seals() {
   seal_settled "$JOBJ" || refuse 7 "job.json was modified outside dl. Flow state changes only through dl; a human inspects the change and runs: dl reseal \"<reason>\""
   case "$(jq -r .phase "$JOBJ")" in intake|shaping|readiness|awaiting_clarification|planning|awaiting_plan_approval) return 0 ;; esac
-  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl card add). A human inspects the change and accepts it with /deliver:reseal <reason>"
+  seal_settled "$BOARD" || refuse 7 "board.json was modified outside dl (use dl card set / dl fix). A human inspects the change and accepts it with /deliver:reseal <reason>"
 }
 jq_inplace() { with_lock "$(basename "$1")" _jq_inplace "$@"; }   # jq_inplace <file> <jq args...>
 git_locked() { with_lock git git "$@"; }
@@ -711,7 +713,7 @@ cmd_next() {
       local sdue sid sres shead jh; sdue="$(stack_due)"; jh="$(branch_head "$JOB_BRANCH")"
       while IFS=$'\x1f' read -r sid sres shead; do
         [[ -z $sid ]] && continue
-        if [[ $sres == FAIL && $shead == "$jh" ]]; then echo "FIX     $sid's stack tests fail on the job branch ($(card_get "$sid" .stack.log)) — a fix card now: dl card add <card.json> \"<why>\"; once it is merged: dl stack-test $sid"
+        if [[ $sres == FAIL && $shead == "$jh" ]]; then echo "FIX     $sid's stack tests fail on the job branch ($(card_get "$sid" .stack.log)) — a fix card now: dl fix open \"<finding>\" --from <source>; once it is merged: dl stack-test $sid"
         else echo "STACK   dl stack-test $sid  (the cards its stack tests need are merged — run them now, not at the end)"; fi
       done <<<"$sdue"
       jq -r '.cards[] | select(.state=="review") | [.id, (.branch//""), (.gate.result//""), (.gate.head//""), (.qa.verdict//""), (.qa.head//""), (.review.verdict//""), (.review.head//""), (.attempts|tostring)] | join("\u001f")' "$BOARD" |
@@ -755,18 +757,28 @@ cmd_next() {
             || echo "QA-WRITE $qid  (QWT=\$(dl wt qa $qid) → the QA role writes the tests from the spec now, while the dev builds; commits; does not run them yet)"
         done
       fi
+      local fid fd
+      for fid in $(jq -r '(.fixes // [])[] | select(.state == "open") | .id' "$JOBJ"); do
+        fd="$(fix_dir "$fid")"
+        if [[ ! -s $fd/cards.json ]]; then
+          echo "FIX-CUT $fid — the Lead of its area cuts the fix card(s): MODE: FIX (SKILL.md) with $fd/finding.md → its JSON array to $fd/cards.json"
+        elif jq -e --arg d "$fd" 'all(.[]; (.tmp_id // "") != "")' "$fd/cards.json" >/dev/null 2>&1 \
+             && [[ -n "$(jq -r '.[].tmp_id' "$fd/cards.json" | while read -r t; do [[ -s $fd/$t.md ]] || echo "$t"; done)" ]]; then
+          echo "FIX-SPEC $fid — the BA specs the Lead's cards: MODE: CARD SPECS with $fd/cards.json → $fd/<tmp_id>.md each"
+        else echo "FIX-ADD $fid — dl fix add $fid"; fi
+      done
       jq -r '.cards[] | select(.state=="running") | "WAIT    \(.id) (agent running)"' "$BOARD"
       jq -r --argjson max "$(setting max_attempts)" '.cards[] | select(.state=="ready" and .attempts >= $max) | "BLOCK   \(.id) (no attempts left: dl card \(.id) state blocked)"' "$BOARD"
       # a component whose suite failed on the job branch right after its last merge (dl integrate) — fixed by the next merge into it
       jq -r '[.cards[] | select(.merge_check) | {id, m: .merge_check}] | group_by(.m.component) | map(max_by(.m.n)) | .[] | select(.m.result == "FAIL" or .m.result == "STALLED")
-        | "FIX     the \(.m.component) suite \(if .m.result == "STALLED" then "did not finish (dl stopped it)" else "fails" end) on the job branch since \(.id)\(if .m.batch then " and " + (.m.batch | join(" ")) else "" end) merged (\(.m.log)) — a fix card in \(.m.component) now: dl card add <card.json> \"<why>\""' "$BOARD"
+        | "FIX     the \(.m.component) suite \(if .m.result == "STALLED" then "did not finish (dl stopped it)" else "fails" end) on the job branch since \(.id)\(if .m.batch then " and " + (.m.batch | join(" ")) else "" end) merged (\(.m.log)) — a fix card in \(.m.component) now: dl fix open \"<finding>\" --from <source>"' "$BOARD"
       local open; open="$(jq '[.cards[] | select(.state | IN("ready","running","review"))] | length' "$BOARD")"
       local busy=0; { [[ -n ${r// /} || $running -gt 0 || -n $sdue ]] || jq -e '.cards[] | select(.state=="review")' "$BOARD" >/dev/null; } && busy=1
       if [[ $open -eq 0 && -z $sdue ]] && ! jq -e '.cards[] | select(.state=="blocked")' "$BOARD" >/dev/null; then
         echo "PHASE   dl phase integrating"
       elif [[ $busy -eq 0 ]]; then
         # Nothing moves on its own: Michael decides about every blocked card — the human is not asked after the start.
-        jq -r '.cards[] | select(.state=="blocked") | "DECIDE  (PM) blocked \(.id): \((.notes[-1].note) // "no note") (split → dl card add <card.json> \"<why>\" then dl card \(.id) state archived \"<why>\" | drop → dl card \(.id) state archived \"<why it is not delivered>\") — goes into the PR"' "$BOARD"
+        jq -r '.cards[] | select(.state=="blocked") | "DECIDE  (PM) blocked \(.id): \((.notes[-1].note) // "no note") (split → dl fix open \"<finding>\" --from <source> then dl card \(.id) state archived \"<why>\" | drop → dl card \(.id) state archived \"<why it is not delivered>\") — goes into the PR"' "$BOARD"
         jq -r --slurpfile j "$JOBJ" '.cards[] | select(.state=="ready") | [(.inputs // [])[] | select(. as $i | ($j[0].input_checks[$i].ok // false) | not)] as $mi
           | if ($mi | length) > 0 then "STUCK   \(.id) waits for what only the human can provide: \($mi | join(", ")) (INPUT above)"
             else "STUCK   \(.id) waits on unmerged dependencies: \(.depends_on|join(","))" end' "$BOARD"
@@ -860,7 +872,7 @@ cmd_phase() {
         [[ $cur == executing || $cur == integrating ]] || refuse 1 "integrating comes after executing (now: $cur)"
         [[ -z "$(stack_due)" ]] || refuse 1 "stack tests have not passed on the job branch: $(stack_due | cut -d$'\x1f' -f1 | tr '\n' ' ')— run each now (dl stack-test <card>); a failure gets a fix card now, not at the end"
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
-          || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl card add …) or drop it (dl card <id> state archived \"<reason>\")" ;;
+          || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl fix open \"<what is left>\" --from blocked: the Lead cuts, the BA specs) or drop it (dl card <id> state archived \"<reason>\")" ;;
       closing)
         [[ $cur == integrating ]] || refuse 1 "only from integrating (now: $cur)"
         [[ "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS ]] && verified_head "$(branch_head "$JOB_BRANCH")" \
@@ -1028,7 +1040,7 @@ cmd_track() {
     node -e 'const n=(t)=>String(t).toLowerCase().replace(/[\u2018\u2019]/g,"\x27").replace(/[\u201c\u201d]/g,"\x22").replace(/\s+/g," ").trim(); const [r,q]=process.argv.slice(1); process.exit(q.split(/\s*(?:…|\.\.\.)\s*/).map(n).filter(Boolean).every((f)=>n(r).includes(f))?0:1)' "$(jq -r .request "$JOBJ")" "$quote" \
       || refuse 1 "the quote is not in the request: \"${quote:0:80}\" — quote its exact words"
   else
-    [[ " intake readiness awaiting_clarification planning " == *" $cur "* ]] || refuse 1 "work has started (phase $cur): the job stays on its path — more work is a card (dl card add), within the frozen decisions"
+    [[ " intake readiness awaiting_clarification planning " == *" $cur "* ]] || refuse 1 "work has started (phase $cur): the job stays on its path — more work is a fix card (dl fix open: the Lead cuts it, the BA specs it), within the frozen decisions"
   fi
   if [[ $to == full && $cur == planning ]]; then   # back to the readiness review: the light decisions stay, the skipped items are answered
     cp "$JOB_DIR/readiness.json" "$JOB_DIR/readiness.light.json"
@@ -1559,6 +1571,11 @@ cmd_card_add() { # dl card add <card.json> "<reason>"
   local file=${1:-} reason=${2:-}
   [[ -f $file && -n $reason ]] || die 'usage: dl card add <card.json> "<reason>"'
   [[ "$(phase_now)" =~ ^(planning|awaiting_plan_approval|executing|integrating)$ ]] || refuse 1 "cards are added in planning/executing/integrating (now: $(phase_now))"
+  # once work has started a card is cut the way planning cuts them: the Lead cuts it, the BA specs it (the user's rule —
+  # live job: Michael wrote fix and continuation cards himself, and the roles were bypassed). dl fix open → dl fix add.
+  if [[ "$(phase_now)" =~ ^(executing|integrating)$ && -z ${DL_ADD_VIA:-} ]]; then
+    refuse 1 "work has started: a new card goes through the planning roles — dl fix open \"<the finding>\" --from <T-xx|merge-check|stack|verify-all|review|blocked>; the Lead cuts it, the BA specs it (dl next says each step), then dl fix add F-n"
+  fi
   local id; id="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
   cp "$BOARD" "$BOARD.bak"
   jq_inplace "$BOARD" --slurpfile c "$file" --arg id "$id" --arg r "$reason" --arg t "$(now)" \
@@ -1567,6 +1584,63 @@ cmd_card_add() { # dl card add <card.json> "<reason>"
     mv "$BOARD.bak" "$BOARD"; seal "$BOARD"; grep -E '^ERROR' "$JOB_DIR/.validate.out" | grep "$id" >&2; refuse 1 "the new card is invalid — nothing added"
   fi
   rm -f "$BOARD.bak"; log_event card-add "$id: $reason"; tracker open; echo "$id"
+}
+
+# A fix while the board is active is cut the way planning cuts cards: the finding (F-n) → the Lead of its area cuts the card(s)
+# (MODE: FIX) → the BA specs them (MODE: CARD SPECS) → dl fix add. Michael orchestrates; he does not write the cards.
+#   .work/<job>/out/fix-F-n/cards.json   the Lead's JSON array (tmp ids, as in planning)
+#   .work/<job>/out/fix-F-n/<tmp_id>.md  the BA's spec of each, with its acceptance criteria and test design
+fix_dir() { echo "$JOB_DIR/out/fix-$1"; }
+cmd_fix() {
+  load_job
+  local sub=${1:-list}; [[ $# -gt 0 ]] && shift
+  case $sub in
+    open) # dl fix open "<finding>" [--from <source>]
+      local finding=${1:-} from=""; shift || true
+      [[ ${1:-} == --from ]] && from=${2:-}
+      [[ -n $finding ]] || die 'usage: dl fix open "<the finding: what fails, where, the evidence>" [--from T-xx|merge-check|stack|verify-all|review|blocked]'
+      [[ "$(phase_now)" =~ ^(executing|integrating)$ ]] || refuse 1 "a fix is opened while the board is active (executing/integrating — now: $(phase_now)); in planning the Lead cuts every card"
+      local id; id="F-$(( $(jq '(.fixes // []) | length' "$JOBJ") + 1 ))"
+      mkdir -p "$(fix_dir "$id")"; printf '%s\n' "$finding" > "$(fix_dir "$id")/finding.md"
+      jq_inplace "$JOBJ" --arg i "$id" --arg f "$finding" --arg s "$from" --arg t "$(now)" '.fixes = ((.fixes // []) + [{"id":$i,"finding":$f,"from":$s,"state":"open","at":$t}])'
+      log_event fix-open "$id${from:+ ($from)}: $finding"
+      echo "$id opened — the Lead cuts it (dl next: FIX-CUT $id); its JSON array goes to $(fix_dir "$id")/cards.json" ;;
+    add) # dl fix add F-n — the Lead's cards with the BA's specs onto the board
+      local id=${1:-}; [[ $id =~ ^F-[0-9]+$ ]] || die "usage: dl fix add F-n"
+      jq -e --arg i "$id" '(.fixes // []) | any(.id == $i and .state == "open")' "$JOBJ" >/dev/null || refuse 1 "$id is not an open fix (dl fix list)"
+      local d cards n i tmp spec nid ids="" map="{}"; d="$(fix_dir "$id")"; cards="$d/cards.json"
+      [[ -f $cards ]] && jq -e 'type == "array" and length > 0 and all(.[]; (.tmp_id // "") != "")' "$cards" >/dev/null 2>&1 \
+        || refuse 1 "$id has no cards from the Lead yet: $cards — the Lead's JSON array (MODE: FIX), each card with its tmp_id"
+      n="$(jq length "$cards")"
+      for ((i = 0; i < n; i++)); do
+        tmp="$(jq -r ".[$i].tmp_id" "$cards")"; spec="$d/$tmp.md"
+        [[ -s $spec ]] || refuse 1 "$id: no spec from the BA for $tmp ($spec) — MODE: CARD SPECS with the cards of $cards; a card is cut by the Lead and specced by the BA, as in planning"
+      done
+      for ((i = 0; i < n; i++)); do   # ids first: depends_on / stack_after may name the fix's own tmp ids
+        nid="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 + '"$i"' | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
+        map="$(jq -c --arg t "$(jq -r ".[$i].tmp_id" "$cards")" --arg n "$nid" '. + {($t): $n}' <<<"$map")"
+      done
+      for ((i = 0; i < n; i++)); do
+        tmp="$(jq -r ".[$i].tmp_id" "$cards")"; nid="$(jq -r --arg t "$tmp" '.[$t]' <<<"$map")"
+        cp "$d/$tmp.md" "$JOB_DIR/specs/$nid.md"
+        jq --argjson m "$map" --arg f "$id" ".[$i] | .depends_on = ((.depends_on // []) | map(\$m[.] // .))
+            | (if .stack_after then .stack_after |= map(\$m[.] // .) else . end) | .fix = \$f | del(.tmp_id)" "$cards" > "$d/$tmp.card.json"
+        # the agent of the card's role and the reviewers its component's other cards have, as planning gives them
+        jq --argjson roles "$(jq -c '.roles // []' "$JOBJ")" --slurpfile b "$BOARD" '. as $c
+            | .agent = (.agent // ([$roles[] | select(.role == $c.role) | .agent] | first))
+            | .reviewers = (.reviewers // ([$b[0].cards[] | select(.component == $c.component and .reviewers) | .reviewers] | first))
+            | with_entries(select(.value != null))' "$d/$tmp.card.json" > "$d/$tmp.card.json.t" && mv "$d/$tmp.card.json.t" "$d/$tmp.card.json"
+        local got; got="$(DL_ADD_VIA=fix cmd_card_add "$d/$tmp.card.json" "$id ($tmp): $(head -c 160 "$d/finding.md" | tr '\n' ' ')" 2>&1)" \
+          || { rm -f "$JOB_DIR/specs/$nid.md"; echo "$got" >&2; refuse 1 "$id: the Lead's card $tmp is invalid — nothing more added; the Lead fixes it (cards added so far:${ids:- none})"; }
+        got="$(tail -1 <<<"$got")"; [[ $got == "$nid" ]] || { rm -f "$JOB_DIR/specs/$nid.md"; echo "$got" >&2; refuse 1 "$id: $tmp was not added (cards added so far:${ids:- none})"; }
+        ids="$ids $nid"
+      done
+      jq_inplace "$JOBJ" --arg i "$id" --arg c "${ids# }" --arg t "$(now)" '.fixes |= map(if .id == $i then . + {"state":"added","cards":($c | split(" ")),"added_at":$t} else . end)'
+      log_event fix-add "$id →${ids}"
+      echo "$id →${ids}" ;;
+    list) jq -r '(.fixes // [])[] | [.id, .state, (.from // ""), ((.cards // []) | join(" ")), .finding[0:100]] | @tsv' "$JOBJ" | table ;;
+    *) die 'usage: dl fix open "<finding>" [--from <source>] | add F-n | list' ;;
+  esac
 }
 
 cmd_card() {
@@ -1642,7 +1716,7 @@ cmd_card() {
         | with_entries(select(.value != null)) | .continues = $id
         | .context = "Continues \($id): \($why).\(if $dev != "" then " The dev carries its work over with: git cherry-pick \($dev)." else "" end)\(if $qa != "" then " QA carries its tests over with: git cherry-pick \($qa)." else "" end) " + .context' "$BOARD" > "$tmp"
       [[ -f $spec ]] && { printf '> Continues %s: %s\n\n' "$card" "$why"; cat "$spec"; } > "$JOB_DIR/specs/$pre.md"
-      if ! nid="$(cmd_card_add "$tmp" "continues $card: $why" | tail -1)"; then rm -f "$tmp" "$JOB_DIR/specs/$pre.md"; exit 1; fi
+      if ! nid="$(DL_ADD_VIA=continue cmd_card_add "$tmp" "continues $card: $why" | tail -1)"; then rm -f "$tmp" "$JOB_DIR/specs/$pre.md"; exit 1; fi
       rm -f "$tmp"
       card_set "$card" '(.cards[] | select(.id==$id)) |= (.state="archived" | .continued_by=$n)' --arg n "$nid"
       # the cards that waited for it wait for its continuation; its stack tests' cards likewise
@@ -2149,10 +2223,10 @@ cmd_integrate() {
     if [[ $mres == PASS ]]; then echo "ok    the $comp suite passes on $JOB_BRANCH after the merge${batch:+ (with $batch)}"
     elif [[ $mres == STALLED ]]; then
       echo "STALLED: the $comp suite did not finish in $(( mto / 60 )) min on $JOB_BRANCH after $card${batch:+ and $batch} merged — dl stopped it ($mlog). The lane goes on: never wait for it, never ask the human to kill it."
-      echo "A hung test or a whole-suite run nested in a test: a fix card in component $comp now (dl card add <card.json> \"<why>\"); a cause outside this job: dl followup."
+      echo "A hung test or a whole-suite run nested in a test: a fix card in component $comp now (dl fix open \"<finding>\" --from <source>); a cause outside this job: dl followup."
     else
       echo "BROKEN: the $comp suite fails on $JOB_BRANCH right after $card${batch:+ and $batch} merged — see $mlog"; show_tail 20 "$mlog" < "$mlog"
-      echo "${batch:+One of }$card${batch:+ $batch} is the cause: open a fix card in component $comp now (dl card add <card.json> \"<why>\"), before other $comp cards are blamed for it."
+      echo "${batch:+One of }$card${batch:+ $batch} is the cause: open a fix card in component $comp now (dl fix open \"<finding>\" --from <source>), before other $comp cards are blamed for it."
     fi
   fi
 }
@@ -2261,7 +2335,7 @@ cmd_stack_test() {
   reset_stop_guard; log_event stack-test "$card $result"; tracker note "$card" stack-test "$result on the job branch ($(basename "$log"))"
   if [[ $result == PASS ]]; then echo "STACK PASSED: $card  (log: $log)"; return 0; fi
   echo "STACK FAILED: $card  (log: $log)"; show_tail 30 "$log" < "$log"
-  echo "Open a fix card now (dl card add <card.json> \"<why>\"); once it is merged, dl stack-test $card again."
+  echo "Open a fix card now (dl fix open \"<finding>\" --from <source>); once it is merged, dl stack-test $card again."
   exit 1
 }
 
@@ -2865,7 +2939,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review integrate verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review fix integrate verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -3062,6 +3136,7 @@ main() {
     ready) cmd_ready ;;
     wt) cmd_wt "$@" ;;
     card) cmd_card "$@" ;;
+    fix) cmd_fix "$@" ;;
     gate) cmd_gate "$@" ;;
     qa) cmd_qa "$@" ;;
     qa-join) cmd_qa_join "$@" ;;
