@@ -2350,7 +2350,11 @@ cmd_baseline() { load_job; run_baseline; }
 
 # blame_log <log> — the merged cards whose scope or qa_scope holds a file the failing log names: where a fix card starts
 blame_log() {
-  local files; files="$(grep -oE '[A-Za-z0-9_./-]+\.(py|[cm]?[jt]sx?|java|kt|go|rb|rs|php|swift|dart|cs)' "$1" 2>/dev/null | sed 's|^\./||' | sort -u | awk 'NR<=200')"
+  # a test runner names files by their absolute path in the integration worktree (node: file:///…/wt/_integration/test/x.mjs —
+  # live run 74 named no card): every path becomes relative to the worktree; paths outside it (../x, /usr/…) are dropped
+  local files; files="$(grep -oE '[A-Za-z0-9_./-]+\.(py|[cm]?[jt]sx?|java|kt|go|rb|rs|php|swift|dart|cs)' "$1" 2>/dev/null \
+    | awk -v w="$IWT/" -v r="$ROOT/" '{ i = index($0, w); if (i) $0 = substr($0, i + length(w)); else { i = index($0, r); if (i) $0 = substr($0, i + length(r)) }
+        sub(/^\.\//, ""); if ($0 !~ /^(\/|\.\.\/)/) print }' | sort -u | awk 'NR<=200')"
   [[ -n $files ]] || return 0
   printf '%s\n' "$files" | node -e '
     const fs = require("fs"), files = fs.readFileSync(0, "utf8").split("\n").filter(Boolean);

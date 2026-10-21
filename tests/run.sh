@@ -1421,7 +1421,7 @@ rm -f "$HOME/app-suite"; cd "$R"
 echo "When the suite runs (suite_runs batch/end), a hung suite after a merge, a lockfile merge, verify-all's blame, dl wt rm of QA's worktree"
 SR="$TMP/suiteruns"; mkdir -p "$SR" && cd "$SR" && git init -q -b main
 jq -n '{dispatch:"subagent", merge_mode:"local", worktree_setup:"pwd >> \"$HOME/setup-runs\"",
-  verify_full:"if test -e \"$HOME/vf-fail\"; then echo \"FAILED src/a/x.py::test_x\"; exit 1; fi"}' > .deliver.json && git add -A && git commit -qm i
+  verify_full:"if test -e \"$HOME/vf-fail\"; then echo \"FAILED src/a/x.py::test_x\"; echo \"  location: file://$PWD/it/b/t.test.mjs:3:1\"; echo \"at file:///usr/lib/node/x.js:1\"; exit 1; fi"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "suite runs" "x" >/dev/null 2>&1; SRJ="$SR/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
 "$DL" phase readiness >/dev/null
@@ -1514,7 +1514,8 @@ qaround T-08 h devtouch; W8="$(jq -r '.cards[7].worktree' "$SRJ/board.json")"; "
 contains "…but a dev commit below QA's recorded one that changes a QA test still fails the gate" "$(cat "$(jq -r '.cards[7].gate.log' "$SRJ/board.json")")" "FAIL  the dev changed a QA test (qa_scope belongs to the QA role): it/h/t"
 touch "$HOME/vf-fail"; out="$("$DL" verify-all 2>&1)"
 contains "verify-all names the merged cards whose files its failures point to" "$out" "LIKELY  T-01 — the failures name src/a/x.py"
-[[ $out != *"LIKELY  T-02"* ]] && ok "…and only those" || bad "blame: $out"
+contains "…also when the runner names them by their absolute path in the worktree (node's file:///…: live run 74 named no card)" "$out" "LIKELY  T-02 — the failures name it/b/t.test.mjs"
+[[ $out != *"LIKELY  T-03"* && $out != *"x.js"* ]] && ok "…and only those" || bad "blame: $out"
 rm -f "$HOME/vf-fail" "$HOME/setup-runs"; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
 ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
