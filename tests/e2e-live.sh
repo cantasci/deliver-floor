@@ -34,6 +34,9 @@
 #                                the start: Michael opens a fix, the Lead cuts it, the BA specs it, dl fix add (F23)
 #   E2E_INJECT=late-regression   (disclosed) the same swap, after the job branch's second merge (the last planned card of
 #                                `complete`): no later card meets it, so verify-all must find it and name the card (blame)
+#   E2E_INJECT=qa-round          (disclosed) when QA's tests join a card branch, the card's scale is broken AND one wrong
+#                                assertion is added to QA's tests: QA fails the card, the dev fixes the code, QA fixes its own
+#                                test — when that lands on top of the dev's fix, Michael records it (dl qa-commit)
 #   E2E_INJECT=hang              (disclosed) the same hook adds a test that never ends to the job branch after its first merge:
 #                                the suite after the merge must be stopped (STALLED) and fixed through a fix card
 #   E2E_INJECT=qa-wrong          (disclosed) when QA's tests join a card branch, one wrong assertion is appended to one of them:
@@ -128,6 +131,13 @@ rm -f "$0"; git add test/zz-scale-loaded.test.mjs && git commit -q -m "test: the
 f="$(git diff --name-only HEAD^1 HEAD | grep -E "\.test\.mjs$" | head -1)"; [ -n "$f" ] || exit 0
 printf '"'"'\n;(await import("node:test")).test("notch of an unchanged rating", async () => (await import("node:assert/strict")).default.equal((await import("%s")).notchChange("BBB", "BBB"), 1));\n'"'"' "$(dirname "$f" | awk -F/ '"'"'{ for (i = 1; i <= NF; i++) printf "../" }'"'"')src/ratings/notch.mjs" >> "$f"
 rm -f "$0"; git commit -q -am "test: unchanged rating"' ;;
+    qa-round) on='job/*--*) ;;'; act='git log -1 --format=%s | grep -q "QA tests" || exit 0
+f="$(git diff --name-only HEAD^1 HEAD | grep -E "\.test\.mjs$" | head -1)"; s=src/ratings/notch.mjs; [ -n "$f" ] && [ -f "$s" ] || exit 0
+perl -0pi -e '"'"'s/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/$4BB+$5$3$1BBB-$2/'"'"' "$s"
+git diff --quiet -- "$s" && exit 0
+rm -f "$0"; git commit -q -am "refactor: tidy the rating scale"
+printf '"'"'\n;(await import("node:test")).test("notch of an unchanged rating", async () => (await import("node:assert/strict")).default.equal((await import("%s")).notchChange("BBB", "BBB"), 1));\n'"'"' "$(dirname "$f" | awk -F/ '"'"'{ for (i = 1; i <= NF; i++) printf "../" }'"'"')src/ratings/notch.mjs" >> "$f"
+git commit -q -am "test: unchanged rating"' ;;
     *) echo "unknown E2E_INJECT: $E2E_INJECT" >&2; exit 2 ;;
   esac
   { printf '#!/bin/sh\n# e2e fault injection (%s), disclosed in report.md — fires once, then deletes itself\n' "$E2E_INJECT"
@@ -427,6 +437,11 @@ if [[ -n ${E2E_INJECT:-} ]]; then
     hang)
       chk "the hung suite was stopped by dl (STALLED), not waited for" bash -c "grep -E \$'\t(merge-check|qa|gate|verify-all)\t' '$J/events.log' | grep -q STALLED || grep -l 'STALLED' '$J'/gates/*.log >/dev/null"
       chk "…and the hanging test is gone from main" bash -c "! git -C '$SB' cat-file -e main:test/zz-scale-loaded.test.mjs 2>/dev/null || ! git -C '$SB' show main:test/zz-scale-loaded.test.mjs | grep -q setInterval" ;;
+    qa-round)
+      chk "QA failed the card (the broken scale is the dev's to fix)" bash -c "jq -e '[.cards[] | select(.attempts >= 2)] | length > 0' '$B'"
+      if gq $'\tqa-commit\t' "$J/events.log"; then ok "Michael recorded QA's own commit on top of the dev's (dl qa-commit): $(grep $'\tqa-commit\t' "$J/events.log" | cut -f3 | head -2 | tr '\n' ';')"
+        chk "…and the gate took it as QA's round, no attempt lost" gq $'\tqa-fix\t' "$J/events.log"
+      else log "QA's own fix did not land on top of the dev's fix in this run — the qa-commit path was not reached"; fi ;;
     qa-wrong)   # QA's own wrong test must be caught before the merge and fixed by QA, with no dev attempt: by QA's own run
       # (dl qa refuses the pass) or, when a gate meets it first, by the gate (qa_fix) — run 73: QA's run caught it
       ic="$(git -C "$SB" branch --contains "$(awk '{print $4}' "$W/injected.log")" --format='%(refname:short)' 2>/dev/null | grep -o 'T-[0-9]*' | head -1)"
