@@ -1484,12 +1484,17 @@ qaround() { # qaround <card> <dir> <extra dev change> — dev, gate, QA's tests 
   echo y >> "$w/src/$2/f"; [[ -z ${3:-} ]] || echo dev >> "$w/it/$2/t"; git -C "$w" commit -qam "$1: the code for the changed spec"
   git -C "$w" rm -q "it/$2/wrong" && git -C "$w" commit -qm "$1 QA: drop the test the changed spec made wrong"
 }
-qaround T-07 g; out="$("$DL" gate T-07 2>&1)"
+qaround T-07 g; "$DL" gate T-07 >/dev/null 2>&1
+contains "an unrecorded QA-test commit on top still counts as the dev's — and the gate says how to record QA's" "$(cat "$(jq -r '.cards[6].gate.log' "$SRJ/board.json")")" "record them — dl qa-commit T-07 <commit>"
+W7="$(jq -r '.cards[6].worktree' "$SRJ/board.json")"
+contains "dl qa-commit refuses a commit that changes more than QA's tests" "$("$DL" qa-commit T-07 "$(git -C "$W7" rev-parse HEAD~1)" 2>&1)" "changes files outside T-07's qa_scope"
+contains "dl qa-commit records QA's commit" "$("$DL" qa-commit T-07 "$(git -C "$W7" rev-parse HEAD)" 2>&1)" "is QA's commit on T-07"
+out="$("$DL" gate T-07 2>&1)"
 [[ "$(jq -r '.cards[6] | "\(.gate.result) \(.attempts) \(.qa_fix.after_dev != null)"' "$SRJ/board.json")" == "PASS 2 true" ]] \
-  && ok "after QA's fail, QA's own commit on top of the dev's is QA's: the gate passes, no attempt is lost (live run 71)" || bad "QA round: $out $(jq -c '.cards[6] | {g: .gate.result, attempts, qa_fix}' "$SRJ/board.json")"
+  && ok "…then the gate takes it as QA's round and passes, with no attempt lost (live run 71)" || bad "QA round: $out $(jq -c '.cards[6] | {g: .gate.result, attempts, qa_fix}' "$SRJ/board.json")"
 contains "…the gate log and the event log say so" "$(cat "$(jq -r '.cards[6].gate.log' "$SRJ/board.json")") $(grep $'\tqa-fix\t' "$SRJ/events.log" | tail -1)" "QA's commits on top of the dev's after QA's fail"
-qaround T-08 h devtouch; "$DL" gate T-08 >/dev/null 2>&1
-contains "…but a dev commit below it that changes a QA test still fails the gate" "$(cat "$(jq -r '.cards[7].gate.log' "$SRJ/board.json")")" "FAIL  the dev changed a QA test (qa_scope belongs to the QA role): it/h/t"
+qaround T-08 h devtouch; W8="$(jq -r '.cards[7].worktree' "$SRJ/board.json")"; "$DL" qa-commit T-08 "$(git -C "$W8" rev-parse HEAD)" >/dev/null 2>&1; "$DL" gate T-08 >/dev/null 2>&1
+contains "…but a dev commit below QA's recorded one that changes a QA test still fails the gate" "$(cat "$(jq -r '.cards[7].gate.log' "$SRJ/board.json")")" "FAIL  the dev changed a QA test (qa_scope belongs to the QA role): it/h/t"
 touch "$HOME/vf-fail"; out="$("$DL" verify-all 2>&1)"
 contains "verify-all names the merged cards whose files its failures point to" "$out" "LIKELY  T-01 — the failures name src/a/x.py"
 [[ $out != *"LIKELY  T-02"* ]] && ok "…and only those" || bad "blame: $out"

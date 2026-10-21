@@ -61,6 +61,7 @@
 #   dl integrate <card>            --no-ff merge into the job branch → merged (needs gate PASS + QA pass +
 #                                  review approve, all on the current commit; exit 3 on conflict, 5 when the
 #                                  repo's commit rules refuse the merge message)
+#   dl qa-commit <card> <commit>   record a commit QA made in the card worktree (its report names it; qa_scope only)
 #   dl merge-check <card>          the component's suite after <card>'s merge, again (its dl was stopped half way)
 #   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
@@ -1764,17 +1765,18 @@ cmd_gate() {
     card_set "$card" '(.cards[] | select(.id==$id)).qa_fix = {"head":$h,"after_gate":$g,"at":$t}' --arg h "$ch" --arg g "$pg" --arg t "$(now)"
     log_event qa-fix "$card: QA's commits after the failed gate (${pg:0:9}..${ch:0:9}, qa_scope only) taken as QA's"
   fi
-  # QA's own round on top of the dev's: after QA failed the card, QA corrects its own tests in the card worktree while the dev
-  # fixes the code. The newest commits that change only qa_scope, on top of the dev's, are QA's; the dev's commits below them
-  # are checked as before. Live run 71, T-02: the gate counted QA's correction as the dev's, the attempts ran out, and the
-  # finished work was cut and built again as a fix card.
-  local qround="" c dh=HEAD
-  if [[ "$(card_get "$card" '.qa.verdict // ""')" == fail && -n $ch && $(jq length <<<"$qscope") -gt 0 ]]; then
-    local qh0; qh0="$(card_get "$card" '.qa.head // ""')"
+  # QA's own round on top of the dev's: QA corrects its own tests in the card worktree after the dev's commit (live run 71,
+  # T-02: the gate counted QA's correction as the dev's, the attempts ran out, and the finished work was built again as a fix
+  # card). Who made a commit is not in git: QA's report names it and Michael records it (dl qa-commit). The newest commits that
+  # change only qa_scope AND are recorded as QA's are QA's round; the dev's commits below them are checked as before. Unrecorded
+  # ones stay the dev's — a dev weakening a QA test after a QA fail must still fail the gate.
+  local qround="" qtrail="" qround_stop="" c dh=HEAD qcs; qcs=" $(card_get "$card" '(.qa_commits // []) | join(" ")') "
+  if [[ -n $ch && $(jq length <<<"$qscope") -gt 0 ]]; then
+    local qh0; qh0="$(qa_mark "$card")"
     for c in $(git -C "$wt" rev-list --first-parent "${qh0:+$qh0..}$ch" 2>/dev/null); do
       [[ $(git -C "$wt" rev-list --parents -n 1 "$c" | wc -w) -eq 2 ]] || break   # a merge is not QA's round
       [[ -n "$(git -C "$wt" diff-tree --no-commit-id --name-only -r "$c")" && -z "$(outside "$c^" "$c" "$qscope")" ]] || break
-      qround=$c
+      qtrail="$c $qtrail"; if [[ $qcs == *" $c "* && -z $qround_stop ]]; then qround=$c; else qround_stop=1; fi
     done
     [[ -n $qround ]] && dh="$(git -C "$wt" rev-parse "$qround^")"
   fi
@@ -1825,6 +1827,7 @@ cmd_gate() {
       done < <(qa_files "$wt" "$dh" "$qscope")
       touched="${touched%$'\n'}"
       if [[ -n $touched ]]; then while IFS= read -r f; do echo "FAIL  the dev changed a QA test (qa_scope belongs to the QA role): $f"; done <<<"$touched"; fail=1
+        [[ -n ${qtrail// /} ]] && echo "      → the newest commit(s) $(for c in $qtrail; do printf '%s ' "${c:0:9}"; done)change only QA tests. If QA made them (its report names each commit), record them — dl qa-commit $card <commit> — and run the gate again: no attempt is used. If the dev did, send the card back."
       else echo "ok    QA tests untouched by the dev"
         if [[ -n $qround ]]; then
           echo "ok    QA's own round on top of the dev's (${dh:0:9}..${ch:0:9}, qa_scope only) — QA's commits after its fail"
@@ -1984,6 +1987,21 @@ cmd_qa() {
 
 # dl qa-join <card> — after the gate, the tests QA wrote meanwhile (dl wt qa) join the card branch: only qa_scope files, merged
 # by dl in the repo's commit format; then QA runs them on the dev's commit in the card worktree and records dl qa.
+# dl qa-commit <card> <commit> — Michael records that QA made <commit> in the card worktree (QA's report names it): a commit on
+# the card branch that changes only qa_scope. The gate then takes the newest such commits as QA's round, not the dev's.
+cmd_qa_commit() {
+  load_job
+  local card=${1:-} sha=${2:-}; [[ -n $card && -n $sha ]] || die "usage: dl qa-commit <card> <commit>"
+  card_exists "$card"; local br full qscope; br="$(card_get "$card" .branch)"; qscope="$(card_get "$card" '.qa_scope // []')"
+  full="$(git -C "$ROOT" rev-parse -q --verify "$sha^{commit}" 2>/dev/null)" || refuse 1 "no such commit: $sha"
+  git -C "$ROOT" merge-base --is-ancestor "$full" "refs/heads/$br" 2>/dev/null || refuse 1 "${full:0:9} is not on $card's branch ($br)"
+  [[ $(git -C "$ROOT" rev-list --parents -n 1 "$full" | wc -w) -eq 2 ]] || refuse 1 "${full:0:9} is a merge — QA's tests from its own branch join with dl qa-join"
+  [[ -z "$(outside "$full^" "$full" "$qscope")" ]] || refuse 1 "${full:0:9} changes files outside $card's qa_scope: $(outside "$full^" "$full" "$qscope" | tr '\n' ' ')— not QA's commit"
+  card_set "$card" '(.cards[] | select(.id==$id)).qa_commits = (((.cards[] | select(.id==$id)).qa_commits // []) + [$s] | unique)' --arg s "$full"
+  log_event qa-commit "$card: ${full:0:9} recorded as QA's ($(git -C "$ROOT" log -1 --format=%s "$full" | cut -c1-80))"
+  echo "recorded: ${full:0:9} is QA's commit on $card — the gate takes it as QA's round"
+}
+
 cmd_qa_join() {
   load_job
   local card=${1:-}; [[ -n $card ]] || die "usage: dl qa-join <card>"
@@ -2997,7 +3015,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join review fix integrate merge-check verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join qa-commit review fix integrate merge-check verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -3198,6 +3216,7 @@ main() {
     gate) cmd_gate "$@" ;;
     qa) cmd_qa "$@" ;;
     qa-join) cmd_qa_join "$@" ;;
+    qa-commit) cmd_qa_commit "$@" ;;
     review) cmd_review "$@" ;;
     integrate) cmd_integrate "$@" ;;
     verify-all) cmd_verify_all "$@" ;;

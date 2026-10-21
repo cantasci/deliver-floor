@@ -396,7 +396,9 @@ Return: the tests written per AC.
    (SendMessage to its agent id — it has the spec and its tests in its history, nothing is read again; on the floor: the
    same QA seat) with **MODE: QA-RUN — your tests fail on the dev's commit (<the failing lines dl printed>); change a test only
    where it contradicts the spec; record the verdict per AC** (in the card worktree; a new agent with the prompt below only
-   when that one cannot be reached). Without QA-WRITE — call **Agent(subagent_type: "qa-tester")**:
+   when that one cannot be reached). **Every commit QA makes in the card worktree** (its report names it): `"$DL" qa-commit
+   T-xx <commit>` at once — git does not say who made a commit, and an unrecorded QA-test commit counts as the dev's at the gate
+   (live run 71: QA corrected its test after the dev's fix, the gate failed it as the dev's, the work was built again). Without QA-WRITE — call **Agent(subagent_type: "qa-tester")**:
 
 ```text
 Role: QA/Test for card T-xx. Write and run its integration/e2e tests for the spec's acceptance criteria. No product code.
