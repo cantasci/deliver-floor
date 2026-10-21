@@ -1444,7 +1444,7 @@ touch "$HOME/suite-hang"; "$DL" jobset '.settings.suite_timeout_min=5' >/dev/nul
 for _ in $(seq 50); do [[ "$(jq -r '.cards[1].merge_check.result' "$SRJ/board.json")" == RUNNING ]] && break; sleep 0.2; done
 kill -9 $MCP 2>/dev/null; wait $MCP 2>/dev/null; rm -rf "$SRJ/.card-lock-integration"
 contains "a suite after a merge whose dl was stopped half way is not taken as checked: dl next says to run it again" "$("$DL" next)" "CHECK   the app suite after T-02 merged was cut off before it finished"
-contains "…the job does not go on to integrating meanwhile" "$("$DL" phase integrating 2>&1)" "the suite after the merge of T-02 never finished"
+contains "…the job does not go on to integrating meanwhile" "$("$DL" phase integrating 2>&1)" "the suite after the merge of T-02 has not finished"
 rm -f "$HOME/suite-hang"; "$DL" jobset 'del(.settings.suite_timeout_min)' >/dev/null
 out="$("$DL" merge-check T-02 2>&1)"
 [[ $out == *"the app suite passes"* && "$(jq -r '.cards[1].merge_check.result' "$SRJ/board.json")" == PASS && "$("$DL" next)" != *"CHECK   the app suite after T-02"* ]] \
