@@ -370,6 +370,10 @@ contains "next moves to integrating" "$("$DL" next)" "PHASE   dl phase integrati
 expect_ok "phase integrating" "$DL" phase integrating
 expect_fail 1 "closing refused before verify-all" "$DL" phase closing
 expect_ok "verify-all passes" "$DL" verify-all
+contains "verify-all again on the same head keeps the pass, runs nothing (live run 70: a fresh session ran it twice)" "$("$DL" verify-all 2>&1)" "PASSED — already on this job branch"
+nva="$(ls "$R/.work/$JOB"/gates/verify-all-*.log 2>/dev/null | wc -l | tr -d ' ')"; sleep 1
+contains "…dl verify-all --again runs it anyway" "$("$DL" verify-all --again 2>&1)" "PASSED"
+[[ "$(ls "$R/.work/$JOB"/gates/verify-all-*.log | wc -l | tr -d ' ')" == $(( nva + 1 )) ]] && ok "…with a log of its own" || bad "verify-all --again: $nva logs before"
 expect_ok "closing" "$DL" phase closing
 expect_fail 1 "approve merge no longer exists" "$DL" approve merge
 expect_fail 1 "ship refused while report.md is the template" "$DL" ship

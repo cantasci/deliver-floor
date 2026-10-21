@@ -63,7 +63,7 @@
 #                                  repo's commit rules refuse the merge message)
 #   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
-#   dl verify-all                  run verify_full in the integration worktree
+#   dl verify-all [--again]        run verify_full in the integration worktree (a pass on the same head is kept)
 #   dl checkpoint                  headless: end this session at a safe point (dl next: CHECKPOINT) — the next round is fresh
 #   dl env <card> [--qa] | integration   the DELIVER_PORT_BASE / DELIVER_RUN_ID of a test run in that worktree
 #                                  (every test command dl runs gets them; agents: eval "$(dl env T-xx)")
@@ -2284,16 +2284,24 @@ blame_log() {
 
 cmd_verify_all() {
   load_job; card_lock integration verify-all
-  local cmd log head; cmd="$(setting verify_full)"; log="$JOB_DIR/gates/verify-all-$(date +%H%M%S).log"
+  local cmd log head again=0; [[ ${1:-} == --again ]] && again=1
+  cmd="$(setting verify_full)"; log="$JOB_DIR/gates/verify-all-$(date +%H%M%S).log"
   [[ -n $cmd ]] || refuse 1 "verify_full is not set — it follows the stack (ARC-stack): record the full test command with dl jobset '.settings.verify_full=\"<command>\"' (and in .deliver.json for the next jobs)"
   head="$(branch_head "$JOB_BRANCH")"
+  # a pass on this head (or one only the job's record changed since) stands: nothing it ran has changed (live run 70: a fresh
+  # session after a checkpoint ran the whole suite again on the same commit). --again runs it anyway.
+  if [[ $again -eq 0 && "$(jq -r '.verify_all.result // ""' "$JOBJ")" == PASS && "$(jq -r '.verify_all.command // ""' "$JOBJ")" == "$cmd" ]] && verified_head "$head"; then
+    log_event verify-all "PASS (kept: ran on $(jq -r '.verify_all.head[0:12]' "$JOBJ"), nothing changed since)"
+    echo "PASSED — already on this job branch ($(jq -r '.verify_all.head[0:12]' "$JOBJ"), log: $(jq -r .verify_all.log "$JOBJ")); nothing has changed since. Run it anyway: dl verify-all --again"
+    return 0
+  fi
   echo "verify_full: $cmd  (log: $log)"
   local result=FAIL vto vrc=0; vto="$(suite_timeout)"
   (cd "$IWT" && test_env integration && run_timed "$vto" "$cmd") > "$log" 2>&1 || vrc=$?
   [[ $vrc -eq 0 ]] && result=PASS
   [[ $vrc -eq 124 ]] && echo "STALLED: verify_full did not finish in $(( vto / 60 )) min (settings.suite_timeout_min) — dl stopped it" >> "$log"
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; result=FAIL; }
-  jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg t "$(now)" '.verify_all = {"result":$r,"head":$h,"log":$l,"at":$t}'
+  jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" '.verify_all = {"result":$r,"head":$h,"command":$c,"log":$l,"at":$t}'
   reset_stop_guard; log_event verify-all "$result"
   if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; blame_log "$log"; exit 1; fi
 }
@@ -3143,7 +3151,7 @@ main() {
     qa-join) cmd_qa_join "$@" ;;
     review) cmd_review "$@" ;;
     integrate) cmd_integrate "$@" ;;
-    verify-all) cmd_verify_all ;;
+    verify-all) cmd_verify_all "$@" ;;
     stack-test) cmd_stack_test "$@" ;;
     env) cmd_env "$@" ;;
     awake) cmd_awake "$@" ;;

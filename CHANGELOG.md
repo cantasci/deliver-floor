@@ -10,6 +10,9 @@ change to `kit/` without both). How to get updates: [README § Staying up to dat
   regression injected on the job branch went merge-check FAIL → `dl fix open` → the Lead's card → the BA's spec →
   `dl fix add` → merged, delivered. One gap it showed is fixed in `SKILL.md`: the BA answers a fix's specs as text under
   `=== <tmp_id> ===` lines and Michael writes them (it was asked to write the file and could not).
+- `dl verify-all` keeps a pass on an unchanged job branch and runs nothing; `--again` runs it anyway. Seen live (run 70): a
+  fresh session after a checkpoint ran the whole suite again on the same commit.
+- The plugin has an icon (`claude plugin validate` now warns without one).
 
 ## 0.18.1 — 2026-10-20
 

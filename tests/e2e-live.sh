@@ -32,6 +32,11 @@
 #   E2E_INJECT=regression        fault injection, disclosed in the report: a git post-merge hook breaks the rating scale on the
 #                                job branch once, right after the merge that brings it (BBB- and BB+ swapped) — a finding after
 #                                the start: Michael opens a fix, the Lead cuts it, the BA specs it, dl fix add (F23)
+#   E2E_INJECT=hang              (disclosed) the same hook adds a test that never ends to the job branch after its first merge:
+#                                the suite after the merge must be stopped (STALLED) and fixed through a fix card
+#   E2E_INJECT=qa-wrong          (disclosed) when QA's tests join a card branch, one wrong assertion is appended to one of them:
+#                                the gate fails on QA's own test, QA fixes it, the next gate takes it as QA's (qa_fix)
+#   E2E_SUITE_RUNS=card|batch|end, E2E_SUITE_TIMEOUT_MIN=<min>   written to .deliver.json (suite_runs, suite_timeout_min)
 #   E2E_MAX_ATTEMPTS=1           one attempt per card: a review change blocks a card; Michael must decide it himself — split
 #                                or drop, recorded and listed in the PR — and ask nothing (R3). No blocked card = not exercised
 set -uo pipefail
@@ -102,18 +107,30 @@ if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
   git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"
 fi
-if [[ ${E2E_INJECT:-} == regression ]]; then
-  cat > "$SB/.git/hooks/post-merge" <<HOOK
-#!/bin/sh
-# e2e fault injection (disclosed in report.md): once, on the job branch, after the merge that brings the rating scale
-case "\$(git symbolic-ref --short HEAD 2>/dev/null)" in job/*--*) exit 0 ;; job/*) ;; *) exit 0 ;; esac   # job/<JOB>--T-xx is a card branch
-f=src/ratings/notch.mjs; [ -f "\$f" ] || exit 0
-perl -0pi -e 's/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/\$4BB+\$5\$3\$1BBB-\$2/' "\$f"
-if git diff --quiet -- "\$f"; then echo "no injection: the scale does not list BBB-, BB+ side by side" >> "$W/injected.log"; exit 0; fi
-rm -f "\$0"; git commit -q -am "refactor: tidy the rating scale"
-echo "injected at \$(git rev-parse HEAD) on \$(git symbolic-ref --short HEAD), after \$(git log -1 --format=%s HEAD^)" >> "$W/injected.log"
-HOOK
-  chmod +x "$SB/.git/hooks/post-merge"; log "fault injection (E2E_INJECT=regression): a post-merge hook swaps BBB- and BB+ on the job branch once"
+if [[ -n ${E2E_INJECT:-} ]]; then   # fault injection, disclosed in report.md: a post-merge hook that fires once and deletes itself
+  case $E2E_INJECT in
+    regression) on='job/*--*) exit 0 ;; job/*) ;;'; act='f=src/ratings/notch.mjs; [ -f "$f" ] || exit 0
+perl -0pi -e '"'"'s/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/$4BB+$5$3$1BBB-$2/'"'"' "$f"
+git diff --quiet -- "$f" && exit 0
+rm -f "$0"; git commit -q -am "refactor: tidy the rating scale"' ;;
+    hang) on='job/*--*) exit 0 ;; job/*) ;;'; act='mkdir -p test; printf '"'"'import { test } from "node:test";\ntest("rating scale stays loaded", async () => { await new Promise(() => setInterval(() => {}, 1000)); });\n'"'"' > test/zz-scale-loaded.test.mjs
+rm -f "$0"; git add test/zz-scale-loaded.test.mjs && git commit -q -m "test: the rating scale stays loaded"' ;;
+    qa-wrong) on='job/*--*) ;;'; act='git log -1 --format=%s | grep -q "QA tests" || exit 0
+f="$(git diff --name-only HEAD^1 HEAD | grep -E "\.test\.mjs$" | head -1)"; [ -n "$f" ] || exit 0
+printf '"'"'\n;(await import("node:test")).test("notch of an unchanged rating", async () => (await import("node:assert/strict")).default.equal((await import("%s")).notchChange("BBB", "BBB"), 1));\n'"'"' "$(dirname "$f" | awk -F/ '"'"'{ for (i = 1; i <= NF; i++) printf "../" }'"'"')src/ratings/notch.mjs" >> "$f"
+rm -f "$0"; git commit -q -am "test: unchanged rating"' ;;
+    *) echo "unknown E2E_INJECT: $E2E_INJECT" >&2; exit 2 ;;
+  esac
+  { printf '#!/bin/sh\n# e2e fault injection (%s), disclosed in report.md — fires once, then deletes itself\n' "$E2E_INJECT"
+    printf 'case "$(git symbolic-ref --short HEAD 2>/dev/null)" in %s *) exit 0 ;; esac\n' "$on"
+    printf '%s\n' "$act"
+    printf 'echo "injected (%s) at $(git rev-parse HEAD) on $(git symbolic-ref --short HEAD), after: $(git log -1 --format=%%s HEAD^)" >> "%s"\n' "$E2E_INJECT" "$W/injected.log"
+  } > "$SB/.git/hooks/post-merge"
+  chmod +x "$SB/.git/hooks/post-merge"; log "fault injection (E2E_INJECT=$E2E_INJECT): a post-merge hook in the sandbox, once — see injected.log"
+fi
+if [[ -n ${E2E_SUITE_RUNS:-}${E2E_SUITE_TIMEOUT_MIN:-} ]]; then
+  jq --arg r "${E2E_SUITE_RUNS:-}" --arg t "${E2E_SUITE_TIMEOUT_MIN:-}" '(if $r != "" then .suite_runs = $r else . end) | (if $t != "" then .suite_timeout_min = ($t | tonumber) else . end)' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
+  git -C "$SB" commit -qam "deliver: suite_runs ${E2E_SUITE_RUNS:-card}${E2E_SUITE_TIMEOUT_MIN:+, suite_timeout_min $E2E_SUITE_TIMEOUT_MIN}" && log "suite_runs ${E2E_SUITE_RUNS:-card}${E2E_SUITE_TIMEOUT_MIN:+ · suite_timeout_min $E2E_SUITE_TIMEOUT_MIN}"
 fi
 iso_env "$HERE/scripts/doctor.sh" "$SB" > "$W/doctor.log" 2>&1 && ok "doctor: $(tail -1 "$W/doctor.log")" || bad "doctor: $(tail -1 "$W/doctor.log")"
 DL="$ISO_HOME/.claude/skills/deliver/bin/dl"
@@ -378,10 +395,13 @@ fi
 step "0.18 · inputs only when the work needs them"
 chk "DEL-inputs: no input asked for by default (a .env file is never needed unless the work reads it)" jq -e '(.items // .) | map(select(.id=="DEL-inputs")) | .[0].status == "n_a" or ((.[0].inputs // []) | length == 0)' "$J/readiness.json"
 ! grep -qiE '\.env|api key' "$J/QUESTIONS.md" 2>/dev/null && ok "…and the human was not asked for a .env file or a key" || bad "the human was asked for an input: $(grep -iE '\.env|api key' "$J/QUESTIONS.md" | head -2)"
-if [[ ${E2E_INJECT:-} == regression ]]; then
-  step "F23 · a finding after the start goes through the Lead and the BA (fault injected, disclosed)"
-  if [[ -s $W/injected.log ]]; then log "injection: $(cat "$W/injected.log")"; else bad "the injection did not happen (no merge brought the scale)"; fi
-  if gq '^injected' "$W/injected.log" 2>/dev/null; then
+vac="$(grep -c $'\tverify-all\t' "$J/events.log")"; vrun="$(grep $'\tverify-all\t' "$J/events.log" | grep -vc 'kept:')"
+log "verify-all: $vac call(s), $vrun run(s) of the suite — $(grep $'\tverify-all\t' "$J/events.log" | cut -f3 | tr '\n' ';')"
+if [[ -n ${E2E_INJECT:-} ]]; then
+  step "fault injected ($E2E_INJECT, disclosed): what the team did with it"
+  if gq '^injected' "$W/injected.log" 2>/dev/null; then log "injection: $(cat "$W/injected.log")"; else bad "the injection did not happen"; fi
+  grep -E $'\t(fix-open|fix-add|merge-check|verify-all|qa-fix|gate|qa|integrate|settings)\t' "$J/events.log" | cut -c1-260 | sed 's/^/    /' >> "$REP"
+  if gq '^injected' "$W/injected.log" 2>/dev/null && [[ $E2E_INJECT != qa-wrong ]]; then
     chk "Michael opened a fix (dl fix open)" gq $'\tfix-open\t' "$J/events.log"
     log "fixes: $(jq -c '[.fixes[]? | {id, from, state, cards, finding: .finding[0:120]}]' "$JJ")"
     chk "…and added it from the Lead's cards with the BA's specs (dl fix add)" gq $'\tfix-add\t' "$J/events.log"
@@ -393,8 +413,24 @@ if [[ ${E2E_INJECT:-} == regression ]]; then
     lead="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | grep -c 'MODE: FIX')"; ba="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | grep -c 'MODE: CARD SPECS')"
     [[ $lead -gt 0 ]] && ok "the Lead was asked in MODE: FIX (transcripts: $lead)" || bad "no MODE: FIX prompt in the transcripts"
     [[ $ba -gt 0 ]] && ok "the BA was asked for card specs (transcripts: $ba)" || bad "no MODE: CARD SPECS prompt in the transcripts"
-    grep -E $'\t(fix-open|fix-add|merge-check|verify-all)\t' "$J/events.log" | sed 's/^/    /' >> "$REP"
   fi
+  case $E2E_INJECT in
+    hang)
+      chk "the hung suite was stopped by dl (STALLED), not waited for" bash -c "grep -E \$'\t(merge-check|qa|gate|verify-all)\t' '$J/events.log' | grep -q STALLED || grep -l 'STALLED' '$J'/gates/*.log >/dev/null"
+      chk "…and the hanging test is gone from main" bash -c "! git -C '$SB' cat-file -e main:test/zz-scale-loaded.test.mjs 2>/dev/null || ! git -C '$SB' show main:test/zz-scale-loaded.test.mjs | grep -q setInterval" ;;
+    qa-wrong)
+      chk "QA's own wrong test failed the gate" gq $'\tgate\tT-[0-9]* FAIL' "$J/events.log"
+      chk "…QA fixed it and the next gate took it as QA's (qa_fix), no new dev attempt" bash -c "grep -q \$'\tqa-fix\t' '$J/events.log' && jq -e '[.cards[] | select(.qa_fix)] | length > 0' '$B'"
+      log "qa_fix: $(jq -c '[.cards[] | select(.qa_fix) | {id, qa_fix, attempts}]' "$B")" ;;
+  esac
+  if [[ ${E2E_SUITE_RUNS:-} == end ]]; then
+    chk "suite_runs end: no suite after a merge" bash -c "! grep -q \$'\tmerge-check\t' '$J/events.log'"
+    [[ $E2E_INJECT == regression ]] && chk "verify-all named the card the failures point to (LIKELY T-…)" bash -c "cat '$SB'/.work/runs/*.jsonl | grep -q 'LIKELY  T-'"
+  fi
+fi
+if [[ ${E2E_SUITE_RUNS:-} == batch ]]; then
+  if gq 'DEFERRED' "$J/events.log"; then ok "suite_runs batch: a merge waited for its partner — $(grep DEFERRED "$J/events.log" | cut -f3 | head -2 | tr '\n' ';')"
+  else log "suite_runs batch: no two cards of one component were ready to merge at the same moment — not exercised in this run"; fi
 fi
 cost="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | jq -s '[.[] | select(.type=="result") | .total_cost_usd // 0] | add // 0')"
 step "result"
