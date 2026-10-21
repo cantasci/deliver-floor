@@ -1,0 +1,504 @@
+# qa_verify: node --test test/integration/indicators/countryRating.integration.test.mjs
+TAP version 13
+# Subtest: AC-6: downgrades return the table-A WL (P0)
+    # Subtest: AC-6: countryRatingChangeWl("BBB+", "BBB") is exactly 1
+    ok 1 - AC-6: countryRatingChangeWl("BBB+", "BBB") is exactly 1
+      ---
+      duration_ms: 1.141957
+      type: 'test'
+      ...
+    # Subtest: AC-6: countryRatingChangeWl("B-", "CCC+") is exactly 1
+    ok 2 - AC-6: countryRatingChangeWl("B-", "CCC+") is exactly 1
+      ---
+      duration_ms: 0.182188
+      type: 'test'
+      ...
+    # Subtest: AC-6: countryRatingChangeWl("BBB+", "BBB-") is exactly 2
+    ok 3 - AC-6: countryRatingChangeWl("BBB+", "BBB-") is exactly 2
+      ---
+      duration_ms: 0.124872
+      type: 'test'
+      ...
+    # Subtest: AC-6: countryRatingChangeWl("A-", "BBB") is exactly 2
+    ok 4 - AC-6: countryRatingChangeWl("A-", "BBB") is exactly 2
+      ---
+      duration_ms: 1.73236
+      type: 'test'
+      ...
+    # Subtest: AC-6: countryRatingChangeWl("BBB+", "BB+") is exactly 2
+    ok 5 - AC-6: countryRatingChangeWl("BBB+", "BB+") is exactly 2
+      ---
+      duration_ms: 0.121978
+      type: 'test'
+      ...
+    # Subtest: AC-6: countryRatingChangeWl("AAA", "CCC-") is exactly 2
+    ok 6 - AC-6: countryRatingChangeWl("AAA", "CCC-") is exactly 2
+      ---
+      duration_ms: 0.089396
+      type: 'test'
+      ...
+    # Subtest: AC-6: boundaries 1 -> 1, 2 -> 2, 3 -> 2, 18 -> 2
+    ok 7 - AC-6: boundaries 1 -> 1, 2 -> 2, 3 -> 2, 18 -> 2
+      ---
+      duration_ms: 0.334187
+      type: 'test'
+      ...
+    # Subtest: AC-6 / C6: 1-notch downgrade gives 1 here and 0 in notchCalculator
+    ok 8 - AC-6 / C6: 1-notch downgrade gives 1 here and 0 in notchCalculator
+      ---
+      duration_ms: 0.295978
+      type: 'test'
+      ...
+    # Subtest: AC-6: exhaustive sweep of all 19x19 pairs returns only 0, 1 or 2 by notch count
+    ok 9 - AC-6: exhaustive sweep of all 19x19 pairs returns only 0, 1 or 2 by notch count
+      ---
+      duration_ms: 0.812277
+      type: 'test'
+      ...
+    1..9
+ok 1 - AC-6: downgrades return the table-A WL (P0)
+  ---
+  duration_ms: 6.964441
+  type: 'suite'
+  ...
+# Subtest: AC-7: upgrades and unchanged ratings return 0 (P1)
+    # Subtest: AC-7: countryRatingChangeWl("BBB", "BBB+") is 0
+    ok 1 - AC-7: countryRatingChangeWl("BBB", "BBB+") is 0
+      ---
+      duration_ms: 0.386007
+      type: 'test'
+      ...
+    # Subtest: AC-7: countryRatingChangeWl("BB+", "BBB+") is 0
+    ok 2 - AC-7: countryRatingChangeWl("BB+", "BBB+") is 0
+      ---
+      duration_ms: 0.089688
+      type: 'test'
+      ...
+    # Subtest: AC-7: countryRatingChangeWl("CCC-", "AAA") is 0
+    ok 3 - AC-7: countryRatingChangeWl("CCC-", "AAA") is 0
+      ---
+      duration_ms: 0.065639
+      type: 'test'
+      ...
+    # Subtest: AC-7: countryRatingChangeWl("A", "A") is 0
+    ok 4 - AC-7: countryRatingChangeWl("A", "A") is 0
+      ---
+      duration_ms: 0.057514
+      type: 'test'
+      ...
+    # Subtest: AC-7: countryRatingChangeWl("CCC-", "CCC-") is 0
+    ok 5 - AC-7: countryRatingChangeWl("CCC-", "CCC-") is 0
+      ---
+      duration_ms: 0.054334
+      type: 'test'
+      ...
+    1..5
+ok 2 - AC-7: upgrades and unchanged ratings return 0 (P1)
+  ---
+  duration_ms: 1.008468
+  type: 'suite'
+  ...
+# Subtest: AC-8: case and trim() whitespace are normalised (P1)
+    # Subtest: AC-8: countryRatingChangeWl(" bbb+ ", "bbb") is 1
+    ok 1 - AC-8: countryRatingChangeWl(" bbb+ ", "bbb") is 1
+      ---
+      duration_ms: 0.200799
+      type: 'test'
+      ...
+    # Subtest: AC-8: countryRatingChangeWl("BBB+", "\\r\\nbbb-") is 2
+    ok 2 - AC-8: countryRatingChangeWl("BBB+", "\\r\\nbbb-") is 2
+      ---
+      duration_ms: 0.059497
+      type: 'test'
+      ...
+    # Subtest: AC-8: countryRatingChangeWl("bbb+", "BB+") is 2
+    ok 3 - AC-8: countryRatingChangeWl("bbb+", "BB+") is 2
+      ---
+      duration_ms: 0.052176
+      type: 'test'
+      ...
+    # Subtest: AC-8: countryRatingChangeWl(" BBB+", "BBB") is 1
+    ok 4 - AC-8: countryRatingChangeWl(" BBB+", "BBB") is 1
+      ---
+      duration_ms: 0.0779
+      type: 'test'
+      ...
+    # Subtest: AC-8: countryRatingChangeWl("BBB+", "bbb ") is 1
+    ok 5 - AC-8: countryRatingChangeWl("BBB+", "bbb ") is 1
+      ---
+      duration_ms: 0.054978
+      type: 'test'
+      ...
+    # Subtest: AC-8: countryRatingChangeWl("\\tBBB+\\n", " BBB ") is 1
+    ok 6 - AC-8: countryRatingChangeWl("\\tBBB+\\n", " BBB ") is 1
+      ---
+      duration_ms: 0.049102
+      type: 'test'
+      ...
+    # Subtest: AC-8: mixed case in both arguments
+    ok 7 - AC-8: mixed case in both arguments
+      ---
+      duration_ms: 0.089807
+      type: 'test'
+      ...
+    1..7
+ok 3 - AC-8: case and trim() whitespace are normalised (P1)
+  ---
+  duration_ms: 0.774471
+  type: 'suite'
+  ...
+# Subtest: AC-9: invalid input throws RangeError (P0)
+    # Subtest: AC-9: invalid previous "AAA+" throws RangeError
+    ok 1 - AC-9: invalid previous "AAA+" throws RangeError
+      ---
+      duration_ms: 2.016128
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "AAA+" throws RangeError
+    ok 2 - AC-9: invalid current "AAA+" throws RangeError
+      ---
+      duration_ms: 0.24341
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "D" throws RangeError
+    ok 3 - AC-9: invalid previous "D" throws RangeError
+      ---
+      duration_ms: 0.103113
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "D" throws RangeError
+    ok 4 - AC-9: invalid current "D" throws RangeError
+      ---
+      duration_ms: 0.073192
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "NR" throws RangeError
+    ok 5 - AC-9: invalid previous "NR" throws RangeError
+      ---
+      duration_ms: 0.064708
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "NR" throws RangeError
+    ok 6 - AC-9: invalid current "NR" throws RangeError
+      ---
+      duration_ms: 0.062261
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "Baa1" throws RangeError
+    ok 7 - AC-9: invalid previous "Baa1" throws RangeError
+      ---
+      duration_ms: 0.060237
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "Baa1" throws RangeError
+    ok 8 - AC-9: invalid current "Baa1" throws RangeError
+      ---
+      duration_ms: 0.062224
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "BBB++" throws RangeError
+    ok 9 - AC-9: invalid previous "BBB++" throws RangeError
+      ---
+      duration_ms: 0.212482
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "BBB++" throws RangeError
+    ok 10 - AC-9: invalid current "BBB++" throws RangeError
+      ---
+      duration_ms: 0.107359
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "BBB +" throws RangeError
+    ok 11 - AC-9: invalid previous "BBB +" throws RangeError
+      ---
+      duration_ms: 0.069458
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "BBB +" throws RangeError
+    ok 12 - AC-9: invalid current "BBB +" throws RangeError
+      ---
+      duration_ms: 0.064001
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "B B B" throws RangeError
+    ok 13 - AC-9: invalid previous "B B B" throws RangeError
+      ---
+      duration_ms: 0.061133
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "B B B" throws RangeError
+    ok 14 - AC-9: invalid current "B B B" throws RangeError
+      ---
+      duration_ms: 0.130284
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "BBB+-" throws RangeError
+    ok 15 - AC-9: invalid previous "BBB+-" throws RangeError
+      ---
+      duration_ms: 0.148272
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "BBB+-" throws RangeError
+    ok 16 - AC-9: invalid current "BBB+-" throws RangeError
+      ---
+      duration_ms: 0.069722
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "" throws RangeError
+    ok 17 - AC-9: invalid previous "" throws RangeError
+      ---
+      duration_ms: 0.064799
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "" throws RangeError
+    ok 18 - AC-9: invalid current "" throws RangeError
+      ---
+      duration_ms: 0.134366
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "   " throws RangeError
+    ok 19 - AC-9: invalid previous "   " throws RangeError
+      ---
+      duration_ms: 0.180526
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "   " throws RangeError
+    ok 20 - AC-9: invalid current "   " throws RangeError
+      ---
+      duration_ms: 0.080445
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous "\\t" throws RangeError
+    ok 21 - AC-9: invalid previous "\\t" throws RangeError
+      ---
+      duration_ms: 0.064355
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current "\\t" throws RangeError
+    ok 22 - AC-9: invalid current "\\t" throws RangeError
+      ---
+      duration_ms: 0.066923
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous null throws RangeError
+    ok 23 - AC-9: invalid previous null throws RangeError
+      ---
+      duration_ms: 0.067277
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current null throws RangeError
+    ok 24 - AC-9: invalid current null throws RangeError
+      ---
+      duration_ms: 0.060924
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous undefined throws RangeError
+    ok 25 - AC-9: invalid previous undefined throws RangeError
+      ---
+      duration_ms: 0.058348
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current undefined throws RangeError
+    ok 26 - AC-9: invalid current undefined throws RangeError
+      ---
+      duration_ms: 0.063859
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous 42 throws RangeError
+    ok 27 - AC-9: invalid previous 42 throws RangeError
+      ---
+      duration_ms: 0.063398
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current 42 throws RangeError
+    ok 28 - AC-9: invalid current 42 throws RangeError
+      ---
+      duration_ms: 0.121249
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous 7 throws RangeError
+    ok 29 - AC-9: invalid previous 7 throws RangeError
+      ---
+      duration_ms: 0.079492
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current 7 throws RangeError
+    ok 30 - AC-9: invalid current 7 throws RangeError
+      ---
+      duration_ms: 0.07501
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous true throws RangeError
+    ok 31 - AC-9: invalid previous true throws RangeError
+      ---
+      duration_ms: 0.060709
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current true throws RangeError
+    ok 32 - AC-9: invalid current true throws RangeError
+      ---
+      duration_ms: 0.057209
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous {} throws RangeError
+    ok 33 - AC-9: invalid previous {} throws RangeError
+      ---
+      duration_ms: 0.068221
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current {} throws RangeError
+    ok 34 - AC-9: invalid current {} throws RangeError
+      ---
+      duration_ms: 0.069748
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid previous ["BBB+"] throws RangeError
+    ok 35 - AC-9: invalid previous ["BBB+"] throws RangeError
+      ---
+      duration_ms: 0.062327
+      type: 'test'
+      ...
+    # Subtest: AC-9: invalid current ["BBB+"] throws RangeError
+    ok 36 - AC-9: invalid current ["BBB+"] throws RangeError
+      ---
+      duration_ms: 0.059447
+      type: 'test'
+      ...
+    # Subtest: AC-9: one-argument call countryRatingChangeWl("BBB") throws RangeError
+    ok 37 - AC-9: one-argument call countryRatingChangeWl("BBB") throws RangeError
+      ---
+      duration_ms: 0.149511
+      type: 'test'
+      ...
+    # Subtest: AC-9: zero-argument call throws RangeError
+    ok 38 - AC-9: zero-argument call throws RangeError
+      ---
+      duration_ms: 0.158923
+      type: 'test'
+      ...
+    # Subtest: AC-9: both arguments invalid throws RangeError
+    ok 39 - AC-9: both arguments invalid throws RangeError
+      ---
+      duration_ms: 0.155228
+      type: 'test'
+      ...
+    # Subtest: AC-9: boxed String, Symbol and null-prototype object throw RangeError
+    ok 40 - AC-9: boxed String, Symbol and null-prototype object throw RangeError
+      ---
+      duration_ms: 0.23573
+      type: 'test'
+      ...
+    # Subtest: AC-9: " BBB+" with inner whitespace "BBB +" stays rejected while " BBB+" is accepted
+    ok 41 - AC-9: " BBB+" with inner whitespace "BBB +" stays rejected while " BBB+" is accepted
+      ---
+      duration_ms: 0.120392
+      type: 'test'
+      ...
+    # Subtest: AC-9: a failed call returns no value (nothing is returned from a throw)
+    ok 42 - AC-9: a failed call returns no value (nothing is returned from a throw)
+      ---
+      duration_ms: 0.237042
+      type: 'test'
+      ...
+    1..42
+ok 4 - AC-9: invalid input throws RangeError (P0)
+  ---
+  duration_ms: 7.36303
+  type: 'suite'
+  ...
+# Subtest: AC-10: error message names argument and value (P3, type asserted; wording is review)
+    # Subtest: AC-10: countryRatingChangeWl("XX", "BBB") throws RangeError
+    ok 1 - AC-10: countryRatingChangeWl("XX", "BBB") throws RangeError
+      ---
+      duration_ms: 0.320991
+      type: 'test'
+      ...
+    # Subtest: AC-10: countryRatingChangeWl("BBB", "YY") throws RangeError
+    ok 2 - AC-10: countryRatingChangeWl("BBB", "YY") throws RangeError
+      ---
+      duration_ms: 0.099743
+      type: 'test'
+      ...
+    # Subtest: AC-10: countryRatingChangeWl("XX", "YY") throws RangeError
+    ok 3 - AC-10: countryRatingChangeWl("XX", "YY") throws RangeError
+      ---
+      duration_ms: 0.082938
+      type: 'test'
+      ...
+    1..3
+ok 5 - AC-10: error message names argument and value (P3, type asserted; wording is review)
+  ---
+  duration_ms: 0.662926
+  type: 'suite'
+  ...
+# Subtest: AC-11: contract of the export (P1)
+    # Subtest: AC-11: { countryRatingChangeWl } is imported by the contract path as a function
+    ok 1 - AC-11: { countryRatingChangeWl } is imported by the contract path as a function
+      ---
+      duration_ms: 0.24301
+      type: 'test'
+      ...
+    # Subtest: AC-11: countryRatingChangeWl.length === 2
+    ok 2 - AC-11: countryRatingChangeWl.length === 2
+      ---
+      duration_ms: 0.091894
+      type: 'test'
+      ...
+    # Subtest: AC-11: an extra argument is not an override (C7)
+    ok 3 - AC-11: an extra argument is not an override (C7)
+      ---
+      duration_ms: 0.116055
+      type: 'test'
+      ...
+    1..3
+ok 6 - AC-11: contract of the export (P1)
+  ---
+  duration_ms: 0.588916
+  type: 'suite'
+  ...
+# Subtest: AC-12: pure, synchronous, built on notchChange (P2)
+    # Subtest: AC-12: result is not a Promise and is a plain number
+    ok 1 - AC-12: result is not a Promise and is a plain number
+      ---
+      duration_ms: 0.186254
+      type: 'test'
+      ...
+    # Subtest: AC-12: repeated calls return the same result (2 on each of two calls)
+    ok 2 - AC-12: repeated calls return the same result (2 on each of two calls)
+      ---
+      duration_ms: 0.146539
+      type: 'test'
+      ...
+    # Subtest: AC-12: input arguments are not mutated and calls do not leak state between inputs
+    ok 3 - AC-12: input arguments are not mutated and calls do not leak state between inputs
+      ---
+      duration_ms: 0.125335
+      type: 'test'
+      ...
+    # Subtest: AC-12: calls write nothing to stdout or stderr
+    ok 4 - AC-12: calls write nothing to stdout or stderr
+      ---
+      duration_ms: 0.231498
+      type: 'test'
+      ...
+    # Subtest: AC-12: module imports only notchChange from ../ratings/notch.mjs (no node: or third-party import)
+    ok 5 - AC-12: module imports only notchChange from ../ratings/notch.mjs (no node: or third-party import)
+      ---
+      duration_ms: 56.993265
+      type: 'test'
+      ...
+    1..5
+ok 7 - AC-12: pure, synchronous, built on notchChange (P2)
+  ---
+  duration_ms: 58.121297
+  type: 'suite'
+  ...
+1..7
+# tests 74
+# suites 7
+# pass 74
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 175.226624

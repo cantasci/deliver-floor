@@ -1,0 +1,97 @@
+# gate: T-02  attempt: 1  2026-10-21T13:37:18Z
+ok    on job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/integration/indicators/countryRating.integration.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: AC-6: downgrades return the table A WL as a number
+ok 1 - AC-6: downgrades return the table A WL as a number
+  ---
+  duration_ms: 3.301236
+  type: 'test'
+  ...
+# Subtest: AC-6 (C6): 1-notch downgrade is WL 1 here and WL 0 in notchCalculator
+ok 2 - AC-6 (C6): 1-notch downgrade is WL 1 here and WL 0 in notchCalculator
+  ---
+  duration_ms: 0.450889
+  type: 'test'
+  ...
+# Subtest: AC-7: upgrades and unchanged return 0 (never -0)
+ok 3 - AC-7: upgrades and unchanged return 0 (never -0)
+  ---
+  duration_ms: 0.277672
+  type: 'test'
+  ...
+# Subtest: AC-8: case and trim whitespace are normalised in either argument
+ok 4 - AC-8: case and trim whitespace are normalised in either argument
+  ---
+  duration_ms: 0.172144
+  type: 'test'
+  ...
+# Subtest: AC-9: every invalid value throws RangeError as previous
+ok 5 - AC-9: every invalid value throws RangeError as previous
+  ---
+  duration_ms: 1.495681
+  type: 'test'
+  ...
+# Subtest: AC-9: every invalid value throws RangeError as current
+ok 6 - AC-9: every invalid value throws RangeError as current
+  ---
+  duration_ms: 0.428925
+  type: 'test'
+  ...
+# Subtest: AC-9: missing arguments throw RangeError
+ok 7 - AC-9: missing arguments throw RangeError
+  ---
+  duration_ms: 0.214962
+  type: 'test'
+  ...
+# Subtest: AC-10: invalid argument throws RangeError from notchChange
+ok 8 - AC-10: invalid argument throws RangeError from notchChange
+  ---
+  duration_ms: 0.189521
+  type: 'test'
+  ...
+# Subtest: AC-10: message names the argument and the value, previous first
+ok 9 - AC-10: message names the argument and the value, previous first
+  ---
+  duration_ms: 0.717025
+  type: 'test'
+  ...
+# Subtest: AC-11: exported function declares exactly 2 parameters
+ok 10 - AC-11: exported function declares exactly 2 parameters
+  ---
+  duration_ms: 0.458001
+  type: 'test'
+  ...
+# Subtest: AC-11 (C7): an extra argument is not an override
+ok 11 - AC-11 (C7): an extra argument is not an override
+  ---
+  duration_ms: 0.312125
+  type: 'test'
+  ...
+# Subtest: AC-12: synchronous and deterministic
+ok 12 - AC-12: synchronous and deterministic
+  ---
+  duration_ms: 0.1688
+  type: 'test'
+  ...
+# Subtest: boundaries: result is only ever 0, 1 or 2 across the whole scale
+ok 13 - boundaries: result is only ever 0, 1 or 2 across the whole scale
+  ---
+  duration_ms: 0.4956
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 130.819836
+ok    verify passed

@@ -1,0 +1,110 @@
+2026-10-21T13:26:42Z	new	Indicators 2 and 3 repayment delay
+2026-10-21T13:27:11Z	jobset	stack: .stack=["node"]
+2026-10-21T13:27:11Z	jobset	roles: .roles=[{"role":"ba","agent":"business-analyst","why":"always"},{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-02/REQ-03-03: indicator mapping logic in src/indicators"},{"role":"backend","agent":"backend-dev","count":2,"why":"Staffing: two backend developers work in parallel, one per requirement"},{"role":"qa","agent":"qa-tester","why":"always"},{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"Plain Node ESM (.mjs) stack"},{"role":"blind","agent":"ecc:code-reviewer","why":"WL levels feed credit-risk monitoring; wrong WL mapping is a P1 risk"}]
+2026-10-21T13:27:12Z	roles-defaults	qa: 2 seats — one per developer seat
+2026-10-21T13:27:12Z	jobset	assumptions: .assumptions += ["Cards are scoped per requirement: REQ-03-02 and REQ-03-03 in separate files, parallel"]
+2026-10-21T13:27:13Z	shape-auto	not shaped: the request states requirement ids, acceptance criteria, and a contract — a specification already, not shaped
+2026-10-21T13:27:13Z	roles	ba backend-lead backend qa reviewer blind
+2026-10-21T13:27:13Z	phase	readiness
+2026-10-21T13:27:16Z	checkpoint	readiness, 0 card(s) merged — a fresh session goes on from here
+2026-10-21T13:27:49Z	context	drafted from the repo: <work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/context.draft.md
+2026-10-21T13:28:40Z	dispatch	business-analyst
+2026-10-21T13:31:19Z	agent	business-analyst ab412b1f8cc09123b: ```json {"items":[ {"id":"PRD-goal","status":"decided","answer":"This job adds two mapping functions to the Watchlist POC (Corporate Client Credit Monitoring, E
+2026-10-21T13:32:00Z	readiness	34 items: 16 decided, 12 n/a, 6 open
+2026-10-21T13:32:01Z	decide	DEL-docs: None beyond JSDoc on the four exports — The request asks for no documentation and the Contract is the documentation; no CHANGELOG exists.
+2026-10-21T13:32:01Z	decide	X-options-immutability: Frozen arrays (Object.freeze) — A consumer cannot mutate the exported lists and change what the WL function accepts; the value still equals the specified list in order.
+2026-10-21T13:32:01Z	decide	X-error-message: Message names the function and lists the allowed options; tests assert RangeError type only — The request fixes only the type; a descriptive message helps callers.
+2026-10-21T13:32:15Z	readiness	34 items: 18 decided, 13 n/a, 3 open
+2026-10-21T13:32:15Z	phase	awaiting_clarification
+2026-10-21T13:32:24Z	clarify	ARC-style: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-21T13:32:24Z	clarify	ARC-components: Confirmed: the drafted architecture is right — one plain Node ESM library at the repo root, code under src/, tests under test/, run with node --test. Keep it as the project's architecture.
+2026-10-21T13:32:25Z	clarify	X-string-object: Rejected with a RangeError: only a primitive string (typeof 'string') is accepted; new String('BBB+') is a non-string.
+2026-10-21T13:32:50Z	context	proposed for .deliver/knowledge/architecture.md: architecture: 1 component(s) — repo (.)
+2026-10-21T13:32:51Z	baseline	PASS (node --test, 0 min)
+2026-10-21T13:32:51Z	freeze	readiness + architecture frozen (5b0d130f0f82)
+2026-10-21T13:32:51Z	roles	ba backend-lead backend qa reviewer blind
+2026-10-21T13:32:51Z	phase	planning
+2026-10-21T13:32:57Z	checkpoint	planning, 0 card(s) merged — a fresh session goes on from here
+2026-10-21T13:33:41Z	dispatch	business-analyst
+2026-10-21T13:34:53Z	agent	business-analyst a160abc7765860938: # Plan: JOB-20261021-1326-indicators-2-and-3-repayment-del ## Goal Add two mapping functions to the Watchlist POC (EPIC-03). Each one turns the dropdown option 
+2026-10-21T13:35:33Z	dispatch	ecc:architect
+2026-10-21T13:36:17Z	agent	ecc:architect a2a96061bc555c021: [{"tmp_id":"B1","title":"REQ-03-02 Indicator 2 Days with delay: DAYS_WITH_DELAY_OPTIONS + daysWithDelayWl","role":"backend","component":"repo","context":"Why: W
+2026-10-21T13:36:51Z	dispatch	business-analyst
+2026-10-21T13:38:34Z	agent	business-analyst a71fc28610f6d2120: === T-01 === # T-01: REQ-03-02 Indicator 2 Days with delay: DAYS_WITH_DELAY_OPTIONS + daysWithDelayWl ## User story As a later POC screen (the code that calls t
+2026-10-21T13:39:52Z	phase	executing
+2026-10-21T13:39:56Z	checkpoint	executing, 0 card(s) merged — a fresh session goes on from here
+2026-10-21T13:40:35Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-21T13:40:36Z	qa-start	T-01 → QA writes its tests in <work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/wt/T-01-qa (branch job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-01-qa) while the dev builds
+2026-10-21T13:40:37Z	assign	T-02 → backend-dev (backend#2) attempt=1
+2026-10-21T13:40:38Z	qa-start	T-02 → QA writes its tests in <work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/wt/T-02-qa (branch job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-02-qa) while the dev builds
+2026-10-21T13:40:47Z	dispatch	backend-dev
+2026-10-21T13:40:55Z	dispatch	backend-dev
+2026-10-21T13:41:01Z	dispatch	qa-tester
+2026-10-21T13:41:07Z	dispatch	qa-tester
+2026-10-21T13:42:15Z	agent	backend-dev a38873ce9de43a75e: status: done commit: 063523f verify: passed (`node --test test/indicators/daysWithDelay.test.mjs`, 10 of 10 pass). I saw the tests fail before writing the modul
+2026-10-21T13:42:19Z	agent	backend-dev acc4786dee8791178: status: done commit: 7cfe8c0 verify: passed (`node --test test/indicators/delayCount.test.mjs` gave 14 pass, 0 fail; `npm test` in the worktree also gave 14 pas
+2026-10-21T13:42:45Z	agent	qa-tester a33e0b03865698066: No remote exists, so nothing was pushed. The commit is on the local QA branch. QA-WRITE is done and there is no verdict yet. The tests are committed as `583191d
+2026-10-21T13:42:49Z	agent	qa-tester abfefce391c849adb: QA-WRITE for T-02 is done. I wrote 76 tests and committed them as `3a141bd` (`T-02 QA: integration tests for delayCountWl and DELAY_COUNT_OPTIONS (AC-7..AC-14)`
+2026-10-21T13:42:54Z	gate	T-01 PASS
+2026-10-21T13:42:56Z	gate	T-02 PASS
+2026-10-21T13:43:02Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-21T13:43:03Z	qa-join	T-02: QA's tests (1 commit(s)) joined the card branch
+2026-10-21T13:43:34Z	qa	T-01 pass (qa_verify PASS) — AC-1 pass: 'AC-1: each option maps to its WL'; AC-2 pass: 'AC-2: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 strings in order'; AC-3 pass: 'AC-3: DAYS_WITH_DELAY_OPTIONS is frozen'; AC-4 pass: 'AC-4' trim tests; AC-5 pass: 'AC-5' RangeError tests; AC-6 pass: 'AC-6' non-string tests; AC-13 pass: 'AC-13' error message tests; AC-14 pass: 'AC-14' pure and repeatable
+2026-10-21T13:43:36Z	qa	T-02 pass (qa_verify PASS) — AC-7 pass: 'AC-7' mapping tests; AC-8 pass: 'AC-8' deepStrictEqual options; AC-9 pass: 'AC-9' frozen/push tests; AC-10 pass: 'AC-10: " 0 " is trimmed and maps to 0'; AC-11 pass: 'AC-11' RangeError tests; AC-12 pass: 'AC-12: non-string throws RangeError'; AC-13 pass: 'AC-13' RangeError message tests; AC-14 pass: 'AC-14' repeatable tests
+2026-10-21T13:43:49Z	dispatch	ecc:typescript-reviewer
+2026-10-21T13:43:55Z	dispatch	ecc:typescript-reviewer
+2026-10-21T13:43:58Z	dispatch	ecc:code-reviewer
+2026-10-21T13:44:01Z	dispatch	ecc:code-reviewer
+2026-10-21T13:44:06Z	agent	ecc:typescript-reviewer a2edbdc15c734bb29: ```json {"verdict":"approve","blocking":[],"nits":["src/indicators/daysWithDelay.mjs: the error message is a constant, so it does not echo the rejected input. T
+2026-10-21T13:44:07Z	agent	ecc:typescript-reviewer a600cfaae572692e5: ```json {"verdict":"approve","blocking":[],"nits":["src/indicators/delayCount.mjs: all checks pass. The module has no imports and no top-level side effects, bec
+2026-10-21T13:44:15Z	agent	ecc:code-reviewer ae4249d12aa3e163c: {"findings":[{"file":"src/indicators/daysWithDelay.mjs","line":36,"issue":"The function trims surrounding whitespace before the lookup. That includes the BOM (U
+2026-10-21T13:44:25Z	agent	ecc:code-reviewer aaf5b248d1e884c88: ```json {"findings":[ {"file":"src/indicators/delayCount.mjs","line":19,"issue":"Input is trimmed with String.prototype.trim before matching, so padded strings 
+2026-10-21T13:44:30Z	review	T-01 reviewer approve — approved, nits only
+2026-10-21T13:44:30Z	review	T-01 blind approve — nits only, no blocking findings
+2026-10-21T13:44:31Z	integrate	T-01 merged
+2026-10-21T13:45:35Z	merge-check	T-01 STALLED (repo suite)
+2026-10-21T13:45:36Z	review	T-02 reviewer approve — approved, nits only
+2026-10-21T13:45:36Z	review	T-02 blind approve — nits only, no blocking findings
+2026-10-21T13:45:38Z	integrate	T-02 merged
+2026-10-21T13:47:51Z	followup	test/zz-scale-loaded.test.mjs (pre-existing on main, commit d20f517) never finishes: its promise never resolves and it holds a setInterval, so 'node --test' hangs and dl's suite run stalls after every merge (suite_timeout_min 1). Not caused by this job; needs an owner decision.
+2026-10-21T13:47:52Z	checkpoint	executing, 2 card(s) merged — a fresh session goes on from here
+2026-10-21T13:50:29Z	fix-open	F-1 (merge-check): test/zz-scale-loaded.test.mjs (commit d20f517 'test: the rating scale stays loaded', on the job branch outside any card, after the baseline) never ends: its async test awaits a promise that never resolves and holds a setInterval open. Alone: 'timeout 15 node --test test/zz-scale-loaded.test.mjs' exits 124; the full 'node --test' prints 101 passing tests then hangs >90s, so dl stops it at suite_timeout_min=1 (gates/T-01-merged-134432.log). Every other test file passes alone (rc 0). Fix: remove or rewrite it as a terminating test; it asserts nothing about the rating scale.
+2026-10-21T13:50:48Z	dispatch	ecc:architect
+2026-10-21T13:51:11Z	agent	ecc:architect a0cd63d3094febca8: [{"tmp_id":"X1","title":"Remove the never-ending test/zz-scale-loaded.test.mjs so `node --test` finishes","role":"backend","component":"repo","context":"Why: fi
+2026-10-21T13:51:25Z	dispatch	business-analyst
+2026-10-21T13:52:18Z	agent	business-analyst a78649ae4d05e7762: === X1 === # X1: Remove the never-ending test/zz-scale-loaded.test.mjs so `node --test` finishes ## User story As the delivery team, we want the job branch's fu
+2026-10-21T13:52:54Z	agent	ecc:architect a0cd63d3094febca8: [{"tmp_id":"X1","title":"Remove the never-ending test/zz-scale-loaded.test.mjs so `node --test` finishes","role":"backend","component":"repo","context":"Why: fi
+2026-10-21T13:53:29Z	agent	business-analyst a78649ae4d05e7762: === X1 === # X1: Remove the never-ending test/zz-scale-loaded.test.mjs so `node --test` finishes ## User story As the delivery team, I want the full `node --tes
+2026-10-21T13:53:40Z	card-add	T-03: F-1 (X1): test/zz-scale-loaded.test.mjs (commit d20f517 'test: the rating scale stays loaded', on the job branch outside any card, after the baseline) never ends: its asy
+2026-10-21T13:53:41Z	fix-add	F-1 → T-03
+2026-10-21T13:53:47Z	assign	T-03 → backend-dev (backend#1) attempt=1
+2026-10-21T13:53:48Z	qa-start	T-03 → QA writes its tests in <work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/wt/T-03-qa (branch job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-03-qa) while the dev builds
+2026-10-21T13:53:57Z	dispatch	backend-dev
+2026-10-21T13:54:02Z	dispatch	qa-tester
+2026-10-21T13:54:33Z	agent	backend-dev a72cf02dad2009011: status: done (committed locally, push blocked) commit: 8a5248a verify: passed (`test ! -e test/zz-scale-loaded.test.mjs && timeout 60 node --test test/indicator
+2026-10-21T13:54:38Z	agent	qa-tester ab3c61ff761fe55b2: QA-WRITE for T-03 is done, but the push was blocked. My commit `faa467d` is on the QA branch `job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-03-qa` a
+2026-10-21T13:54:44Z	gate	T-03 PASS
+2026-10-21T13:54:45Z	qa-join	T-03: QA's tests (1 commit(s)) joined the card branch
+2026-10-21T13:54:47Z	qa	T-03 pass (qa_verify PASS) — AC-1: suiteFinishes test asserts file absent; AC-2: dev verify diff; AC-3: dev verify indicators; AC-4: dev commit; AC-5: AC-5: test/zz-scale-loaded.test.mjs does not exist (the suite can finish); AC-6: same test fails fast with file present; AC-7: test uses only node: builtins; AC-8: qa_verify timeout 60 node --test
+2026-10-21T13:54:58Z	dispatch	ecc:typescript-reviewer
+2026-10-21T13:55:01Z	dispatch	ecc:code-reviewer
+2026-10-21T13:55:06Z	agent	ecc:typescript-reviewer a46d09ccf07c0eb46: ```json {"verdict":"approve","blocking":[],"nits":["The stray file's name and test title suggest it was meant to check that the rating scale stays loaded. Delet
+2026-10-21T13:55:18Z	agent	ecc:code-reviewer a4c7e5968fc0e5146: ```json {"findings":[{"file":"test/integration/suiteFinishes/suiteFinishes.integration.test.mjs","line":14,"issue":"The test checks only that one named file is 
+2026-10-21T13:55:22Z	review	T-03 reviewer approve — diff is the deletion plus one terminating QA test; no blocking items
+2026-10-21T13:55:23Z	review	T-03 blind approve — only nits, no findings that block
+2026-10-21T13:55:24Z	integrate	T-03 merged
+2026-10-21T13:55:25Z	merge-check	T-03 PASS (repo suite)
+2026-10-21T13:55:33Z	checkpoint	executing, 3 card(s) merged — a fresh session goes on from here
+2026-10-21T13:55:57Z	phase	integrating
+2026-10-21T13:55:58Z	verify-all	PASS
+2026-10-21T13:56:03Z	checkpoint	integrating, 3 card(s) merged — a fresh session goes on from here
+2026-10-21T13:56:26Z	phase	closing
+2026-10-21T13:56:33Z	checkpoint	closing, 3 card(s) merged — a fresh session goes on from here
+2026-10-21T13:57:30Z	dispatch	business-analyst
+2026-10-21T13:59:12Z	agent	business-analyst aa6b8b08142bf68c3: # Closing check: JOB-20261021-1326, Indicators 2 and 3 repayment delay All 14 acceptance criteria are met and the security requirement passes. Every value in th
+2026-10-21T13:59:49Z	followup	test/zz-scale-loaded.test.mjs came from commit d20f517 on the job branch, not from main (an earlier note said pre-existing on main); it asserted nothing and never finished. Owner to say whether it was meant to check something real.
+2026-10-21T13:59:49Z	followup	The bash-guard hook blocks read-only commands whose text contains certain words, and blocked sending the T-03 card branch to the remote; tighten its matching.
+2026-10-21T13:59:49Z	followup	daysWithDelay uses a Map and delayCount uses indexOf for option lookup; align when Ind. 4-13 are built.
+2026-10-21T13:59:54Z	knowledge	lessons/standards committed to job/JOB-20261021-1326-indicators-2-and-3-repayment-del: .deliver/knowledge/architecture.md 
+2026-10-21T13:59:54Z	record	the job's record committed to job/JOB-20261021-1326-indicators-2-and-3-repayment-del: .deliver/jobs/JOB-20261021-1326-indicators-2-and-3-repayment-del/
+2026-10-21T13:59:55Z	ship	local merge into main

@@ -1,0 +1,418 @@
+{
+  "cards": [
+    {
+      "id": "T-01",
+      "title": "REQ-03-02 Indicator 2 Days with delay: DAYS_WITH_DELAY_OPTIONS + daysWithDelayWl",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "repo",
+      "context": "Why: Watchlist POC (EPIC-03), Indicator 2 'Days with delay' (REQ-03-02). An analyst picks a dropdown option and this function turns it into a Watchlist level (WL, 0-4, higher is worse). Later POC screens show the exported option list as the dropdown (C4) and call the function in-process. No UI, API, I/O or logging. Repo state: empty Node 18+ ESM library (src/.gitkeep, test/.gitkeep); both files are new. package.json 'test' = 'node --test'. CLAUDE.md: plain .mjs ES modules, NO npm dependencies, tests use node:test + node:assert/strict, src/indicators holds pure functions with no I/O. Work TDD. NEW FILE src/indicators/daysWithDelay.mjs with exactly these exports: (1) `export const DAYS_WITH_DELAY_OPTIONS = Object.freeze([\"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\"])`, these 5 strings in this order; '<=3 days' is ASCII '<='; the Unicode '≤3 days' is INVALID (C1). (2) `export function daysWithDelayWl(option)` returns a JS number: 'no delay'→0, '<=3 days'→0, '>3 days'→2, '>60 days'→3, '>90 days'→4. Never returns 1, never more than 4. Input rules (C1, C5, X-string-object, NFR-security): (a) if `typeof option !== \"string\"`, throw a RangeError, never a TypeError (missing argument, undefined, null, numbers incl. NaN, booleans, objects, arrays, String wrapper objects like new String('>3 days'), Symbols). Build the message without implicitly converting the argument to a string (a Symbol in a template literal throws a TypeError). (b) Otherwise trim with String.prototype.trim() only (removes space, tab, CR/LF, NBSP, other Unicode whitespace; NOT the zero-width space U+200B), then match exactly and case-sensitively against the option list. No inner-whitespace or case normalisation. (c) No match, incl. '' and whitespace-only, throws a RangeError synchronously. No default/fallback branch returning a number. Error message (X-error-message): contains the function name 'daysWithDelayWl' and lists the allowed options, e.g. `daysWithDelayWl: invalid option; expected one of \"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\"`. Tests assert only the RangeError type. Purity (AC-14): the module imports nothing and has no top-level side effects beyond its exports. Do not derive the option from day counts; the caller chooses it (C6). Use an own-property-safe lookup so '__proto__', 'toString' etc. do not match. NEW FILE test/indicators/daysWithDelay.test.mjs: unit tests for AC-1..AC-6 and AC-14, using the exact example values in acceptance. ESM is strict, so DAYS_WITH_DELAY_OPTIONS.push(...) throws a TypeError. Disjoint from card T-02 (delayCount): create/edit no other file under src/indicators or test/indicators. Commit format per your role card.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/daysWithDelay.mjs",
+        "test/indicators/daysWithDelay.test.mjs"
+      ],
+      "verify": "node --test test/indicators/daysWithDelay.test.mjs",
+      "qa_scope": [
+        "test/integration/daysWithDelay/**"
+      ],
+      "qa_verify": "node --test test/integration/daysWithDelay/daysWithDelay.integration.test.mjs",
+      "acceptance": [
+        "AC-1 [P1] (REQ-03-02, C2). Given the module, when `daysWithDelayWl` is called with each option, then it returns exactly these numbers (`assert.strictEqual`): `\"no delay\"` → `0`, `\"<=3 days\"` → `0`, `\">3 days\"` → `2`, `\">60 days\"` → `3`, `\">90 days\"` → `4`. Calling it with each element of `DAYS_WITH_DELAY_OPTIONS` returns a number and never throws. No valid input returns `1`, and none returns more than `4`.",
+        "AC-2 [P2] (REQ-03-02, C1, C4). `assert.deepStrictEqual(DAYS_WITH_DELAY_OPTIONS, [\"no delay\", \"<=3 days\", \">3 days\", \">60 days\", \">90 days\"])` passes. The length is 5, the order is as given, and element 1 is ASCII `\"<=3 days\"` (`\"<=3 days\"`), not `\"≤3 days\"`.",
+        "AC-3 [P3] (REQ-03-02, X-options-immutability). `Object.isFrozen(DAYS_WITH_DELAY_OPTIONS) === true`. `DAYS_WITH_DELAY_OPTIONS.push(\">120 days\")` throws a `TypeError`. Afterwards the list still deep-equals the 5 strings of item 2, and `daysWithDelayWl(\">120 days\")` throws a `RangeError`.",
+        "AC-4 [P2] (REQ-03-02, C5). A valid option with whitespace around it is trimmed with `String.prototype.trim()` and mapped: `\"  >3 days  \"` → `2`, `\"\\t>60 days\"` → `3`, `\">90 days\\n\"` → `4`, `\" no delay \"` → `0`, `\"\\r\\n<=3 days \\t\"` → `0`, `\" >3 days \"` → `2`.",
+        "AC-5 [P1] (REQ-03-02, C1, C5, PRD-conflicts). A string that, once trimmed, is not exactly one of the 5 options throws a `RangeError` synchronously (`instanceof RangeError`, not a `TypeError`): `\">3 Days\"`, `\"No delay\"`, `\">3  days\"` (two inner spaces), `\"> 3 days\"`, `\"≤3 days\"`, `\">120 days\"`, `\"3 days\"`, `\"​>3 days\"`, `\"\"`, `\"   \"`, `\"\\t\\n\"`.",
+        "AC-6 [P1] (REQ-03-02, C5, X-string-object). An argument that is not a primitive string makes `daysWithDelayWl` throw a `RangeError`, never a `TypeError`: no argument (`daysWithDelayWl()`), `undefined`, `null`, `0`, `90`, `NaN`, `true`, `{}`, `[\">3 days\"]`, `new String(\">3 days\")`, `Symbol(\">3 days\")`.",
+        "AC-13 [P3] (C1, X-error-message). For an invalid input, `daysWithDelayWl(\">3 Days\")` or `daysWithDelayWl(Symbol(\"x\"))`, the `RangeError` message contains `daysWithDelayWl` and all 5 allowed options. Building the message does not throw a `TypeError` itself (no Symbol inside a template literal). Tests assert the `RangeError` type only; review checks the wording.",
+        "AC-14 [P3] (C6, CLAUDE.md \"Pure functions, no I/O\"). `daysWithDelayWl(\">60 days\")` called three times returns `3` each time. The module imports nothing, writes no log and has no top-level side effects beyond defining its two exports. Review checks this."
+      ],
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-21T13:40:35Z"
+        }
+      ],
+      "worktree": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/wt/T-01",
+      "branch": "job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-01",
+      "gate": {
+        "result": "PASS",
+        "head": "063523f648a499e2e69631e29bcb96efc8da61de",
+        "attempt": 1,
+        "seconds": 1,
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-01-a1-134253.log",
+        "at": "2026-10-21T13:42:54Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-21T13:42:54.471Z",
+          "author": "gate",
+          "text": "PASS — 17 checks ok, 0 failed (T-01-a1-134253.log)"
+        },
+        {
+          "at": "2026-10-21T13:43:34.974Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1 pass: 'AC-1: each option maps to its WL'; AC-2 pass: 'AC-2: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 strings in order'; AC-3 pass: 'AC-3: DAYS_WITH_DELAY_OPTIONS is frozen'; AC-4 pass: 'AC-4' trim tests; AC-5 pass: 'AC-5' RangeError tests; AC-6 pass: 'AC-6' non-string tests; AC-13 pass: 'AC-13' error message tests; AC-14 pass: 'AC-14' pure and repeatable"
+        },
+        {
+          "at": "2026-10-21T13:44:30.286Z",
+          "author": "reviewer",
+          "text": "approve — approved, nits only"
+        },
+        {
+          "at": "2026-10-21T13:44:31.117Z",
+          "author": "blind",
+          "text": "approve — nits only, no blocking findings"
+        },
+        {
+          "at": "2026-10-21T13:45:35.287Z",
+          "author": "integrate",
+          "text": "the repo suite on job/JOB-20261021-1326-indicators-2-and-3-repayment-del after the merge: STALLED"
+        }
+      ],
+      "qa_join": {
+        "head": "a2cbed732412927aee0f47eac426351d7c447a35",
+        "qa_branch": "583191d15fa71fdaa602cc7a3b667099411302e4",
+        "at": "2026-10-21T13:43:02Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "a2cbed732412927aee0f47eac426351d7c447a35",
+        "gate_head": "063523f648a499e2e69631e29bcb96efc8da61de",
+        "qa_verify": "PASS",
+        "seconds": 1,
+        "suite_seconds": 0,
+        "suite": "npm test",
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-01-qa-a1-134333.log",
+        "summary": "AC-1 pass: 'AC-1: each option maps to its WL'; AC-2 pass: 'AC-2: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 strings in order'; AC-3 pass: 'AC-3: DAYS_WITH_DELAY_OPTIONS is frozen'; AC-4 pass: 'AC-4' trim tests; AC-5 pass: 'AC-5' RangeError tests; AC-6 pass: 'AC-6' non-string tests; AC-13 pass: 'AC-13' error message tests; AC-14 pass: 'AC-14' pure and repeatable",
+        "at": "2026-10-21T13:43:34Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "a2cbed732412927aee0f47eac426351d7c447a35",
+          "qa_verify": "PASS",
+          "summary": "AC-1 pass: 'AC-1: each option maps to its WL'; AC-2 pass: 'AC-2: DAYS_WITH_DELAY_OPTIONS deep-equals the 5 strings in order'; AC-3 pass: 'AC-3: DAYS_WITH_DELAY_OPTIONS is frozen'; AC-4 pass: 'AC-4' trim tests; AC-5 pass: 'AC-5' RangeError tests; AC-6 pass: 'AC-6' non-string tests; AC-13 pass: 'AC-13' error message tests; AC-14 pass: 'AC-14' pure and repeatable",
+          "at": "2026-10-21T13:43:34Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "a2cbed732412927aee0f47eac426351d7c447a35",
+          "summary": "approved, nits only",
+          "at": "2026-10-21T13:44:29Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "a2cbed732412927aee0f47eac426351d7c447a35",
+          "summary": "nits only, no blocking findings",
+          "at": "2026-10-21T13:44:30Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "a2cbed732412927aee0f47eac426351d7c447a35",
+        "summary": "blind: approve — nits only, no blocking findings | reviewer: approve — approved, nits only",
+        "pending": [],
+        "at": "2026-10-21T13:44:30Z"
+      },
+      "merge_check": {
+        "result": "STALLED",
+        "component": "repo",
+        "head": "d20f517d138c7c14937ca2a775498296a07ac1c3",
+        "seconds": 63,
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-01-merged-134432.log",
+        "n": 1,
+        "at": "2026-10-21T13:45:35Z"
+      }
+    },
+    {
+      "id": "T-02",
+      "title": "REQ-03-03 Indicator 3 Delays in 12 months: DELAY_COUNT_OPTIONS + delayCountWl",
+      "role": "backend",
+      "agent": "backend-dev",
+      "component": "repo",
+      "context": "Why: Watchlist POC (EPIC-03), Indicator 3 'Delays in 12 months' (REQ-03-03). An analyst picks a dropdown option and this function turns it into a Watchlist level (WL, 0-4, higher is worse). Later POC screens show the exported option list as the dropdown (C4) and call the function in-process. No UI, API, I/O or logging. Repo state: empty Node 18+ ESM library (src/.gitkeep, test/.gitkeep); both files are new. package.json 'test' = 'node --test'. CLAUDE.md: plain .mjs ES modules, NO npm dependencies, tests use node:test + node:assert/strict, src/indicators holds pure functions with no I/O. Work TDD. NEW FILE src/indicators/delayCount.mjs with exactly these exports: (1) `export const DELAY_COUNT_OPTIONS = Object.freeze([\"0\", \"1\", \">1\"])`; the elements are STRINGS, not numbers, in this order. (2) `export function delayCountWl(option)` returns a JS number: '0'→0, '1'→1, '>1'→2. Never more than 2. Input rules (C1, C5, X-string-object, NFR-security): (a) if `typeof option !== \"string\"`, throw a RangeError, never a TypeError. This explicitly includes the NUMBERS 0, 1 and 2, which must NOT be coerced to '0'/'1'; also missing argument, undefined, null, NaN, booleans, objects, arrays like ['1'] (no loose == or String() coercion before the type check), String wrapper objects like new String('>1'), Symbols. Build the message without implicitly converting the argument to a string (a Symbol in a template literal throws a TypeError). (b) Otherwise trim with String.prototype.trim() only (removes space, tab, CR/LF, NBSP, other Unicode whitespace; NOT the zero-width space U+200B), then match exactly and case-sensitively. No inner-whitespace normalisation and no number parsing: '01', '1.0', '2' are invalid. (c) No match, incl. '' and whitespace-only, throws a RangeError synchronously. No default/fallback branch returning a number. Error message (X-error-message): contains the function name 'delayCountWl' and lists the allowed options, e.g. `delayCountWl: invalid option; expected one of \"0\", \"1\", \">1\"`. Tests assert only the RangeError type. Purity (AC-14): the module imports nothing and has no top-level side effects beyond its exports. Counting delays in the last 12 months is the caller's job (C6). Use an own-property-safe lookup so '__proto__', 'toString' etc. do not match. NEW FILE test/indicators/delayCount.test.mjs: unit tests for AC-7..AC-12 and AC-14, using the exact example values in acceptance. ESM is strict, so DELAY_COUNT_OPTIONS.push(...) throws a TypeError. Disjoint from card T-01 (daysWithDelay): create/edit no other file under src/indicators or test/indicators. Commit format per your role card.",
+      "depends_on": [],
+      "scope": [
+        "src/indicators/delayCount.mjs",
+        "test/indicators/delayCount.test.mjs"
+      ],
+      "verify": "node --test test/indicators/delayCount.test.mjs",
+      "qa_scope": [
+        "test/integration/delayCount/**"
+      ],
+      "qa_verify": "node --test test/integration/delayCount/delayCount.integration.test.mjs",
+      "acceptance": [
+        "AC-7 [P1] (REQ-03-03, C2). `delayCountWl` returns exactly these numbers (`assert.strictEqual`): `\"0\"` → `0`, `\"1\"` → `1`, `\">1\"` → `2`. Calling it with each element of `DELAY_COUNT_OPTIONS` never throws. No valid input returns more than `2`.",
+        "AC-8 [P2] (REQ-03-03, C1, C4). `assert.deepStrictEqual(DELAY_COUNT_OPTIONS, [\"0\", \"1\", \">1\"])` passes. The length is 3, every element has `typeof === \"string\"` (the number `0` is not the string `\"0\"`), and the order is as given.",
+        "AC-9 [P3] (REQ-03-03, X-options-immutability). `Object.isFrozen(DELAY_COUNT_OPTIONS) === true`. `DELAY_COUNT_OPTIONS.push(\"2\")` throws a `TypeError`. Afterwards the list still deep-equals `[\"0\", \"1\", \">1\"]`, and `delayCountWl(\"2\")` throws a `RangeError`.",
+        "AC-10 [P2] (REQ-03-03, C5). A valid option with whitespace around it is trimmed with `String.prototype.trim()` and mapped: `\" 0 \"` → `0`, `\"\\t1\\n\"` → `1`, `\" >1 \"` → `2`, `\"  >1\"` → `2`, `\" 1 \"` → `1`.",
+        "AC-11 [P1] (REQ-03-03, C1, C5). A string that, once trimmed, is not exactly one of the 3 options throws a `RangeError` synchronously: `\"2\"`, `\"01\"`, `\"1.0\"`, `\"> 1\"`, `\">  1\"`, `\"≥1\"`, `\">0\"`, `\"one\"`, `\"\"`, `\"   \"`, `\"​1\"`.",
+        "AC-12 [P1] (REQ-03-03, C5, X-string-object). An argument that is not a primitive string makes `delayCountWl` throw a `RangeError`, never a `TypeError` and never a WL: no argument, `undefined`, `null`, `0`, `1`, `2`, `NaN`, `false`, `{}`, `[\"1\"]`, `new String(\">1\")`, `Symbol(\"1\")`.",
+        "AC-13 [P3] (C1, X-error-message). For an invalid input, `delayCountWl(2)` or `delayCountWl(Symbol(\"1\"))`, the `RangeError` message contains `delayCountWl` and the 3 allowed options `\"0\"`, `\"1\"`, `\">1\"`. Building the message does not throw a `TypeError` itself. Tests assert the `RangeError` type only; review checks the wording.",
+        "AC-14 [P3] (C6, CLAUDE.md \"Pure functions, no I/O\"). `delayCountWl(\">1\")` called three times returns `2` each time. The module imports nothing, writes no log and has no top-level side effects beyond its two exports. Review checks this."
+      ],
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "seat": "backend#2",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#2",
+          "by": "michael",
+          "at": "2026-10-21T13:40:36Z"
+        }
+      ],
+      "worktree": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/wt/T-02",
+      "branch": "job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-02",
+      "gate": {
+        "result": "PASS",
+        "head": "7cfe8c0c730d7495c8a7d2840d1d262dc42eeb57",
+        "attempt": 1,
+        "seconds": 0,
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-02-a1-134255.log",
+        "at": "2026-10-21T13:42:55Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-21T13:42:56.050Z",
+          "author": "gate",
+          "text": "PASS — 21 checks ok, 0 failed (T-02-a1-134255.log)"
+        },
+        {
+          "at": "2026-10-21T13:43:36.630Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-7 pass: 'AC-7' mapping tests; AC-8 pass: 'AC-8' deepStrictEqual options; AC-9 pass: 'AC-9' frozen/push tests; AC-10 pass: 'AC-10: \" 0 \" is trimmed and maps to 0'; AC-11 pass: 'AC-11' RangeError tests; AC-12 pass: 'AC-12: non-string throws RangeError'; AC-13 pass: 'AC-13' RangeError message tests; AC-14 pass: 'AC-14' repeatable tests"
+        },
+        {
+          "at": "2026-10-21T13:45:36.301Z",
+          "author": "reviewer",
+          "text": "approve — approved, nits only"
+        },
+        {
+          "at": "2026-10-21T13:45:37.276Z",
+          "author": "blind",
+          "text": "approve — nits only, no blocking findings"
+        }
+      ],
+      "qa_join": {
+        "head": "2a837c8c229beddcd0c1c00fd20efbeeeb2b3411",
+        "qa_branch": "3a141bd9fc8617de6da73e4e00d2a1f635ee5cb6",
+        "at": "2026-10-21T13:43:03Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "2a837c8c229beddcd0c1c00fd20efbeeeb2b3411",
+        "gate_head": "7cfe8c0c730d7495c8a7d2840d1d262dc42eeb57",
+        "qa_verify": "PASS",
+        "seconds": 0,
+        "suite_seconds": 1,
+        "suite": "npm test",
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-02-qa-a1-134335.log",
+        "summary": "AC-7 pass: 'AC-7' mapping tests; AC-8 pass: 'AC-8' deepStrictEqual options; AC-9 pass: 'AC-9' frozen/push tests; AC-10 pass: 'AC-10: \" 0 \" is trimmed and maps to 0'; AC-11 pass: 'AC-11' RangeError tests; AC-12 pass: 'AC-12: non-string throws RangeError'; AC-13 pass: 'AC-13' RangeError message tests; AC-14 pass: 'AC-14' repeatable tests",
+        "at": "2026-10-21T13:43:36Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "2a837c8c229beddcd0c1c00fd20efbeeeb2b3411",
+          "qa_verify": "PASS",
+          "summary": "AC-7 pass: 'AC-7' mapping tests; AC-8 pass: 'AC-8' deepStrictEqual options; AC-9 pass: 'AC-9' frozen/push tests; AC-10 pass: 'AC-10: \" 0 \" is trimmed and maps to 0'; AC-11 pass: 'AC-11' RangeError tests; AC-12 pass: 'AC-12: non-string throws RangeError'; AC-13 pass: 'AC-13' RangeError message tests; AC-14 pass: 'AC-14' repeatable tests",
+          "at": "2026-10-21T13:43:36Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "2a837c8c229beddcd0c1c00fd20efbeeeb2b3411",
+          "summary": "approved, nits only",
+          "at": "2026-10-21T13:45:35Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "2a837c8c229beddcd0c1c00fd20efbeeeb2b3411",
+          "summary": "nits only, no blocking findings",
+          "at": "2026-10-21T13:45:36Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "2a837c8c229beddcd0c1c00fd20efbeeeb2b3411",
+        "summary": "blind: approve — nits only, no blocking findings | reviewer: approve — approved, nits only",
+        "pending": [],
+        "at": "2026-10-21T13:45:36Z"
+      }
+    },
+    {
+      "title": "Remove the never-ending test/zz-scale-loaded.test.mjs so `node --test` finishes",
+      "role": "backend",
+      "component": "repo",
+      "context": "Why: finding F-1. Stray commit d20f517 on the job branch added test/zz-scale-loaded.test.mjs, whose only test awaits a promise that never resolves and starts a setInterval; `node --test` hangs after 101 passing tests and dl kills it at suite_timeout_min=1. Decision: delete the file, do not rewrite or replace it (it imports nothing from src/ and asserts nothing). Dev: delete only test/zz-scale-loaded.test.mjs; do not touch src/**, test/indicators/** or test/integration/**; a normal commit in the repo's commit format, no history rewrite. QA (separate): adds test/integration/suiteFinishes/suiteFinishes.integration.test.mjs (node:test, node:assert/strict, node:fs) asserting the stray file is absent (path from import.meta.url); it must end on its own and must NOT spawn `node --test`. Proving the whole suite finishes is qa_verify's job. CLAUDE.md: Node 18+ ESM, no dependencies.",
+      "depends_on": [],
+      "scope": [
+        "test/zz-scale-loaded.test.mjs"
+      ],
+      "verify": "test ! -e test/zz-scale-loaded.test.mjs && timeout 60 node --test test/indicators/*.test.mjs",
+      "qa_scope": [
+        "test/integration/suiteFinishes/**"
+      ],
+      "qa_verify": "timeout 60 node --test",
+      "acceptance": [
+        "test/zz-scale-loaded.test.mjs no longer exists in the card branch",
+        "The dev diff only deletes test/zz-scale-loaded.test.mjs; no files under src/ change",
+        "`test ! -e test/zz-scale-loaded.test.mjs && timeout 60 node --test test/indicators/*.test.mjs` exits 0",
+        "test/integration/suiteFinishes/suiteFinishes.integration.test.mjs asserts the stray file is absent, ends on its own, and does not spawn a nested `node --test`",
+        "`timeout 60 node --test` from the worktree root exits 0 (not 124): the whole suite finishes and passes"
+      ],
+      "fix": "F-1",
+      "agent": "backend-dev",
+      "reviewers": [
+        "reviewer",
+        "blind"
+      ],
+      "id": "T-03",
+      "state": "merged",
+      "attempts": 1,
+      "notes": [],
+      "history": [
+        {
+          "at": "2026-10-21T13:53:40Z",
+          "by": "michael",
+          "change": "added",
+          "reason": "F-1 (X1): test/zz-scale-loaded.test.mjs (commit d20f517 'test: the rating scale stays loaded', on the job branch outside any card, after the baseline) never ends: its asy"
+        }
+      ],
+      "seat": "backend#1",
+      "assignments": [
+        {
+          "attempt": 1,
+          "agent": "backend-dev",
+          "seat": "backend#1",
+          "by": "michael",
+          "at": "2026-10-21T13:53:47Z"
+        }
+      ],
+      "worktree": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/wt/T-03",
+      "branch": "job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-03",
+      "gate": {
+        "result": "PASS",
+        "head": "8a5248a077c7433bb27656052dd2b392b6a00215",
+        "attempt": 1,
+        "seconds": 1,
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-03-a1-135443.log",
+        "at": "2026-10-21T13:54:44Z"
+      },
+      "comments": [
+        {
+          "at": "2026-10-21T13:54:44.592Z",
+          "author": "gate",
+          "text": "PASS — 31 checks ok, 0 failed (T-03-a1-135443.log)"
+        },
+        {
+          "at": "2026-10-21T13:54:47.824Z",
+          "author": "qa-tester",
+          "text": "pass (qa_verify PASS): AC-1: suiteFinishes test asserts file absent; AC-2: dev verify diff; AC-3: dev verify indicators; AC-4: dev commit; AC-5: AC-5: test/zz-scale-loaded.test.mjs does not exist (the suite can finish); AC-6: same test fails fast with file present; AC-7: test uses only node: builtins; AC-8: qa_verify timeout 60 node --test"
+        },
+        {
+          "at": "2026-10-21T13:55:23.235Z",
+          "author": "reviewer",
+          "text": "approve — diff is the deletion plus one terminating QA test; no blocking items"
+        },
+        {
+          "at": "2026-10-21T13:55:24.087Z",
+          "author": "blind",
+          "text": "approve — only nits, no findings that block"
+        },
+        {
+          "at": "2026-10-21T13:55:25.731Z",
+          "author": "integrate",
+          "text": "the repo suite on job/JOB-20261021-1326-indicators-2-and-3-repayment-del after the merge: PASS"
+        }
+      ],
+      "qa_join": {
+        "head": "e70ab540edc55156190283ee46f7b59f9a56648c",
+        "qa_branch": "faa467d81420dd09e3102416cac8eba34cea05cc",
+        "at": "2026-10-21T13:54:45Z"
+      },
+      "qa": {
+        "verdict": "pass",
+        "head": "e70ab540edc55156190283ee46f7b59f9a56648c",
+        "gate_head": "8a5248a077c7433bb27656052dd2b392b6a00215",
+        "qa_verify": "PASS",
+        "seconds": 0,
+        "suite_seconds": 1,
+        "suite": "npm test",
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-03-qa-a1-135446.log",
+        "summary": "AC-1: suiteFinishes test asserts file absent; AC-2: dev verify diff; AC-3: dev verify indicators; AC-4: dev commit; AC-5: AC-5: test/zz-scale-loaded.test.mjs does not exist (the suite can finish); AC-6: same test fails fast with file present; AC-7: test uses only node: builtins; AC-8: qa_verify timeout 60 node --test",
+        "at": "2026-10-21T13:54:47Z"
+      },
+      "qas": [
+        {
+          "verdict": "pass",
+          "head": "e70ab540edc55156190283ee46f7b59f9a56648c",
+          "qa_verify": "PASS",
+          "summary": "AC-1: suiteFinishes test asserts file absent; AC-2: dev verify diff; AC-3: dev verify indicators; AC-4: dev commit; AC-5: AC-5: test/zz-scale-loaded.test.mjs does not exist (the suite can finish); AC-6: same test fails fast with file present; AC-7: test uses only node: builtins; AC-8: qa_verify timeout 60 node --test",
+          "at": "2026-10-21T13:54:47Z"
+        }
+      ],
+      "reviews": [
+        {
+          "by": "reviewer",
+          "verdict": "approve",
+          "head": "e70ab540edc55156190283ee46f7b59f9a56648c",
+          "summary": "diff is the deletion plus one terminating QA test; no blocking items",
+          "at": "2026-10-21T13:55:22Z"
+        },
+        {
+          "by": "blind",
+          "verdict": "approve",
+          "head": "e70ab540edc55156190283ee46f7b59f9a56648c",
+          "summary": "only nits, no findings that block",
+          "at": "2026-10-21T13:55:23Z",
+          "triage": []
+        }
+      ],
+      "review": {
+        "verdict": "approve",
+        "head": "e70ab540edc55156190283ee46f7b59f9a56648c",
+        "summary": "blind: approve — only nits, no findings that block | reviewer: approve — diff is the deletion plus one terminating QA test; no blocking items",
+        "pending": [],
+        "at": "2026-10-21T13:55:23Z"
+      },
+      "merge_check": {
+        "result": "PASS",
+        "component": "repo",
+        "head": "e6afc5b9a6e0c30a2756ffb869ced7edbaadaf96",
+        "seconds": 1,
+        "log": "<work>/repo/.work/JOB-20261021-1326-indicators-2-and-3-repayment-del/gates/T-03-merged-135524.log",
+        "n": 3,
+        "at": "2026-10-21T13:55:25Z"
+      }
+    }
+  ]
+}

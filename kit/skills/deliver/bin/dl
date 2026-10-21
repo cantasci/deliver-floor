@@ -777,6 +777,11 @@ cmd_next() {
         mcp="$(card_get "$mc" '.merge_check.pid // 0')"; kill -0 "$mcp" 2>/dev/null && continue
         echo "CHECK   the $(card_get "$mc" .merge_check.component) suite after $mc merged was cut off before it finished (the dl running it was stopped) — run it again: dl merge-check $mc"
       done
+      # suite_runs batch: a merge whose suite waits for a partner that is no longer on its way to merge (sent back, blocked)
+      for mc in $(jq -r '.cards[] | select(.merge_check.result == "DEFERRED") | .id' "$BOARD"); do
+        mcp="$(card_get "$mc" '.merge_check.with // ""')"; [[ -n $mcp && "$(card_get "$mcp" .state)" == review ]] && continue
+        echo "CHECK   the $(card_get "$mc" .merge_check.component) suite has not run since $mc merged: ${mcp:-its partner} was to merge next and did not — run it: dl merge-check $mc"
+      done
       # a component whose suite failed on the job branch right after its last merge (dl integrate) — fixed by the next merge into it
       jq -r '[.cards[] | select(.merge_check) | {id, m: .merge_check}] | group_by(.m.component) | map(max_by(.m.n)) | .[] | select(.m.result == "FAIL" or .m.result == "STALLED")
         | "FIX     the \(.m.component) suite \(if .m.result == "STALLED" then "did not finish (dl stopped it)" else "fails" end) on the job branch since \(.id)\(if .m.batch then " and " + (.m.batch | join(" ")) else "" end) merged (\(.m.log)) — a fix card in \(.m.component) now: dl fix open \"<finding>\" --from <source>"' "$BOARD"
@@ -878,8 +883,8 @@ cmd_phase() {
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       integrating)
         [[ $cur == executing || $cur == integrating ]] || refuse 1 "integrating comes after executing (now: $cur)"
-        local cut; cut="$(jq -r '[.cards[] | select(.merge_check.result == "RUNNING") | .id] | join(" ")' "$BOARD")"
-        [[ -z $cut ]] || refuse 1 "the suite after the merge of $cut never finished (the dl running it was stopped) — run it: dl merge-check <card>"
+        local cut; cut="$(jq -r '[.cards[] | select(.merge_check.result == "RUNNING" or .merge_check.result == "DEFERRED") | .id] | join(" ")' "$BOARD")"
+        [[ -z $cut ]] || refuse 1 "the suite after the merge of $cut has not finished (its dl was stopped, or it waits for a partner that did not merge) — run it: dl merge-check <card>"
         [[ -z "$(stack_due)" ]] || refuse 1 "stack tests have not passed on the job branch: $(stack_due | cut -d$'\x1f' -f1 | tr '\n' ' ')— run each now (dl stack-test <card>); a failure gets a fix card now, not at the end"
         jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null \
           || refuse 1 "cards are not finished: $(jq -r '[.cards[] | select(.state | IN("ready","running","review","blocked")) | "\(.id)=\(.state)"] | join(" ")' "$BOARD") — decide each blocked card yourself: split it (dl fix open \"<what is left>\" --from blocked: the Lead cuts, the BA specs) or drop it (dl card <id> state archived \"<reason>\")" ;;
@@ -2240,13 +2245,16 @@ cmd_integrate() {
   # blamed that card — and four fix cards followed). Without a component suite nothing runs here: verify-all is the check.
   local comp msuite; comp="$(card_get "$card" '.component // ""')"
   msuite=""; [[ -n $comp && -f $JOB_DIR/readiness.json ]] && msuite="$(jq -r --arg c "$comp" '[.architecture.components[]? | select(.id==$c) | .verify // empty][0] // ""' "$JOB_DIR/readiness.json")"
-  # suite_runs batch: another card of this component is ready to merge right now — the suite runs once, after the last of them
+  # suite_runs batch: another card of this component has passed QA on its current commit and waits for its review or its merge
+  # — the suite runs once, after the last of them. (Approved only was too late: live run 72b, Michael reviews and merges one
+  # card after the other, so no partner was ever approved yet.) A partner that then does not merge leaves the suite owed: dl next
+  # says CHECK, and integrating waits for it.
   local partner=""
   if [[ -n $msuite && "$(suite_runs)" == batch ]]; then
     local pid pbr ph
-    for pid in $(jq -r --arg c "$comp" --arg id "$card" '.cards[] | select(.state=="review" and .component==$c and .id!=$id and .qa.verdict=="pass" and .review.verdict=="approve") | .id' "$BOARD"); do
+    for pid in $(jq -r --arg c "$comp" --arg id "$card" '.cards[] | select(.state=="review" and .component==$c and .id!=$id and .qa.verdict=="pass") | .id' "$BOARD"); do
       pbr="$(card_get "$pid" .branch)"; ph="$(branch_head "$pbr")"
-      [[ "$(card_get "$pid" .qa.head)" == "$ph" && "$(card_get "$pid" .review.head)" == "$ph" ]] && gate_holds "$pid" "$ph" && { partner=$pid; break; }
+      [[ "$(card_get "$pid" .qa.head)" == "$ph" ]] && gate_holds "$pid" "$ph" && { partner=$pid; break; }
     done
   fi
   if [[ -n $partner ]]; then

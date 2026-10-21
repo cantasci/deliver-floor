@@ -1,0 +1,151 @@
+# gate: T-01  attempt: 1  2026-10-21T13:31:06Z
+ok    on job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/integration/ratings/notch.contract.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs
+TAP version 13
+# Subtest: RATING_SCALE has the 19 ratings, best first
+ok 1 - RATING_SCALE has the 19 ratings, best first
+  ---
+  duration_ms: 3.213674
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE is frozen and cannot be mutated
+ok 2 - RATING_SCALE is frozen and cannot be mutated
+  ---
+  duration_ms: 1.051762
+  type: 'test'
+  ...
+# Subtest: notchChange returns index(current) - index(previous)
+ok 3 - notchChange returns index(current) - index(previous)
+  ---
+  duration_ms: 0.507116
+  type: 'test'
+  ...
+# Subtest: notchChange of equal ratings is +0, not -0
+ok 4 - notchChange of equal ratings is +0, not -0
+  ---
+  duration_ms: 0.296171
+  type: 'test'
+  ...
+# Subtest: notchChange gives +0 for every equal pair
+ok 5 - notchChange gives +0 for every equal pair
+  ---
+  duration_ms: 0.397292
+  type: 'test'
+  ...
+# Subtest: notchCalculator: 1-notch downgrade has wl 0
+ok 6 - notchCalculator: 1-notch downgrade has wl 0
+  ---
+  duration_ms: 0.392945
+  type: 'test'
+  ...
+# Subtest: notchCalculator: 2-notch downgrade has wl 1
+ok 7 - notchCalculator: 2-notch downgrade has wl 1
+  ---
+  duration_ms: 0.388857
+  type: 'test'
+  ...
+# Subtest: notchCalculator: 3-notch downgrade has wl 2 (C2 correction)
+ok 8 - notchCalculator: 3-notch downgrade has wl 2 (C2 correction)
+  ---
+  duration_ms: 0.164684
+  type: 'test'
+  ...
+# Subtest: notchCalculator: largest downgrade has wl 2
+ok 9 - notchCalculator: largest downgrade has wl 2
+  ---
+  duration_ms: 0.639465
+  type: 'test'
+  ...
+# Subtest: notchCalculator: upgrades are negative with wl 0
+ok 10 - notchCalculator: upgrades are negative with wl 0
+  ---
+  duration_ms: 0.861812
+  type: 'test'
+  ...
+# Subtest: notchCalculator: unchanged is exactly {0, 'unchanged', 0}
+ok 11 - notchCalculator: unchanged is exactly {0, 'unchanged', 0}
+  ---
+  duration_ms: 0.560052
+  type: 'test'
+  ...
+# Subtest: notchCalculator agrees with notchChange and the rules for all 19x19 pairs
+ok 12 - notchCalculator agrees with notchChange and the rules for all 19x19 pairs
+  ---
+  duration_ms: 3.044261
+  type: 'test'
+  ...
+# Subtest: inputs are trimmed and case-insensitive
+ok 13 - inputs are trimmed and case-insensitive
+  ---
+  duration_ms: 0.27803
+  type: 'test'
+  ...
+# Subtest: NBSP is trimmed, in both positions and both functions
+ok 14 - NBSP is trimmed, in both positions and both functions
+  ---
+  duration_ms: 0.262556
+  type: 'test'
+  ...
+# Subtest: notchChange rejects invalid strings with RangeError in either position
+ok 15 - notchChange rejects invalid strings with RangeError in either position
+  ---
+  duration_ms: 0.957498
+  type: 'test'
+  ...
+# Subtest: notchChange rejects non-strings with RangeError (never TypeError) in either position
+ok 16 - notchChange rejects non-strings with RangeError (never TypeError) in either position
+  ---
+  duration_ms: 0.664661
+  type: 'test'
+  ...
+# Subtest: notchChange rejects when both arguments are invalid
+ok 17 - notchChange rejects when both arguments are invalid
+  ---
+  duration_ms: 0.306127
+  type: 'test'
+  ...
+# Subtest: notchCalculator rejects invalid strings with RangeError in either position
+ok 18 - notchCalculator rejects invalid strings with RangeError in either position
+  ---
+  duration_ms: 0.354534
+  type: 'test'
+  ...
+# Subtest: notchCalculator rejects non-strings with RangeError (never TypeError) in either position
+ok 19 - notchCalculator rejects non-strings with RangeError (never TypeError) in either position
+  ---
+  duration_ms: 0.321834
+  type: 'test'
+  ...
+# Subtest: notchCalculator rejects when both arguments are invalid
+ok 20 - notchCalculator rejects when both arguments are invalid
+  ---
+  duration_ms: 0.215231
+  type: 'test'
+  ...
+# Subtest: missing arguments throw RangeError
+ok 21 - missing arguments throw RangeError
+  ---
+  duration_ms: 0.278344
+  type: 'test'
+  ...
+# Subtest: RangeError message names the offending argument
+ok 22 - RangeError message names the offending argument
+  ---
+  duration_ms: 0.361412
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 141.340079
+ok    verify passed

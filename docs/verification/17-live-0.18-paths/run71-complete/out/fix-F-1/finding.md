@@ -1,0 +1,1 @@
+src/ratings/notch.mjs RATING_SCALE has BBB- and BB+ swapped (order ...BBB+,BBB,BB+,BBB-,BB...) since commit 84e2366 'refactor: tidy the rating scale' (a merge commit on the job branch, not made through dl). Violates C1 (BBB+,BBB,BBB-,BB+,BB,BB-); T-01 contract tests fail (26 failures in full node --test). Restore the order; no other change.

@@ -1422,16 +1422,17 @@ jq -n --argjson a "$(srcard T-01 a)" --argjson b "$(srcard T-02 b)" --argjson c 
   '{cards:[$a, $b, ($c | .scope += ["package-lock.json"]), $d, $e, ($f | .qa_verify = "test -f it/f/t && test ! -e it/f/bad"),
     ($g | .qa_verify = "test -f it/g/t && test ! -e it/g/wrong"), ($h | .qa_verify = "test -f it/h/t && test ! -e it/h/wrong")]}' > "$SRJ/board.json"
 "$DL" phase executing >/dev/null
-srprep() { # srprep <card> <dir> [extra file at the root] — dev, gate, QA pass, review: ready to integrate
+srprep() { # srprep <card> <dir> [extra file at the root] [noreview] — dev, gate, QA pass, review: ready to integrate
   local w; w="$("$DL" wt add "$1")"; mkdir -p "$w/src/$2" "$w/it/$2" && echo x > "$w/src/$2/f" && { [[ -z ${3:-} ]] || echo '{}' > "$w/$3"; }
   git -C "$w" add -A && git -C "$w" commit -qm "$1: $2" && "$DL" gate "$1" >/dev/null 2>&1 && echo t > "$w/it/$2/t" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: $2" \
-    && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review "$1" approve ok >/dev/null 2>&1
+    && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && { [[ -n ${4:-} ]] || "$DL" review "$1" approve ok >/dev/null 2>&1; }
 }
 "$DL" jobset '.settings.suite_runs="batch"' >/dev/null
-srprep T-01 a && srprep T-02 b || bad "T-01/T-02 not ready to merge"
+srprep T-01 a && srprep T-02 b "" noreview || bad "T-01/T-02 not ready to merge"
 rm -f "$HOME/app-suite-runs"
 out="$("$DL" integrate T-01 2>&1)"
-contains "suite_runs batch: another card of the component is ready to merge — the suite waits for it" "$out" "later: the app suite runs once T-02 merges too (suite_runs batch)"
+contains "suite_runs batch: another card of the component passed QA and waits for its review — the suite waits for it (live run 72b)" "$out" "later: the app suite runs once T-02 merges too (suite_runs batch)"
+"$DL" review T-02 approve ok >/dev/null 2>&1
 [[ ! -e $HOME/app-suite-runs ]] && ok "…and did not run" || bad "the suite ran for T-01"
 out="$("$DL" integrate T-02 2>&1)"
 contains "…it runs once after the last of them, and says so" "$out" "the app suite passes on"
@@ -1461,6 +1462,10 @@ srprep T-04 d || bad "T-04 not ready to merge"
 out="$("$DL" integrate T-04 2>&1)"
 [[ $out == *"MERGED: T-04"* && $out != *"app suite"* && ! -e $HOME/app-suite-runs && "$(jq -r '.cards[3].merge_check // "none"' "$SRJ/board.json")" == none ]] \
   && ok "suite_runs end: no suite after a merge" || bad "end: $out"
+bedit "$SRJ/board.json" '(.cards[3].merge_check) = {"result":"DEFERRED","component":"app","head":"x","with":"T-05","n":99,"at":"x"}'
+contains "a batched suite whose partner did not merge is owed: dl next says to run it" "$("$DL" next)" "CHECK   the app suite has not run since T-04 merged: T-05 was to merge next and did not"
+contains "…integrating waits for it" "$("$DL" phase integrating 2>&1)" "the suite after the merge of T-04 has not finished"
+"$DL" merge-check T-04 >/dev/null 2>&1; [[ "$(jq -r '.cards[3].merge_check.result' "$SRJ/board.json")" == PASS ]] && ok "…dl merge-check runs it" || bad "deferred merge-check: $(jq -c '.cards[3].merge_check' "$SRJ/board.json")"
 W5="$("$DL" wt add T-05)"; Q5="$("$DL" wt qa T-05)"
 out="$("$DL" wt rm T-05 2>&1)"
 [[ ! -d $W5 && ! -d $Q5 && $out == *"removed: $Q5"* ]] && ok "dl wt rm removes the card's QA worktree too (live job: half-written tests left behind)" || bad "wt rm: $out"

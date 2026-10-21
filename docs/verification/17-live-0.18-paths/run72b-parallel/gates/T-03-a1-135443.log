@@ -1,0 +1,163 @@
+# gate: T-03  attempt: 1  2026-10-21T13:54:43Z
+ok    on job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-03
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["test/zz-scale-loaded.test.mjs"] (+ QA tests ["test/integration/suiteFinishes/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: test ! -e test/zz-scale-loaded.test.mjs && timeout 60 node --test test/indicators/*.test.mjs
+TAP version 13
+# Subtest: AC-1: each option maps to its Watchlist level
+ok 1 - AC-1: each option maps to its Watchlist level
+  ---
+  duration_ms: 1.309254
+  type: 'test'
+  ...
+# Subtest: AC-1: every listed option maps to a number in {0,2,3,4}, never 1 or above 4
+ok 2 - AC-1: every listed option maps to a number in {0,2,3,4}, never 1 or above 4
+  ---
+  duration_ms: 1.880525
+  type: 'test'
+  ...
+# Subtest: AC-2: option list is exactly the 5 strings in order, ASCII <=
+ok 3 - AC-2: option list is exactly the 5 strings in order, ASCII <=
+  ---
+  duration_ms: 0.886481
+  type: 'test'
+  ...
+# Subtest: AC-3: option list is frozen and cannot be extended
+ok 4 - AC-3: option list is frozen and cannot be extended
+  ---
+  duration_ms: 0.635319
+  type: 'test'
+  ...
+# Subtest: AC-4: surrounding whitespace is trimmed
+ok 5 - AC-4: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.306961
+  type: 'test'
+  ...
+# Subtest: AC-5: strings that are not exactly an option throw RangeError
+ok 6 - AC-5: strings that are not exactly an option throw RangeError
+  ---
+  duration_ms: 0.567891
+  type: 'test'
+  ...
+# Subtest: AC-6: non-string arguments throw RangeError, never TypeError
+ok 7 - AC-6: non-string arguments throw RangeError, never TypeError
+  ---
+  duration_ms: 0.363865
+  type: 'test'
+  ...
+# Subtest: AC-6: calling with no argument throws RangeError
+ok 8 - AC-6: calling with no argument throws RangeError
+  ---
+  duration_ms: 0.148018
+  type: 'test'
+  ...
+# Subtest: AC-13: error message names the function and lists all options
+ok 9 - AC-13: error message names the function and lists all options
+  ---
+  duration_ms: 1.03417
+  type: 'test'
+  ...
+# Subtest: AC-14: repeated calls are stable and synchronous
+ok 10 - AC-14: repeated calls are stable and synchronous
+  ---
+  duration_ms: 0.524332
+  type: 'test'
+  ...
+# Subtest: AC-7: maps each option to its WL
+ok 11 - AC-7: maps each option to its WL
+  ---
+  duration_ms: 3.0895
+  type: 'test'
+  ...
+# Subtest: AC-7: every listed option maps without throwing, WL in {0,1,2}
+ok 12 - AC-7: every listed option maps without throwing, WL in {0,1,2}
+  ---
+  duration_ms: 0.392281
+  type: 'test'
+  ...
+# Subtest: AC-8: option list is exactly ['0','1','>1'] of strings
+ok 13 - AC-8: option list is exactly ['0','1','>1'] of strings
+  ---
+  duration_ms: 1.102538
+  type: 'test'
+  ...
+# Subtest: AC-9: option list is frozen and cannot be changed
+ok 14 - AC-9: option list is frozen and cannot be changed
+  ---
+  duration_ms: 0.594716
+  type: 'test'
+  ...
+# Subtest: AC-10: surrounding whitespace is trimmed
+ok 15 - AC-10: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.341646
+  type: 'test'
+  ...
+# Subtest: AC-10: trim is String.prototype.trim (NBSP, BOM, ideographic space)
+ok 16 - AC-10: trim is String.prototype.trim (NBSP, BOM, ideographic space)
+  ---
+  duration_ms: 0.203451
+  type: 'test'
+  ...
+# Subtest: AC-11: strings that are not exactly an option throw RangeError
+ok 17 - AC-11: strings that are not exactly an option throw RangeError
+  ---
+  duration_ms: 0.586391
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string arguments throw RangeError, never TypeError
+ok 18 - AC-12: non-string arguments throw RangeError, never TypeError
+  ---
+  duration_ms: 0.659437
+  type: 'test'
+  ...
+# Subtest: AC-12: no argument throws RangeError
+ok 19 - AC-12: no argument throws RangeError
+  ---
+  duration_ms: 0.377569
+  type: 'test'
+  ...
+# Subtest: AC-12: objects with custom coercion are not coerced
+ok 20 - AC-12: objects with custom coercion are not coerced
+  ---
+  duration_ms: 0.574482
+  type: 'test'
+  ...
+# Subtest: AC-13: error for invalid input names the function and the options
+ok 21 - AC-13: error for invalid input names the function and the options
+  ---
+  duration_ms: 0.508558
+  type: 'test'
+  ...
+# Subtest: AC-14: repeated calls give the same result
+ok 22 - AC-14: repeated calls give the same result
+  ---
+  duration_ms: 0.199669
+  type: 'test'
+  ...
+# Subtest: AC-14: returns a number synchronously, not a Promise
+ok 23 - AC-14: returns a number synchronously, not a Promise
+  ---
+  duration_ms: 0.131451
+  type: 'test'
+  ...
+# Subtest: AC-14: module has no imports and exposes only its two exports
+ok 24 - AC-14: module has no imports and exposes only its two exports
+  ---
+  duration_ms: 0.844116
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 109.674827
+ok    verify passed

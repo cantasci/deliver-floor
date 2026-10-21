@@ -1,0 +1,555 @@
+# the repo component's suite (architecture) on T-02's commit (dev + QA tests together): npm test
+
+> watchlist-poc@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: AC-7: maps each option to its WL
+ok 1 - AC-7: maps each option to its WL
+  ---
+  duration_ms: 2.96536
+  type: 'test'
+  ...
+# Subtest: AC-7: every listed option maps without throwing, WL in {0,1,2}
+ok 2 - AC-7: every listed option maps without throwing, WL in {0,1,2}
+  ---
+  duration_ms: 0.334329
+  type: 'test'
+  ...
+# Subtest: AC-8: option list is exactly ['0','1','>1'] of strings
+ok 3 - AC-8: option list is exactly ['0','1','>1'] of strings
+  ---
+  duration_ms: 1.455746
+  type: 'test'
+  ...
+# Subtest: AC-9: option list is frozen and cannot be changed
+ok 4 - AC-9: option list is frozen and cannot be changed
+  ---
+  duration_ms: 1.023389
+  type: 'test'
+  ...
+# Subtest: AC-10: surrounding whitespace is trimmed
+ok 5 - AC-10: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.576248
+  type: 'test'
+  ...
+# Subtest: AC-10: trim is String.prototype.trim (NBSP, BOM, ideographic space)
+ok 6 - AC-10: trim is String.prototype.trim (NBSP, BOM, ideographic space)
+  ---
+  duration_ms: 0.324149
+  type: 'test'
+  ...
+# Subtest: AC-11: strings that are not exactly an option throw RangeError
+ok 7 - AC-11: strings that are not exactly an option throw RangeError
+  ---
+  duration_ms: 0.632347
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string arguments throw RangeError, never TypeError
+ok 8 - AC-12: non-string arguments throw RangeError, never TypeError
+  ---
+  duration_ms: 0.352729
+  type: 'test'
+  ...
+# Subtest: AC-12: no argument throws RangeError
+ok 9 - AC-12: no argument throws RangeError
+  ---
+  duration_ms: 0.432123
+  type: 'test'
+  ...
+# Subtest: AC-12: objects with custom coercion are not coerced
+ok 10 - AC-12: objects with custom coercion are not coerced
+  ---
+  duration_ms: 0.676778
+  type: 'test'
+  ...
+# Subtest: AC-13: error for invalid input names the function and the options
+ok 11 - AC-13: error for invalid input names the function and the options
+  ---
+  duration_ms: 0.422346
+  type: 'test'
+  ...
+# Subtest: AC-14: repeated calls give the same result
+ok 12 - AC-14: repeated calls give the same result
+  ---
+  duration_ms: 0.119871
+  type: 'test'
+  ...
+# Subtest: AC-14: returns a number synchronously, not a Promise
+ok 13 - AC-14: returns a number synchronously, not a Promise
+  ---
+  duration_ms: 0.142307
+  type: 'test'
+  ...
+# Subtest: AC-14: module has no imports and exposes only its two exports
+ok 14 - AC-14: module has no imports and exposes only its two exports
+  ---
+  duration_ms: 0.692668
+  type: 'test'
+  ...
+# Subtest: module exports exactly DELAY_COUNT_OPTIONS and delayCountWl
+ok 15 - module exports exactly DELAY_COUNT_OPTIONS and delayCountWl
+  ---
+  duration_ms: 5.219849
+  type: 'test'
+  ...
+# Subtest: AC-7: "0" -> 0, "1" -> 1, ">1" -> 2 (strictEqual)
+ok 16 - AC-7: "0" -> 0, "1" -> 1, ">1" -> 2 (strictEqual)
+  ---
+  duration_ms: 0.306088
+  type: 'test'
+  ...
+# Subtest: AC-7: every element of DELAY_COUNT_OPTIONS maps without throwing, result in {0,1,2}
+ok 17 - AC-7: every element of DELAY_COUNT_OPTIONS maps without throwing, result in {0,1,2}
+  ---
+  duration_ms: 0.649895
+  type: 'test'
+  ...
+# Subtest: AC-7: option list order maps to ascending WL 0, 1, 2
+ok 18 - AC-7: option list order maps to ascending WL 0, 1, 2
+  ---
+  duration_ms: 0.249132
+  type: 'test'
+  ...
+# Subtest: AC-7 (edge): result is a plain number returned synchronously, never a Promise
+ok 19 - AC-7 (edge): result is a plain number returned synchronously, never a Promise
+  ---
+  duration_ms: 0.422207
+  type: 'test'
+  ...
+# Subtest: AC-8: DELAY_COUNT_OPTIONS deep-equals ["0", "1", ">1"]
+ok 20 - AC-8: DELAY_COUNT_OPTIONS deep-equals ["0", "1", ">1"]
+  ---
+  duration_ms: 0.297721
+  type: 'test'
+  ...
+# Subtest: AC-8: length is 3, every element is a string, order as given
+ok 21 - AC-8: length is 3, every element is a string, order as given
+  ---
+  duration_ms: 0.340767
+  type: 'test'
+  ...
+# Subtest: AC-9: DELAY_COUNT_OPTIONS is frozen
+ok 22 - AC-9: DELAY_COUNT_OPTIONS is frozen
+  ---
+  duration_ms: 0.217649
+  type: 'test'
+  ...
+# Subtest: AC-9: push("2") throws TypeError, list unchanged, "2" still a RangeError
+ok 23 - AC-9: push("2") throws TypeError, list unchanged, "2" still a RangeError
+  ---
+  duration_ms: 0.900745
+  type: 'test'
+  ...
+# Subtest: AC-9 (edge): index assignment, pop and length change cannot alter the list
+ok 24 - AC-9 (edge): index assignment, pop and length change cannot alter the list
+  ---
+  duration_ms: 0.72519
+  type: 'test'
+  ...
+# Subtest: AC-10: " 0 " is trimmed and maps to 0
+ok 25 - AC-10: " 0 " is trimmed and maps to 0
+  ---
+  duration_ms: 0.351069
+  type: 'test'
+  ...
+# Subtest: AC-10: "\\t1\\n" is trimmed and maps to 1
+ok 26 - AC-10: "\\t1\\n" is trimmed and maps to 1
+  ---
+  duration_ms: 0.149201
+  type: 'test'
+  ...
+# Subtest: AC-10: " >1 " is trimmed and maps to 2
+ok 27 - AC-10: " >1 " is trimmed and maps to 2
+  ---
+  duration_ms: 0.106189
+  type: 'test'
+  ...
+# Subtest: AC-10: "  >1" is trimmed and maps to 2
+ok 28 - AC-10: "  >1" is trimmed and maps to 2
+  ---
+  duration_ms: 0.174573
+  type: 'test'
+  ...
+# Subtest: AC-10: " 1 " is trimmed and maps to 1
+ok 29 - AC-10: " 1 " is trimmed and maps to 1
+  ---
+  duration_ms: 0.101882
+  type: 'test'
+  ...
+# Subtest: AC-10: " 1 " is trimmed and maps to 1
+ok 30 - AC-10: " 1 " is trimmed and maps to 1
+  ---
+  duration_ms: 0.164649
+  type: 'test'
+  ...
+# Subtest: AC-10 (edge): String.prototype.trim() semantics - BOM and ideographic space, CR/LF, multiple spaces
+ok 31 - AC-10 (edge): String.prototype.trim() semantics - BOM and ideographic space, CR/LF, multiple spaces
+  ---
+  duration_ms: 0.164751
+  type: 'test'
+  ...
+# Subtest: AC-10: whitespace around every listed option maps like the bare option
+ok 32 - AC-10: whitespace around every listed option maps like the bare option
+  ---
+  duration_ms: 0.272955
+  type: 'test'
+  ...
+# Subtest: AC-11: "2" throws RangeError (just past the top option)
+ok 33 - AC-11: "2" throws RangeError (just past the top option)
+  ---
+  duration_ms: 0.246274
+  type: 'test'
+  ...
+# Subtest: AC-11: "01" throws RangeError (numeric look-alike)
+ok 34 - AC-11: "01" throws RangeError (numeric look-alike)
+  ---
+  duration_ms: 1.967532
+  type: 'test'
+  ...
+# Subtest: AC-11: "1.0" throws RangeError (numeric look-alike)
+ok 35 - AC-11: "1.0" throws RangeError (numeric look-alike)
+  ---
+  duration_ms: 0.198528
+  type: 'test'
+  ...
+# Subtest: AC-11: "> 1" throws RangeError (inner whitespace)
+ok 36 - AC-11: "> 1" throws RangeError (inner whitespace)
+  ---
+  duration_ms: 0.127322
+  type: 'test'
+  ...
+# Subtest: AC-11: ">  1" throws RangeError (inner whitespace)
+ok 37 - AC-11: ">  1" throws RangeError (inner whitespace)
+  ---
+  duration_ms: 0.109016
+  type: 'test'
+  ...
+# Subtest: AC-11: "≥1" throws RangeError (Unicode >= sign)
+ok 38 - AC-11: "≥1" throws RangeError (Unicode >= sign)
+  ---
+  duration_ms: 0.161194
+  type: 'test'
+  ...
+# Subtest: AC-11: ">0" throws RangeError (below range)
+ok 39 - AC-11: ">0" throws RangeError (below range)
+  ---
+  duration_ms: 0.172037
+  type: 'test'
+  ...
+# Subtest: AC-11: "one" throws RangeError (a word)
+ok 40 - AC-11: "one" throws RangeError (a word)
+  ---
+  duration_ms: 0.110258
+  type: 'test'
+  ...
+# Subtest: AC-11: "" throws RangeError (empty)
+ok 41 - AC-11: "" throws RangeError (empty)
+  ---
+  duration_ms: 0.102754
+  type: 'test'
+  ...
+# Subtest: AC-11: "   " throws RangeError (whitespace only)
+ok 42 - AC-11: "   " throws RangeError (whitespace only)
+  ---
+  duration_ms: 0.218906
+  type: 'test'
+  ...
+# Subtest: AC-11: "​1" throws RangeError (zero-width space is not trimmed)
+ok 43 - AC-11: "​1" throws RangeError (zero-width space is not trimmed)
+  ---
+  duration_ms: 0.126228
+  type: 'test'
+  ...
+# Subtest: AC-11: "+1" throws RangeError (no number parsing)
+ok 44 - AC-11: "+1" throws RangeError (no number parsing)
+  ---
+  duration_ms: 0.10121
+  type: 'test'
+  ...
+# Subtest: AC-11: "1e0" throws RangeError (no number parsing)
+ok 45 - AC-11: "1e0" throws RangeError (no number parsing)
+  ---
+  duration_ms: 0.167969
+  type: 'test'
+  ...
+# Subtest: AC-11: "0x1" throws RangeError (no number parsing)
+ok 46 - AC-11: "0x1" throws RangeError (no number parsing)
+  ---
+  duration_ms: 0.114204
+  type: 'test'
+  ...
+# Subtest: AC-11: "-0" throws RangeError (no number parsing)
+ok 47 - AC-11: "-0" throws RangeError (no number parsing)
+  ---
+  duration_ms: 0.104485
+  type: 'test'
+  ...
+# Subtest: AC-11: ">1​" throws RangeError (trailing zero-width space)
+ok 48 - AC-11: ">1​" throws RangeError (trailing zero-width space)
+  ---
+  duration_ms: 0.100123
+  type: 'test'
+  ...
+# Subtest: AC-11: "> 1 " throws RangeError (inner whitespace with outer whitespace)
+ok 49 - AC-11: "> 1 " throws RangeError (inner whitespace with outer whitespace)
+  ---
+  duration_ms: 0.158249
+  type: 'test'
+  ...
+# Subtest: AC-11: "__proto__" throws RangeError (inherited name)
+ok 50 - AC-11: "__proto__" throws RangeError (inherited name)
+  ---
+  duration_ms: 0.121734
+  type: 'test'
+  ...
+# Subtest: AC-11: "toString" throws RangeError (inherited name)
+ok 51 - AC-11: "toString" throws RangeError (inherited name)
+  ---
+  duration_ms: 0.101276
+  type: 'test'
+  ...
+# Subtest: AC-11: "constructor" throws RangeError (inherited name)
+ok 52 - AC-11: "constructor" throws RangeError (inherited name)
+  ---
+  duration_ms: 0.159939
+  type: 'test'
+  ...
+# Subtest: AC-11: "length" throws RangeError (inherited name)
+ok 53 - AC-11: "length" throws RangeError (inherited name)
+  ---
+  duration_ms: 0.111698
+  type: 'test'
+  ...
+# Subtest: AC-11: "hasOwnProperty" throws RangeError (inherited name)
+ok 54 - AC-11: "hasOwnProperty" throws RangeError (inherited name)
+  ---
+  duration_ms: 0.099113
+  type: 'test'
+  ...
+# Subtest: AC-11: "\\u00001" throws RangeError (NUL character)
+ok 55 - AC-11: "\\u00001" throws RangeError (NUL character)
+  ---
+  duration_ms: 0.100989
+  type: 'test'
+  ...
+# Subtest: AC-11: ">1>1" throws RangeError (repeated)
+ok 56 - AC-11: ">1>1" throws RangeError (repeated)
+  ---
+  duration_ms: 0.102522
+  type: 'test'
+  ...
+# Subtest: AC-11: "0 1" throws RangeError (two options)
+ok 57 - AC-11: "0 1" throws RangeError (two options)
+  ---
+  duration_ms: 0.136063
+  type: 'test'
+  ...
+# Subtest: AC-11: "0,1" throws RangeError (two options)
+ok 58 - AC-11: "0,1" throws RangeError (two options)
+  ---
+  duration_ms: 0.120584
+  type: 'test'
+  ...
+# Subtest: AC-11: ">=1" throws RangeError (operator variant)
+ok 59 - AC-11: ">=1" throws RangeError (operator variant)
+  ---
+  duration_ms: 0.245576
+  type: 'test'
+  ...
+# Subtest: AC-11: "＞1" throws RangeError (full-width greater-than)
+ok 60 - AC-11: "＞1" throws RangeError (full-width greater-than)
+  ---
+  duration_ms: 0.143929
+  type: 'test'
+  ...
+# Subtest: AC-11: "１" throws RangeError (full-width digit)
+ok 61 - AC-11: "１" throws RangeError (full-width digit)
+  ---
+  duration_ms: 0.201168
+  type: 'test'
+  ...
+# Subtest: AC-11: the RangeError is thrown synchronously, not returned as a rejected Promise
+ok 62 - AC-11: the RangeError is thrown synchronously, not returned as a rejected Promise
+  ---
+  duration_ms: 0.231069
+  type: 'test'
+  ...
+# Subtest: AC-11 (edge): matching is case-sensitive, no fallback number for unknown strings
+ok 63 - AC-11 (edge): matching is case-sensitive, no fallback number for unknown strings
+  ---
+  duration_ms: 0.334227
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string undefined throws RangeError, not TypeError, not a WL
+ok 64 - AC-12: non-string undefined throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.387028
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string null throws RangeError, not TypeError, not a WL
+ok 65 - AC-12: non-string null throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.205433
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string number 0 throws RangeError, not TypeError, not a WL
+ok 66 - AC-12: non-string number 0 throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.377294
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string number 1 throws RangeError, not TypeError, not a WL
+ok 67 - AC-12: non-string number 1 throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.202117
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string number 2 throws RangeError, not TypeError, not a WL
+ok 68 - AC-12: non-string number 2 throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.155805
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string NaN throws RangeError, not TypeError, not a WL
+ok 69 - AC-12: non-string NaN throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.159282
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string false throws RangeError, not TypeError, not a WL
+ok 70 - AC-12: non-string false throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.205713
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string true throws RangeError, not TypeError, not a WL
+ok 71 - AC-12: non-string true throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.162884
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string {} throws RangeError, not TypeError, not a WL
+ok 72 - AC-12: non-string {} throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.159934
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string ["1"] throws RangeError, not TypeError, not a WL
+ok 73 - AC-12: non-string ["1"] throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.157178
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string [] throws RangeError, not TypeError, not a WL
+ok 74 - AC-12: non-string [] throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.147857
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string new String(">1") throws RangeError, not TypeError, not a WL
+ok 75 - AC-12: non-string new String(">1") throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.23522
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string new String("1") throws RangeError, not TypeError, not a WL
+ok 76 - AC-12: non-string new String("1") throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.168327
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string Symbol("1") throws RangeError, not TypeError, not a WL
+ok 77 - AC-12: non-string Symbol("1") throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.232231
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string BigInt 1n throws RangeError, not TypeError, not a WL
+ok 78 - AC-12: non-string BigInt 1n throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.161338
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string function throws RangeError, not TypeError, not a WL
+ok 79 - AC-12: non-string function throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.173196
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string object with toString returning "1" throws RangeError, not TypeError, not a WL
+ok 80 - AC-12: non-string object with toString returning "1" throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.218895
+  type: 'test'
+  ...
+# Subtest: AC-12: non-string object with valueOf returning "1" throws RangeError, not TypeError, not a WL
+ok 81 - AC-12: non-string object with valueOf returning "1" throws RangeError, not TypeError, not a WL
+  ---
+  duration_ms: 0.324789
+  type: 'test'
+  ...
+# Subtest: AC-12: no argument throws RangeError
+ok 82 - AC-12: no argument throws RangeError
+  ---
+  duration_ms: 0.189071
+  type: 'test'
+  ...
+# Subtest: AC-12: a RangeError is not a TypeError for any non-string (explicit class check)
+ok 83 - AC-12: a RangeError is not a TypeError for any non-string (explicit class check)
+  ---
+  duration_ms: 0.446241
+  type: 'test'
+  ...
+# Subtest: AC-12 (edge): no coercion - the number 0 does not return 0 and the array ["1"] does not return 1
+ok 84 - AC-12 (edge): no coercion - the number 0 does not return 0 and the array ["1"] does not return 1
+  ---
+  duration_ms: 0.245377
+  type: 'test'
+  ...
+# Subtest: AC-12 (edge): argument's toString/valueOf are never invoked
+ok 85 - AC-12 (edge): argument's toString/valueOf are never invoked
+  ---
+  duration_ms: 0.228537
+  type: 'test'
+  ...
+# Subtest: AC-13: delayCountWl(2) throws a RangeError (type only; wording is reviewed)
+ok 86 - AC-13: delayCountWl(2) throws a RangeError (type only; wording is reviewed)
+  ---
+  duration_ms: 1.810047
+  type: 'test'
+  ...
+# Subtest: AC-13: delayCountWl(Symbol("1")) throws a RangeError - building the message does not throw a TypeError
+ok 87 - AC-13: delayCountWl(Symbol("1")) throws a RangeError - building the message does not throw a TypeError
+  ---
+  duration_ms: 0.274498
+  type: 'test'
+  ...
+# Subtest: AC-14: delayCountWl(">1") called three times returns 2 each time
+ok 88 - AC-14: delayCountWl(">1") called three times returns 2 each time
+  ---
+  duration_ms: 0.23934
+  type: 'test'
+  ...
+# Subtest: AC-14: no state carries over between calls (valid, invalid, valid)
+ok 89 - AC-14: no state carries over between calls (valid, invalid, valid)
+  ---
+  duration_ms: 0.413684
+  type: 'test'
+  ...
+# Subtest: AC-14: importing the module twice yields the same exports (no per-import side effects)
+ok 90 - AC-14: importing the module twice yields the same exports (no per-import side effects)
+  ---
+  duration_ms: 0.190166
+  type: 'test'
+  ...
+1..90
+# tests 90
+# suites 0
+# pass 90
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 183.179218

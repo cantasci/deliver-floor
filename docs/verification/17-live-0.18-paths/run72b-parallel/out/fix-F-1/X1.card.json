@@ -1,0 +1,28 @@
+{
+  "title": "Remove the never-ending test/zz-scale-loaded.test.mjs so `node --test` finishes",
+  "role": "backend",
+  "component": "repo",
+  "context": "Why: finding F-1. Stray commit d20f517 on the job branch added test/zz-scale-loaded.test.mjs, whose only test awaits a promise that never resolves and starts a setInterval; `node --test` hangs after 101 passing tests and dl kills it at suite_timeout_min=1. Decision: delete the file, do not rewrite or replace it (it imports nothing from src/ and asserts nothing). Dev: delete only test/zz-scale-loaded.test.mjs; do not touch src/**, test/indicators/** or test/integration/**; a normal commit in the repo's commit format, no history rewrite. QA (separate): adds test/integration/suiteFinishes/suiteFinishes.integration.test.mjs (node:test, node:assert/strict, node:fs) asserting the stray file is absent (path from import.meta.url); it must end on its own and must NOT spawn `node --test`. Proving the whole suite finishes is qa_verify's job. CLAUDE.md: Node 18+ ESM, no dependencies.",
+  "depends_on": [],
+  "scope": [
+    "test/zz-scale-loaded.test.mjs"
+  ],
+  "verify": "test ! -e test/zz-scale-loaded.test.mjs && timeout 60 node --test test/indicators/*.test.mjs",
+  "qa_scope": [
+    "test/integration/suiteFinishes/**"
+  ],
+  "qa_verify": "timeout 60 node --test",
+  "acceptance": [
+    "test/zz-scale-loaded.test.mjs no longer exists in the card branch",
+    "The dev diff only deletes test/zz-scale-loaded.test.mjs; no files under src/ change",
+    "`test ! -e test/zz-scale-loaded.test.mjs && timeout 60 node --test test/indicators/*.test.mjs` exits 0",
+    "test/integration/suiteFinishes/suiteFinishes.integration.test.mjs asserts the stray file is absent, ends on its own, and does not spawn a nested `node --test`",
+    "`timeout 60 node --test` from the worktree root exits 0 (not 124): the whole suite finishes and passes"
+  ],
+  "fix": "F-1",
+  "agent": "backend-dev",
+  "reviewers": [
+    "reviewer",
+    "blind"
+  ]
+}
