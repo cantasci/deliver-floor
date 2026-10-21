@@ -1515,7 +1515,7 @@ contains "…but a dev commit below QA's recorded one that changes a QA test sti
 touch "$HOME/vf-fail"; out="$("$DL" verify-all 2>&1)"
 contains "verify-all names the merged cards whose files its failures point to" "$out" "LIKELY  T-01 — the failures name src/a/x.py"
 contains "…also when the runner names them by their absolute path in the worktree (node's file:///…: live run 74 named no card)" "$out" "LIKELY  T-02 — the failures name it/b/t.test.mjs"
-[[ $out != *"LIKELY  T-03"* && $out != *"x.js"* ]] && ok "…and only those" || bad "blame: $out"
+[[ "$(grep -c '^LIKELY' <<<"$out")" == 2 ]] && ! grep -q '^LIKELY.*x\.js' <<<"$out" && ok "…and only those (a path outside the worktree names no card)" || bad "blame: $out"
 rm -f "$HOME/vf-fail" "$HOME/setup-runs"; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
 ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
