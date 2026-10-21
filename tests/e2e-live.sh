@@ -32,6 +32,8 @@
 #   E2E_INJECT=regression        fault injection, disclosed in the report: a git post-merge hook breaks the rating scale on the
 #                                job branch once, right after the merge that brings it (BBB- and BB+ swapped) — a finding after
 #                                the start: Michael opens a fix, the Lead cuts it, the BA specs it, dl fix add (F23)
+#   E2E_INJECT=late-regression   (disclosed) the same swap, after the job branch's second merge (the last planned card of
+#                                `complete`): no later card meets it, so verify-all must find it and name the card (blame)
 #   E2E_INJECT=hang              (disclosed) the same hook adds a test that never ends to the job branch after its first merge:
 #                                the suite after the merge must be stopped (STALLED) and fixed through a fix card
 #   E2E_INJECT=qa-wrong          (disclosed) when QA's tests join a card branch, one wrong assertion is appended to one of them:
@@ -114,6 +116,12 @@ if [[ -n ${E2E_INJECT:-} ]]; then   # fault injection, disclosed in report.md: a
 perl -0pi -e '"'"'s/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/$4BB+$5$3$1BBB-$2/'"'"' "$f"
 git diff --quiet -- "$f" && exit 0
 rm -f "$0"; git commit -q -am "refactor: tidy the rating scale"' ;;
+    late-regression) on='job/*--*) exit 0 ;; job/*) ;;'; act='git log -1 --format=%s | grep -q "QA tests" && exit 0
+n=$(( $(cat "$0.n" 2>/dev/null || echo 0) + 1 )); echo $n > "$0.n"; [ $n -ge 2 ] || exit 0
+f=src/ratings/notch.mjs; [ -f "$f" ] || exit 0
+perl -0pi -e '"'"'s/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/$4BB+$5$3$1BBB-$2/'"'"' "$f"
+git diff --quiet -- "$f" && exit 0
+rm -f "$0" "$0.n"; git commit -q -am "refactor: tidy the rating scale"' ;;
     hang) on='job/*--*) exit 0 ;; job/*) ;;'; act='mkdir -p test; printf '"'"'import { test } from "node:test";\ntest("rating scale stays loaded", async () => { await new Promise(() => setInterval(() => {}, 1000)); });\n'"'"' > test/zz-scale-loaded.test.mjs
 rm -f "$0"; git add test/zz-scale-loaded.test.mjs && git commit -q -m "test: the rating scale stays loaded"' ;;
     qa-wrong) on='job/*--*) ;;'; act='git log -1 --format=%s | grep -q "QA tests" || exit 0
@@ -419,14 +427,18 @@ if [[ -n ${E2E_INJECT:-} ]]; then
     hang)
       chk "the hung suite was stopped by dl (STALLED), not waited for" bash -c "grep -E \$'\t(merge-check|qa|gate|verify-all)\t' '$J/events.log' | grep -q STALLED || grep -l 'STALLED' '$J'/gates/*.log >/dev/null"
       chk "…and the hanging test is gone from main" bash -c "! git -C '$SB' cat-file -e main:test/zz-scale-loaded.test.mjs 2>/dev/null || ! git -C '$SB' show main:test/zz-scale-loaded.test.mjs | grep -q setInterval" ;;
-    qa-wrong)
-      chk "QA's own wrong test failed the gate" gq $'\tgate\tT-[0-9]* FAIL' "$J/events.log"
-      chk "…QA fixed it and the next gate took it as QA's (qa_fix), no new dev attempt" bash -c "grep -q \$'\tqa-fix\t' '$J/events.log' && jq -e '[.cards[] | select(.qa_fix)] | length > 0' '$B'"
-      log "qa_fix: $(jq -c '[.cards[] | select(.qa_fix) | {id, qa_fix, attempts}]' "$B")" ;;
+    qa-wrong)   # QA's own wrong test must be caught before the merge and fixed by QA, with no dev attempt: by QA's own run
+      # (dl qa refuses the pass) or, when a gate meets it first, by the gate (qa_fix) — run 73: QA's run caught it
+      ic="$(git -C "$SB" branch --contains "$(awk '{print $4}' "$W/injected.log")" --format='%(refname:short)' 2>/dev/null | grep -o 'T-[0-9]*' | head -1)"
+      log "injected into $ic"
+      chk "QA's wrong test was caught before the merge (a QA run refused it, or the gate failed on it)" bash -c "grep -q 'fail 1' '$J'/gates/$ic-qa-*.log 2>/dev/null || grep -q \$'\tgate\t$ic FAIL' '$J/events.log'"
+      chk "…QA fixed its own test (qa_scope only) and no new dev attempt was used" bash -c "[[ \$(jq -r --arg c '$ic' '.cards[] | select(.id==\$c) | .attempts' '$B') == 1 ]] && ! git -C '$SB' show main:\$(git -C '$SB' show --name-only --format= \$(awk '{print \$4}' '$W/injected.log') | head -1) | grep -q 'notch of an unchanged rating'"
+      if gq $'\tqa-fix\t' "$J/events.log"; then log "the gate met it first: qa_fix $(jq -c '[.cards[] | select(.qa_fix) | {id, qa_fix}]' "$B")"
+      else log "QA's own run met it first (dl qa refused the pass); the gate path (qa_fix) was not reached"; fi ;;
   esac
   if [[ ${E2E_SUITE_RUNS:-} == end ]]; then
     chk "suite_runs end: no suite after a merge" bash -c "! grep -q \$'\tmerge-check\t' '$J/events.log'"
-    [[ $E2E_INJECT == regression ]] && chk "verify-all named the card the failures point to (LIKELY T-…)" bash -c "cat '$SB'/.work/runs/*.jsonl | grep -q 'LIKELY  T-'"
+    [[ $E2E_INJECT == *regression ]] && chk "verify-all named the card the failures point to (LIKELY T-…)" bash -c "cat '$SB'/.work/runs/*.jsonl | grep -q 'LIKELY  T-'"
   fi
 fi
 if [[ ${E2E_SUITE_RUNS:-} == batch ]]; then

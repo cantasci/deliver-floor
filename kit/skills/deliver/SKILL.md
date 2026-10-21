@@ -65,6 +65,10 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    every wave of cards (none running or in review): run `"$DL" checkpoint` and **end your turn** — the next round goes on in a
    fresh session, from the files (`dl next` tells it where), so your context stays small. On Munder Difflin there are no
    subagents: every role is a person at a seat (`dl md-hire`, `dl md-send`), reporting through your inbox.
+   **`dl` commands that run tests take minutes** (`gate`, `qa`, `integrate`, `merge-check`, `stack-test`, `verify-all`,
+   `baseline`): give each its own Bash call with `timeout: 600000` — never several in one loop under the default 2 minutes. A
+   Bash call stopped by its timeout stops `dl` half way (live run 72b: T-02 merged, the suite after it never finished); `dl next`
+   then says `CHECK … dl merge-check T-xx`.
 7. **The human is asked only at the start** — when the project or task is given (intake, readiness, `awaiting_clarification`):
    every open readiness item is answered by the human before planning, never on assumptions, never on the human's behalf.
    **After that you do not ask.** Whatever only a person could have decided is your decision as PM: take it, record it with its
