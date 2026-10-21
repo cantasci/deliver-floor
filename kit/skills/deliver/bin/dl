@@ -1363,9 +1363,10 @@ cmd_reopen() {
   load_job
   local id=${1:-} why=${2:-}; [[ -n $id && -n $why ]] || die 'usage: dl reopen <id> "<why the recorded answer does not answer it>"'
   [[ "$(phase_now)" == readiness || "$(phase_now)" == awaiting_clarification ]] || refuse 1 "items are reopened only at the start, before the freeze (now: $(phase_now)) — after that it is your decision: dl pm-decide"
-  node "$BIN_DIR/readiness.mjs" reopen "$JOB_DIR" "$id" "$why" || exit 1
+  local said; said="$(node "$BIN_DIR/readiness.mjs" reopen "$JOB_DIR" "$id" "$why")" || exit 1
   node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || true   # QUESTIONS.md lists it again
-  reset_stop_guard; log_event reopen "$id: $why"; echo "$id is open again — QUESTIONS.md asks it; the human answers with dl clarify"
+  reset_stop_guard; log_event reopen "$id: $why"
+  if [[ $said == *"your own decision"* ]]; then echo "$said"; else echo "$id is open again — QUESTIONS.md asks it; the human answers with dl clarify"; fi
 }
 cmd_clarify() {
   human_only "answering a business question (dl clarify)"; load_job

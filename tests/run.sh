@@ -188,6 +188,11 @@ expect_fail 1 "planning refused while a PM decision is open" "$DL" phase plannin
 ! grep -q "X-immutable" "$RJ/QUESTIONS.md" && ok "PM-owned items are not put to the human" || bad "pm item in QUESTIONS.md"
 expect_ok "the PM decides it with a rationale" "$DL" decide X-immutable "freeze with Object.freeze" "no scope or contract impact; protects consumers"
 jq -e '.items[] | select(.id=="X-immutable") | .status=="decided" and (.source|startswith("pm: michael"))' "$RJ/readiness.json" >/dev/null && ok "recorded with source pm: michael + rationale" || bad "pm decision record"
+out="$("$DL" reopen X-immutable "my wording implied a docs role" 2>&1)"
+contains "reopening his own decision gives it back to Michael, not to the human (live run 75)" "$out" "your own decision, open again for you"
+jq -e '.items[] | select(.id=="X-immutable") | .owner=="pm" and .question=="Freeze the options array?"' "$RJ/readiness.json" >/dev/null && ! grep -q "X-immutable" "$RJ/QUESTIONS.md" \
+  && ok "…its question unchanged, and not in QUESTIONS.md" || bad "pm reopen: $(jq -c '.items[] | select(.id=="X-immutable")' "$RJ/readiness.json")"
+expect_ok "…he decides it anew" "$DL" decide X-immutable "freeze with Object.freeze" "no scope or contract impact"
 contains "agents cannot record PM decisions" "$(printf '%s' '{"tool_input":{"command":"dl decide X a b"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 expect_ok "phase planning once nothing is open" "$DL" phase planning
 jq -e '.frozen.readiness_sha256 | length == 64' "$R/.work/$JOB/job.json" >/dev/null && ok "planning froze readiness.json (sha256 in job.json)" || bad "freeze"
