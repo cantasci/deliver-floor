@@ -2007,7 +2007,8 @@ node "$PA" "$TMP/ha.json" "beta only" >/dev/null 2>&1; [[ $? == 2 ]] && ok "two 
 node "$PA" "$HA" "What colour is the logo?" >/dev/null 2>&1; [[ $? == 2 ]] && ok "a question no answer fits is left to a person" || bad "unmatched answered"
 q='Is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off) a constraint on this slice beyond C1-C8?'
 node "$PA" "$HA" "$q" >/dev/null 2>&1; [[ $? == 2 ]] && ok "one shared word is no answer: the compliance question is not answered with the thresholds answer (seen live)" || bad "compliance question got: $(node "$PA" "$HA" "$q")"
-contains "a readiness item id names its answer" "$(node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
+contains "a readiness item id names its answer" "$(PICK_REQUEST=JOB.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
+contains "…an answer that belongs to one request reaches only that scenario (live run 72: another slice's priority answer)" "$(PICK_REQUEST=JOB-parallel.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "Both are Must and ship together"
 
 echo "risk-based test design: a priority per acceptance criterion, a test design per card, every AC in the QA verdict, the NFR gate, the blind review"
 export DELIVER_KNOWLEDGE="$TMP/no-company-standards"   # the company standards earlier sections left in ~/.deliver are not this job's
