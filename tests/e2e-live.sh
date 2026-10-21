@@ -244,7 +244,7 @@ for c in $(jq -r '.cards[] | select(.state=="merged") | .id' "$B"); do
   total="$(git -C "$SB" ls-files | wc -l)"; [[ $((total - n)) -gt 0 ]] && qa_files=$((qa_files + total - n))
 done
 [[ $qa_files -gt 0 ]] && ok "QA's integration tests are on main ($qa_files file(s) in the cards' qa_scope)" || bad "no QA test files on main"
-for a in business-analyst $([[ $SC == light ]] || echo ecc:architect) qa-tester; do grep -q $'\tagent\t'"$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
+for a in business-analyst $([[ $SC == light || "$(jq -r '.track // "full"' "$JJ")" == light ]] || echo ecc:architect) qa-tester; do grep -q $'\tagent\t'"$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
 grep -qE $'\tagent\t(backend|frontend|mobile|database)-dev' "$J/events.log" && ok "role really ran: a dev agent" || bad "no dev agent run"
 grep -qE $'\tagent\tecc:[a-z-]*reviewer' "$J/events.log" && ok "role really ran: a stack reviewer" || bad "no reviewer run"
 ! grep -q $'\ttracker-error\t' "$J/events.log" && ok "no tracker errors" || bad "tracker errors in events.log"

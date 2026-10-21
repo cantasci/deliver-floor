@@ -199,6 +199,13 @@ jq -e '.frozen.readiness_sha256 | length == 64' "$R/.work/$JOB/job.json" >/dev/n
 contains "in planning Michael may still write board.json with a script (the Leads' cards)" \
   "$(printf '%s' "$(jq -n --arg c 'node -e "fs.writeFileSync(d+\"/board.json\", s)"' --arg cwd "$R" '{tool_input:{command:$c},cwd:$cwd}')" | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=0"
 [[ -f $R/.work/$JOB/roles/backend.md && -f $R/.work/$JOB/roles/qa.md && -f $R/.work/$JOB/ROLES.md ]] && ok "role cards generated on planning" || bad "role cards"
+"$DL" jobset '.roles += [{"role":"blind","agent":"ecc:code-reviewer","why":"test"}]' >/dev/null
+[[ -f $R/.work/$JOB/roles/blind.md ]] && ok "a role added after planning wrote the role cards gets its card too (live run 75: the blind reviewer had none)" || bad "no role card for a role added in planning: $(ls "$R/.work/$JOB/roles")"
+"$DL" jobset 'del(.roles[] | select(.role == "blind"))' >/dev/null
+jq 'del(.roles[] | select(.role | endswith("lead")))' "$R/.work/$JOB/job.json" > "$TMP/nolead.json"
+contains "a full-path job keeps a lead role from planning on: the Leads cut the cards" "$(node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$TMP/nolead.json" 2>&1)" "no lead role on a full-path job"
+jq '.track = "light"' "$TMP/nolead.json" > "$TMP/nolead-light.json"
+node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$TMP/nolead-light.json" >/dev/null 2>&1 && ok "…the light path has none: the BA cuts its cards" || bad "light path refused without a lead: $(node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$TMP/nolead-light.json" 2>&1)"
 grep -q "TDD" "$R/.work/$JOB/roles/backend.md" && grep -q "integration and/or end-to-end tests" "$R/.work/$JOB/roles/qa.md" \
   && grep -q "node --test" "$R/.work/$JOB/roles/backend.md" && ok "role cards carry kind rules + project facts" || bad "role card content"
 cat > "$R/.work/$JOB/plan.md" <<'EOF'

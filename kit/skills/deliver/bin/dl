@@ -943,6 +943,11 @@ _jobset_locked() {
   local changed; changed="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" '[$ok[] | select($a[.] != $b[.])] | join(",")')"
   jq_inplace "$JOBJ" "$1"
   [[ -n $changed ]] && log_event jobset "$changed: $1"
+  # a role added after the role cards were written (planning) gets its card too (live run 75: the blind reviewer was added in
+  # planning and was sent a role card that did not exist)
+  if [[ ,$changed, == *,roles,* && -d $JOB_DIR/roles ]]; then
+    node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"
+  fi
   apply_role_defaults
   return 0
 }
