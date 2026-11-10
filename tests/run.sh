@@ -1517,6 +1517,89 @@ contains "verify-all names the merged cards whose files its failures point to" "
 contains "…also when the runner names them by their absolute path in the worktree (node's file:///…: live run 74 named no card)" "$out" "LIKELY  T-02 — the failures name it/b/t.test.mjs"
 [[ "$(grep -c '^LIKELY' <<<"$out")" == 2 ]] && ! grep -q '^LIKELY.*x\.js' <<<"$out" && ok "…and only those (a path outside the worktree names no card)" || bad "blame: $out"
 rm -f "$HOME/vf-fail" "$HOME/setup-runs"; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+echo "The code driver (dl run, settings.driver code): the cards are run by a program, Michael only where judgment is needed"
+DR="$TMP/driver"; mkdir -p "$DR" && cd "$DR" && git init -q -b main
+echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2,"driver":"code"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "driver" "x" >/dev/null 2>&1; DRJ="$DR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"},{"role":"blind","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+for c in T-01 T-02 T-03; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$DRJ/specs/$c.md"; done
+drcard() { jq -n --arg id "$1" --arg d "$2" '{id:$id,title:$d,role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/\($d)/**"],qa_scope:["it/\($d)/**"],
+  verify:"test -f src/\($d)/f",qa_verify:"test -f it/\($d)/t && test ! -e it/\($d)/wrong",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[],reviewers:["reviewer"]}'; }
+jq -n --argjson a "$(drcard T-01 a)" --argjson b "$(drcard T-02 b)" --argjson c "$(drcard T-03 c)" '{cards:[$a, $b, ($c | .depends_on = ["T-01","T-02"] | .reviewers = ["reviewer","blind"])]}' > "$DRJ/board.json"
+"$DL" phase executing >/dev/null
+FK="$TMP/fake"; mkdir -p "$FK"; export FAKE_CLAUDE_DIR="$FK" DELIVER_CLAUDE="$HERE/tests/fake-claude.mjs"
+# what each role's agent does here: the dev builds its card and commits; QA writes its test and names it per AC; reviewers answer JSON
+cat > "$FK/backend-dev.sh" <<'FAKE'
+wt="$(sed -n 's/^WORKTREE: \([^ ]*\).*/\1/p' <<<"$PROMPT")"; d="$(grep -o '"src/[a-z]*/' <<<"$PROMPT" | sed -n '1s|"src/\(.*\)/|\1|p')"; id="$(grep -o '"id": "T-[0-9]*"' <<<"$PROMPT" | grep -o 'T-[0-9]*')"
+mkdir -p "$wt/src/$d" && echo "$RESUME x" >> "$wt/src/$d/f" && git -C "$wt" add -A && git -C "$wt" commit -qm "$id: $d" && printf 'status: done\ncommit: %s\nverify: passed\nopen issues: -\n' "$(git -C "$wt" rev-parse --short HEAD)"
+FAKE
+cat > "$FK/qa-tester.sh" <<'FAKE'
+wt="$(sed -n 's/^WORKTREE: \([^ ]*\).*/\1/p' <<<"$PROMPT")"; d="$(grep -o '"it/[a-z]*/' <<<"$PROMPT" | sed -n '1s|"it/\(.*\)/|\1|p')"; id="$(grep -o '"id": "T-[0-9]*"' <<<"$PROMPT" | grep -o 'T-[0-9]*')"
+if grep -q 'MODE: QA-WRITE' <<<"$PROMPT"; then
+  mkdir -p "$wt/it/$d" && echo t > "$wt/it/$d/t" && { [[ $d != b ]] || echo w > "$wt/it/$d/wrong"; } && git -C "$wt" add -A && git -C "$wt" commit -qm "$id QA: tests" && printf 'tests written\nAC-MAP: AC-1: %s has its file\n' "$d"
+else   # QA-RUN: its own wrong test fails on the dev's commit — QA removes it and names the commit
+  git -C "$wt" rm -q "it/$d/wrong" && git -C "$wt" commit -qm "$id QA: drop the wrong test" && printf '{"verdict":"pass","summary":"AC-1 pass: %s has its file","commits":["%s"]}\n' "$d" "$(git -C "$wt" rev-parse HEAD)"
+fi
+FAKE
+cat > "$FK/ecc_code-reviewer.sh" <<'FAKE'
+if grep -q 'blind reviewer' <<<"$PROMPT"; then echo '{"findings":[{"file":"src/c/f","line":1,"issue":"x is not a value","shows":"read it","severity":"blocking"}]}'
+elif grep -q '"id": "T-01"' <<<"$PROMPT" && [[ ! -e $FAKE_CLAUDE_DIR/t01-reviewed ]]; then touch "$FAKE_CLAUDE_DIR/t01-reviewed"; echo '```json
+{"verdict":"changes","blocking":[{"file":"src/a/f","line":1,"issue":"too short","fix":"add a line"}],"nits":[],"standards":{}}
+```'
+else echo 'Looks right. {"verdict":"approve","blocking":[],"nits":["naming"],"standards":{}}'; fi
+FAKE
+contains "Michael's session with the driver is shown only what needs his judgment — no dispatch, no gate" "$(DELIVER_DRIVER=1 "$DL" next)" "DRIVER  the code driver runs the cards"
+[[ "$(DELIVER_DRIVER=1 "$DL" next)" != *DISPATCH* && "$("$DL" next)" == *"DISPATCH T-01 T-02"* ]] && ok "…the driver itself reads the whole of dl next" || bad "next: $(DELIVER_DRIVER=1 "$DL" next)"
+out="$("$DL" run 2>&1)"; rc=$?
+[[ "$(jq -r '[.cards[0,1].state] | join(" ")' "$DRJ/board.json")" == "merged merged" ]] && ok "dl run takes the cards from dispatch to merge: dev → gate → QA → review → integrate, with no Michael" || bad "driver: rc=$rc $(jq -c '[.cards[] | {id, state, g: .gate.result, q: .qa.verdict, r: .review.verdict}]' "$DRJ/board.json") $out"
+[[ "$(grep -c $'^qa-tester\t0\tMODE: QA-WRITE' "$FK/calls.log")" == 3 && "$(jq -r '.cards[0].qa.summary' "$DRJ/board.json")" == "AC-1: a has its file" ]] \
+  && ok "…QA wrote each card's tests while the dev built it, and the pass is recorded with the tests QA named per AC — no QA agent to run them" || bad "qa: $(cat "$FK/calls.log") $(jq -c '.cards[0].qa' "$DRJ/board.json")"
+[[ "$(grep -c $'^qa-tester\t1\tMODE: QA-RUN' "$FK/calls.log")" == 1 && "$(jq -r '.cards[1].qa_commits | length' "$DRJ/board.json")" == 1 && "$(jq -r '.cards[1].attempts' "$DRJ/board.json")" == 1 ]] \
+  && ok "…tests that fail on the dev's commit go back to the same QA session (QA-RUN); its commit is recorded as QA's, no dev attempt" || bad "qa-run: $(grep qa-tester "$FK/calls.log") $(jq -c '.cards[1] | {qa_commits, attempts}' "$DRJ/board.json")"
+[[ "$(jq -r '.cards[0].attempts' "$DRJ/board.json")" == 2 && "$(grep -c $'^backend-dev\t1\t' "$FK/calls.log")" == 1 ]] \
+  && ok "…a review that asks for changes sends the card back to the same dev session with the blocking items" || bad "redispatch: $(jq -c '.cards[0] | {attempts, review}' "$DRJ/board.json") $(grep backend-dev "$FK/calls.log")"
+contains "…the feedback is in the dev's second prompt" "$(cat "$DRJ"/out/run/run-T-01-dev-*.prompt.md)" "src/a/f:1 too short — fix: add a line"
+[[ $rc == 10 && "$(jq -r '.cards[2].state' "$DRJ/board.json")" == review ]] && ok "a blind reviewer's blocking finding is not the driver's to decide: it stops for Michael (exit 10)" || bad "handover: rc=$rc $(jq -c '.cards[2] | {state, review}' "$DRJ/board.json")"
+contains "…and says what is his, with where the finding is" "$(cat "$DRJ/out/run/HANDOVER.md")" "the blind reviewer has 1 blocking finding(s): triage each against the spec"
+contains "…dl next points Michael to it" "$(DELIVER_DRIVER=1 "$DL" next)" "out/run/HANDOVER.md lists"
+"$DL" review T-03 changes "x is not a value" --by blind --triage '[{"finding":"x is not a value","decision":"defect"}]' >/dev/null 2>&1
+cat > "$FK/ecc_code-reviewer.sh" <<'FAKE'
+if grep -q 'blind reviewer' <<<"$PROMPT"; then echo '{"findings":[]}'; else echo '{"verdict":"approve","blocking":[],"nits":[],"standards":{}}'; fi
+FAKE
+out="$("$DL" run 2>&1)"; rc=$?
+[[ $rc == 0 && "$(jq -r '.cards[2].state' "$DRJ/board.json")" == merged && "$(jq -r .phase "$DRJ/job.json")" == integrating && ! -e $DRJ/out/run/HANDOVER.md ]] \
+  && ok "after Michael's triage the driver goes on: the dev again, both reviews, merged — and the phase moves to integrating" || bad "second run: rc=$rc $(jq -c '.cards[2] | {state, attempts, review}' "$DRJ/board.json") $(jq -r .phase "$DRJ/job.json") $out"
+contains "the event log has every agent run of the driver, as the timeline reads them" "$(grep -c $'\tdispatch\t' "$DRJ/events.log") $(grep $'\tdriver\t' "$DRJ/events.log" | tail -1)" "executing is finished: phase integrating"
+# the light path: the developer writes the card's code and all of its tests; one reviewer; no QA agent
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1
+"$DL" new "driver light" "x" >/dev/null 2>&1; DRJ="$DR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+bedit "$DRJ/job.json" '.track = "light"'
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$DRJ/specs/T-01.md"; jq -n --argjson a "$(drcard T-01 a)" '{cards:[$a]}' > "$DRJ/board.json"; "$DL" phase executing >/dev/null
+contains "light path: the developer's role card says it writes the card's tests too" "$(cat "$DRJ/roles/backend.md")" "You write ALL of this card's tests"
+! grep -q "Never write or change files in the card's qa_scope" "$DRJ/roles/backend.md" && ok "…and no longer forbids qa_scope" || bad "the dev's role card still forbids qa_scope"
+contains "…the reviewer's says every acceptance criterion is checked against a test" "$(cat "$DRJ/roles/reviewer.md")" "The developer wrote this card's tests too"
+cat > "$FK/backend-dev.sh" <<'FAKE'
+wt="$(sed -n 's/^WORKTREE: \([^ ]*\).*/\1/p' <<<"$PROMPT")"
+mkdir -p "$wt/src/a" "$wt/it/a" && echo x > "$wt/src/a/f" && echo t > "$wt/it/a/t" && git -C "$wt" add -A && git -C "$wt" commit -qm "T-01: a with its tests" && printf 'status: done\ncommit: x\nverify: passed\nopen issues: -\nAC-MAP: AC-1: a has its file\n'
+FAKE
+: > "$FK/calls.log"; out="$("$DL" run 2>&1)"; rc=$?
+[[ $rc == 0 && "$(jq -r '.cards[0].state' "$DRJ/board.json")" == merged && "$(jq -r '.cards[0].qa.summary' "$DRJ/board.json")" == "AC-1: a has its file" ]] \
+  && ok "light path with the driver: the developer's own tests are run by dl (qa pass from its AC-MAP), reviewed, merged" || bad "light: rc=$rc $(jq -c '.cards[0] | {state, g: .gate.result, qa, r: .review.verdict}' "$DRJ/board.json") $out"
+[[ "$(cut -f1 "$FK/calls.log" | sort | uniq -c | tr -s ' \n' ' ')" == " 1 backend-dev 1 ecc:code-reviewer " ]] && ok "…two agent runs for the card: the developer and the reviewer — no QA agent" || bad "light calls: $(cat "$FK/calls.log")"
+contains "…the gate says whose tests they are" "$(cat "$(jq -r '.cards[0].gate.log' "$DRJ/board.json")")" "the developer writes this card's tests too"
+contains "dl wt qa is refused on the light path" "$("$DL" wt qa T-01 2>&1)" "the developer writes the card's tests too"
+echo 'echo "You have hit your usage limit · resets 3pm"' > "$FK/backend-dev.sh"
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1
+"$DL" new "driver limit" "x" >/dev/null 2>&1; DRJ="$DR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$DRJ/specs/T-01.md"; jq -n --argjson a "$(drcard T-01 a)" '{cards:[$a]}' > "$DRJ/board.json"; "$DL" phase executing >/dev/null
+"$DL" run >/dev/null 2>&1; rc=$?
+[[ $rc == 3 && "$(jq -r '.cards[0] | "\(.gate // "none") \(.state)"' "$DRJ/board.json")" == "none running" ]] && ok "a usage limit in an agent stops the driver (exit 3) and records nothing against the card" || bad "limit: rc=$rc $(jq -c '.cards[0] | {state, gate, attempts}' "$DRJ/board.json")"
+unset FAKE_CLAUDE_DIR DELIVER_CLAUDE; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
 ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "stack" "x" >/dev/null 2>&1; SJ="$ST/.work/$(cat .work/ACTIVE)"

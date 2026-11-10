@@ -166,7 +166,15 @@ function roleEntry(sel, cat) {
 export function renderRole(sel, job, cat) {
   const r = roleEntry(sel, cat);
   // a blind reviewer judges the diff alone: the kind's rules ("judge the change against the card") are not its own
-  const rules = [...(cat.rules?.all ?? []), ...(r.blind ? [] : cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
+  let rules = [...(cat.rules?.all ?? []), ...(r.blind ? [] : cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
+  // the light path: the developer writes the card's tests too (dl's dev_tests) — the rule that keeps qa_scope from the dev is
+  // replaced, and the reviewer is the one who checks every acceptance criterion against a test
+  if (job.track === "light" && job.settings?.light?.qa !== true) {
+    if (r.kind === "dev") rules = [...rules.filter((x) => !/qa_scope/.test(x)),
+      "You write ALL of this card's tests: unit tests test-first in scope, and in the card's qa_scope at least one integration test per acceptance criterion, named after it (\"AC-2: …\"). No QA role works on this job. End your summary with one line — AC-MAP: AC-1: <test name>; AC-2: <test name>; … — naming every acceptance criterion of the card."];
+    if (r.kind === "review" && !r.blind) rules = [...rules,
+      "The developer wrote this card's tests too (no QA role on this job): check every acceptance criterion against a test that would fail without the change. A criterion without one, or a test that asserts nothing about it, is a blocking item."];
+  }
   const md = [
     `# Role: ${sel.role} — ${KIND_TITLE[r.kind] ?? r.kind}${r.focus ? ` (${r.focus})` : ""}`,
     "",

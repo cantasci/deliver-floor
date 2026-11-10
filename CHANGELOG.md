@@ -4,6 +4,20 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.19.0 — 2026-11-10
+
+**Less process per card.** A two-function job took 25–37 minutes and 13–20 agent runs; the developer was 12 % of that
+time, and Michael's own session — reading `dl next`, running the command it named, filing the answer — was 60 % of a large
+job's tokens.
+- **The code driver** (`settings.driver: "code"`, `dl run`; unattended runs): a program runs the cards of the executing
+  phase. It reads `dl next`, calls each role's agent in its own session (dev, QA, reviewers — in parallel, each card on its
+  own), and runs gate, QA, review and merge itself. Michael is called only for what needs judgment: a fix, a blocked card,
+  a blind reviewer's blocking finding, a verdict `dl` refuses — listed in `out/run/HANDOVER.md`; his `dl next` then shows
+  only that. Default `michael` (as before) until live runs have measured it.
+- **The light path has no QA agent** (`settings.light.qa: false`, the default): the developer writes the card's code and
+  all of its tests, `dl` runs them and the suite, and one reviewer checks every acceptance criterion against a test. Two
+  agent runs per card instead of five. `light.qa: true` keeps the QA role.
+
 ## 0.18.2 — 2026-10-21
 
 - Fix cards, live (run 70, [docs/verification/16-fix-cards-live](docs/verification/16-fix-cards-live/README.md)): a

@@ -62,6 +62,9 @@
 #                                  review approve, all on the current commit; exit 3 on conflict, 5 when the
 #                                  repo's commit rules refuse the merge message)
 #   dl qa-commit <card> <commit>   record a commit QA made in the card worktree (its report names it; qa_scope only)
+#   dl run                         the code driver for the executing phase (settings.driver "code"): runs the cards
+#                                  itself — dev, gate, QA, review, merge — and stops for Michael only where judgment is
+#                                  needed (exit 10, out/run/HANDOVER.md)
 #   dl merge-check <card>          the component's suite after <card>'s merge, again (its dl was stopped half way)
 #   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
@@ -257,6 +260,10 @@ suite_timeout() {
 #           to back share one run (live job: four fix merges into one service each ran its 13–20 min suite, 1.5 h of lane)
 #   end   — only at the start (baseline) and the end (verify-all): the fastest lane; a break is found late, and verify-all
 #           names the cards whose files its failures point to
+# dev_tests → the light path (dl track light), unless settings.light.qa is true: the developer writes the card's code AND all
+# of its tests (qa_scope too), one reviewer checks every acceptance criterion against a test — no QA agent. A small change
+# went through five agents per card (BA spec, dev, QA-WRITE, QA, reviewers); the developer was 12 % of a small job's time.
+dev_tests() { [[ "$(jq -r '.track // "full"' "$JOBJ")" == light && "$(setting light.qa)" != true ]]; }
 suite_runs() { local r; r="$(setting suite_runs)"; case $r in batch|end) echo "$r" ;; *) echo card ;; esac; }
 
 # qa_mark <card> [jq list of heads] — the newest commit recorded as QA's on the card: dl qa, dl qa-join, or QA's commits
@@ -633,6 +640,15 @@ cmd_ready() { load_job; ready_ids; }
 cmd_next() {
   load_job
   local phase gates_plan; phase="$(phase_now)"
+  # the code driver runs the cards (dl run, settings.driver "code"): Michael's session (DELIVER_DRIVER=1) is shown only what
+  # needs his judgment — the rest is not his to do
+  if [[ ${DELIVER_DRIVER:-} == 1 && $phase == executing && -z ${DELIVER_NEXT_RAW:-} ]]; then
+    local all his ho="$JOB_DIR/out/run/HANDOVER.md"; all="$(DELIVER_NEXT_RAW=1 DELIVER_HEADLESS= cmd_next)"
+    his="$(grep -E '^(FIX|FIX-CUT|FIX-SPEC|FIX-ADD|BLOCK|DECIDE|ASK|INPUT|UNRECORDED)[[:space:]]' <<<"$all" || true)"
+    echo "DRIVER  the code driver runs the cards (dispatch, gate, QA, review, merge): do none of that yourself. Yours is only what follows$([[ -s $ho ]] && echo " and what $ho lists"); when it is done — or there is nothing — end your turn, the driver goes on"
+    [[ -z $his ]] || echo "$his"
+    return 0
+  fi
   gates_plan="$(jq -r '.settings.gates.plan' "$JOBJ")"
   if [[ ${DELIVER_HEADLESS:-} == 1 && "$(setting checkpoints)" != false ]] && checkpoint_due; then
     echo "CHECKPOINT dl checkpoint, then end your turn — the next round goes on in a fresh session (all state is in files; dl next tells it where)"
@@ -738,6 +754,7 @@ cmd_next() {
             # QA's tests are on the card (qa-join): dl runs them itself — no QA agent while they pass (live job: most QA-RUN
             # dispatches only ran the tests QA-WRITE had written and recorded the result)
             elif [[ -n "$(card_get "$id" '.qa_join.head // ""')" ]]; then echo "QA      dl qa $id pass \"<AC-n: the test QA-WRITE named for it>\"  (dl runs QA's tests on the dev's commit — no QA agent while they pass; refused → continue the QA-WRITE agent with SendMessage: MODE QA-RUN)"
+            elif dev_tests; then echo "QA      dl qa $id pass \"<AC-n: the test the developer named for it (its AC-MAP line)>\"  (light path: the developer wrote this card's tests — dl runs them and the suite; no QA agent)"
             else echo "QA      $id  (QA/Test role writes + runs the integration/e2e tests for the ACs → dl qa $id pass|fail)"; fi
           elif [[ $rv != approve || $rhead != "$head" ]]; then
             local pend; pend="$(card_get "$id" '(if .review.head == "'"$head"'" then .review.pending else (.reviewers // ["reviewer"]) end) // [] | join(", ")')"
@@ -754,7 +771,7 @@ cmd_next() {
         elif (.waiting|length)>0 then "IDLE    \(.seat) — waiting: \(.waiting|join(", ")) depend on unmerged cards"
         else "IDLE    \(.seat) — no more work for \(.role)" end' 
       # QA writes the tests of every assigned card from its spec while the dev builds (settings.qa_early)
-      if [[ "$(setting qa_early)" != false ]]; then
+      if [[ "$(setting qa_early)" != false ]] && ! dev_tests; then
         local qid; for qid in $(jq -r '.cards[] | select(.state=="running" and ((.qa_scope // []) | length) > 0 and .qa == null and .qa_join == null) | .id' "$BOARD"); do
           git -C "$ROOT" show-ref --verify --quiet "refs/heads/$(card_get "$qid" .branch)-qa" \
             || echo "QA-WRITE $qid  (QWT=\$(dl wt qa $qid) → the QA role writes the tests from the spec now, while the dev builds; commits; does not run them yet)"
@@ -1567,6 +1584,7 @@ cmd_wt() {
       ;;
     qa) # the QA role's own worktree: it writes the card's tests from the spec while the dev builds (settings.qa_early)
       assert_frozen
+      dev_tests && refuse 1 "this job is on the light path: the developer writes the card's tests too — there is no QA worktree (settings.light.qa true keeps the QA role)"
       [[ "$(jq -c '.qa_scope // []' <<<"$(card_get "$card" .)")" != "[]" ]] || refuse 1 "$card has no qa_scope — nothing for QA to write"
       [[ -z "$(card_get "$card" '.qa_join.head // ""')" && -z "$(card_get "$card" '.qa.head // ""')" ]] || refuse 1 "$card's QA tests are already on the card branch — QA works in the card worktree now"
       [[ " running review " == *" $(card_get "$card" .state) "* ]] || refuse 1 "$card is $(card_get "$card" .state) — QA starts once the card is assigned (dl wt add $card)"
@@ -1824,7 +1842,8 @@ cmd_gate() {
     else echo "ok    all changes within scope $(jq -c . <<<"$scope") (+ QA tests $(jq -c . <<<"$qscope"))"; fi
     # The QA tests (qa_scope) belong to the QA role: the dev must not write or change them.
     local devfrom="$JOB_BRANCH"; [[ -n $qhead ]] && git -C "$wt" merge-base --is-ancestor "$qhead" "$dh" 2>/dev/null && devfrom="$qhead"
-    if [[ $(jq length <<<"$qscope") -gt 0 ]]; then
+    if dev_tests; then echo "ok    the developer writes this card's tests too (light path: qa_scope $(jq -c . <<<"$qscope") is the dev's)"
+    elif [[ $(jq length <<<"$qscope") -gt 0 ]]; then
       # QA files are compared blob by blob: changed or deleted since QA's last commit, or added by the dev,
       # fail the gate. Files that only came in by merging the job branch equal the job branch and are ignored.
       local touched="" f
@@ -3033,7 +3052,7 @@ cmd_jobs() {
 # (AGENT_ID=god, set by Munder Difflin in his terminal): run /deliver from a separate terminal and two Michaels read the
 # same inbox and race for every seat's report (seen on a user's machine). The human answers (clarify, approve), reads
 # (status, next, board, kanban, md-seats) and switches modes (dl dispatch) from any terminal.
-FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join qa-commit review fix integrate merge-check verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
+FLOW_CMDS=" new phase jobset roles readiness decide pm-decide reopen learn followup wt card gate qa qa-join qa-commit review fix integrate merge-check run verify-all baseline ship pr md-dispatch md-hire md-reseat md-send md-done md-release md-inbox md-wait cleanup "
 dispatch_of() { # the dispatch a command would run under: the active job's, or for `new` the repo's / the kit default
   resolve_root
   local j="${DELIVER_JOB:-$(cat "$WORK/ACTIVE" 2>/dev/null || true)}" d=""
@@ -3206,6 +3225,7 @@ main() {
     new) cmd_new "$@" ;;
     status) cmd_status "$@" ;;
     next) cmd_next ;;
+    run) load_job; export DELIVER_AGENT_NS; exec node "$BIN_DIR/run.mjs" "$ROOT" ;;
     board) cmd_board ;;
     phase) cmd_phase "$@" ;;
     jobset) cmd_jobset "$@" ;;

@@ -14,6 +14,7 @@ command -v jq >/dev/null || exit 0
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 is_agent && exit 0   # agents, card workers and floor seats wait for orders; only Michael is held to the board
+[[ ${DELIVER_DRIVER:-} == 1 ]] && exit 0   # the code driver runs the cards (dl run): Michael's round ends when his part is done
 owned="$(owned_job)" || exit 0
 IFS=$'\t' read -r job root <<<"$owned"
 jf="$root/.work/$job/job.json"; bf="$root/.work/$job/board.json"

@@ -94,6 +94,17 @@ for ((i = 1; i <= rounds; i++)); do
   if [[ $state == "$last" ]]; then echo "⚠ no progress in the last round ($phase) — stopping. Check: dl status; tail .work/$job/events.log"; exit 1; fi
   last=$state
   echo "round $i — $job ($phase)"
+  # settings.driver "code": the cards are run by a program (dl run), not by Michael's session; he gets a round only for what
+  # the driver hands over (exit 10) — with DELIVER_DRIVER=1, so dl next shows him only that
+  if [[ $phase == executing && "$(jq -r '.settings.driver // "michael"' "$jf")" == code ]]; then
+    drc=0; PERMISSION_MODE="$mode" "$KIT/bin/dl" run || drc=$?
+    case $drc in
+      0) continue ;;
+      10) DELIVER_DRIVER=1 run "$DCMD resume"; if wait_for_limit "$LAST_LOG"; then last=""; i=$((i - 1)); fi; continue ;;
+      3) echo "⏸  a usage limit stopped an agent of the driver — nothing was recorded; run this script again after the reset"; exit 3 ;;
+      *) echo "⚠ dl run failed (exit $drc) — Michael takes this round"; ;;
+    esac
+  fi
   run "$DCMD resume"
   if wait_for_limit "$LAST_LOG"; then last=""; i=$((i - 1)); fi   # a limit is neither a round nor "no progress"
 done

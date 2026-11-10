@@ -113,7 +113,11 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    exist, with no new dependency, data, integration, UI or deployment decision, and a request that states the behaviour — goes
    the **light path**: `"$DL" track light "<why it is small>" --quote "<the request's words that say so>"`. The readiness
    review then answers only the items marked `light` (fewer questions), the BA plans and cuts the cards in one step
-   (MODE LIGHT — no Lead), and you write the closing report from the QA verdicts. Gates, QA, reviews and merges are the same.
+   (MODE LIGHT — no Lead), and you write the closing report from the QA verdicts. **The developer writes the card's tests
+   too** (unit tests and the integration tests in `qa_scope`; its summary ends with `AC-MAP: AC-1: <test>; …`): no QA agent
+   is called — record `"$DL" qa T-xx pass "<its AC-MAP>"` after the gate (`dl` runs the tests and the suite); the card's only
+   reviewer is the stack reviewer, who checks every AC against a test (no `blind`). `settings.light.qa: true` keeps the QA
+   role. Gates, reviews and merges are the same.
    Anything bigger stays full (the default). When the BA or the planning shows it is bigger, `"$DL" track full "<why>"` —
    allowed until execution; from planning it goes back to readiness, the light decisions stay frozen, the skipped items are
    answered and a Lead role joins.
@@ -343,6 +347,12 @@ With the gate off (default): go straight on. The user sees the plan and the boar
 ## Phase 3 — Assign and execute (`executing`)
 
 `"$DL" phase executing`, then loop on `"$DL" next`:
+
+**With the code driver** (`settings.driver: "code"`, unattended runs): a program runs the cards — dispatch, gate, QA, review,
+merge (`dl run`) — and you are called only for what it cannot decide. `dl next` then starts with `DRIVER` and lists only
+that: fixes (**Fix cards**), blocked cards (**Blocked**), and what `.work/<job>/out/run/HANDOVER.md` names (a blind
+reviewer's blocking finding to triage, a verdict `dl` refused, a stuck developer). Do those, nothing else — no dispatch, no
+gate, no review of your own — and end your turn; the driver goes on.
 
 1. **DISPATCH T-a T-b** → for each card: `WT=$("$DL" wt add T-xx)` (this is the assignment: it records you as assigner and the
    card's agent as assignee, enforces deps/max_parallel/max_attempts). Copy `templates/handoff.md` to
