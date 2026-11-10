@@ -6,14 +6,10 @@
   "type": "object",
   "properties": {
     "$schema": { "type": "string" },
-    "dispatch": {
-      "enum": ["munder", "subagent"],
-      "default": "munder",
-      "description": "munder (default): every role is a person at a seat on the Munder Difflin floor; /deliver in a terminal opens the app and hands the job to Michael there. subagent: roles run as Claude Code subagents in one claude session (no app; required for unattended runs). Chosen by the human; Michael never switches it."
-    },
+    "dispatch": { "enum": ["subagent"], "deprecated": true, "description": "No longer used: every role runs as a Claude Code agent (subagents, or the sessions of the code driver). Accepted so that an older .deliver.json stays valid." },
     "base_branch": { "type": "string", "default": "auto", "description": "Branch the job starts from and the PR targets (auto = the main checkout's current branch)." },
     "record_job": { "type": "boolean", "default": true, "description": "dl ship commits the job's record to .deliver/jobs/<job>/ with its code: the request, the readiness decisions and their sources, the plan, the specs, the board (every gate, QA and review verdict), the report and the event log — the audit trail in git. false keeps it in .work/ only." },
-    "suite_runs": { "type": "string", "enum": ["card", "batch", "end"], "default": "card", "description": "When the whole (or the component's) suite runs besides the baseline and verify-all. card: at every QA pass and after every merge — a break is named at once. batch: merges back to back share one run (chosen for the job when the baseline takes more than 10 min). end: only at the start and in verify-all — fastest, a break is found late." },
+    "suite_runs": { "type": "string", "enum": ["batch", "card", "end"], "default": "batch", "description": "When the whole (or the component's) suite runs besides the baseline and verify-all. A card is always checked with its own tests (verify, qa_verify). batch: after a merge, once per group of merges into a component. card: also at every QA pass and after every single merge — a break is named at once, at the price of a suite run per card. end: only at the start and in verify-all — fastest, a break is found late." },
     "suite_timeout_min": { "type": "number", "exclusiveMinimum": 0, "description": "Minutes (a fraction is fine: 0.5 is 30 s) a suite run may take before dl stops it as STALLED. Default: 3 × the baseline's time (at least 20), or 60." },
     "qa_verify_full": { "type": "boolean", "default": true, "description": "A QA pass also runs verify_full on the card's commit, with the dev's and QA's tests together, before review — catches tests that pass alone but break the suite together (e.g. two helpers with the same module name). When the architecture gives the card's component its own suite (readiness.json components[].verify), that one runs instead. false only for a suite too slow to run per card; verify_full still runs on the job branch at the end." },
     "test_design": { "type": "object", "additionalProperties": false, "properties": {
@@ -21,7 +17,8 @@
     "review": { "type": "object", "additionalProperties": false, "properties": {
       "blind": { "enum": ["risk", "all", "off"], "default": "risk", "description": "A blind review: a reviewer who sees only the diff — no card, no spec, no QA result — judges what the code does. risk: cards with a P0 or P1 acceptance criterion; all: every card; off: none. Michael triages each finding against the spec: intended (the spec's words quoted) or a defect for the dev." } } },
     "light": { "type": "object", "additionalProperties": false, "properties": {
-      "max_cards": { "type": "integer", "minimum": 1, "maximum": 5, "default": 2, "description": "The light path (dl track light: a small change inside existing code) plans at most this many cards; a bigger job goes to the full path (dl track full)." } } },
+      "max_cards": { "type": "integer", "minimum": 1, "maximum": 5, "default": 2, "description": "The light path (dl track light: a small change inside existing code) plans at most this many cards; a bigger job goes to the full path (dl track full)." },
+      "qa": { "type": "boolean", "default": false, "description": "false: on the light path the developer writes the card's code and all of its tests (qa_scope too) and one reviewer checks every acceptance criterion against a test — no QA agent. true: the QA role writes and runs the integration tests, as on the full path." } } },
     "upstream": { "type": "object", "additionalProperties": false, "properties": {
       "engine": { "enum": ["auto", "bmad", "off"], "default": "auto", "description": "Shaping before the readiness review. auto: only a request that is not a specification yet — it states fewer than two of requirement ids, acceptance criteria and a contract (measured live: on a specified request shaping cost 30 % more for the same product; on an idea it caught decisions the readiness review missed). bmad: every full-path job. the BMad Method (installed into the repo, outside git) chooses its own path and writes the specification headless from the request, the repo, the standards and our delivery checklist; every decision, assumption, question and review finding it reports is decided by Michael with the human, sent back to BMad, and frozen with the readiness decisions at planning. off: the readiness review works from the request alone." },
       "bmad_version": { "type": "string", "default": "6.12.2", "description": "The BMad Method release dl shape install installs (npx bmad-method@<version>); its output formats are read by bin/bmad.mjs." },
@@ -42,6 +39,7 @@
       "description": "human: a PR you merge · semi: auto-merge armed, you approve · auto: merged on green CI · local: merged into the base branch locally, no remote."
     },
     "max_parallel": { "type": "integer", "minimum": 1, "default": 3, "description": "Cards running at once (all roles together)." },
+    "driver": { "type": "string", "enum": ["michael", "code"], "default": "michael", "description": "Who runs the cards in the executing phase of an unattended run (scripts/run-headless.sh). michael: the PM's own session dispatches every agent and runs every step. code: dl run — a program reads dl next, calls each role's agent in its own session and runs gate, QA, review and merge itself; Michael is called only where judgment is needed (a fix, a blocked card, a blind reviewer's blocking finding)." },
     "qa_early": { "type": "boolean", "default": true, "description": "QA writes each card's tests from its spec while the developer builds it (own worktree; joined after the gate with dl qa-join), instead of after the gate." },
     "max_attempts": { "type": "integer", "minimum": 1, "default": 2, "description": "Tries per card before it is blocked and Michael decides (split, replace or drop — listed in the PR)." },
     "gates": {
@@ -57,22 +55,11 @@
       "additionalProperties": {
         "type": "object",
         "properties": {
-          "model": { "type": "string", "description": "e.g. opus, sonnet, haiku, or another CLI's model (gpt-5-codex)." },
-          "provider": { "type": "string", "enum": ["claude", "codex", "gemini", "grok", "kimi", "qwen", "opencode", "crush", "pi", "copilot", "cursor", "antigravity"], "description": "Which CLI runs the role (non-Claude needs dispatch munder)." },
+          "model": { "type": "string", "description": "e.g. opus, sonnet, haiku, or a full model id." },
+          "provider": { "type": "string", "enum": ["claude"], "deprecated": true, "description": "Every role runs on Claude Code; name a model instead." },
           "count": { "type": "integer", "minimum": 1, "description": "Seats of this role working in parallel (backend#1, backend#2 …)." }
         },
         "additionalProperties": false
-      }
-    },
-    "munder": {
-      "type": "object",
-      "properties": {
-        "hive_root": { "type": "string", "description": "The Munder Difflin hive folder for this repo (the app's harnessHome). /deliver opens the app on it." },
-        "app_command": { "type": "string", "description": "How to start Munder Difflin when it is not running (default: the installed app, or `npm run preview` in the source checkout scripts/init.sh made)." },
-        "model": { "type": "string", "default": "sonnet", "description": "Model of every Claude seat whose role names none. Seats never start on the app's default model." },
-        "seat_timeout_minutes": { "type": "integer", "minimum": 0, "default": 5, "description": "A seat with no 'seated' message this long after hiring is failed (dl md-seats says why; Michael re-seats it)." },
-        "claude_command": { "type": "string", "default": "claude", "description": "Command the Claude seats run (a wrapper or pinned path)." },
-        "token_cap": { "type": "integer", "minimum": 0, "default": 0 }
       }
     },
     "tracker": {

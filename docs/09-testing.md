@@ -1,6 +1,6 @@
 # 09 — Testing: how the flow is proven
 
-Four layers, from cheapest to most real. The raw output of every run is kept in [`verification/`](verification/) — nothing
+Three layers, from cheapest to most real. The raw output of every run is kept in [`verification/`](verification/) — nothing
 is summarised away.
 
 | Layer | Command | Model? | Time | Proves |
@@ -8,7 +8,6 @@ is summarised away.
 | 1. Deterministic | `tests/run.sh` | no | ~2 min | every `dl` guard, the validator, roles, readiness, knowledge, hooks, trackers (contract stubs of Jira, Asana, Linear, GitHub Projects; switching a running job's tracker), merge modes (fake `gh`, bare origin), installer |
 | 2. Replay | `tests/replay-watchlist.sh` | no | ~1 min | the whole flow on the POC slice, narrated step by step with real `dl` output; a scope violation rejected and retried; the hidden oracle passes |
 | 3. Live, headless | `tests/e2e-live.sh complete \| incomplete \| parallel` | yes | 10–25 min each | real Claude Code + real ECC from GitHub + real agents on a fresh HOME; the only input is a requirements file |
-| 4. Live, Munder Difflin | `tests/e2e-munder.sh` | yes | 30–60 min | `scripts/init.sh --munder` from nothing, the real Electron app driven like a user (Playwright + xvfb), Michael briefed with one message, a person seated for every role seat does that role's work (no subagents), screenshots of the floor and of people at work |
 
 ## The test data
 
@@ -30,12 +29,10 @@ is summarised away.
 Groups (each prints ✔/✘ per check, ends with `result: N passed, M failed`): macOS bash 3.2 (`tests/lint-bash32.mjs`: no
 case statement inside `$( )`, no bare empty array under `set -u`, no bash-4 features) · scope matcher · repo + job · planning guards ·
 execution guards (gate, QA scope, review on the same commit, attempts, blocked) · integration + delivery · hooks
-(bash-guard, write-guard, agent-guard, stop-guard, subagent-log) · Munder Difflin dispatch (spawn request, providers, worker
-command) · seats (one person per seat, `live` only after `seated`, failures with their reason — startup crash, API/credit
-error, rejected request, timeout — `md-reseat`, explicit models) · the floor default (a floor job refused outside the app's
-Michael, `dl dispatch` by hand) · mixed stacks, frozen decisions, parallel assignment · traceability (card changes, seals) · Jira, Asana, Linear, GitHub Projects contract stubs · switching the tracker mid-job
+(bash-guard, write-guard, agent-guard, stop-guard, subagent-log) · mixed stacks, frozen decisions, seats, parallel
+assignment · traceability (card changes, seals) · Jira, Asana, Linear, GitHub Projects contract stubs · switching the tracker mid-job
 (statuses, comments, branch links, a workflow missing a status) · ECC specialists · `dl next` robustness · commit hygiene ·
-tracker factory · knowledge (standards, lessons, MemPalace, knowledge graph) · merge modes · install/uninstall.
+tracker factory · knowledge (standards, lessons) · merge modes · install/uninstall.
 
 ## Layer 3 — the live scenarios, judged from the outside
 
@@ -52,23 +49,6 @@ Every scenario writes `report.md` step by step, and `tests/verify-job.sh` checks
 `incomplete` additionally checks that Michael stopped in `awaiting_clarification` **before** any card or code existed and that
 `QUESTIONS.md` asks about the missing rule; `parallel` checks that two seats of one role were running at the same time.
 
-## Layer 4 — Munder Difflin
-
-`tests/e2e-munder.sh` adds: init from scratch (clone, native modules, build, config, brief), the app under xvfb, Michael
-briefed with `/deliver <JOB.md>` through the composer, a screenshot of the floor every minute, the human's answers through
-`dl clarify` + a composer message when Michael asks (retried every 30 s while he waits), screenshots of each person's own
-terminal while they work on an order and when they report done, and floor checks:
-
-- a seat was hired for every role seat the requirements called for (`job.roles[].count`), and Munder Difflin seated them;
-- every seat reported finished tasks (`md-done <task> <seat>` in `events.log`), and the cards record which seat built them;
-- Michael ran no subagent: every `agent` line in `events.log` comes from a seat (`@worker-…`), none from Michael (`@god`);
-- Michael sent every seat home at the end (`md-release`), and the driver waits for them to leave before closing the app.
-
-Then the same `verify-job.sh`.
-
-The test's HOME is brand new, so it marks Claude Code's first run as done (`hasCompletedOnboarding`), as a user who has
-started `claude` once already has — see [07 § 5](07-munder-difflin.md#5-authentication-and-first-run).
-
 ## Running them yourself
 
 ```bash
@@ -77,13 +57,8 @@ tests/replay-watchlist.sh                      # watch the flow without a model
 tests/e2e-live.sh complete /tmp/e2e            # needs Claude Code logged in (or ANTHROPIC_API_KEY); costs tokens
 tests/e2e-live.sh incomplete /tmp/e2e
 tests/e2e-live.sh parallel /tmp/e2e
-tests/e2e-munder.sh /tmp/e2e-md                # + xvfb-run, Playwright
 ```
 
 Each live run keeps everything: the sandbox repo with `.work/` (job, readiness, plan, board, specs, handoffs, gate logs,
 events), the `claude -p` transcripts (`.work/runs/*.jsonl` — in the run's work folder only: `tests/archive-run.sh`
-leaves them out of `docs/verification/`), the report, and for Munder Difflin the screenshots.
-
-The fixtures of `tests/run.sh` and the headless/interactive scenarios run with Claude Code subagents — chosen explicitly
-(`"dispatch": "subagent"`, `scripts/sandbox.sh --subagent`), since the floor is the default. `tests/e2e-munder.sh` runs the
-floor.
+leaves them out of `docs/verification/`) and the report.

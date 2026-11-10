@@ -5,7 +5,7 @@
 ```text
                                ┌──────────────────────────┐
                                │  MICHAEL — PM            │  picks roles, verifies readiness, assigns every card,
-                               │  (main session / god)    │  calls dl; writes no product code
+                               │  (main session)          │  calls dl; writes no product code
                                └────────────┬─────────────┘
    ┌──────────────┬──────────────┬──────────┼───────────┬──────────────┬──────────────────┐
    ▼              ▼              ▼          ▼           ▼              ▼                  ▼
@@ -53,7 +53,7 @@ while a card + its spec + the role card carry everything in one hop. One dispatc
 
 Michael picks only from this file, writes a one-line reason per role that quotes the request, and keeps it small — no role
 "just in case". `dl phase readiness` checks the selection (`roles.mjs check`: unknown roles, a dev without its lead, a
-non-Claude role without `dispatch: munder`); `dl readiness` refuses a component whose owner or reviewer is not on the job and a
+role with a `provider` other than `claude`); `dl readiness` refuses a component whose owner or reviewer is not on the job and a
 decided readiness item whose specialist is missing.
 
 ## Role cards — the rules each agent starts from
@@ -71,8 +71,8 @@ Job · Agent: backend-dev · runs on: claude (model) · Why this role is on the 
 ## Company standards and memory   the "## Must" lists of matching standards + lessons from earlier jobs + code graph
 ```
 
-Every prompt Michael sends starts with `ROLE CARD (your rules — read first): <path>`. Floor workers on Munder Difflin get the
-card embedded in their objective. Lanes in the role cards are the same rules the hooks and `dl` enforce.
+Every prompt Michael sends starts with `ROLE CARD (your rules — read first): <path>`. Lanes in the role cards are the same
+rules the hooks and `dl` enforce.
 
 ## Mixed stacks: one role card per component stack
 
@@ -101,26 +101,24 @@ gets its own branch and worktree, and appears on the kanban under that seat. `dl
 is busy; `dl next` / `dl seats` print an `IDLE` line for every free seat — with the card it should take or what it waits for —
 so no role sits idle while work exists ([00-flow](00-flow.md#no-bottleneck-seats-and-pipelining)).
 
-## Models and CLIs per role
+## Models per role
 
-Every role can run on its own model, and — on Munder Difflin — on its own CLI:
+Every role can run on its own model:
 
 ```json
 "roles": [
   { "role": "ba",       "agent": "business-analyst", "model": "opus" },
-  { "role": "backend",  "agent": "backend-dev",      "provider": "codex",  "model": "gpt-5-codex", "count": 2 },
-  { "role": "frontend", "agent": "frontend-dev",     "provider": "gemini", "model": "gemini-2.5-pro" },
+  { "role": "backend",  "agent": "backend-dev",      "model": "sonnet", "count": 2 },
+  { "role": "frontend", "agent": "frontend-dev",     "model": "haiku" },
   { "role": "reviewer", "agent": "ecc:typescript-reviewer" }
 ]
 ```
 
-| Where | Claude roles | Other providers (`codex gemini grok kimi qwen opencode crush pi copilot cursor antigravity`) |
-| --- | --- | --- |
-| subagents (`dispatch: subagent`) | Agent tool with `model` | not possible — `dl` refuses: set `dispatch: munder` |
-| Munder Difflin (`dispatch: munder`) | a person at a seat for the whole job: `dl md-hire` seats a plain `claude --model <model>`; every work order (`dl md-send`) carries the role card + the agent's instructions | a person at a seat on that CLI, same work orders |
-
-Michael himself can run on any CLI Munder Difflin supports: the hive gets `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` with the
-same brief, and a non-Claude Michael follows `SKILL.md` as a playbook with `dl` ([07](07-munder-difflin.md)).
+Michael passes the role's `model` to the Agent tool when he dispatches it as a subagent; the code driver (`dl run`) starts
+the role's session with it. A role without a `model` runs on Claude Code's default. The project's defaults per role live in
+`.deliver.json` (`"roles": {"ba": {"model": "opus"}}`); what you tell Michael at the start, or a Staffing section in the
+request, wins. Another vendor's model works through an LLM gateway: the `model` name is passed through to it
+([README § Connect it](../README.md#connect-it)).
 
 ## How ECC is used — every role, every step
 
@@ -150,9 +148,6 @@ own missions and don't follow a card contract. Ours are thin wrappers that accep
      when: "migrations, ETL, analytics tables"
      rules:
        - "Every migration is reversible and tested up and down."
-     floor:
-       character: "jim"
-       accent: "#4a7"
    ```
 
 3. A reviewer for its stack in `stack_reviewers` if needed (`database: ecc:database-reviewer`).

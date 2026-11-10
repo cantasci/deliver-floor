@@ -7,8 +7,8 @@
 //                      lets Michael write .work/ files); a backup is kept. Applies from the next session.
 //   per repo           a repo with .deliver.json: .claude/settings.local.json gets an empty commit/PR attribution
 //                      (commit.ai_attribution false is checked by the gate) — this repo only, never global
-//   every session      git, jq, node ≥ 18, bash (Git Bash on Windows), the ECC plugin, and — for the floor, the default
-//                      mode — Munder Difflin; anything missing is named with the command that fixes it
+//   every session      git, jq, node ≥ 18, bash (Git Bash on Windows), the ECC plugin; anything missing is named with the
+//                      command that fixes it
 //                      as the plugin: a copy of the kit in ~/.claude is deleted (copied-kit.mjs), and <plugin data>/bin/dl
 //                      runs this version's dl — the one path that stays the same across updates (Michael's brief names it)
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, readdirSync, chmodSync } from "node:fs";
@@ -86,7 +86,7 @@ if (asPlugin && Object.keys(installed).some((k) => k.startsWith("deliver@"))) {
   if (removed.length) done.push(`the plugin is the only copy of the kit now — removed the copy in ${cfgDir}: ${removed.join("; ")}. Restart Claude Code once (the copy's /deliver and hooks are still loaded in this session)`);
 } else if (copied && Object.keys(installed).some((k) => k.startsWith("deliver@")))
   warn.push("the kit is installed twice (plugin AND copied into ~/.claude) — the next session of the plugin removes the copy");
-if (asPlugin) {   // the stable dl: Michael's brief and other CLIs on the floor call it; it always runs the version loaded last
+if (asPlugin) {   // the stable dl: scripts and other tools call it; it always runs the version loaded last
   const launcher = join(dataDir, "bin", "dl");
   const body = `#!/usr/bin/env bash\n# Written by the deliver plugin at every session start: runs the plugin version that session loaded.\nexec bash "${join(kit, "skills", "deliver", "bin", "dl").replace(/\\/g, "/")}" "$@"\n`;
   if ((existsSync(launcher) ? readFileSync(launcher, "utf8") : "") !== body) {
@@ -96,19 +96,12 @@ if (asPlugin) {   // the stable dl: Michael's brief and other CLIs on the floor 
 const projCopy = join(project, ".claude", "skills", "deliver");
 if (asPlugin && existsSync(join(projCopy, "bin", "dl")))
   warn.push(`this repo carries its own copy of the kit (${projCopy}, committed): /deliver here runs that copy, not the plugin. Remove it with scripts/install.sh --project ${project} --uninstall and commit, or keep it on purpose`);
-const mode = projCfg?.dispatch ?? readJson(join(kit, "skills", "deliver", "config.json"), {}).dispatch ?? "munder";
-if (projCfg && mode === "munder") {
-  const ud = win ? join(process.env.APPDATA ?? "", "Munder Difflin") : platform() === "darwin" ? join(homedir(), "Library", "Application Support", "munder-difflin") : join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "munder-difflin");
-  const alt = win ? join(process.env.APPDATA ?? "", "munder-difflin") : platform() === "darwin" ? join(homedir(), "Library", "Application Support", "Munder Difflin") : ud;
-  if (!existsSync(join(ud, "config.json")) && !existsSync(join(alt, "config.json")))
-    warn.push(`this repo runs on the Munder Difflin floor (the default) but the app is not set up — install it with scripts/init.sh --munder from https://github.com/cantasci/deliver-floor (the cantasci/munder-difflin fork; the released app's seats never start), or choose subagents by hand: "dispatch": "subagent" in .deliver.json`);
-}
 
 if (report) {
   const installedAs = Object.keys(installed).filter((k) => k.startsWith("deliver@")).join(", ") || "not installed as a plugin";
   console.log(`deliver ${version} (${installedAs}) — ${kit}`);
   for (const w of warn) console.log(`⚠ ${w}`);
-  if (!warn.length) console.log(`✔ git, jq, node ${process.versions.node}, bash, the ECC plugin${projCfg && mode === "munder" ? ", Munder Difflin" : ""} — nothing to fix`);
+  if (!warn.length) console.log(`✔ git, jq, node ${process.versions.node}, bash, the ECC plugin — nothing to fix`);
   process.exit(0);
 }
 if (done.length || warn.length) {

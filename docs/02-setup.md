@@ -7,7 +7,6 @@ About 15 minutes. `scripts/init.sh` does steps 1–3 for you; the rest is per re
 ```bash
 git clone https://github.com/cantasci/deliver-floor && cd deliver-floor
 scripts/init.sh --repo /path/to/your/repo                        # ECC + the kit (~/.claude) + .deliver.json + doctor
-scripts/init.sh --repo /path/to/repo --munder --hive ~/md-hive   # … and Munder Difflin from source (see 07)
 ```
 
 | Flag | Effect |
@@ -15,9 +14,6 @@ scripts/init.sh --repo /path/to/repo --munder --hive ~/md-hive   # … and Munde
 | *(none)* | checks tools · installs the ECC plugin (`ecc@ecc`) if missing · installs the kit at user level · runs doctor |
 | `--repo <path>` | also writes a starter `.deliver.json` for that repo (if it has none): `verify_full` guessed from the stack, `merge_mode` `human` (or `local` without an `origin`) |
 | `--project <repo>` | installs the kit into `<repo>/.claude` instead of `~/.claude` (commit it to share it with the team) |
-| `--munder --hive <dir>` | clones, installs, builds and configures Munder Difflin, registers the repo, teaches Michael `/deliver` |
-| `--munder-dir <dir>` | where the Munder Difflin checkout lives (default `~/.local/share/munder-difflin`) |
-| `--skip-onboarding` | marks Munder Difflin's first-run wizard as done (CI / headless) |
 | `--no-ecc` | leave the ECC plugin alone |
 
 It is idempotent: every step checks first. `bash -x scripts/init.sh …` shows every command.
@@ -28,7 +24,7 @@ It is idempotent: every step checks first. `bash -x scripts/init.sh …` shows e
 `--keep-attribution`, `--plugin` — see the plugin section below):
 
 - `kit/agents/*.md` → `<target>/agents/` (business-analyst, qa-tester, backend-dev, frontend-dev, mobile-dev, database-dev)
-- `kit/skills/deliver/` → `<target>/skills/deliver/` (SKILL.md, roles.yaml, readiness.yaml, config.json, templates, `bin/dl` …)
+- `kit/skills/deliver/` → `<target>/skills/deliver/` (SKILL.md, `phases/`, roles.yaml, readiness.yaml, config.json, templates, `bin/dl` …)
 - `kit/hooks/deliver/` → `<target>/hooks/deliver/`
 - merges `kit/settings.hooks.json` into `<target>/settings.json`: the five hooks, `env.GATEGUARD_EXEMPT_GLOBS` (so ECC's
   GateGuard lets Michael write `.work/` files), and `attribution: {commit: "", pr: ""}` so no Co-Authored-By / "Generated with"
@@ -57,19 +53,19 @@ the plugin's SessionStart hook (`kit/hooks/deliver/setup.mjs`), once per plugin 
 - `~/.claude/settings.json` gets the env a plugin cannot set (`GATEGUARD_EXEMPT_GLOBS`: ECC's GateGuard lets Michael write
   `.work/` files), with a backup; restart Claude Code once so it applies;
 - in a repo with `.deliver.json`, `.claude/settings.local.json` gets an empty commit/PR attribution — that repo only;
-- every session: git, jq, Node 18+, bash (Git Bash on Windows), ECC and — for a floor repo — Munder Difflin are checked;
-  what is missing is named with the command that fixes it. Nothing is printed when all is well.
+- every session: git, jq, Node 18+, bash (Git Bash on Windows) and ECC are checked; what is missing is named with the
+  command that fixes it. Nothing is printed when all is well.
 - every session: a copy of the kit in `~/.claude` (`skills/deliver`, `hooks/deliver`, the kit's agents, their hook entries
   in `settings.json`) is deleted — the plugin is the only copy; `settings.json` is backed up, your own agents and hooks stay.
   And `~/.claude/plugins/data/deliver-deliver-floor/bin/dl` is rewritten to run the version this session loaded: the one
-  `dl` path that survives updates (Michael's brief names it for CLIs that cannot run `/deliver:deliver`).
+  `dl` path that survives updates.
 
 `scripts/install.sh --user --plugin` still exists for a machine set up from a terminal; it is no longer required.
 
 What changes with the plugin:
 
 - The kit's agents are namespaced: `deliver:backend-dev`, `deliver:qa-tester`, … `dl` detects the plugin and writes those
-  names into ROLES.md, the role cards and the seats' orders. `job.json` and `board.json` keep the plain names. Developing
+  names into ROLES.md and the role cards. `job.json` and `board.json` keep the plain names. Developing
   with `claude --plugin-dir kit`? Set `DELIVER_AGENT_NS=deliver`.
 - The job starts with `/deliver:deliver <request>` (or `/deliver:new`); everything else you do is a slash command too —
   [README § Your commands](../README.md#your-commands). You never run `dl` in a terminal.
@@ -95,7 +91,6 @@ The plugin runs on Windows with what Claude Code on Windows already needs, plus 
 | Git for Windows (Git Bash) | `dl` and the guards are bash; Claude Code's Bash tool uses Git Bash too | `winget install Git.Git` |
 | jq | `dl` reads and writes its JSON state with it | `winget install jqlang.jq` |
 | Node 18+ | helpers and the hook launcher | `winget install OpenJS.NodeJS.LTS` |
-| Munder Difflin (floor mode) | the default run mode | `scripts/init.sh --munder` in Git Bash (builds the [cantasci/munder-difflin](https://github.com/cantasci/munder-difflin) fork; the released installer's seats never start) |
 
 How the kit copes:
 
@@ -105,22 +100,18 @@ How the kit copes:
 - Paths: Claude Code hands hooks `C:\Users\…`; `dl` sees `/c/Users/…` in Git Bash. The guards normalise both forms before
   comparing.
 - Line endings: `.gitattributes` keeps LF in every checkout, so `core.autocrlf` cannot break the scripts.
-- `/deliver` in a floor repo opens the installed app (`%LOCALAPPDATA%\Programs\Munder Difflin`), its config is read from
-  `%APPDATA%\Munder Difflin`.
 - `worktree_setup` commands are yours: on Windows avoid `ln -s` (it needs Developer Mode) — copy instead.
 
-`scripts/init.sh --munder` builds Munder Difflin from source (native modules); on Windows install the released app instead.
 The Windows path is checked by `tests/run.sh` (launcher, path normalisation, line endings) but has not been run on a real
 Windows machine yet.
 
 ### Claude authentication
 
-Michael and the Claude roles are ordinary Claude Code sessions and sign in the way your `claude` does: a `/login` (your
+Michael and the roles run in Claude Code and sign in the way your `claude` does: a `/login` (your
 subscription; `claude setup-token` → `CLAUDE_CODE_OAUTH_TOKEN` for an unattended machine), `ANTHROPIC_API_KEY`, Bedrock
 (`CLAUDE_CODE_USE_BEDROCK=1`), Vertex (`CLAUDE_CODE_USE_VERTEX=1`) or a gateway (`ANTHROPIC_BASE_URL` +
-`ANTHROPIC_AUTH_TOKEN`). Put the variables in `~/.claude/settings.json` → `env` or the shell that starts `claude` / Munder
-Difflin — never in `.deliver.json`. `scripts/doctor.sh` says which one it found. Roles on other vendors' CLIs sign in with
-that CLI's own login or key ([README § Connect it](../README.md#connect-it)).
+`ANTHROPIC_AUTH_TOKEN`). Put the variables in `~/.claude/settings.json` → `env` or the shell that starts `claude` — never
+in `.deliver.json`. `scripts/doctor.sh` says which one it found ([README § Connect it](../README.md#connect-it)).
 
 ## 2. `dl` on your PATH (for you; Michael uses the absolute path)
 
@@ -135,7 +126,7 @@ dl help
 scripts/doctor.sh /path/to/repo
 ```
 
-Everything should be ✔. Warnings about optional tools (gh, Munder Difflin, tracker) are fine.
+Everything should be ✔. Warnings about optional tools (gh, tracker) are fine.
 
 ## 4. Taking a normal project into the flow
 
@@ -220,31 +211,16 @@ a running job to another one — [10-trackers](10-trackers.md).
 
 ## 5. First run
 
-Try it on the sandbox first — nothing of yours is touched:
-
-**On the Munder Difflin floor — the default mode.** Install the app, make a sandbox, give the job to Michael in the app:
-
-```bash
-scripts/sandbox.sh /tmp/wl watchlist-poc
-scripts/init.sh --munder --hive ~/md-hive --repo /tmp/wl
-```
-
-```text
-/deliver /path/to/deliver-floor/examples/watchlist-poc/JOB.md          (typed to Michael in the app)
-```
-
-**With Claude Code subagents — chosen by hand.** No app; one `claude` session, roles run as its subagents:
+Try it on the sandbox first — nothing of yours is touched. One `claude` session is Michael; the roles run as its
+subagents:
 
 ```bash
-scripts/sandbox.sh --subagent /tmp/wl watchlist-poc && cd /tmp/wl && claude
+scripts/sandbox.sh /tmp/wl watchlist-poc && cd /tmp/wl && claude
 ```
 
 ```text
 /deliver /path/to/deliver-floor/examples/watchlist-poc/JOB.md
 ```
-
-Never start `/deliver` for a floor job from a separate terminal: `dl` refuses it, because a second Michael would read the
-same inbox. Switching modes and recovering seats: [07 § Choosing the mode](07-munder-difflin.md#choosing-the-mode).
 
 Then on your repo, something small: `/deliver Add a /health endpoint that returns {"status":"ok"}`.
 

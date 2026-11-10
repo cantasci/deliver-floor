@@ -14,11 +14,6 @@ set -euo pipefail
 repo="$(cd "${1:?repo path required}" && pwd)"; request="${2:-}"; rounds="${3:-40}"
 cd "$repo"
 command -v claude >/dev/null || { echo "claude CLI not found" >&2; exit 1; }
-# Unattended runs use Claude Code subagents; a floor job (Munder Difflin, the default) is run by the app's Michael.
-# the layered settings: .deliver.json over the user's own config over the kit default (munder)
-d="$(jq -r '.dispatch // empty' .deliver.json 2>/dev/null || true)"
-[[ -n $d ]] || d="$(jq -r '.dispatch // empty' "${DELIVER_HOME:-$HOME/.deliver}/config.json" 2>/dev/null || true)"
-[[ $d == subagent ]] || { echo "run-headless: this repo runs on the Munder Difflin floor (dispatch: ${d:-munder, the default}). Unattended runs need \"dispatch\": \"subagent\" in .deliver.json — see docs/07-munder-difflin.md#choosing-the-mode" >&2; exit 1; }
 
 # auto: classifier-based approvals (no prompts). If your plan lacks auto mode, use
 # PERMISSION_MODE=acceptEdits and pre-allow Bash commands in .claude/settings.json (docs/02-setup.md § 4.5).
@@ -94,6 +89,17 @@ for ((i = 1; i <= rounds; i++)); do
   if [[ $state == "$last" ]]; then echo "⚠ no progress in the last round ($phase) — stopping. Check: dl status; tail .work/$job/events.log"; exit 1; fi
   last=$state
   echo "round $i — $job ($phase)"
+  # settings.driver "code": the cards are run by a program (dl run), not by Michael's session; he gets a round only for what
+  # the driver hands over (exit 10) — with DELIVER_DRIVER=1, so dl next shows him only that
+  if [[ $phase == executing && "$(jq -r '.settings.driver // "michael"' "$jf")" == code ]]; then
+    drc=0; PERMISSION_MODE="$mode" "$KIT/bin/dl" run || drc=$?
+    case $drc in
+      0) continue ;;
+      10) DELIVER_DRIVER=1 run "$DCMD resume"; if wait_for_limit "$LAST_LOG"; then last=""; i=$((i - 1)); fi; continue ;;
+      3) echo "⏸  a usage limit stopped an agent of the driver — nothing was recorded; run this script again after the reset"; exit 3 ;;
+      *) echo "⚠ dl run failed (exit $drc) — Michael takes this round"; ;;
+    esac
+  fi
   run "$DCMD resume"
   if wait_for_limit "$LAST_LOG"; then last=""; i=$((i - 1)); fi   # a limit is neither a round nor "no progress"
 done

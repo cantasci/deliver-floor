@@ -115,10 +115,7 @@ export function checkJobRoles(job, cat) {
   // request or the human, never a default), so until then the job may have no reviewer yet; from planning on it must.
   const stackOpen = !(job.stack ?? []).length && ["intake", "shaping", "readiness", "awaiting_clarification"].includes(job.phase);
   if (!stackOpen && !(job.roles ?? []).some((r) => r.role?.startsWith("reviewer"))) errors.push("no stack reviewer selected (role 'reviewer')");
-  const PROVIDERS = ["claude", "codex", "gemini", "grok", "kimi", "qwen", "opencode", "crush", "pi", "copilot", "cursor", "antigravity"];
-  for (const r of job.roles ?? []) if (r.provider && !PROVIDERS.includes(r.provider)) errors.push(`role '${r.role}': provider '${r.provider}' is not one of ${PROVIDERS.join(", ")}`);
-  const sa = (job.roles ?? []).filter((r) => (r.provider ?? "claude") !== "claude" && (job.settings?.dispatch ?? "munder") !== "munder");
-  for (const r of sa) errors.push(`role '${r.role}' runs on ${r.provider}: non-Claude roles run as Munder Difflin floor workers — set dispatch "munder"`);
+  for (const r of job.roles ?? []) if (r.provider && r.provider !== "claude") errors.push(`role '${r.role}': provider '${r.provider}' is not supported — every role runs on Claude Code (name a model instead)`);
   return errors;
 }
 
@@ -159,14 +156,22 @@ function componentsSection(sel, r, job, cat) {
 }
 
 function roleEntry(sel, cat) {
-  if (sel.role?.startsWith("reviewer")) return { kind: "review", agent: sel.agent, does: "Lead review of each card's change for the job's stack.", floor: { character: "toby", accent: "slate" } };
+  if (sel.role?.startsWith("reviewer")) return { kind: "review", agent: sel.agent, does: "Lead review of each card's change for the job's stack." };
   return cat.roles[sel.role];
 }
 
 export function renderRole(sel, job, cat) {
   const r = roleEntry(sel, cat);
   // a blind reviewer judges the diff alone: the kind's rules ("judge the change against the card") are not its own
-  const rules = [...(cat.rules?.all ?? []), ...(r.blind ? [] : cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
+  let rules = [...(cat.rules?.all ?? []), ...(r.blind ? [] : cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
+  // the light path: the developer writes the card's tests too (dl's dev_tests) — the rule that keeps qa_scope from the dev is
+  // replaced, and the reviewer is the one who checks every acceptance criterion against a test
+  if (job.track === "light" && job.settings?.light?.qa !== true) {
+    if (r.kind === "dev") rules = [...rules.filter((x) => !/qa_scope/.test(x)),
+      "You write ALL of this card's tests: unit tests test-first in scope, and in the card's qa_scope at least one integration test per acceptance criterion, named after it (\"AC-2: …\"). No QA role works on this job. End your summary with one line — AC-MAP: AC-1: <test name>; AC-2: <test name>; … — naming every acceptance criterion of the card."];
+    if (r.kind === "review" && !r.blind) rules = [...rules,
+      "The developer wrote this card's tests too (no QA role on this job): check every acceptance criterion against a test that would fail without the change. A criterion without one, or a test that asserts nothing about it, is a blocking item."];
+  }
   const md = [
     `# Role: ${sel.role} — ${KIND_TITLE[r.kind] ?? r.kind}${r.focus ? ` (${r.focus})` : ""}`,
     "",
@@ -199,7 +204,6 @@ export function render(jobDir) {
   const errors = checkJobRoles(job, cat);
   if (errors.length) { for (const e of errors) console.error(`ERROR ${e}`); process.exit(1); }
   mkdirSync(join(jobDir, "roles"), { recursive: true });
-  const munder = job.settings?.dispatch === "munder";
   const rows = [];
   for (const sel of job.roles) {
     if (sel.agent === "artemis") { rows.push(`| ${sel.role} | artemis (Michael) | qa | ${sel.why ?? ""} | — |`); continue; }
@@ -211,7 +215,6 @@ export function render(jobDir) {
   writeFileSync(join(jobDir, "ROLES.md"), [
     `# Roles for ${job.id}`, "", "| Role | Agent | Kind | Why | Rules |", "| --- | --- | --- | --- | --- |", ...rows, "",
     process.env.DELIVER_AGENT_NS ? `The kit runs as the \`${process.env.DELIVER_AGENT_NS}\` plugin: call its agents by the names above (subagent_type, claude --agent). job.json and board.json keep the plain names.\n` : "",
-    munder ? "On the Munder Difflin floor each role seat is a person Michael hires for the whole job: dl md-hire, dl md-seats." : "",
   ].join("\n"));
   console.log(`roles: ${job.roles.length} role card(s) → ${join(jobDir, "roles")}`);
 }
@@ -226,7 +229,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   } else if (cmd === "render") render(arg);
   else if (cmd === "dev-seats") { // seats of every developer role (count each, default 1) — QA seats follow them
     const job = JSON.parse(readFileSync(arg, "utf8")), cat = loadCatalog();
-    // a string: console.log colours a number under FORCE_COLOR (set in the floor's terminals), and dl could not read it
+    // a string: console.log colours a number under FORCE_COLOR (set in some terminals), and dl could not read it
     console.log(String((job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev").reduce((n, r) => n + (r.count ?? 1), 0)));
   }
   else if (cmd === "kind") console.log(roleEntry({ role: arg }, loadCatalog())?.kind ?? "");   // dev | qa | review | ba | lead …

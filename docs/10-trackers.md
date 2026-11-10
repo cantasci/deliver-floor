@@ -63,7 +63,7 @@ only needs a different column mapping — or a tracker class.
 | Data Center / Server | `JIRA_BASE_URL=https://jira.company.local` · `JIRA_PAT=<personal access token>` · and `"api_version": "2"` |
 
 Use a bot account with *Browse, Create, Edit, Transition, Add Comments, Link Issues* in the project. In Claude Code put the
-variables in `~/.claude/settings.json → env` (or the shell that starts `claude` / Munder Difflin); agents never see them —
+variables in `~/.claude/settings.json → env` (or the shell that starts `claude`); agents never see them —
 only `dl` (through `tracker.mjs`) calls Jira.
 
 ### 3. Settings

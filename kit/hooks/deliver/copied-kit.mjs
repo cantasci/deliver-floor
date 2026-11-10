@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The plugin is the only source of the kit. A copy that scripts/install.sh --user (or an older init.sh) put into ~/.claude
-// shadows it: `/deliver` runs the copy, its hooks run beside the plugin's, and Michael on the floor keeps the copy's version
+// shadows it: `/deliver` runs the copy, its hooks run beside the plugin's, and Michael keeps the copy's version
 // however often the plugin updates (seen on a user's machine). With the plugin installed, the copy is deleted — the files,
 // and its hook entries in settings.json (that file is the user's: a backup is kept). Who wants a fixed version installs that
 // version of the plugin.

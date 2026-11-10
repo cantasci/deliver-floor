@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LIVE end-to-end in INTERACTIVE mode — a person at a terminal with Michael, no headless runner, no office floor.
+# LIVE end-to-end in INTERACTIVE mode — a person at a terminal with Michael, no headless runner.
 #   setup   fresh HOME → ECC from GitHub → scripts/install.sh → doctor → sandbox repo (as tests/e2e-live.sh)
 #   run     the real Claude Code TUI in tmux; the "person" types `/deliver <JOB.md>` and then only reads the screen:
 #           first-run / trust / permission dialogs are answered as a person would; when Michael asks the human, the
@@ -34,7 +34,7 @@ if ! iso_env claude plugin list 2>/dev/null | gq "ecc@ecc"; then
 fi
 iso_env claude plugin list 2>/dev/null | gq ecc@ecc && ok "ECC plugin installed" || bad "ECC plugin not installed (ecc.log)"
 iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
-SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" --subagent "$SB" "$EXN" > /dev/null
+SB="$W/repo"; rm -rf "$SB"; iso_env "$HERE/scripts/sandbox.sh" "$SB" "$EXN" > /dev/null
 iso_env "$HERE/scripts/doctor.sh" "$SB" > "$W/doctor.log" 2>&1 && ok "doctor: $(tail -1 "$W/doctor.log")" || bad "doctor: $(tail -1 "$W/doctor.log")"
 # A person who has used Claude Code once has finished its first-run screens; trusting the repo is asked on screen.
 cj="$ISO_HOME/.claude.json"; [[ -s $cj ]] || echo '{}' > "$cj"

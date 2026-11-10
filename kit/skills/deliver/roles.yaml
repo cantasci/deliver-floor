@@ -1,7 +1,6 @@
 # Role catalog — Michael selects roles ONLY from this list (not from all of ECC's agents).
-# `dl roles` turns the selected roles into project-specific role cards (.work/<job>/roles/<role>.md); on the Munder
-# Difflin floor every seat of a role is a person (dl md-hire). A role card = rules.all + rules.<kind> + the role's own
-# rules + project facts.
+# `dl roles` turns the selected roles into project-specific role cards (.work/<job>/roles/<role>.md). A role card = rules.all + rules.<kind> +
+# the role's own rules + project facts.
 #
 # Format (kept to a small YAML subset so bin/roles.mjs can read it without dependencies):
 #   2-space indentation · `key: value` · `- item` lists · "double-quoted" or bare scalars · `#` comments
@@ -11,7 +10,6 @@
 # writes:   can it write files? (ECC architect/reviewers are read-only — on purpose)
 # when:     selection rule (Michael decides at intake from the request + the repo)
 # always:   selected for every job
-# floor:    Munder Difflin look (character + accent) when the role runs on the office floor
 # blind:    a reviewer that sees the diff alone — its role card leaves out the kind's rules (no card, no spec to judge by)
 
 rules:
@@ -89,9 +87,6 @@ roles:
     writes: false
     always: true
     does: "Turns the request into a traceable plan (Given/When/Then ACs), writes a spec for every card, checks the ACs at closing."
-    floor:
-      character: pam
-      accent: mint
 
   tech-lead:
     kind: lead
@@ -101,9 +96,6 @@ roles:
     does: "Technical approach + cross-area contracts (API schema, types). Produces cards."
     rules:
       - "Write cross-area contracts (API shapes, shared types) into the context of every card that uses them."
-    floor:
-      character: jim
-      accent: sky
 
   backend-lead:
     kind: lead
@@ -113,9 +105,6 @@ roles:
     does: "Produces backend cards; later reviews backend cards (together with the stack reviewer)."
     rules:
       - "Put schema changes and their migrations in the same card; data-changing migrations must be reversible."
-    floor:
-      character: oscar
-      accent: amber
 
   frontend-lead:
     kind: lead
@@ -125,9 +114,6 @@ roles:
     does: "Produces frontend cards; later reviews them."
     rules:
       - "Reuse existing components and design tokens; name them in the card context."
-    floor:
-      character: kelly
-      accent: rose
 
   mobile-lead:
     kind: lead
@@ -137,9 +123,6 @@ roles:
     does: "Produces mobile cards; later reviews them."
     rules:
       - "Cards that need a device say so in their context; they run one at a time per device."
-    floor:
-      character: ryan
-      accent: violet
 
   backend:
     kind: dev
@@ -149,9 +132,6 @@ roles:
     rules:
       - "Keep public contracts (exports, endpoints, response shapes) exactly as the card states them."
       - "Validate external input at the boundary; no secrets in code or tests."
-    floor:
-      character: dwight
-      accent: amber
 
   frontend:
     kind: dev
@@ -161,9 +141,6 @@ roles:
     rules:
       - "Use the existing components, tokens and data-fetching pattern; no new UI library."
       - "Interactive elements are keyboard reachable and labelled."
-    floor:
-      character: phyllis
-      accent: rose
 
   mobile:
     kind: dev
@@ -172,9 +149,6 @@ roles:
     when: "mobile-lead was selected"
     rules:
       - "Verify UI flows on a device (ARTEMIS) before writing the UI test; record the device serial in the handoff."
-    floor:
-      character: kevin
-      accent: violet
 
   database:
     kind: dev
@@ -184,9 +158,6 @@ roles:
     rules:
       - "Every schema change ships with a forward migration and, where data allows, a tested rollback."
       - "Migrations are backward compatible with the code currently deployed (expand → migrate → contract)."
-    floor:
-      character: stanley
-      accent: slate
 
   security:
     kind: review
@@ -196,9 +167,6 @@ roles:
     does: "Reviews the relevant cards IN ADDITION to the stack reviewer."
     rules:
       - "Check OWASP Top 10 classes relevant to the change, secrets, authz on every new entry point."
-    floor:
-      character: creed
-      accent: slate
 
   blind:
     kind: review
@@ -219,9 +187,6 @@ roles:
     writes: false
     always: true
     does: "Writes and runs each card's integration/e2e tests for its acceptance criteria (after the gate, before the Lead review)."
-    floor:
-      character: angela
-      accent: mint
 
   a11y:
     kind: review
@@ -263,9 +228,6 @@ roles:
     writes: true
     when: "A web user flow changes"
     does: "Runs end-to-end checks on the integrated job branch; durable e2e tests go through a card."
-    floor:
-      character: andy
-      accent: sky
 
   qa-mobile:
     kind: qa

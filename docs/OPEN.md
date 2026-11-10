@@ -12,21 +12,17 @@ Last updated: 2026-10-05.
 | --- | --- | --- | --- |
 | L1 | Headless `complete` (`tests/e2e-live.sh complete`) | last passed in run 7; shared code changed since (`stop-guard`, validate path rule, `roles.mjs`, plugin detection) | **done** — run 21 passed 25/25 ([report](verification/03-live-headless/complete-run21/report.md)) |
 | L2 | Headless `incomplete` (`tests/e2e-live.sh incomplete`) | run 19 failed in the test's prepared human; run 20 stopped correctly on two new business questions, which the user answered | **done** — run 23 passed 30/30, the recorded answer checked against its question ([report](verification/03-live-headless/incomplete-run23/report.md)) |
-| L3 | Munder Difflin floor with the kit **copied** (not a plugin) and seats | last live with a copy was run 15, before the `md-inbox` and `stop-guard` fixes | **done** — run 24 passed every check ([report](verification/04-live-munder/copied-seats/report.md)) |
 | L4 | **Interactive mode** — a person at the terminal with Michael (`tests/e2e-interactive.sh`) | run 22's one human answer was wrong (R2) | **done** — run 25 passed every check, no wrong answer recorded ([report](verification/06-live-interactive/repeat/report.md)) |
 
-## Multiple projects on one floor
+## Multiple projects at once
 
-Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until these are done, run one project per floor.
+Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until these are done, run each project's job in its
+own Claude Code session.
 
 | # | What |
 | --- | --- |
-| M1 | `dl md-inbox` takes only its own job's messages — today it shows and archives every project's reports |
-| M2 | seat names carry the project (`watchlist · ba`) — today two projects both have a `ba` |
-| M3 | faces unique across the whole floor, not only within a job |
-| M4 | worker limit: warn when concurrent jobs' seats exceed `maxConcurrentWorkers`; doctor states the rule |
-| M5 | `stop-guard` checks every job Michael owns, not only the first |
-| M6 | a live floor test with two projects at once |
+| M5 | `stop-guard` checks every job a session owns, not only the first |
+| M6 | a live test with two projects at once |
 
 ## Product findings
 
@@ -41,35 +37,26 @@ Analysis and fixes: [11-multiple-projects.md](11-multiple-projects.md). Until th
 
 | # | What | Status |
 | --- | --- | --- |
-| R4 | A role runs on the model the owner names — in the request file, typed to Michael, or as the floor default (`munder.model`) | **Done — verified live**, judged from the session transcripts: runs 36 (file, headless), 37 (typed, interactive), 39 (floor: role model wins over the default, every role ≠ Michael's model). Non-Claude CLIs stay O1 |
+| R4 | A role runs on the model the owner names — in the request file or typed to Michael | **Done — verified live**, judged from the session transcripts: runs 36 (file, headless), 37 (typed, interactive) |
 
 ## The user's Mac report (2026-10-05) and what followed
 
 | # | What | Status |
 | --- | --- | --- |
-| F1 | `dl` did not run on macOS bash 3.2 | **Fixed; verified on a real Mac for the floor code** — the owner's branch `fix/floor-robustness` (d6d6455) ran `tests/run.sh` 393/393 on bash 3.2 and found two traps the lint here had missed (`"$miss→"`, `"{a, b}"` in nested quotes); both are fixed here and the lint now finds all five on the pre-fix `dl`. This branch has more code since — **the owner re-runs `/bin/bash tests/run.sh` on the Mac once** |
-| F2 | a seat was "live" though its worker died at startup | **Done** — `live` only after its `seated` message (`tests/run.sh`; runs 42–43) |
-| F3 | a worker crashing at startup was silent | **Done** — `dl md-seats` reads the app's crash log, the worker's transcript (API/credit errors), rejected requests and a timeout, and says why (`tests/run.sh`; runs 42–43: seen within ~45 s) |
-| F4 | no command to re-seat a stuck seat | **Done** — `dl md-reseat <seat> "<why>" [--model m]`, Michael's decision, listed in the PR (run 43) |
-| F5 | workers started on the app's default model (no credit), unreported | **Done** — every seat gets an explicit model (`munder.model`, default sonnet); a credit error shows as `failed` (runs 42–43) |
-| F6 | `/deliver` from a separate terminal raced the app's Michael for the inbox | **Done** — a floor job runs only from the app's Michael (run 41); `/deliver` in a terminal now opens the floor (F8) |
-| F7 | the floor is the default; subagents only by hand | **Done** — `dispatch: munder` default; `"dispatch": "subagent"`, `--subagent`, `dl dispatch` (human only) — run 40 |
-| F8 | `/deliver` in a terminal opens Munder Difflin on the repo's floor and hands the job to Michael | **Done — verified live** (run 45). One click remains: the app opens on its floor picker, and has no setting to skip it |
+| F1 | `dl` did not run on macOS bash 3.2 | **Fixed; verified on a real Mac** — the owner's branch `fix/floor-robustness` (d6d6455) ran `tests/run.sh` 393/393 on bash 3.2 and found two traps the lint here had missed (`"$miss→"`, `"{a, b}"` in nested quotes); both are fixed here and the lint now finds all five on the pre-fix `dl`. This branch has more code since — **the owner re-runs `/bin/bash tests/run.sh` on the Mac once** |
 | F9 | plugin setup without scripts (postinstall) | **Done** — SessionStart setup + ECC as a dependency (run 44) |
 | F10 | a config file per project | **Done** — the first `/deliver` writes `.deliver.json` with a schema; per-role defaults reach the job (`tests/run.sh`) |
-| F12 | Munder Difflin restores a previous job's workers when it is reopened (seen in run 45); they idle and take no orders, but crowd the floor | **App behaviour, open** — to raise with Munder Difflin (a released seat should not come back) |
-| F15 | Munder Difflin v0.4.4 (fork `d9695a8`) keeps seats on the floor after they answered `md-release` with `act: "done"` (run 52, 8 seats, 2 hired mid-job) | **App behaviour, open** — the kit's release and the seats' answers are in the hive log; the app's done-scan did not release them. To raise with the fork |
-| F13 | slow floor runs / agents waiting | **Measured (run 45): not the floor** — its handoffs cost 2–18 s each (~3 of 23.5 min); 10 min went to a QA command Node 22 rejects (`node --test <dir>`), seen in runs 29, 33, 45. Now refused at validation and before the gate, fixable on a running card (`tests/run.sh`). Proposed, not done: QA writes its tests in parallel with the dev |
+| F13 | slow runs / agents waiting | **Measured (run 45):** 10 of 23.5 min went to a QA command Node 22 rejects (`node --test <dir>`), seen in runs 29, 33, 45. Now refused at validation and before the gate, fixable on a running card (`tests/run.sh`). Proposed, not done: QA writes its tests in parallel with the dev |
 | F14 | the POC was written in Node.js by default | **Done — verified live** (run 47): in a repo without code the team chooses the best fit for the requirements — Python + FastAPI, quoting "yfinance" and "Python KAP client", Node.js and Java weighed — as Michael's decision listed in the PR; no default language, no `npm test` default |
 | F16 | Michael kept an old version on a user's machine; the human was told to run `dl` in a terminal, where a plugin puts none | **Done — verified live** (0.7.0, run 55 + [09-plugin-commands](verification/09-plugin-commands/report.md)): the plugin deletes a copied kit in `~/.claude`, Michael runs `/deliver:deliver` and a `dl` path that survives updates, the human's actions are `/deliver:<command>`s that Claude cannot run. Open: an update from GitHub into the plugin cache across two versions on a real machine (here the local marketplace loads in place); Windows paths with spaces; the TUI's permission prompt for these commands — the owner checks. Relies on Claude Code running a skill's `` !`…` `` lines without PreToolUse hooks and dropping a failed one's output — observed in 2.1.291, not documented: `tests/run.sh` cannot see it, so it is re-checked by hand after a Claude Code update |
 | F17 | changing the tracker of a running job: `.deliver.json` did not reach it (a job keeps its settings), and a job moved by hand from Jira to Linear sent Jira's epic key to Linear as the parent issue | **Done — tested** (0.7.1): `/deliver:tracker <kind> <why>` checks the new tool first, then it opens the job and every card in its current column; every tracker record carries its kind, the old one goes to `tracker_history`. `tests/run.sh` (14 checks, Jira → Linear) — red with the fix disabled, green with it. Not run against real accounts (O2) |
 | F18 | after a usage limit, `resume` gave a running card a new agent: its history lost, everything read again (attempts were not used) | **Done** (0.7.2): `dl agents` finds each card's agent in Claude Code's transcripts (old jobs too); Michael continues it with SendMessage. Mechanism **verified live** ([report](verification/11-continue-agents/report.md)): continued from a new process resuming the same session, history intact. Not seen here: an agent stopped by a **real** usage limit being continued — the documentation states it only for finished agents and the turn limit; the user's next limit shows it. If it cannot be continued, the card gets a new agent as before |
 | F19 | the dev's unit tests and QA's tests each passed, yet the whole suite broke once both were collected together (two test helpers named `sovereign_support.py`; pytest imported one for both) — only the reviewer of T-08 found it, a review round late | **Done — tested** (0.8.1): a QA pass runs `verify_full` on the card's commit with both sets of tests and is refused when it fails (`qa_verify_full`, default on). Reproduced with pytest: each folder alone passes, the whole suite fails. Ran live in run 57 ([log](verification/12-brand-standards/run57/), passing; the clash case is covered by `tests/run.sh`) |
-| F20 | from comparing the kit with a long-task harness prompt: (a) no budget or time limit per job in subagent mode (the floor has `munder.token_cap`; subagents only `max_attempts` and the headless rounds); (b) the effort level is not recorded per role, only the model; (c) `dl ship` dies if `gh pr create` succeeded but the PR url was not saved — a retry gets "a PR already exists" instead of finding it | **Open — noted, not started.** Fixed in 0.9.0 from the same comparison: a baseline before planning, test/contract changes listed in the PR, every AC accounted for in the report |
+| F20 | from comparing the kit with a long-task harness prompt: (a) no budget or time limit per job (only `max_attempts` and the headless rounds); (b) the effort level is not recorded per role, only the model; (c) `dl ship` dies if `gh pr create` succeeded but the PR url was not saved — a retry gets "a PR already exists" instead of finding it | **Open — noted, not started.** Fixed in 0.9.0 from the same comparison: a baseline before planning, test/contract changes listed in the PR, every AC accounted for in the report |
 | F21 | a user's job: QA "takes very long" and the work did not look parallel — every test run of `dl` (gate, QA, the whole suite of 0.8.1) runs in Michael's turn | **Measured, open.** Running the whole suite in the background was built and measured live ([report](verification/13-background-suite/report.md)): no faster with two cards (5.3 vs 5.5 min executing), so it was not adopted (the owner's decision). Kept (0.9.2): each test run's duration on the card and in `dl timeline`, and `qa_verify` not run twice. **Next:** the user's own `dl timeline` from a real job, to see whether the gate, QA's run or the suite is the slow step |
 | F22 | 0.18.0's parts without a test: `suite_runs` batch/end and verify-all's blame, STALLED of the suite after a merge, QA's commits after a failed gate (`qa_fix`), the block refusal with QA unrecorded, `dl qa` asking for the join first, `dl wt rm` of the QA worktree, `dl card continue`, the lockfile rerun of `worktree_setup` | **Done — `tests/run.sh`** (0.18.1; `dl card continue` in 0.18.0's fix-card tests). Mutation-checked: switching off the batch wait, the lockfile rerun or `qa_fix` fails 5 tests. Live, run 70: `DEL-inputs` n_a with its evidence, merge-check (`suite_runs card`). Live, runs 71–75 ([17-live-0.18-paths](verification/17-live-0.18-paths/README.md)): end, batch, STALLED, fix from verify-all. **Not verified live:** `qa_fix` at the gate, `dl qa-commit`, the blame fix, the lockfile rerun (`tests/run.sh` only) |
 | F23 | the user's request: a fix card while a board is active goes through the planning roles (Lead cuts it, BA writes its spec) instead of Michael writing it | **Done — `tests/run.sh`** (`dl fix open/add/list`, FIX-CUT/FIX-SPEC/FIX-ADD in `dl next`, `dl card add` refused after the start, tmp ids mapped in `depends_on`, agent and reviewers filled, `dl card continue` unchanged; mutation-checked: dropping the guard or the spec check fails 7 tests). **Live: run 70** ([16-fix-cards-live](verification/16-fix-cards-live/README.md)): a regression injected on the job branch went merge-check FAIL → `dl fix open` → Lead (MODE: FIX) → BA spec → `dl fix add` → T-03 merged → delivered |
-| F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings, Windows app paths). **Not run on a real Windows machine** — the owner checks |
+| F11 | Windows | **Code + `tests/run.sh` done** (node hook launcher finding Git Bash, path normalisation, LF line endings). **Not run on a real Windows machine** — the owner checks |
 
 ## 0.17.0 — shaping with the BMad Method
 
@@ -101,7 +88,6 @@ triage, each refused where it must be). Live: `tests/e2e-live.sh light` (B1, B2 
 
 | # | What | Why not here |
 | --- | --- | --- |
-| O1 | Seats and roles on non-Claude CLIs (Codex, Gemini, Grok, …) | no credentials for those vendors in this environment; covered by contract tests (`dl md-dispatch` / spawn requests) |
 | O2 | Jira, Asana, Linear and GitHub Projects against a live account | no accounts here (and this environment's network allows none of those APIs); each is covered by a contract stub (`tests/jira-stub.mjs`, `tests/tracker-stubs.mjs`) through the real `dl` flow, including `dl tracker check` and doctor's credential check. Asana, Linear and GitHub Projects were also checked call by call against the vendors' official API descriptions ([10-trackers](verification/10-trackers/report.md); `tests/tracker-apis/run.sh` repeats it) |
 | O4 | **Trello** | requested; not built — its official API reference (developer.atlassian.com) is blocked by this environment's network policy, and it is not written from memory. Allow `developer.atlassian.com` (and `api.trello.com` for a live test) in the environment's network settings to build it the same way |
 | O3 | Claude through Bedrock, Vertex or an LLM gateway (`ANTHROPIC_BASE_URL`, e.g. another vendor's models behind LiteLLM) | no such accounts here; Claude Code's own settings, passed through unchanged — doctor names the one in use (`tests/run.sh`) |

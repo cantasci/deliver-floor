@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Stop hook — while a job is executing/integrating, Michael cannot stop before the board is finished.
 # Only affects the session that owns the job (the one whose transcript mentions the job id); other Claude
-# sessions, subagents, dev workers in card worktrees and Munder Difflin seats (AGENT_ID ≠ god) are left alone.
-# dispatch=munder: devs run as floor workers and wake Michael through his inbox, so waiting is allowed
-# while the only open cards are running.
+# sessions, subagents and the role sessions of the code driver (DELIVER_AGENT_ID) are left alone.
 # Loop protection: lets the stop through after job.settings.stop_guard_max blocks.
 # Any progress (dl phase/card/wt/gate/review/integrate/approve) resets the counter.
 set -uo pipefail
@@ -13,7 +11,8 @@ input="$(cat)"
 command -v jq >/dev/null || exit 0
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-is_agent && exit 0   # agents, card workers and floor seats wait for orders; only Michael is held to the board
+is_agent && exit 0   # role agents end when their task is done; only Michael is held to the board
+[[ ${DELIVER_DRIVER:-} == 1 ]] && exit 0   # the code driver runs the cards (dl run): Michael's round ends when his part is done
 owned="$(owned_job)" || exit 0
 IFS=$'\t' read -r job root <<<"$owned"
 jf="$root/.work/$job/job.json"; bf="$root/.work/$job/board.json"
@@ -33,9 +32,9 @@ open="$(jq --slurpfile j "$jf" '[.cards[] | select(.state | IN("ready","running"
   | select(.state != "ready" or all((.inputs // [])[]; . as $i | ($j[0].input_checks[$i].ok // false)))] | length' "$bf")"
 [[ $open -gt 0 ]] || exit 0
 
-# Waiting for running agents is fine where they report back on their own: Munder Difflin floor workers (inbox) and
-# background agents of an interactive session (task notifications). Headless runs dispatch in the foreground.
-if [[ "$(jq -r '.settings.dispatch // "subagent"' "$jf")" == munder || ${DELIVER_HEADLESS:-} != 1 ]]; then
+# Waiting for running agents is fine where they report back on their own: background agents of an interactive session
+# (task notifications). Headless runs dispatch in the foreground.
+if [[ ${DELIVER_HEADLESS:-} != 1 ]]; then
   # actionable = a card in review, or a ready card whose dependencies are all merged
   actionable="$(jq --slurpfile j "$jf" '. as $b | [.cards[] | select(.state=="review" or (.state=="ready" and
       all((.depends_on // [])[]; . as $d | ([$b.cards[] | select(.id==$d) | .state] | first) == "merged")

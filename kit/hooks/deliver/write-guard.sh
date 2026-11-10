@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # PreToolUse(Edit|Write|MultiEdit|NotebookEdit) — isolation, enforced.
 # While a job is active in a repo:
-#   - agents (subagents, and floor workers inside a card worktree) may write inside that repo only in a
-#     card worktree (.work/<job>/wt/T-*), the handoffs folder or out/ (a floor seat's analysis) — never in the main checkout, the integration
+#   - agents (subagents, and the role sessions of the code driver) may write inside that repo only in a
+#     card worktree (.work/<job>/wt/T-*), the handoffs folder or out/ — never in the main checkout, the integration
 #     worktree, or the job's state files;
 #   - the orchestrator (the session that owns the job) writes only the job's files under .work/<job>/ —
 #     product code is written by dev agents.

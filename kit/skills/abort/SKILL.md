@@ -1,6 +1,6 @@
 ---
 name: abort
-description: "(for you, the human — Claude does not run it) Stop the active /deliver job: seats sent home, worktrees cleared, branches kept — a new job can start."
+description: "(for you, the human — Claude does not run it) Stop the active /deliver job: worktrees cleared, branches kept — a new job can start."
 disable-model-invocation: true
 argument-hint: "<why>"
 allowed-tools: Bash(bash "${CLAUDE_SKILL_DIR}/run.sh":*)

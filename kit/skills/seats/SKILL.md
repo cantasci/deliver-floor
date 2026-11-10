@@ -1,6 +1,6 @@
 ---
 name: seats
-description: "(for you, the human — Claude does not run it) Who sits at which seat on the Munder Difflin floor, and why a seat is not live."
+description: "(for you, the human — Claude does not run it) The active /deliver job's role seats: which are busy, which are idle, and the card each idle seat should take."
 disable-model-invocation: true
 allowed-tools: Bash(bash "${CLAUDE_SKILL_DIR}/run.sh":*)
 ---

@@ -1,9 +1,9 @@
-# 08 — Knowledge: company standards, memory, code graph, and feeding Munder Difflin
+# 08 — Knowledge: company standards, memory and the code graph
 
 Every role starts from its role card, and the role card carries what the house has learned. **The source of truth is git**:
 each project keeps its own standards and lessons, an optional shared knowledge repo holds what several projects share, and
-both change only through a PR a human merges. Everything else (the role cards, Munder Difflin's Knowledge Graph and
-MemPalace) is a mirror refreshed from git. Sources, most general first; a later file with the same name wins:
+both change only through a PR a human merges. The role cards are a mirror refreshed from git. Sources, most general
+first; a later file with the same name wins:
 
 | # | Source | Where | How it changes |
 | --- | --- | --- | --- |
@@ -151,22 +151,7 @@ pip install graphifyy && graphify install      # once; Python 3.10+ (PyPI name h
 Commit `graphify-out/GRAPH_REPORT.md` if the team wants it shared, or keep it local (add `graphify-out/` to
 `worktree_exclude` when it is not committed, so card worktrees don't flag it).
 
-## 4. Feeding Munder Difflin
-
-Munder Difflin has two memory layers of its own; `/deliver` feeds both.
-
-| Layer | What it is | How `/deliver` feeds it |
-| --- | --- | --- |
-| **Knowledge Graph** (Settings → Knowledge Graph) | your documents and policies, searchable by every agent on the floor (`node "$KG_CLI" search "<topic>"`) | `dl knowledge sync-md` — from a floor terminal (where `KG_CLI`, `KG_ROOT` are set): ingests every company/project standard (tagged `deliver`, `standards`, origin, `applies_to`, stack) and the lessons file (tagged `lessons`). Re-running replaces the earlier copies (matched by source), so run it after standards change — Michael runs it before the first job (SKILL.md) |
-| **MemPalace** (semantic memory) | each agent's `hive/agents/<id>/memory.md`, mined into a shared, searchable palace (needs `uv tool install mempalace`; Munder Difflin's Prerequisites page installs it) | `dl learn` on the floor also appends the lesson to Michael's `hive/agents/god/memory.md`, so it is mined into the palace; workers' own notes are mined from their memory files as usual |
-
-`sync-md` ingests the accepted lessons (the project's and the shared repo's `lessons.md`), not a job's proposals.
-
-Role cards on the floor say that the standards are also in the Knowledge Graph, so a worker can search them by topic.
-
-What not to put in either: secrets, customer data, anything you would not put in the repository.
-
-## 5. Checking it
+## 4. Checking it
 
 ```bash
 dl knowledge list                       # every applicable document + lessons, as JSON
@@ -177,5 +162,5 @@ grep "MUST \[" .work/<job>/roles/backend.md
 
 `tests/run.sh` covers it: a company standard reaches the right roles only, a project standard overrides the company one,
 only `## Must` bullets are copied (with their ids; a rule with a `{{…}}` left is not), a review approval is refused while a
-rule is unanswered or violated, a readiness item is settled by a standard only with its words quoted, lessons reach the next role cards and Michael's memory on the floor, and `sync-md` ingests
-standards + lessons into a knowledge-graph store.
+rule is unanswered or violated, a readiness item is settled by a standard only with its words quoted, and lessons reach
+the next role cards.

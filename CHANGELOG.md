@@ -4,6 +4,40 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.19.0 — 2026-11-10
+
+**Less process per card.** A two-function job took 25–37 minutes and 13–20 agent runs; the developer was 12 % of that
+time, and Michael's own session — reading `dl next`, running the command it named, filing the answer — was 60 % of a large
+job's tokens.
+- **The code driver** (`settings.driver: "code"`, `dl run`; unattended runs): a program runs the cards of the executing
+  phase. It reads `dl next`, calls each role's agent in its own session (dev, QA, reviewers — in parallel, each card on its
+  own), and runs gate, QA, review and merge itself. Michael is called only for what needs judgment: a fix, a blocked card,
+  a blind reviewer's blocking finding, a verdict `dl` refuses — listed in `out/run/HANDOVER.md`; his `dl next` then shows
+  only that. Default `michael` (as before) until live runs have measured it.
+- **The light path has no QA agent** (`settings.light.qa: false`, the default): the developer writes the card's code and
+  all of its tests, `dl` runs them and the suite, and one reviewer checks every acceptance criterion against a test. Two
+  agent runs per card instead of five. `light.qa: true` keeps the QA role.
+- **The suite runs per group of merges, not per card** (`suite_runs: "batch"` is the default; was `card`): a card is
+  checked with its own tests — `verify` at the gate, `qa_verify` at the QA pass — and the component's suite runs once after
+  the merges that go in together; verify-all runs the whole suite at the end. Seen live: 23 QA passes each ran a 19-minute
+  suite, 7.7 hours. `card` brings the suite back to every QA pass and merge.
+
+**The playbook is one file per phase.** `SKILL.md` was 50 KB and every session read all of it. It now holds setup, the
+invariants and resume (10 KB); the steps of a phase are in `phases/<file>.md` (4–15 KB each), and `dl next` names the file
+of the phase the job is in on its first line (`PLAYBOOK …`). `dl playbook <phase>` prints it.
+
+**Munder Difflin is removed.** Every role runs as a Claude Code agent — a subagent of Michael's session, or a session the
+code driver starts. One way to run means one playbook and one set of guards; `dl` is 590 lines shorter.
+- Gone: the `dl md-*` commands, `dl floor-open`, `dl dispatch`, `dl knowledge sync-md`, `/deliver:mode`, the `munder`
+  settings, `scripts/init.sh --munder`, `scripts/md-brief.sh`, `tests/e2e-munder.sh`, `docs/07-munder-difflin.md`. The
+  recorded floor runs stay under `docs/verification/04-live-munder` as history.
+- `"dispatch": "subagent"` in an existing `.deliver.json` is still accepted and does nothing. `"dispatch": "munder"`, a
+  `munder` block or a role `provider` other than `claude` no longer has a meaning: remove them (`scripts/doctor.sh` names
+  a role that still asks for another vendor's CLI).
+- `/deliver:seats` shows the role seats of the job (`dl seats`): which are busy, which are idle and the card each idle
+  seat should take.
+- The hooks tell a role session of the code driver from Michael by `DELIVER_AGENT_ID` (was the app's `AGENT_ID`).
+
 ## 0.18.2 — 2026-10-21
 
 - Fix cards, live (run 70, [docs/verification/16-fix-cards-live](docs/verification/16-fix-cards-live/README.md)): a

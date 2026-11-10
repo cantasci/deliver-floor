@@ -18,7 +18,7 @@ if [[ -z $msg ]]; then # older Claude Code: read the agent's own transcript
   at="$(hkp .agent_transcript_path)"
   [[ -n $at && -f $at ]] && msg="$(jq -rs '[.[] | select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text] | last // ""' "$at" 2>/dev/null)"
 fi
-# On the Munder Difflin floor AGENT_ID says whose session ran the subagent (@god = Michael, @worker-… = a seat).
-printf '%s\tagent\t%s %s%s: %s\n' "$(date -u +%FT%TZ)" "$(hk .agent_type)" "$(hk .agent_id)" "${AGENT_ID:+ @$AGENT_ID}" \
+# Under the code driver DELIVER_AGENT_ID says which role session ran the subagent.
+printf '%s\tagent\t%s %s%s: %s\n' "$(date -u +%FT%TZ)" "$(hk .agent_type)" "$(hk .agent_id)" "${DELIVER_AGENT_ID:+ @$DELIVER_AGENT_ID}" \
   "$(tr -s '[:space:]' ' ' <<<"$msg" | cut -c1-160)" >> "$root/.work/$job/events.log"
 exit 0

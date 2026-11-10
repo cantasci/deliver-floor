@@ -15,7 +15,7 @@ keep="${1:-}"; SB="${keep:-$(mktemp -d "${TMPDIR:-/tmp}/watchlist-replay.XXXXXX"
 [[ -n $keep ]] || trap 'rm -rf "$(dirname "$SB")"' EXIT
 export DELIVER_HOME="$(dirname "$SB")/.deliver"
 export GIT_AUTHOR_NAME=replay GIT_AUTHOR_EMAIL=replay@example.com GIT_COMMITTER_NAME=replay GIT_COMMITTER_EMAIL=replay@example.com
-unset DELIVER_JOB DELIVER_REPO HIVE_ROOT DELIVER_HEADLESS
+unset DELIVER_JOB DELIVER_REPO DELIVER_HEADLESS
 
 c_step=$'\033[1;36m'; c_who=$'\033[1;33m'; c_off=$'\033[0m'
 step() { printf '\n%s━━ %s%s\n' "$c_step" "$*" "$c_off"; }
@@ -39,7 +39,7 @@ qa() { # qa <card> <wt> — the "QA role": writes the integration tests for the 
 }
 
 step "0 · sandbox repo from examples/watchlist-poc/seed"
-"$HERE/scripts/sandbox.sh" --subagent "$SB" | sed 's/^/    /'
+"$HERE/scripts/sandbox.sh" "$SB" | sed 's/^/    /'
 cd "$SB"
 
 step "0 · INTAKE — Michael opens the job and picks the roles"

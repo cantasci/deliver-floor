@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Shared by the /deliver hooks. Source it after reading the hook input into $input.
 #
-# Jobs are found without relying on the session's cwd: Michael may run in the repo, in a Munder Difflin
-# hive folder, or anywhere else. Candidates come from $CLAUDE_PROJECT_DIR/.work/ACTIVE, the hook's cwd,
+# Jobs are found without relying on the session's cwd: Michael may run in the repo, in another
+# folder, or anywhere else. Candidates come from $CLAUDE_PROJECT_DIR/.work/ACTIVE, the hook's cwd,
 # and the registry `dl new` writes (~/.deliver/jobs/<id> → repo root). A job is "active" when its repo's
 # .work/ACTIVE names it.
 
@@ -54,11 +54,11 @@ owns_job() {
 }
 
 in_card_worktree() { [[ "$(hkp .cwd)" == */.work/JOB-*/wt/T-* ]]; }
-# Munder Difflin sets AGENT_ID in every terminal on the floor; Michael's is "god". Every other id is a seat or a worker.
-is_floor_seat() { [[ -n ${AGENT_ID:-} && $AGENT_ID != god ]]; }
-# A role is a subagent (Claude Code gives it an agent id) or a seat on the floor — never decided by the directory: the
+# The code driver (dl run) starts every role as a Claude session of its own and sets DELIVER_AGENT_ID in it.
+is_driver_agent() { [[ -n ${DELIVER_AGENT_ID:-} ]]; }
+# A role is a subagent (Claude Code gives it an agent id) or a session the code driver started — never decided by the directory: the
 # main session's shell may cd into a card worktree and is still Michael (seen live: his dl review was refused).
-is_agent() { [[ -n "$(hk .agent_id)" ]] || is_floor_seat; }
+is_agent() { [[ -n "$(hk .agent_id)" ]] || is_driver_agent; }
 
 # owned_job → "<id>\t<root>" of the active job this (orchestrator) session owns, if any
 owned_job() {
