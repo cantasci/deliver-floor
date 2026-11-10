@@ -10,7 +10,9 @@
 // answer about the miscounted example — Michael rightly refused it. A tie is a question no prepared answer settles.
 import { readFileSync } from "node:fs";
 const [file, question, id] = process.argv.slice(2);
-const answers = JSON.parse(readFileSync(file, "utf8"));
+// an answer may name the requests it belongs to (`requests`: file names); PICK_REQUEST is the scenario's request file
+const req = process.env.PICK_REQUEST ?? "";
+const answers = JSON.parse(readFileSync(file, "utf8")).filter((a) => !a.requests || !req || a.requests.includes(req));
 // top-level alternatives only: "a|b(c|d)|e" → a, b(c|d), e
 const alts = (m) => {
   const out = []; let depth = 0, cur = "";

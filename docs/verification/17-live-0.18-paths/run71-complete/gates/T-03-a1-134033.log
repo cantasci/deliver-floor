@@ -1,0 +1,990 @@
+# gate: T-03  attempt: 1  2026-10-21T13:40:33Z
+ok    on job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-03
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/ratings/notch.mjs","test/ratings/notch.test.mjs"] (+ QA tests ["test/integration/ratings/scaleOrder.contract.test.mjs"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/ratings/notch.test.mjs test/integration/ratings/notch.contract.test.mjs
+TAP version 13
+# Subtest: T-01 RATING_SCALE
+    # Subtest: AC-1: RATING_SCALE deep-equals the 19 ratings best first, length 19, frozen
+    ok 1 - AC-1: RATING_SCALE deep-equals the 19 ratings best first, length 19, frozen
+      ---
+      duration_ms: 10.119126
+      type: 'test'
+      ...
+    # Subtest: AC-1: RATING_SCALE.push('D') throws TypeError and leaves the scale unchanged
+    ok 2 - AC-1: RATING_SCALE.push('D') throws TypeError and leaves the scale unchanged
+      ---
+      duration_ms: 0.866014
+      type: 'test'
+      ...
+    # Subtest: AC-1: RATING_SCALE[0] = 'X' throws TypeError and leaves the scale unchanged
+    ok 3 - AC-1: RATING_SCALE[0] = 'X' throws TypeError and leaves the scale unchanged
+      ---
+      duration_ms: 0.350415
+      type: 'test'
+      ...
+    # Subtest: AC-1: other mutations (pop, splice, length, extra index) also throw and change nothing
+    ok 4 - AC-1: other mutations (pop, splice, length, extra index) also throw and change nothing
+      ---
+      duration_ms: 0.466064
+      type: 'test'
+      ...
+    1..4
+ok 1 - T-01 RATING_SCALE
+  ---
+  duration_ms: 13.561926
+  type: 'suite'
+  ...
+# Subtest: T-01 notchChange
+    # Subtest: AC-2: notchChange("BBB+","BB+") is 3 and an integer
+    ok 1 - AC-2: notchChange("BBB+","BB+") is 3 and an integer
+      ---
+      duration_ms: 0.472398
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("BB+","BBB+") is -3 and an integer
+    ok 2 - AC-2: notchChange("BB+","BBB+") is -3 and an integer
+      ---
+      duration_ms: 0.137264
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("AAA","AA+") is 1 and an integer
+    ok 3 - AC-2: notchChange("AAA","AA+") is 1 and an integer
+      ---
+      duration_ms: 0.252981
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("CCC","CCC-") is 1 and an integer
+    ok 4 - AC-2: notchChange("CCC","CCC-") is 1 and an integer
+      ---
+      duration_ms: 4.726426
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("AAA","CCC-") is 18 and an integer
+    ok 5 - AC-2: notchChange("AAA","CCC-") is 18 and an integer
+      ---
+      duration_ms: 0.517508
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange("CCC-","AAA") is -18 and an integer
+    ok 6 - AC-2: notchChange("CCC-","AAA") is -18 and an integer
+      ---
+      duration_ms: 0.323477
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange('A','A') is 0 and Object.is(result, 0), never -0
+    ok 7 - AC-2: notchChange('A','A') is 0 and Object.is(result, 0), never -0
+      ---
+      duration_ms: 0.228017
+      type: 'test'
+      ...
+    # Subtest: AC-2: equal ratings are +0 for every rating of the scale
+    ok 8 - AC-2: equal ratings are +0 for every rating of the scale
+      ---
+      duration_ms: 0.319357
+      type: 'test'
+      ...
+    # Subtest: AC-2: both scale ends work in both positions; magnitude is at most 18
+    ok 9 - AC-2: both scale ends work in both positions; magnitude is at most 18
+      ---
+      duration_ms: 11.403788
+      type: 'test'
+      ...
+    # Subtest: AC-2: full 19x19 sweep returns index(current) - index(previous)
+    ok 10 - AC-2: full 19x19 sweep returns index(current) - index(previous)
+      ---
+      duration_ms: 0.88001
+      type: 'test'
+      ...
+    1..10
+ok 2 - T-01 notchChange
+  ---
+  duration_ms: 20.087226
+  type: 'suite'
+  ...
+# Subtest: T-01 notchCalculator
+    # Subtest: AC-3: BBB+ -> BBB is a 1-notch downgrade with WL 0
+    ok 1 - AC-3: BBB+ -> BBB is a 1-notch downgrade with WL 0
+      ---
+      duration_ms: 0.447232
+      type: 'test'
+      ...
+    # Subtest: AC-3: BBB+ -> BBB- is a 2-notch downgrade with WL 1
+    ok 2 - AC-3: BBB+ -> BBB- is a 2-notch downgrade with WL 1
+      ---
+      duration_ms: 0.139466
+      type: 'test'
+      ...
+    # Subtest: AC-3: BBB+ -> BB+ is a 3-notch downgrade with WL 2 (C2 corrects the POC example)
+    ok 3 - AC-3: BBB+ -> BB+ is a 3-notch downgrade with WL 2 (C2 corrects the POC example)
+      ---
+      duration_ms: 0.124435
+      type: 'test'
+      ...
+    # Subtest: AC-3: AAA -> CCC- is an 18-notch downgrade with WL 2 (no WL above 2)
+    ok 4 - AC-3: AAA -> CCC- is an 18-notch downgrade with WL 2 (no WL above 2)
+      ---
+      duration_ms: 0.123926
+      type: 'test'
+      ...
+    # Subtest: AC-3: WL boundaries 1/2/3/4 notches give 0/1/2/2
+    ok 5 - AC-3: WL boundaries 1/2/3/4 notches give 0/1/2/2
+      ---
+      duration_ms: 8.539213
+      type: 'test'
+      ...
+    # Subtest: AC-3: full 19x19 sweep: every downgrade pair gets wl 0 for 1, 1 for 2, 2 for >=3 notches
+    ok 6 - AC-3: full 19x19 sweep: every downgrade pair gets wl 0 for 1, 1 for 2, 2 for >=3 notches
+      ---
+      duration_ms: 1.834644
+      type: 'test'
+      ...
+    # Subtest: AC-4: BBB -> BBB+ is a 1-notch upgrade with negative notches and WL 0
+    ok 7 - AC-4: BBB -> BBB+ is a 1-notch upgrade with negative notches and WL 0
+      ---
+      duration_ms: 0.319864
+      type: 'test'
+      ...
+    # Subtest: AC-4: BB+ -> BBB+ is a 3-notch upgrade with WL 0
+    ok 8 - AC-4: BB+ -> BBB+ is a 3-notch upgrade with WL 0
+      ---
+      duration_ms: 0.163911
+      type: 'test'
+      ...
+    # Subtest: AC-4: CCC- -> AAA is an 18-notch upgrade with WL 0
+    ok 9 - AC-4: CCC- -> AAA is an 18-notch upgrade with WL 0
+      ---
+      duration_ms: 0.124177
+      type: 'test'
+      ...
+    # Subtest: AC-4: A -> A is unchanged: exactly { notches: 0, direction: 'unchanged', wl: 0 }, no -0
+    ok 10 - AC-4: A -> A is unchanged: exactly { notches: 0, direction: 'unchanged', wl: 0 }, no -0
+      ---
+      duration_ms: 0.189314
+      type: 'test'
+      ...
+    # Subtest: AC-4: the result has exactly the keys notches, direction, wl for every pair
+    ok 11 - AC-4: the result has exactly the keys notches, direction, wl for every pair
+      ---
+      duration_ms: 9.635107
+      type: 'test'
+      ...
+    # Subtest: AC-4: full 19x19 sweep: notches === notchChange; direction and wl follow the rule
+    ok 12 - AC-4: full 19x19 sweep: notches === notchChange; direction and wl follow the rule
+      ---
+      duration_ms: 10.513663
+      type: 'test'
+      ...
+    # Subtest: AC-4: repeated calls return independent objects (no shared mutable result)
+    ok 13 - AC-4: repeated calls return independent objects (no shared mutable result)
+      ---
+      duration_ms: 0.389289
+      type: 'test'
+      ...
+    1..13
+ok 3 - T-01 notchCalculator
+  ---
+  duration_ms: 33.328119
+  type: 'suite'
+  ...
+# Subtest: T-01 input normalisation (trim + case-insensitive)
+    # Subtest: AC-7: notchChange('bbb+','BB+') is 3
+    ok 1 - AC-7: notchChange('bbb+','BB+') is 3
+      ---
+      duration_ms: 0.229305
+      type: 'test'
+      ...
+    # Subtest: AC-7: notchChange with spaces, tab and newline around mixed case is 3
+    ok 2 - AC-7: notchChange with spaces, tab and newline around mixed case is 3
+      ---
+      duration_ms: 0.10086
+      type: 'test'
+      ...
+    # Subtest: AC-7: notchChange('aaa','ccc-') is 18
+    ok 3 - AC-7: notchChange('aaa','ccc-') is 18
+      ---
+      duration_ms: 0.170198
+      type: 'test'
+      ...
+    # Subtest: AC-7: notchCalculator(' Bbb+ ','bbb-') is a 2-notch downgrade with WL 1
+    ok 4 - AC-7: notchCalculator(' Bbb+ ','bbb-') is a 2-notch downgrade with WL 1
+      ---
+      duration_ms: 0.116412
+      type: 'test'
+      ...
+    # Subtest: AC-7: NBSP around the rating is trimmed, in both positions, for both functions
+    ok 5 - AC-7: NBSP around the rating is trimmed, in both positions, for both functions
+      ---
+      duration_ms: 0.153925
+      type: 'test'
+      ...
+    # Subtest: AC-7: every rating of the scale accepts lower case and surrounding whitespace in both positions
+    ok 6 - AC-7: every rating of the scale accepts lower case and surrounding whitespace in both positions
+      ---
+      duration_ms: 16.126382
+      type: 'test'
+      ...
+    # Subtest: AC-7: normalisation does not change the outcome vs. canonical input
+    ok 7 - AC-7: normalisation does not change the outcome vs. canonical input
+      ---
+      duration_ms: 0.24808
+      type: 'test'
+      ...
+    1..7
+ok 4 - T-01 input normalisation (trim + case-insensitive)
+  ---
+  duration_ms: 18.265667
+  type: 'suite'
+  ...
+# Subtest: T-01 invalid input (RangeError)
+    # Subtest: AC-8: notchChange throws RangeError for invalid string empty string as previous
+    ok 1 - AC-8: notchChange throws RangeError for invalid string empty string as previous
+      ---
+      duration_ms: 7.157088
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string empty string as current
+    ok 2 - AC-8: notchChange throws RangeError for invalid string empty string as current
+      ---
+      duration_ms: 0.544896
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string whitespace only as previous
+    ok 3 - AC-8: notchChange throws RangeError for invalid string whitespace only as previous
+      ---
+      duration_ms: 0.14523
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string whitespace only as current
+    ok 4 - AC-8: notchChange throws RangeError for invalid string whitespace only as current
+      ---
+      duration_ms: 0.144596
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string inner space BBB + as previous
+    ok 5 - AC-8: notchChange throws RangeError for invalid string inner space BBB + as previous
+      ---
+      duration_ms: 0.154412
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string inner space BBB + as current
+    ok 6 - AC-8: notchChange throws RangeError for invalid string inner space BBB + as current
+      ---
+      duration_ms: 0.17476
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string spaced letters B B B as previous
+    ok 7 - AC-8: notchChange throws RangeError for invalid string spaced letters B B B as previous
+      ---
+      duration_ms: 0.090584
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string spaced letters B B B as current
+    ok 8 - AC-8: notchChange throws RangeError for invalid string spaced letters B B B as current
+      ---
+      duration_ms: 0.088334
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string double plus BB++ as previous
+    ok 9 - AC-8: notchChange throws RangeError for invalid string double plus BB++ as previous
+      ---
+      duration_ms: 0.23245
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string double plus BB++ as current
+    ok 10 - AC-8: notchChange throws RangeError for invalid string double plus BB++ as current
+      ---
+      duration_ms: 0.104942
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string AAA- as previous
+    ok 11 - AC-8: notchChange throws RangeError for invalid string AAA- as previous
+      ---
+      duration_ms: 0.992271
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string AAA- as current
+    ok 12 - AC-8: notchChange throws RangeError for invalid string AAA- as current
+      ---
+      duration_ms: 0.176036
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string D as previous
+    ok 13 - AC-8: notchChange throws RangeError for invalid string D as previous
+      ---
+      duration_ms: 0.109533
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string D as current
+    ok 14 - AC-8: notchChange throws RangeError for invalid string D as current
+      ---
+      duration_ms: 0.083595
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string NR as previous
+    ok 15 - AC-8: notchChange throws RangeError for invalid string NR as previous
+      ---
+      duration_ms: 0.082811
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string NR as current
+    ok 16 - AC-8: notchChange throws RangeError for invalid string NR as current
+      ---
+      duration_ms: 0.074903
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string Moody's Baa1 as previous
+    ok 17 - AC-8: notchChange throws RangeError for invalid string Moody's Baa1 as previous
+      ---
+      duration_ms: 0.077099
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string Moody's Baa1 as current
+    ok 18 - AC-8: notchChange throws RangeError for invalid string Moody's Baa1 as current
+      ---
+      duration_ms: 0.073806
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string full-width ＢＢＢ as previous
+    ok 19 - AC-8: notchChange throws RangeError for invalid string full-width ＢＢＢ as previous
+      ---
+      duration_ms: 0.192771
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError for invalid string full-width ＢＢＢ as current
+    ok 20 - AC-8: notchChange throws RangeError for invalid string full-width ＢＢＢ as current
+      ---
+      duration_ms: 0.203721
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string null as previous
+    ok 21 - AC-8: notchChange throws RangeError (not TypeError) for non-string null as previous
+      ---
+      duration_ms: 0.20024
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string null as current
+    ok 22 - AC-8: notchChange throws RangeError (not TypeError) for non-string null as current
+      ---
+      duration_ms: 0.11859
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string undefined as previous
+    ok 23 - AC-8: notchChange throws RangeError (not TypeError) for non-string undefined as previous
+      ---
+      duration_ms: 0.09624
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string undefined as current
+    ok 24 - AC-8: notchChange throws RangeError (not TypeError) for non-string undefined as current
+      ---
+      duration_ms: 1.380176
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string number 3 as previous
+    ok 25 - AC-8: notchChange throws RangeError (not TypeError) for non-string number 3 as previous
+      ---
+      duration_ms: 0.159849
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string number 3 as current
+    ok 26 - AC-8: notchChange throws RangeError (not TypeError) for non-string number 3 as current
+      ---
+      duration_ms: 0.083815
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string NaN as previous
+    ok 27 - AC-8: notchChange throws RangeError (not TypeError) for non-string NaN as previous
+      ---
+      duration_ms: 0.1166
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string NaN as current
+    ok 28 - AC-8: notchChange throws RangeError (not TypeError) for non-string NaN as current
+      ---
+      duration_ms: 0.077287
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string boolean true as previous
+    ok 29 - AC-8: notchChange throws RangeError (not TypeError) for non-string boolean true as previous
+      ---
+      duration_ms: 0.092543
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string boolean true as current
+    ok 30 - AC-8: notchChange throws RangeError (not TypeError) for non-string boolean true as current
+      ---
+      duration_ms: 0.079382
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string bigint 10n as previous
+    ok 31 - AC-8: notchChange throws RangeError (not TypeError) for non-string bigint 10n as previous
+      ---
+      duration_ms: 0.220572
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string bigint 10n as current
+    ok 32 - AC-8: notchChange throws RangeError (not TypeError) for non-string bigint 10n as current
+      ---
+      duration_ms: 0.082946
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string Symbol as previous
+    ok 33 - AC-8: notchChange throws RangeError (not TypeError) for non-string Symbol as previous
+      ---
+      duration_ms: 0.107714
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string Symbol as current
+    ok 34 - AC-8: notchChange throws RangeError (not TypeError) for non-string Symbol as current
+      ---
+      duration_ms: 0.072421
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string {} as previous
+    ok 35 - AC-8: notchChange throws RangeError (not TypeError) for non-string {} as previous
+      ---
+      duration_ms: 0.113868
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string {} as current
+    ok 36 - AC-8: notchChange throws RangeError (not TypeError) for non-string {} as current
+      ---
+      duration_ms: 0.117647
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string Object.create(null) as previous
+    ok 37 - AC-8: notchChange throws RangeError (not TypeError) for non-string Object.create(null) as previous
+      ---
+      duration_ms: 0.138492
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string Object.create(null) as current
+    ok 38 - AC-8: notchChange throws RangeError (not TypeError) for non-string Object.create(null) as current
+      ---
+      duration_ms: 0.156258
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string ['BBB'] as previous
+    ok 39 - AC-8: notchChange throws RangeError (not TypeError) for non-string ['BBB'] as previous
+      ---
+      duration_ms: 0.124186
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string ['BBB'] as current
+    ok 40 - AC-8: notchChange throws RangeError (not TypeError) for non-string ['BBB'] as current
+      ---
+      duration_ms: 0.14261
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as previous
+    ok 41 - AC-8: notchChange throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as previous
+      ---
+      duration_ms: 0.179175
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as current
+    ok 42 - AC-8: notchChange throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as current
+      ---
+      duration_ms: 0.162028
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string new String('BBB') as previous
+    ok 43 - AC-8: notchChange throws RangeError (not TypeError) for non-string new String('BBB') as previous
+      ---
+      duration_ms: 0.232543
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError (not TypeError) for non-string new String('BBB') as current
+    ok 44 - AC-8: notchChange throws RangeError (not TypeError) for non-string new String('BBB') as current
+      ---
+      duration_ms: 5.096697
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange throws RangeError when both arguments are invalid
+    ok 45 - AC-8: notchChange throws RangeError when both arguments are invalid
+      ---
+      duration_ms: 0.360968
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string empty string as previous
+    ok 46 - AC-8: notchCalculator throws RangeError for invalid string empty string as previous
+      ---
+      duration_ms: 0.222809
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string empty string as current
+    ok 47 - AC-8: notchCalculator throws RangeError for invalid string empty string as current
+      ---
+      duration_ms: 0.117874
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string whitespace only as previous
+    ok 48 - AC-8: notchCalculator throws RangeError for invalid string whitespace only as previous
+      ---
+      duration_ms: 0.075175
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string whitespace only as current
+    ok 49 - AC-8: notchCalculator throws RangeError for invalid string whitespace only as current
+      ---
+      duration_ms: 0.073556
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string inner space BBB + as previous
+    ok 50 - AC-8: notchCalculator throws RangeError for invalid string inner space BBB + as previous
+      ---
+      duration_ms: 0.066993
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string inner space BBB + as current
+    ok 51 - AC-8: notchCalculator throws RangeError for invalid string inner space BBB + as current
+      ---
+      duration_ms: 0.071573
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string spaced letters B B B as previous
+    ok 52 - AC-8: notchCalculator throws RangeError for invalid string spaced letters B B B as previous
+      ---
+      duration_ms: 0.086432
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string spaced letters B B B as current
+    ok 53 - AC-8: notchCalculator throws RangeError for invalid string spaced letters B B B as current
+      ---
+      duration_ms: 0.252209
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string double plus BB++ as previous
+    ok 54 - AC-8: notchCalculator throws RangeError for invalid string double plus BB++ as previous
+      ---
+      duration_ms: 0.145679
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string double plus BB++ as current
+    ok 55 - AC-8: notchCalculator throws RangeError for invalid string double plus BB++ as current
+      ---
+      duration_ms: 0.125882
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string AAA- as previous
+    ok 56 - AC-8: notchCalculator throws RangeError for invalid string AAA- as previous
+      ---
+      duration_ms: 0.084661
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string AAA- as current
+    ok 57 - AC-8: notchCalculator throws RangeError for invalid string AAA- as current
+      ---
+      duration_ms: 0.069161
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string D as previous
+    ok 58 - AC-8: notchCalculator throws RangeError for invalid string D as previous
+      ---
+      duration_ms: 0.137827
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string D as current
+    ok 59 - AC-8: notchCalculator throws RangeError for invalid string D as current
+      ---
+      duration_ms: 0.069636
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string NR as previous
+    ok 60 - AC-8: notchCalculator throws RangeError for invalid string NR as previous
+      ---
+      duration_ms: 0.118685
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string NR as current
+    ok 61 - AC-8: notchCalculator throws RangeError for invalid string NR as current
+      ---
+      duration_ms: 0.064452
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string Moody's Baa1 as previous
+    ok 62 - AC-8: notchCalculator throws RangeError for invalid string Moody's Baa1 as previous
+      ---
+      duration_ms: 0.055084
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string Moody's Baa1 as current
+    ok 63 - AC-8: notchCalculator throws RangeError for invalid string Moody's Baa1 as current
+      ---
+      duration_ms: 0.054017
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string full-width ＢＢＢ as previous
+    ok 64 - AC-8: notchCalculator throws RangeError for invalid string full-width ＢＢＢ as previous
+      ---
+      duration_ms: 0.067766
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError for invalid string full-width ＢＢＢ as current
+    ok 65 - AC-8: notchCalculator throws RangeError for invalid string full-width ＢＢＢ as current
+      ---
+      duration_ms: 0.053538
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string null as previous
+    ok 66 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string null as previous
+      ---
+      duration_ms: 0.050654
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string null as current
+    ok 67 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string null as current
+      ---
+      duration_ms: 0.052295
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string undefined as previous
+    ok 68 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string undefined as previous
+      ---
+      duration_ms: 0.052291
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string undefined as current
+    ok 69 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string undefined as current
+      ---
+      duration_ms: 0.051238
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string number 3 as previous
+    ok 70 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string number 3 as previous
+      ---
+      duration_ms: 0.046726
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string number 3 as current
+    ok 71 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string number 3 as current
+      ---
+      duration_ms: 0.056153
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string NaN as previous
+    ok 72 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string NaN as previous
+      ---
+      duration_ms: 0.051694
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string NaN as current
+    ok 73 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string NaN as current
+      ---
+      duration_ms: 0.104925
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string boolean true as previous
+    ok 74 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string boolean true as previous
+      ---
+      duration_ms: 0.063718
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string boolean true as current
+    ok 75 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string boolean true as current
+      ---
+      duration_ms: 3.669388
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string bigint 10n as previous
+    ok 76 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string bigint 10n as previous
+      ---
+      duration_ms: 0.15088
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string bigint 10n as current
+    ok 77 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string bigint 10n as current
+      ---
+      duration_ms: 0.07825
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string Symbol as previous
+    ok 78 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string Symbol as previous
+      ---
+      duration_ms: 0.05867
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string Symbol as current
+    ok 79 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string Symbol as current
+      ---
+      duration_ms: 0.061092
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string {} as previous
+    ok 80 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string {} as previous
+      ---
+      duration_ms: 0.06608
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string {} as current
+    ok 81 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string {} as current
+      ---
+      duration_ms: 0.05723
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string Object.create(null) as previous
+    ok 82 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string Object.create(null) as previous
+      ---
+      duration_ms: 0.055747
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string Object.create(null) as current
+    ok 83 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string Object.create(null) as current
+      ---
+      duration_ms: 0.255763
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string ['BBB'] as previous
+    ok 84 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string ['BBB'] as previous
+      ---
+      duration_ms: 0.073942
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string ['BBB'] as current
+    ok 85 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string ['BBB'] as current
+      ---
+      duration_ms: 0.065449
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as previous
+    ok 86 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as previous
+      ---
+      duration_ms: 0.061309
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as current
+    ok 87 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string { toString: () => 'BBB' } as current
+      ---
+      duration_ms: 0.052467
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string new String('BBB') as previous
+    ok 88 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string new String('BBB') as previous
+      ---
+      duration_ms: 0.05233
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError (not TypeError) for non-string new String('BBB') as current
+    ok 89 - AC-8: notchCalculator throws RangeError (not TypeError) for non-string new String('BBB') as current
+      ---
+      duration_ms: 0.053605
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator throws RangeError when both arguments are invalid
+    ok 90 - AC-8: notchCalculator throws RangeError when both arguments are invalid
+      ---
+      duration_ms: 0.073769
+      type: 'test'
+      ...
+    # Subtest: AC-8: explicit Symbol, Object.create(null) and 10n never produce a TypeError
+    ok 91 - AC-8: explicit Symbol, Object.create(null) and 10n never produce a TypeError
+      ---
+      duration_ms: 0.557605
+      type: 'test'
+      ...
+    # Subtest: AC-8: the toString/valueOf of a coercible object is never used to accept it
+    ok 92 - AC-8: the toString/valueOf of a coercible object is never used to accept it
+      ---
+      duration_ms: 0.219385
+      type: 'test'
+      ...
+    # Subtest: AC-8: missing arguments throw RangeError: notchChange('BBB')
+    ok 93 - AC-8: missing arguments throw RangeError: notchChange('BBB')
+      ---
+      duration_ms: 0.098955
+      type: 'test'
+      ...
+    # Subtest: AC-8: missing arguments throw RangeError: notchChange()
+    ok 94 - AC-8: missing arguments throw RangeError: notchChange()
+      ---
+      duration_ms: 0.088384
+      type: 'test'
+      ...
+    # Subtest: AC-8: missing arguments throw RangeError: notchCalculator('BBB')
+    ok 95 - AC-8: missing arguments throw RangeError: notchCalculator('BBB')
+      ---
+      duration_ms: 0.080118
+      type: 'test'
+      ...
+    # Subtest: AC-8: missing arguments throw RangeError: notchCalculator()
+    ok 96 - AC-8: missing arguments throw RangeError: notchCalculator()
+      ---
+      duration_ms: 0.117504
+      type: 'test'
+      ...
+    # Subtest: AC-8: a thrown error is raised, never returned or replaced by a fallback value
+    ok 97 - AC-8: a thrown error is raised, never returned or replaced by a fallback value
+      ---
+      duration_ms: 0.1456
+      type: 'test'
+      ...
+    1..97
+ok 5 - T-01 invalid input (RangeError)
+  ---
+  duration_ms: 39.866186
+  type: 'suite'
+  ...
+# Subtest: RATING_SCALE has the 19 ratings, best first
+ok 6 - RATING_SCALE has the 19 ratings, best first
+  ---
+  duration_ms: 10.702836
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE is frozen and cannot be mutated
+ok 7 - RATING_SCALE is frozen and cannot be mutated
+  ---
+  duration_ms: 1.005541
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE is exactly the C1 order (BBB- before BB+)
+ok 8 - RATING_SCALE is exactly the C1 order (BBB- before BB+)
+  ---
+  duration_ms: 0.259998
+  type: 'test'
+  ...
+# Subtest: RATING_SCALE indices around the investment-grade boundary
+ok 9 - RATING_SCALE indices around the investment-grade boundary
+  ---
+  duration_ms: 0.343943
+  type: 'test'
+  ...
+# Subtest: notchChange across the BBB-/BB+ boundary
+ok 10 - notchChange across the BBB-/BB+ boundary
+  ---
+  duration_ms: 0.396374
+  type: 'test'
+  ...
+# Subtest: notchChange returns index(current) - index(previous)
+ok 11 - notchChange returns index(current) - index(previous)
+  ---
+  duration_ms: 5.344132
+  type: 'test'
+  ...
+# Subtest: notchChange of equal ratings is +0, not -0
+ok 12 - notchChange of equal ratings is +0, not -0
+  ---
+  duration_ms: 0.494918
+  type: 'test'
+  ...
+# Subtest: notchChange gives +0 for every equal pair
+ok 13 - notchChange gives +0 for every equal pair
+  ---
+  duration_ms: 0.386869
+  type: 'test'
+  ...
+# Subtest: notchCalculator: 1-notch downgrade has wl 0
+ok 14 - notchCalculator: 1-notch downgrade has wl 0
+  ---
+  duration_ms: 0.71006
+  type: 'test'
+  ...
+# Subtest: notchCalculator: 2-notch downgrade has wl 1
+ok 15 - notchCalculator: 2-notch downgrade has wl 1
+  ---
+  duration_ms: 0.977984
+  type: 'test'
+  ...
+# Subtest: notchCalculator: 3-notch downgrade has wl 2 (C2 correction)
+ok 16 - notchCalculator: 3-notch downgrade has wl 2 (C2 correction)
+  ---
+  duration_ms: 0.366522
+  type: 'test'
+  ...
+# Subtest: notchCalculator: largest downgrade has wl 2
+ok 17 - notchCalculator: largest downgrade has wl 2
+  ---
+  duration_ms: 0.186141
+  type: 'test'
+  ...
+# Subtest: notchCalculator: upgrades are negative with wl 0
+ok 18 - notchCalculator: upgrades are negative with wl 0
+  ---
+  duration_ms: 0.375989
+  type: 'test'
+  ...
+# Subtest: notchCalculator: unchanged is exactly {0, 'unchanged', 0}
+ok 19 - notchCalculator: unchanged is exactly {0, 'unchanged', 0}
+  ---
+  duration_ms: 0.268373
+  type: 'test'
+  ...
+# Subtest: notchCalculator agrees with notchChange and the rules for all 19x19 pairs
+ok 20 - notchCalculator agrees with notchChange and the rules for all 19x19 pairs
+  ---
+  duration_ms: 4.035072
+  type: 'test'
+  ...
+# Subtest: inputs are trimmed and case-insensitive
+ok 21 - inputs are trimmed and case-insensitive
+  ---
+  duration_ms: 0.345267
+  type: 'test'
+  ...
+# Subtest: NBSP is trimmed, in both positions and both functions
+ok 22 - NBSP is trimmed, in both positions and both functions
+  ---
+  duration_ms: 0.208393
+  type: 'test'
+  ...
+# Subtest: notchChange rejects invalid strings with RangeError in either position
+ok 23 - notchChange rejects invalid strings with RangeError in either position
+  ---
+  duration_ms: 1.114094
+  type: 'test'
+  ...
+# Subtest: notchChange rejects non-strings with RangeError (never TypeError) in either position
+ok 24 - notchChange rejects non-strings with RangeError (never TypeError) in either position
+  ---
+  duration_ms: 0.941428
+  type: 'test'
+  ...
+# Subtest: notchChange rejects when both arguments are invalid
+ok 25 - notchChange rejects when both arguments are invalid
+  ---
+  duration_ms: 0.26073
+  type: 'test'
+  ...
+# Subtest: notchCalculator rejects invalid strings with RangeError in either position
+ok 26 - notchCalculator rejects invalid strings with RangeError in either position
+  ---
+  duration_ms: 0.646115
+  type: 'test'
+  ...
+# Subtest: notchCalculator rejects non-strings with RangeError (never TypeError) in either position
+ok 27 - notchCalculator rejects non-strings with RangeError (never TypeError) in either position
+  ---
+  duration_ms: 0.499613
+  type: 'test'
+  ...
+# Subtest: notchCalculator rejects when both arguments are invalid
+ok 28 - notchCalculator rejects when both arguments are invalid
+  ---
+  duration_ms: 0.155794
+  type: 'test'
+  ...
+# Subtest: missing arguments throw RangeError
+ok 29 - missing arguments throw RangeError
+  ---
+  duration_ms: 0.323435
+  type: 'test'
+  ...
+# Subtest: RangeError message names the offending argument
+ok 30 - RangeError message names the offending argument
+  ---
+  duration_ms: 0.317097
+  type: 'test'
+  ...
+1..30
+# tests 156
+# suites 5
+# pass 156
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 423.460418
+ok    verify passed

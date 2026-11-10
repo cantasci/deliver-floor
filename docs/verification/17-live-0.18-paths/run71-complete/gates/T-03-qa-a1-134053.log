@@ -1,0 +1,122 @@
+# qa_verify: node --test test/integration/ratings/scaleOrder.contract.test.mjs
+TAP version 13
+# Subtest: T-03 AC-1: RATING_SCALE is in the C1 order
+    # Subtest: AC-1: RATING_SCALE deep-equals the 19 literal ratings, best first
+    ok 1 - AC-1: RATING_SCALE deep-equals the 19 literal ratings, best first
+      ---
+      duration_ms: 2.610551
+      type: 'test'
+      ...
+    # Subtest: AC-1: RATING_SCALE has length 19, AAA at 0 and CCC- at 18
+    ok 2 - AC-1: RATING_SCALE has length 19, AAA at 0 and CCC- at 18
+      ---
+      duration_ms: 0.454703
+      type: 'test'
+      ...
+    # Subtest: AC-1: RATING_SCALE[9] is BBB- and RATING_SCALE[10] is BB+ (the swapped pair)
+    ok 3 - AC-1: RATING_SCALE[9] is BBB- and RATING_SCALE[10] is BB+ (the swapped pair)
+      ---
+      duration_ms: 0.270463
+      type: 'test'
+      ...
+    # Subtest: AC-1: Object.isFrozen(RATING_SCALE) is true
+    ok 4 - AC-1: Object.isFrozen(RATING_SCALE) is true
+      ---
+      duration_ms: 0.230986
+      type: 'test'
+      ...
+    # Subtest: AC-1: RATING_SCALE.push('D') throws TypeError and leaves the scale intact
+    ok 5 - AC-1: RATING_SCALE.push('D') throws TypeError and leaves the scale intact
+      ---
+      duration_ms: 0.712814
+      type: 'test'
+      ...
+    # Subtest: AC-1: RATING_SCALE[0] = 'X' throws TypeError and leaves the scale intact
+    ok 6 - AC-1: RATING_SCALE[0] = 'X' throws TypeError and leaves the scale intact
+      ---
+      duration_ms: 0.398121
+      type: 'test'
+      ...
+    # Subtest: AC-1: indexOf gives BBB 8, BBB- 9, BB+ 10, BB 11
+    ok 7 - AC-1: indexOf gives BBB 8, BBB- 9, BB+ 10, BB 11
+      ---
+      duration_ms: 0.390304
+      type: 'test'
+      ...
+    # Subtest: AC-1: every adjacent pair of the literal list is exactly 1 notch apart
+    ok 8 - AC-1: every adjacent pair of the literal list is exactly 1 notch apart
+      ---
+      duration_ms: 0.614708
+      type: 'test'
+      ...
+    1..8
+ok 1 - T-03 AC-1: RATING_SCALE is in the C1 order
+  ---
+  duration_ms: 7.841595
+  type: 'suite'
+  ...
+# Subtest: T-03 AC-2: notchChange follows the C1 order
+    # Subtest: AC-2: boundary pairs from the spec
+    ok 1 - AC-2: boundary pairs from the spec
+      ---
+      duration_ms: 0.58069
+      type: 'test'
+      ...
+    # Subtest: AC-2: notchChange(L[i], L[j]) === j - i for all 19x19 pairs
+    ok 2 - AC-2: notchChange(L[i], L[j]) === j - i for all 19x19 pairs
+      ---
+      duration_ms: 0.99891
+      type: 'test'
+      ...
+    # Subtest: AC-2: normalised input crosses the boundary (trim, case-insensitive)
+    ok 3 - AC-2: normalised input crosses the boundary (trim, case-insensitive)
+      ---
+      duration_ms: 0.356123
+      type: 'test'
+      ...
+    1..3
+ok 2 - T-03 AC-2: notchChange follows the C1 order
+  ---
+  duration_ms: 2.305705
+  type: 'suite'
+  ...
+# Subtest: T-03 AC-3: notchCalculator across the BBB-/BB+ boundary
+    # Subtest: AC-3: BBB -> BBB- is 1 notch, wl 0
+    ok 1 - AC-3: BBB -> BBB- is 1 notch, wl 0
+      ---
+      duration_ms: 0.387756
+      type: 'test'
+      ...
+    # Subtest: AC-3: BBB+ -> BBB- is 2 notches, wl 1
+    ok 2 - AC-3: BBB+ -> BBB- is 2 notches, wl 1
+      ---
+      duration_ms: 0.190184
+      type: 'test'
+      ...
+    # Subtest: AC-3: BBB+ -> BB+ is 3 notches, wl 2
+    ok 3 - AC-3: BBB+ -> BB+ is 3 notches, wl 2
+      ---
+      duration_ms: 0.162117
+      type: 'test'
+      ...
+    # Subtest: AC-3: normalised input ' Bbb+ ' -> 'bbb-' is 2 notches, wl 1
+    ok 4 - AC-3: normalised input ' Bbb+ ' -> 'bbb-' is 2 notches, wl 1
+      ---
+      duration_ms: 0.134004
+      type: 'test'
+      ...
+    1..4
+ok 3 - T-03 AC-3: notchCalculator across the BBB-/BB+ boundary
+  ---
+  duration_ms: 1.330262
+  type: 'suite'
+  ...
+1..3
+# tests 15
+# suites 3
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 123.577266

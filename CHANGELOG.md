@@ -4,6 +4,30 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.18.2 — 2026-10-21
+
+- Fix cards, live (run 70, [docs/verification/16-fix-cards-live](docs/verification/16-fix-cards-live/README.md)): a
+  regression injected on the job branch went merge-check FAIL → `dl fix open` → the Lead's card → the BA's spec →
+  `dl fix add` → merged, delivered. One gap it showed is fixed in `SKILL.md`: the BA answers a fix's specs as text under
+  `=== <tmp_id> ===` lines and Michael writes them (it was asked to write the file and could not).
+- `dl verify-all` keeps a pass on an unchanged job branch and runs nothing; `--again` runs it anyway. Seen live (run 70): a
+  fresh session after a checkpoint ran the whole suite again on the same commit.
+- The plugin has an icon (`claude plugin validate` now warns without one).
+
+**What the live runs of 0.18 found** ([docs/verification/17-live-0.18-paths](docs/verification/17-live-0.18-paths/README.md))
+- **QA's own commits are QA's when Michael records them** (`dl qa-commit T-xx <commit>`). Live run 71: QA corrected its test
+  on top of the dev's fix after its fail; the gate took the commit for the dev's, the attempts ran out and the finished work
+  was built again as a fix card. Git does not say who made a commit — QA's report names it. The gate takes only recorded
+  commits as QA's round; when an unrecorded QA-test commit fails it, it says how to record it (no attempt is used).
+- **A suite after a merge that was cut off is not taken as checked.** Live run 72b: Michael's Bash call timed out while the
+  suite after T-02's merge ran; the merge stood with no result. The suite is marked RUNNING first; `dl next` says
+  `CHECK … dl merge-check T-xx` and integrating waits. Michael gives every test-running `dl` call its own long timeout.
+- **`suite_runs batch` defers to a partner that passed QA** (approved only was too late: Michael reviews and merges one card
+  after the other, so batch never deferred). A partner that then does not merge leaves the suite owed: `CHECK`, and
+  integrating waits for `dl merge-check`.
+- **Reopening his own decision gives it back to Michael.** Live run 75: Michael reopened his own PM decision to reword it;
+  the note went to the human as a question and the run stopped. Only an answer from the human goes back to the human.
+
 ## 0.18.1 — 2026-10-20
 
 - Tests for what 0.18.0 left untested: `suite_runs` batch (merges back to back share one run) and end (no suite after a

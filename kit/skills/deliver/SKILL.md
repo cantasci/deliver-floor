@@ -65,6 +65,10 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    every wave of cards (none running or in review): run `"$DL" checkpoint` and **end your turn** — the next round goes on in a
    fresh session, from the files (`dl next` tells it where), so your context stays small. On Munder Difflin there are no
    subagents: every role is a person at a seat (`dl md-hire`, `dl md-send`), reporting through your inbox.
+   **`dl` commands that run tests take minutes** (`gate`, `qa`, `integrate`, `merge-check`, `stack-test`, `verify-all`,
+   `baseline`): give each its own Bash call with `timeout: 600000` — never several in one loop under the default 2 minutes. A
+   Bash call stopped by its timeout stops `dl` half way (live run 72b: T-02 merged, the suite after it never finished); `dl next`
+   then says `CHECK … dl merge-check T-xx`.
 7. **The human is asked only at the start** — when the project or task is given (intake, readiness, `awaiting_clarification`):
    every open readiness item is answered by the human before planning, never on assumptions, never on the human's behalf.
    **After that you do not ask.** Whatever only a person could have decided is your decision as PM: take it, record it with its
@@ -392,7 +396,9 @@ Return: the tests written per AC.
    (SendMessage to its agent id — it has the spec and its tests in its history, nothing is read again; on the floor: the
    same QA seat) with **MODE: QA-RUN — your tests fail on the dev's commit (<the failing lines dl printed>); change a test only
    where it contradicts the spec; record the verdict per AC** (in the card worktree; a new agent with the prompt below only
-   when that one cannot be reached). Without QA-WRITE — call **Agent(subagent_type: "qa-tester")**:
+   when that one cannot be reached). **Every commit QA makes in the card worktree** (its report names it): `"$DL" qa-commit
+   T-xx <commit>` at once — git does not say who made a commit, and an unrecorded QA-test commit counts as the dev's at the gate
+   (live run 71: QA corrected its test after the dev's fix, the gate failed it as the dev's, the work was built again). Without QA-WRITE — call **Agent(subagent_type: "qa-tester")**:
 
 ```text
 Role: QA/Test for card T-xx. Write and run its integration/e2e tests for the spec's acceptance criteria. No product code.
@@ -500,8 +506,10 @@ OUTPUT — only a JSON array, as in planning: [{"tmp_id":"X1","title":"…","rol
 ```
 
    Write its answer to `.work/<job>/out/fix-F-n/cards.json`.
-3. `FIX-SPEC F-n` — the BA specs them: `MODE: CARD SPECS` with those cards (and the finding), one spec per tmp id with its
-   acceptance criteria and test design → `.work/<job>/out/fix-F-n/<tmp_id>.md`.
+3. `FIX-SPEC F-n` — the BA specs them: `MODE: CARD SPECS` as in planning, with `CARDS:` those cards and `FINDING:` the
+   finding. The BA writes no files: it answers with one spec per card under `=== <tmp_id> ===` lines — split the answer there
+   and write each part, as it is, to `.work/<job>/out/fix-F-n/<tmp_id>.md` (live run 70: the BA was asked to write the file
+   itself, refused by its role card, and answered with the text).
 4. `FIX-ADD F-n` — `"$DL" fix add F-n`: the cards get their T-ids (tmp ids in depends_on rewritten), the agent of their role
    and the reviewers of their component, their specs move to `specs/`, and `dl validate` checks them — an invalid card goes
    back to the Lead. `dl fix list` shows every fix and the cards it became; the PR lists them.

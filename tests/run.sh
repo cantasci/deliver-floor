@@ -188,12 +188,24 @@ expect_fail 1 "planning refused while a PM decision is open" "$DL" phase plannin
 ! grep -q "X-immutable" "$RJ/QUESTIONS.md" && ok "PM-owned items are not put to the human" || bad "pm item in QUESTIONS.md"
 expect_ok "the PM decides it with a rationale" "$DL" decide X-immutable "freeze with Object.freeze" "no scope or contract impact; protects consumers"
 jq -e '.items[] | select(.id=="X-immutable") | .status=="decided" and (.source|startswith("pm: michael"))' "$RJ/readiness.json" >/dev/null && ok "recorded with source pm: michael + rationale" || bad "pm decision record"
+out="$("$DL" reopen X-immutable "my wording implied a docs role" 2>&1)"
+contains "reopening his own decision gives it back to Michael, not to the human (live run 75)" "$out" "your own decision, open again for you"
+jq -e '.items[] | select(.id=="X-immutable") | .owner=="pm" and .question=="Freeze the options array?"' "$RJ/readiness.json" >/dev/null && ! grep -q "X-immutable" "$RJ/QUESTIONS.md" \
+  && ok "…its question unchanged, and not in QUESTIONS.md" || bad "pm reopen: $(jq -c '.items[] | select(.id=="X-immutable")' "$RJ/readiness.json")"
+expect_ok "…he decides it anew" "$DL" decide X-immutable "freeze with Object.freeze" "no scope or contract impact"
 contains "agents cannot record PM decisions" "$(printf '%s' '{"tool_input":{"command":"dl decide X a b"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 expect_ok "phase planning once nothing is open" "$DL" phase planning
 jq -e '.frozen.readiness_sha256 | length == 64' "$R/.work/$JOB/job.json" >/dev/null && ok "planning froze readiness.json (sha256 in job.json)" || bad "freeze"
 contains "in planning Michael may still write board.json with a script (the Leads' cards)" \
   "$(printf '%s' "$(jq -n --arg c 'node -e "fs.writeFileSync(d+\"/board.json\", s)"' --arg cwd "$R" '{tool_input:{command:$c},cwd:$cwd}')" | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=0"
 [[ -f $R/.work/$JOB/roles/backend.md && -f $R/.work/$JOB/roles/qa.md && -f $R/.work/$JOB/ROLES.md ]] && ok "role cards generated on planning" || bad "role cards"
+"$DL" jobset '.roles += [{"role":"blind","agent":"ecc:code-reviewer","why":"test"}]' >/dev/null
+[[ -f $R/.work/$JOB/roles/blind.md ]] && ok "a role added after planning wrote the role cards gets its card too (live run 75: the blind reviewer had none)" || bad "no role card for a role added in planning: $(ls "$R/.work/$JOB/roles")"
+"$DL" jobset 'del(.roles[] | select(.role == "blind"))' >/dev/null
+jq 'del(.roles[] | select(.role | endswith("lead")))' "$R/.work/$JOB/job.json" > "$TMP/nolead.json"
+contains "a full-path job keeps a lead role from planning on: the Leads cut the cards" "$(node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$TMP/nolead.json" 2>&1)" "no lead role on a full-path job"
+jq '.track = "light"' "$TMP/nolead.json" > "$TMP/nolead-light.json"
+node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$TMP/nolead-light.json" >/dev/null 2>&1 && ok "…the light path has none: the BA cuts its cards" || bad "light path refused without a lead: $(node "$HERE/kit/skills/deliver/bin/roles.mjs" check "$TMP/nolead-light.json" 2>&1)"
 grep -q "TDD" "$R/.work/$JOB/roles/backend.md" && grep -q "integration and/or end-to-end tests" "$R/.work/$JOB/roles/qa.md" \
   && grep -q "node --test" "$R/.work/$JOB/roles/backend.md" && ok "role cards carry kind rules + project facts" || bad "role card content"
 cat > "$R/.work/$JOB/plan.md" <<'EOF'
@@ -370,6 +382,10 @@ contains "next moves to integrating" "$("$DL" next)" "PHASE   dl phase integrati
 expect_ok "phase integrating" "$DL" phase integrating
 expect_fail 1 "closing refused before verify-all" "$DL" phase closing
 expect_ok "verify-all passes" "$DL" verify-all
+contains "verify-all again on the same head keeps the pass, runs nothing (live run 70: a fresh session ran it twice)" "$("$DL" verify-all 2>&1)" "PASSED — already on this job branch"
+nva="$(ls "$R/.work/$JOB"/gates/verify-all-*.log 2>/dev/null | wc -l | tr -d ' ')"; sleep 1
+contains "…dl verify-all --again runs it anyway" "$("$DL" verify-all --again 2>&1)" "PASSED"
+[[ "$(ls "$R/.work/$JOB"/gates/verify-all-*.log | wc -l | tr -d ' ')" == $(( nva + 1 )) ]] && ok "…with a log of its own" || bad "verify-all --again: $nva logs before"
 expect_ok "closing" "$DL" phase closing
 expect_fail 1 "approve merge no longer exists" "$DL" approve merge
 expect_fail 1 "ship refused while report.md is the template" "$DL" ship
@@ -1405,33 +1421,46 @@ rm -f "$HOME/app-suite"; cd "$R"
 echo "When the suite runs (suite_runs batch/end), a hung suite after a merge, a lockfile merge, verify-all's blame, dl wt rm of QA's worktree"
 SR="$TMP/suiteruns"; mkdir -p "$SR" && cd "$SR" && git init -q -b main
 jq -n '{dispatch:"subagent", merge_mode:"local", worktree_setup:"pwd >> \"$HOME/setup-runs\"",
-  verify_full:"if test -e \"$HOME/vf-fail\"; then echo \"FAILED src/a/x.py::test_x\"; exit 1; fi"}' > .deliver.json && git add -A && git commit -qm i
+  verify_full:"if test -e \"$HOME/vf-fail\"; then echo \"FAILED src/a/x.py::test_x\"; echo \"  location: file://$PWD/it/b/t.test.mjs:3:1\"; echo \"at file:///usr/lib/node/x.js:1\"; exit 1; fi"}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "suite runs" "x" >/dev/null 2>&1; SRJ="$SR/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
 "$DL" phase readiness >/dev/null
 ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"if test -e \"$HOME/suite-hang\"; then sleep 30; fi; echo run >> \"$HOME/app-suite-runs\""}]}' ready_all
 "$DL" phase planning >/dev/null
-for c in T-01 T-02 T-03 T-04 T-05 T-06; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$SRJ/specs/$c.md"; done
+for c in T-01 T-02 T-03 T-04 T-05 T-06 T-07 T-08; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$SRJ/specs/$c.md"; done
 srcard() { jq -n --arg id "$1" --arg d "$2" '{id:$id,title:$d,role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/\($d)/**"],qa_scope:["it/\($d)/**"],
   verify:"test -f src/\($d)/f",qa_verify:"test -f it/\($d)/t",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}'; }
-jq -n --argjson a "$(srcard T-01 a)" --argjson b "$(srcard T-02 b)" --argjson c "$(srcard T-03 c)" --argjson d "$(srcard T-04 d)" --argjson e "$(srcard T-05 e)" --argjson f "$(srcard T-06 f)" \
-  '{cards:[$a, $b, ($c | .scope += ["package-lock.json"]), $d, $e, ($f | .qa_verify = "test -f it/f/t && test ! -e it/f/bad")]}' > "$SRJ/board.json"
+jq -n --argjson a "$(srcard T-01 a)" --argjson b "$(srcard T-02 b)" --argjson c "$(srcard T-03 c)" --argjson d "$(srcard T-04 d)" --argjson e "$(srcard T-05 e)" --argjson f "$(srcard T-06 f)" --argjson g "$(srcard T-07 g)" --argjson h "$(srcard T-08 h)" \
+  '{cards:[$a, $b, ($c | .scope += ["package-lock.json"]), $d, $e, ($f | .qa_verify = "test -f it/f/t && test ! -e it/f/bad"),
+    ($g | .qa_verify = "test -f it/g/t && test ! -e it/g/wrong"), ($h | .qa_verify = "test -f it/h/t && test ! -e it/h/wrong")]}' > "$SRJ/board.json"
 "$DL" phase executing >/dev/null
-srprep() { # srprep <card> <dir> [extra file at the root] — dev, gate, QA pass, review: ready to integrate
+srprep() { # srprep <card> <dir> [extra file at the root] [noreview] — dev, gate, QA pass, review: ready to integrate
   local w; w="$("$DL" wt add "$1")"; mkdir -p "$w/src/$2" "$w/it/$2" && echo x > "$w/src/$2/f" && { [[ -z ${3:-} ]] || echo '{}' > "$w/$3"; }
   git -C "$w" add -A && git -C "$w" commit -qm "$1: $2" && "$DL" gate "$1" >/dev/null 2>&1 && echo t > "$w/it/$2/t" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: $2" \
-    && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review "$1" approve ok >/dev/null 2>&1
+    && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && { [[ -n ${4:-} ]] || "$DL" review "$1" approve ok >/dev/null 2>&1; }
 }
 "$DL" jobset '.settings.suite_runs="batch"' >/dev/null
-srprep T-01 a && srprep T-02 b || bad "T-01/T-02 not ready to merge"
+srprep T-01 a && srprep T-02 b "" noreview || bad "T-01/T-02 not ready to merge"
 rm -f "$HOME/app-suite-runs"
 out="$("$DL" integrate T-01 2>&1)"
-contains "suite_runs batch: another card of the component is ready to merge — the suite waits for it" "$out" "later: the app suite runs once T-02 merges too (suite_runs batch)"
+contains "suite_runs batch: another card of the component passed QA and waits for its review — the suite waits for it (live run 72b)" "$out" "later: the app suite runs once T-02 merges too (suite_runs batch)"
+"$DL" review T-02 approve ok >/dev/null 2>&1
 [[ ! -e $HOME/app-suite-runs ]] && ok "…and did not run" || bad "the suite ran for T-01"
 out="$("$DL" integrate T-02 2>&1)"
 contains "…it runs once after the last of them, and says so" "$out" "the app suite passes on"
 [[ "$(wc -l < "$HOME/app-suite-runs" | tr -d ' ')" == 1 && "$(jq -c '[(.cards[0].merge_check.result), (.cards[1].merge_check.batch)]' "$SRJ/board.json")" == '["PASS",["T-01"]]' ]] \
   && ok "…one run for two merges; both cards share its result" || bad "batch: runs=$(cat "$HOME/app-suite-runs" 2>/dev/null | wc -l) $(jq -c '[.cards[0].merge_check, .cards[1].merge_check]' "$SRJ/board.json")"
+# live run 72b: Michael's Bash call timed out while the suite after T-02's merge ran — the merge stood, its check never ended
+touch "$HOME/suite-hang"; "$DL" jobset '.settings.suite_timeout_min=5' >/dev/null
+"$DL" merge-check T-02 >/dev/null 2>&1 & MCP=$!
+for _ in $(seq 50); do [[ "$(jq -r '.cards[1].merge_check.result' "$SRJ/board.json")" == RUNNING ]] && break; sleep 0.2; done
+kill -9 $MCP 2>/dev/null; wait $MCP 2>/dev/null; rm -rf "$SRJ/.card-lock-integration"
+contains "a suite after a merge whose dl was stopped half way is not taken as checked: dl next says to run it again" "$("$DL" next)" "CHECK   the app suite after T-02 merged was cut off before it finished"
+contains "…the job does not go on to integrating meanwhile" "$("$DL" phase integrating 2>&1)" "the suite after the merge of T-02 has not finished"
+rm -f "$HOME/suite-hang"; "$DL" jobset 'del(.settings.suite_timeout_min)' >/dev/null
+out="$("$DL" merge-check T-02 2>&1)"
+[[ $out == *"the app suite passes"* && "$(jq -r '.cards[1].merge_check.result' "$SRJ/board.json")" == PASS && "$("$DL" next)" != *"CHECK   the app suite after T-02"* ]] \
+  && ok "…dl merge-check runs it again and records the result" || bad "merge-check: $out"
 srprep T-03 c package-lock.json || bad "T-03 not ready to merge"
 SRIW="$(jq -r .integration_worktree "$SRJ/job.json")"; n0="$(grep -cx "$SRIW" "$HOME/setup-runs")"
 touch "$HOME/suite-hang"; "$DL" jobset '.settings.suite_timeout_min=0.05' >/dev/null
@@ -1445,6 +1474,10 @@ srprep T-04 d || bad "T-04 not ready to merge"
 out="$("$DL" integrate T-04 2>&1)"
 [[ $out == *"MERGED: T-04"* && $out != *"app suite"* && ! -e $HOME/app-suite-runs && "$(jq -r '.cards[3].merge_check // "none"' "$SRJ/board.json")" == none ]] \
   && ok "suite_runs end: no suite after a merge" || bad "end: $out"
+bedit "$SRJ/board.json" '(.cards[3].merge_check) = {"result":"DEFERRED","component":"app","head":"x","with":"T-05","n":99,"at":"x"}'
+contains "a batched suite whose partner did not merge is owed: dl next says to run it" "$("$DL" next)" "CHECK   the app suite has not run since T-04 merged: T-05 was to merge next and did not"
+contains "…integrating waits for it" "$("$DL" phase integrating 2>&1)" "the suite after the merge of T-04 has not finished"
+"$DL" merge-check T-04 >/dev/null 2>&1; [[ "$(jq -r '.cards[3].merge_check.result' "$SRJ/board.json")" == PASS ]] && ok "…dl merge-check runs it" || bad "deferred merge-check: $(jq -c '.cards[3].merge_check' "$SRJ/board.json")"
 W5="$("$DL" wt add T-05)"; Q5="$("$DL" wt qa T-05)"
 out="$("$DL" wt rm T-05 2>&1)"
 [[ ! -d $W5 && ! -d $Q5 && $out == *"removed: $Q5"* ]] && ok "dl wt rm removes the card's QA worktree too (live job: half-written tests left behind)" || bad "wt rm: $out"
@@ -1459,9 +1492,30 @@ out="$("$DL" gate T-06 2>&1)"
 [[ "$(jq -r '.cards[5].qa_fix.after_gate // ""' "$SRJ/board.json")" != "" && "$(jq -r '.cards[5].gate.result' "$SRJ/board.json")" == PASS && "$(jq -r '.cards[5].attempts' "$SRJ/board.json")" == "$A6" ]] \
   && ok "QA's commits after a failed gate (qa_scope only) are QA's: the next gate takes them and passes, no new dev attempt" || bad "qa_fix: $out $(jq -c '.cards[5] | {qa_fix, g: .gate, attempts}' "$SRJ/board.json")"
 contains "…and the event log says so" "$(cat "$SRJ/events.log")" "taken as QA's"
+# live run 71, T-02: QA failed the card, the dev fixed the code, QA corrected its own test on top — the gate took QA's commit
+# for the dev's, the attempts ran out and the finished work was built again as a fix card
+qaround() { # qaround <card> <dir> <extra dev change> — dev, gate, QA's tests with a wrong one, QA fail, dev again, QA drops its wrong test
+  local w; w="$("$DL" wt add "$1")"; mkdir -p "$w/src/$2" && echo x > "$w/src/$2/f" && git -C "$w" add -A && git -C "$w" commit -qm "$1: $2"
+  "$DL" gate "$1" >/dev/null 2>&1; mkdir -p "$w/it/$2" && echo t > "$w/it/$2/t" && echo w > "$w/it/$2/wrong" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: tests"
+  "$DL" qa "$1" fail "AC-1 fail: the spec changed" >/dev/null 2>&1; w="$("$DL" wt add "$1" 2>&1 | tail -1)"
+  echo y >> "$w/src/$2/f"; [[ -z ${3:-} ]] || echo dev >> "$w/it/$2/t"; git -C "$w" commit -qam "$1: the code for the changed spec"
+  git -C "$w" rm -q "it/$2/wrong" && git -C "$w" commit -qm "$1 QA: drop the test the changed spec made wrong"
+}
+qaround T-07 g; "$DL" gate T-07 >/dev/null 2>&1
+contains "an unrecorded QA-test commit on top still counts as the dev's — and the gate says how to record QA's" "$(cat "$(jq -r '.cards[6].gate.log' "$SRJ/board.json")")" "record them — dl qa-commit T-07 <commit>"
+W7="$(jq -r '.cards[6].worktree' "$SRJ/board.json")"
+contains "dl qa-commit refuses a commit that changes more than QA's tests" "$("$DL" qa-commit T-07 "$(git -C "$W7" rev-parse HEAD~1)" 2>&1)" "changes files outside T-07's qa_scope"
+contains "dl qa-commit records QA's commit" "$("$DL" qa-commit T-07 "$(git -C "$W7" rev-parse HEAD)" 2>&1)" "is QA's commit on T-07"
+out="$("$DL" gate T-07 2>&1)"
+[[ "$(jq -r '.cards[6] | "\(.gate.result) \(.attempts) \(.qa_fix.after_dev != null)"' "$SRJ/board.json")" == "PASS 2 true" ]] \
+  && ok "…then the gate takes it as QA's round and passes, with no attempt lost (live run 71)" || bad "QA round: $out $(jq -c '.cards[6] | {g: .gate.result, attempts, qa_fix}' "$SRJ/board.json")"
+contains "…the gate log and the event log say so" "$(cat "$(jq -r '.cards[6].gate.log' "$SRJ/board.json")") $(grep $'\tqa-fix\t' "$SRJ/events.log" | tail -1)" "QA's commits on top of the dev's after QA's fail"
+qaround T-08 h devtouch; W8="$(jq -r '.cards[7].worktree' "$SRJ/board.json")"; "$DL" qa-commit T-08 "$(git -C "$W8" rev-parse HEAD)" >/dev/null 2>&1; "$DL" gate T-08 >/dev/null 2>&1
+contains "…but a dev commit below QA's recorded one that changes a QA test still fails the gate" "$(cat "$(jq -r '.cards[7].gate.log' "$SRJ/board.json")")" "FAIL  the dev changed a QA test (qa_scope belongs to the QA role): it/h/t"
 touch "$HOME/vf-fail"; out="$("$DL" verify-all 2>&1)"
 contains "verify-all names the merged cards whose files its failures point to" "$out" "LIKELY  T-01 — the failures name src/a/x.py"
-[[ $out != *"LIKELY  T-02"* ]] && ok "…and only those" || bad "blame: $out"
+contains "…also when the runner names them by their absolute path in the worktree (node's file:///…: live run 74 named no card)" "$out" "LIKELY  T-02 — the failures name it/b/t.test.mjs"
+[[ "$(grep -c '^LIKELY' <<<"$out")" == 2 ]] && ! grep -q '^LIKELY.*x\.js' <<<"$out" && ok "…and only those (a path outside the worktree names no card)" || bad "blame: $out"
 rm -f "$HOME/vf-fail" "$HOME/setup-runs"; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
 ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
@@ -2003,7 +2057,8 @@ node "$PA" "$TMP/ha.json" "beta only" >/dev/null 2>&1; [[ $? == 2 ]] && ok "two 
 node "$PA" "$HA" "What colour is the logo?" >/dev/null 2>&1; [[ $? == 2 ]] && ok "a question no answer fits is left to a person" || bad "unmatched answered"
 q='Is any banking regulation or internal policy (e.g. model-risk validation of the WL thresholds, four-eyes sign-off) a constraint on this slice beyond C1-C8?'
 node "$PA" "$HA" "$q" >/dev/null 2>&1; [[ $? == 2 ]] && ok "one shared word is no answer: the compliance question is not answered with the thresholds answer (seen live)" || bad "compliance question got: $(node "$PA" "$HA" "$q")"
-contains "a readiness item id names its answer" "$(node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
+contains "a readiness item id names its answer" "$(PICK_REQUEST=JOB.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
+contains "…an answer that belongs to one request reaches only that scenario (live run 72: another slice's priority answer)" "$(PICK_REQUEST=JOB-parallel.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "Both are Must and ship together"
 
 echo "risk-based test design: a priority per acceptance criterion, a test design per card, every AC in the QA verdict, the NFR gate, the blind review"
 export DELIVER_KNOWLEDGE="$TMP/no-company-standards"   # the company standards earlier sections left in ~/.deliver are not this job's

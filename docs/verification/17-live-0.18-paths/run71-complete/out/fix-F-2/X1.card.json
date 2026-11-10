@@ -1,0 +1,31 @@
+{
+  "title": "Re-deliver Indicator 12: countryRatingChangeWl in src/indicators/countryRating.mjs (from T-02 branch work)",
+  "role": "backend",
+  "component": "repo",
+  "context": "Why: Indicator 12 (REQ-03-12) is missing from the job branch. Card T-02 was finished, but it got blocked after using both attempts (2/2). The only reason the attempt-2 gate failed was that QA's commit, which belongs in qa_scope, ended up in the card worktree. This card re-delivers T-02 with the same contract. Starting point: the finished work is on branch job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-02. Dev commit 9dedde5 holds src/indicators/countryRating.mjs and test/indicators/countryRating.test.mjs (52/52 unit tests pass). QA commit 08a655d holds test/integration/indicators/countryRating.contract.test.mjs (75/75 pass). 9dedde5 alone only changes the unit test (the AC-7 correction); the source file is in 47bf323. Bring the work over by copying only the two in-scope files from the T-02 branch tip: git checkout job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-02 -- src/indicators/countryRating.mjs test/indicators/countryRating.test.mjs (or cherry-pick 47bf323 then 9dedde5). Do NOT cherry-pick or commit 08a655d or any file under test/integration/: that file is QA's, and having it in the dev worktree is exactly what failed the gate last time. After cherry-picking, run the verify command again against the current job branch. T-01 and T-03 are merged, and T-03 restored the C1 scale order. Dependency: src/ratings/notch.mjs (T-01, merged; do not edit it) exports notchChange(previous, current). It returns the signed notch count (positive means downgrade, e.g. notchChange('A','A-') === 1). It trims and case-folds its inputs, and it throws a RangeError for any value that is not on the 19-rating scale, including non-strings. C1 scale, best first: AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-. CONTRACT: src/indicators/countryRating.mjs has `import { notchChange } from \"../ratings/notch.mjs\"`. Its only export is countryRatingChangeWl(previous, current), with no third parameter (an edited auto-filled value is simply passed in as current, per C7). It returns n >= 2 ? 2 : n === 1 ? 1 : 0, where n = notchChange(previous, current). So 0 gives 0, 1 gives 1, 2 or more gives 2, and any negative gives 0. This differs on purpose from notchCalculator's wl (C6: a 1-notch move is WL 0 there and WL 1 here). The RangeError from notchChange must propagate unchanged: do not catch it, wrap it or fall back to 0. No rating list or index table in this file, and no I/O (CLAUDE.md: pure functions in src/indicators). AC-7 CORRECTION: under the restored C1 order, countryRatingChangeWl(' bbb\\n','BB+') === 2 (BBB to BB+ is 2 notches: BBB, BBB-, BB+). An earlier version of the spec pinned a different value, so check that the unit test from 9dedde5 asserts 2 and fix it if it does not. Unit tests in test/indicators/countryRating.test.mjs use node:test and node:assert/strict. They cover the boundaries, the full 19x19 sweep against the rule, case and whitespace (spaces, newline, NBSP, both positions), every invalid value in AC-8 in both positions plus a missing argument via assert.throws(fn, RangeError) (never assert message text), and AC-9 by reading the source with node:fs inside the test only and checking Object.keys(await import(...)) deep-equals ['countryRatingChangeWl']. Out of scope: notch.mjs itself, pre-fill from a public source (C4), persistence or audit (C7), UI (C8), Indicator 13. Node 18+ ESM, no npm dependencies. Commit as '<CARD-ID>: Indicator 12 country rating change WL'. Spec: .work/JOB-20261021-1317-rating-notch-calculator-and-coun/specs/T-02.md (corrected).",
+  "depends_on": [],
+  "scope": [
+    "src/indicators/countryRating.mjs",
+    "test/indicators/countryRating.test.mjs"
+  ],
+  "verify": "node --test test/indicators/countryRating.test.mjs",
+  "qa_scope": [
+    "test/integration/indicators/countryRating.contract.test.mjs"
+  ],
+  "qa_verify": "node --test test/integration/indicators/countryRating.contract.test.mjs",
+  "acceptance": [
+    "AC-5: countryRatingChangeWl('A','A-') === 1 (differs from the calculator's wl 0, C6); countryRatingChangeWl('A','BBB+') === 2; countryRatingChangeWl('A','BBB') === 2; countryRatingChangeWl('AAA','CCC-') === 2.",
+    "AC-6: countryRatingChangeWl('A-','A') === 0, countryRatingChangeWl('CCC-','AAA') === 0 and countryRatingChangeWl('BB','BB') === 0.",
+    "AC-5, AC-6: for every pair (p, c) of the 19x19 C1 scale, countryRatingChangeWl(p, c) is a number in {0,1,2} equal to n >= 2 ? 2 : n === 1 ? 1 : 0, where n = notchChange(p, c).",
+    "AC-7: inputs that differ only in case or in leading/trailing whitespace are accepted: countryRatingChangeWl(' a ','a-') === 1, countryRatingChangeWl(' bbb\\n','BB+') === 2 (corrected under the C1 order restored by T-03), countryRatingChangeWl('aaa','ccc-') === 2.",
+    "AC-8: a RangeError is thrown (never a TypeError, never a return value) for each of these in either position: '', '   ', 'BBB +', 'BB++', 'AAA-', 'D', 'NR', 'Baa1', 'ＢＢＢ', null, undefined, 3, NaN, true, 10n, Symbol('BBB'), {}, Object.create(null), ['BBB'], { toString: () => 'BBB' }, new String('BBB'); and for a missing argument, countryRatingChangeWl('BBB'). The RangeError from notchChange propagates unchanged.",
+    "AC-9: src/indicators/countryRating.mjs contains import { notchChange } from \"../ratings/notch.mjs\" (either quote style), contains no list of rating codes and no index table, and its only export is countryRatingChangeWl.",
+    "The card's diff touches only src/indicators/countryRating.mjs and test/indicators/countryRating.test.mjs (no file under test/integration/, no change to src/ratings/notch.mjs)."
+  ],
+  "fix": "F-2",
+  "agent": "backend-dev",
+  "reviewers": [
+    "reviewer",
+    "blind"
+  ]
+}

@@ -1,0 +1,912 @@
+# qa_verify: node --test test/integration/ratings/notch.integration.test.mjs
+TAP version 13
+# Subtest: AC-1: RATING_SCALE content
+    # Subtest: AC-1: deep-equals the 19-step scale, best first
+    ok 1 - AC-1: deep-equals the 19-step scale, best first
+      ---
+      duration_ms: 2.901996
+      type: 'test'
+      ...
+    # Subtest: AC-1: length 19, [0] is AAA, [18] is CCC-
+    ok 2 - AC-1: length 19, [0] is AAA, [18] is CCC-
+      ---
+      duration_ms: 0.607677
+      type: 'test'
+      ...
+    # Subtest: AC-1: RATING_SCALE index matches the documented index of every rating
+    ok 3 - AC-1: RATING_SCALE index matches the documented index of every rating
+      ---
+      duration_ms: 0.341213
+      type: 'test'
+      ...
+    1..3
+ok 1 - AC-1: RATING_SCALE content
+  ---
+  duration_ms: 6.184427
+  type: 'suite'
+  ...
+# Subtest: AC-3: notchChange (P0)
+    # Subtest: AC-3: notchChange("BBB+", "BB+") === 3
+    ok 1 - AC-3: notchChange("BBB+", "BB+") === 3
+      ---
+      duration_ms: 0.766799
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("BBB+", "BBB-") === 2
+    ok 2 - AC-3: notchChange("BBB+", "BBB-") === 2
+      ---
+      duration_ms: 0.19373
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("BBB+", "BBB") === 1
+    ok 3 - AC-3: notchChange("BBB+", "BBB") === 1
+      ---
+      duration_ms: 0.200124
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("A-", "BBB") === 2
+    ok 4 - AC-3: notchChange("A-", "BBB") === 2
+      ---
+      duration_ms: 0.361168
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("B-", "CCC+") === 1
+    ok 5 - AC-3: notchChange("B-", "CCC+") === 1
+      ---
+      duration_ms: 0.535157
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("BB+", "BBB+") === -3
+    ok 6 - AC-3: notchChange("BB+", "BBB+") === -3
+      ---
+      duration_ms: 0.563509
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("BBB", "BBB+") === -1
+    ok 7 - AC-3: notchChange("BBB", "BBB+") === -1
+      ---
+      duration_ms: 0.65397
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("A", "A") === 0
+    ok 8 - AC-3: notchChange("A", "A") === 0
+      ---
+      duration_ms: 0.407206
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("AAA", "CCC-") === 18
+    ok 9 - AC-3: notchChange("AAA", "CCC-") === 18
+      ---
+      duration_ms: 0.28701
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("CCC-", "AAA") === -18
+    ok 10 - AC-3: notchChange("CCC-", "AAA") === -18
+      ---
+      duration_ms: 0.340907
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("AAA", "AAA") === 0
+    ok 11 - AC-3: notchChange("AAA", "AAA") === 0
+      ---
+      duration_ms: 0.13844
+      type: 'test'
+      ...
+    # Subtest: AC-3: notchChange("CCC-", "CCC-") === 0
+    ok 12 - AC-3: notchChange("CCC-", "CCC-") === 0
+      ---
+      duration_ms: 0.096584
+      type: 'test'
+      ...
+    # Subtest: AC-3: equal ratings give +0, not -0 (both scale ends and middle)
+    ok 13 - AC-3: equal ratings give +0, not -0 (both scale ends and middle)
+      ---
+      duration_ms: 0.309685
+      type: 'test'
+      ...
+    # Subtest: AC-3: sign is index(current) - index(previous) for every pair of the scale
+    ok 14 - AC-3: sign is index(current) - index(previous) for every pair of the scale
+      ---
+      duration_ms: 2.94738
+      type: 'test'
+      ...
+    1..14
+ok 2 - AC-3: notchChange (P0)
+  ---
+  duration_ms: 9.240422
+  type: 'suite'
+  ...
+# Subtest: AC-4: notchCalculator downgrades (P0)
+    # Subtest: AC-4: notchCalculator("BBB+", "BB+") deep-equals {"notches":3,"direction":"downgrade","wl":2}
+    ok 1 - AC-4: notchCalculator("BBB+", "BB+") deep-equals {"notches":3,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.751511
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchCalculator("BBB+", "BBB-") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+    ok 2 - AC-4: notchCalculator("BBB+", "BBB-") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+      ---
+      duration_ms: 0.209968
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchCalculator("BBB+", "BBB") deep-equals {"notches":1,"direction":"downgrade","wl":0}
+    ok 3 - AC-4: notchCalculator("BBB+", "BBB") deep-equals {"notches":1,"direction":"downgrade","wl":0}
+      ---
+      duration_ms: 0.144643
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchCalculator("A-", "BBB") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+    ok 4 - AC-4: notchCalculator("A-", "BBB") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+      ---
+      duration_ms: 0.269279
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchCalculator("A", "BBB+") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+    ok 5 - AC-4: notchCalculator("A", "BBB+") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+      ---
+      duration_ms: 0.244333
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchCalculator("A", "BBB") deep-equals {"notches":3,"direction":"downgrade","wl":2}
+    ok 6 - AC-4: notchCalculator("A", "BBB") deep-equals {"notches":3,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.183288
+      type: 'test'
+      ...
+    # Subtest: AC-4: notchCalculator("AAA", "CCC-") deep-equals {"notches":18,"direction":"downgrade","wl":2}
+    ok 7 - AC-4: notchCalculator("AAA", "CCC-") deep-equals {"notches":18,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.275268
+      type: 'test'
+      ...
+    # Subtest: AC-4: WL boundaries 1 -> 0, 2 -> 1, 3 -> 2, 18 -> 2
+    ok 8 - AC-4: WL boundaries 1 -> 0, 2 -> 1, 3 -> 2, 18 -> 2
+      ---
+      duration_ms: 0.293444
+      type: 'test'
+      ...
+    # Subtest: AC-4: every downgrade of 3 or more notches has WL 2 and never above
+    ok 9 - AC-4: every downgrade of 3 or more notches has WL 2 and never above
+      ---
+      duration_ms: 0.624945
+      type: 'test'
+      ...
+    1..9
+ok 3 - AC-4: notchCalculator downgrades (P0)
+  ---
+  duration_ms: 3.576543
+  type: 'suite'
+  ...
+# Subtest: AC-5: notchCalculator upgrades and unchanged
+    # Subtest: AC-5: notchCalculator("BB+", "BBB+") deep-equals {"notches":-3,"direction":"upgrade","wl":0}
+    ok 1 - AC-5: notchCalculator("BB+", "BBB+") deep-equals {"notches":-3,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.443821
+      type: 'test'
+      ...
+    # Subtest: AC-5: notchCalculator("BBB", "BBB+") deep-equals {"notches":-1,"direction":"upgrade","wl":0}
+    ok 2 - AC-5: notchCalculator("BBB", "BBB+") deep-equals {"notches":-1,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.152767
+      type: 'test'
+      ...
+    # Subtest: AC-5: notchCalculator("BBB-", "BBB+") deep-equals {"notches":-2,"direction":"upgrade","wl":0}
+    ok 3 - AC-5: notchCalculator("BBB-", "BBB+") deep-equals {"notches":-2,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.140583
+      type: 'test'
+      ...
+    # Subtest: AC-5: notchCalculator("CCC-", "AAA") deep-equals {"notches":-18,"direction":"upgrade","wl":0}
+    ok 4 - AC-5: notchCalculator("CCC-", "AAA") deep-equals {"notches":-18,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.134209
+      type: 'test'
+      ...
+    # Subtest: AC-5: notchCalculator("A", "A") deep-equals {"notches":0,"direction":"unchanged","wl":0}
+    ok 5 - AC-5: notchCalculator("A", "A") deep-equals {"notches":0,"direction":"unchanged","wl":0}
+      ---
+      duration_ms: 0.210695
+      type: 'test'
+      ...
+    # Subtest: AC-5: notchCalculator("AAA", "AAA") deep-equals {"notches":0,"direction":"unchanged","wl":0}
+    ok 6 - AC-5: notchCalculator("AAA", "AAA") deep-equals {"notches":0,"direction":"unchanged","wl":0}
+      ---
+      duration_ms: 0.167994
+      type: 'test'
+      ...
+    # Subtest: AC-5: every upgrade of the scale has WL 0 and direction "upgrade"
+    ok 7 - AC-5: every upgrade of the scale has WL 0 and direction "upgrade"
+      ---
+      duration_ms: 0.723025
+      type: 'test'
+      ...
+    # Subtest: AC-5: result.notches === notchChange(previous, current) for every row of tables B and C
+    ok 8 - AC-5: result.notches === notchChange(previous, current) for every row of tables B and C
+      ---
+      duration_ms: 0.395606
+      type: 'test'
+      ...
+    # Subtest: AC-5: unchanged ratings give notches +0, not -0
+    ok 9 - AC-5: unchanged ratings give notches +0, not -0
+      ---
+      duration_ms: 0.296091
+      type: 'test'
+      ...
+    1..9
+ok 4 - AC-5: notchCalculator upgrades and unchanged
+  ---
+  duration_ms: 3.270619
+  type: 'suite'
+  ...
+# Subtest: AC-8: case and whitespace normalisation
+    # Subtest: AC-8: notchChange("bbb+", "BB+") === 3
+    ok 1 - AC-8: notchChange("bbb+", "BB+") === 3
+      ---
+      duration_ms: 0.451452
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange("BBB+", "bb+") === 3
+    ok 2 - AC-8: notchChange("BBB+", "bb+") === 3
+      ---
+      duration_ms: 0.101954
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange("  BBB+ ", "\\tbb+\\n") === 3
+    ok 3 - AC-8: notchChange("  BBB+ ", "\\tbb+\\n") === 3
+      ---
+      duration_ms: 0.111442
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange("Bbb-", "bBb+") === -2
+    ok 4 - AC-8: notchChange("Bbb-", "bBb+") === -2
+      ---
+      duration_ms: 0.113674
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange(" aaa ", "AAA") === 0
+    ok 5 - AC-8: notchChange(" aaa ", "AAA") === 0
+      ---
+      duration_ms: 0.097116
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchChange(" BBB+ ", "BBB") === 1
+    ok 6 - AC-8: notchChange(" BBB+ ", "BBB") === 1
+      ---
+      duration_ms: 0.095661
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator("bbb+", "bb+") deep-equals {"notches":3,"direction":"downgrade","wl":2}
+    ok 7 - AC-8: notchCalculator("bbb+", "bb+") deep-equals {"notches":3,"direction":"downgrade","wl":2}
+      ---
+      duration_ms: 0.157783
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator(" ccc- ", "AAA") deep-equals {"notches":-18,"direction":"upgrade","wl":0}
+    ok 8 - AC-8: notchCalculator(" ccc- ", "AAA") deep-equals {"notches":-18,"direction":"upgrade","wl":0}
+      ---
+      duration_ms: 0.095321
+      type: 'test'
+      ...
+    # Subtest: AC-8: notchCalculator("BBB+", "\\r\\nbbb-") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+    ok 9 - AC-8: notchCalculator("BBB+", "\\r\\nbbb-") deep-equals {"notches":2,"direction":"downgrade","wl":1}
+      ---
+      duration_ms: 0.10997
+      type: 'test'
+      ...
+    # Subtest: AC-8: every trim() whitespace character is stripped at either end, in either argument, in both functions
+    ok 10 - AC-8: every trim() whitespace character is stripped at either end, in either argument, in both functions
+      ---
+      duration_ms: 0.378757
+      type: 'test'
+      ...
+    # Subtest: AC-8: case only in previous, and case only in current
+    ok 11 - AC-8: case only in previous, and case only in current
+      ---
+      duration_ms: 0.185844
+      type: 'test'
+      ...
+    # Subtest: AC-8: every scale entry in lowercase and padded equals the uppercase entry
+    ok 12 - AC-8: every scale entry in lowercase and padded equals the uppercase entry
+      ---
+      duration_ms: 0.214688
+      type: 'test'
+      ...
+    # Subtest: AC-8: inner whitespace is still rejected after trimming
+    ok 13 - AC-8: inner whitespace is still rejected after trimming
+      ---
+      duration_ms: 1.003657
+      type: 'test'
+      ...
+    1..13
+ok 5 - AC-8: case and whitespace normalisation
+  ---
+  duration_ms: 3.790626
+  type: 'suite'
+  ...
+# Subtest: AC-9: invalid input throws RangeError (P0)
+    # Subtest: AC-9: notchChange rejects "AAA+" as previous
+    ok 1 - AC-9: notchChange rejects "AAA+" as previous
+      ---
+      duration_ms: 1.584303
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "AAA+" as current
+    ok 2 - AC-9: notchChange rejects "AAA+" as current
+      ---
+      duration_ms: 0.198663
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "AAA+" as previous
+    ok 3 - AC-9: notchCalculator rejects "AAA+" as previous
+      ---
+      duration_ms: 0.203338
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "AAA+" as current
+    ok 4 - AC-9: notchCalculator rejects "AAA+" as current
+      ---
+      duration_ms: 0.189709
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "D" as previous
+    ok 5 - AC-9: notchChange rejects "D" as previous
+      ---
+      duration_ms: 0.134444
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "D" as current
+    ok 6 - AC-9: notchChange rejects "D" as current
+      ---
+      duration_ms: 0.250163
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "D" as previous
+    ok 7 - AC-9: notchCalculator rejects "D" as previous
+      ---
+      duration_ms: 0.31909
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "D" as current
+    ok 8 - AC-9: notchCalculator rejects "D" as current
+      ---
+      duration_ms: 0.227024
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "NR" as previous
+    ok 9 - AC-9: notchChange rejects "NR" as previous
+      ---
+      duration_ms: 0.134465
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "NR" as current
+    ok 10 - AC-9: notchChange rejects "NR" as current
+      ---
+      duration_ms: 0.11587
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "NR" as previous
+    ok 11 - AC-9: notchCalculator rejects "NR" as previous
+      ---
+      duration_ms: 0.151865
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "NR" as current
+    ok 12 - AC-9: notchCalculator rejects "NR" as current
+      ---
+      duration_ms: 0.160264
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "Baa1" as previous
+    ok 13 - AC-9: notchChange rejects "Baa1" as previous
+      ---
+      duration_ms: 0.266485
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "Baa1" as current
+    ok 14 - AC-9: notchChange rejects "Baa1" as current
+      ---
+      duration_ms: 0.122496
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "Baa1" as previous
+    ok 15 - AC-9: notchCalculator rejects "Baa1" as previous
+      ---
+      duration_ms: 0.180322
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "Baa1" as current
+    ok 16 - AC-9: notchCalculator rejects "Baa1" as current
+      ---
+      duration_ms: 0.134155
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "BBB++" as previous
+    ok 17 - AC-9: notchChange rejects "BBB++" as previous
+      ---
+      duration_ms: 0.138919
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "BBB++" as current
+    ok 18 - AC-9: notchChange rejects "BBB++" as current
+      ---
+      duration_ms: 0.123201
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "BBB++" as previous
+    ok 19 - AC-9: notchCalculator rejects "BBB++" as previous
+      ---
+      duration_ms: 0.119936
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "BBB++" as current
+    ok 20 - AC-9: notchCalculator rejects "BBB++" as current
+      ---
+      duration_ms: 2.268047
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "BBB +" as previous
+    ok 21 - AC-9: notchChange rejects "BBB +" as previous
+      ---
+      duration_ms: 0.167226
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "BBB +" as current
+    ok 22 - AC-9: notchChange rejects "BBB +" as current
+      ---
+      duration_ms: 0.115536
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "BBB +" as previous
+    ok 23 - AC-9: notchCalculator rejects "BBB +" as previous
+      ---
+      duration_ms: 0.095986
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "BBB +" as current
+    ok 24 - AC-9: notchCalculator rejects "BBB +" as current
+      ---
+      duration_ms: 0.094801
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "B B B" as previous
+    ok 25 - AC-9: notchChange rejects "B B B" as previous
+      ---
+      duration_ms: 0.092807
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "B B B" as current
+    ok 26 - AC-9: notchChange rejects "B B B" as current
+      ---
+      duration_ms: 0.095875
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "B B B" as previous
+    ok 27 - AC-9: notchCalculator rejects "B B B" as previous
+      ---
+      duration_ms: 0.244342
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "B B B" as current
+    ok 28 - AC-9: notchCalculator rejects "B B B" as current
+      ---
+      duration_ms: 0.106919
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "BBB+-" as previous
+    ok 29 - AC-9: notchChange rejects "BBB+-" as previous
+      ---
+      duration_ms: 0.230889
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "BBB+-" as current
+    ok 30 - AC-9: notchChange rejects "BBB+-" as current
+      ---
+      duration_ms: 0.107018
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "BBB+-" as previous
+    ok 31 - AC-9: notchCalculator rejects "BBB+-" as previous
+      ---
+      duration_ms: 0.089673
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "BBB+-" as current
+    ok 32 - AC-9: notchCalculator rejects "BBB+-" as current
+      ---
+      duration_ms: 0.153463
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "" as previous
+    ok 33 - AC-9: notchChange rejects "" as previous
+      ---
+      duration_ms: 0.117613
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "" as current
+    ok 34 - AC-9: notchChange rejects "" as current
+      ---
+      duration_ms: 0.089007
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "" as previous
+    ok 35 - AC-9: notchCalculator rejects "" as previous
+      ---
+      duration_ms: 0.089351
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "" as current
+    ok 36 - AC-9: notchCalculator rejects "" as current
+      ---
+      duration_ms: 0.091879
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "   " as previous
+    ok 37 - AC-9: notchChange rejects "   " as previous
+      ---
+      duration_ms: 0.103062
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "   " as current
+    ok 38 - AC-9: notchChange rejects "   " as current
+      ---
+      duration_ms: 0.103753
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "   " as previous
+    ok 39 - AC-9: notchCalculator rejects "   " as previous
+      ---
+      duration_ms: 0.087662
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "   " as current
+    ok 40 - AC-9: notchCalculator rejects "   " as current
+      ---
+      duration_ms: 0.111083
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "\\t" as previous
+    ok 41 - AC-9: notchChange rejects "\\t" as previous
+      ---
+      duration_ms: 0.090168
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects "\\t" as current
+    ok 42 - AC-9: notchChange rejects "\\t" as current
+      ---
+      duration_ms: 0.112758
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "\\t" as previous
+    ok 43 - AC-9: notchCalculator rejects "\\t" as previous
+      ---
+      duration_ms: 0.100448
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects "\\t" as current
+    ok 44 - AC-9: notchCalculator rejects "\\t" as current
+      ---
+      duration_ms: 0.132689
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects null as previous
+    ok 45 - AC-9: notchChange rejects null as previous
+      ---
+      duration_ms: 0.110253
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects null as current
+    ok 46 - AC-9: notchChange rejects null as current
+      ---
+      duration_ms: 0.146165
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects null as previous
+    ok 47 - AC-9: notchCalculator rejects null as previous
+      ---
+      duration_ms: 0.141208
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects null as current
+    ok 48 - AC-9: notchCalculator rejects null as current
+      ---
+      duration_ms: 0.11267
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects undefined as previous
+    ok 49 - AC-9: notchChange rejects undefined as previous
+      ---
+      duration_ms: 0.085868
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects undefined as current
+    ok 50 - AC-9: notchChange rejects undefined as current
+      ---
+      duration_ms: 0.10355
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects undefined as previous
+    ok 51 - AC-9: notchCalculator rejects undefined as previous
+      ---
+      duration_ms: 0.115726
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects undefined as current
+    ok 52 - AC-9: notchCalculator rejects undefined as current
+      ---
+      duration_ms: 0.233309
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects 42 as previous
+    ok 53 - AC-9: notchChange rejects 42 as previous
+      ---
+      duration_ms: 0.128629
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects 42 as current
+    ok 54 - AC-9: notchChange rejects 42 as current
+      ---
+      duration_ms: 0.113118
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects 42 as previous
+    ok 55 - AC-9: notchCalculator rejects 42 as previous
+      ---
+      duration_ms: 0.098361
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects 42 as current
+    ok 56 - AC-9: notchCalculator rejects 42 as current
+      ---
+      duration_ms: 0.102324
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects 7 as previous
+    ok 57 - AC-9: notchChange rejects 7 as previous
+      ---
+      duration_ms: 0.197872
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects 7 as current
+    ok 58 - AC-9: notchChange rejects 7 as current
+      ---
+      duration_ms: 0.211644
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects 7 as previous
+    ok 59 - AC-9: notchCalculator rejects 7 as previous
+      ---
+      duration_ms: 0.133245
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects 7 as current
+    ok 60 - AC-9: notchCalculator rejects 7 as current
+      ---
+      duration_ms: 0.137853
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects true as previous
+    ok 61 - AC-9: notchChange rejects true as previous
+      ---
+      duration_ms: 0.135832
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects true as current
+    ok 62 - AC-9: notchChange rejects true as current
+      ---
+      duration_ms: 0.130728
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects true as previous
+    ok 63 - AC-9: notchCalculator rejects true as previous
+      ---
+      duration_ms: 0.118031
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects true as current
+    ok 64 - AC-9: notchCalculator rejects true as current
+      ---
+      duration_ms: 0.149954
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects object as previous
+    ok 65 - AC-9: notchChange rejects object as previous
+      ---
+      duration_ms: 0.399264
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects object as current
+    ok 66 - AC-9: notchChange rejects object as current
+      ---
+      duration_ms: 0.15353
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects object as previous
+    ok 67 - AC-9: notchCalculator rejects object as previous
+      ---
+      duration_ms: 0.215978
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects object as current
+    ok 68 - AC-9: notchCalculator rejects object as current
+      ---
+      duration_ms: 0.1498
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects array as previous
+    ok 69 - AC-9: notchChange rejects array as previous
+      ---
+      duration_ms: 0.131051
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchChange rejects array as current
+    ok 70 - AC-9: notchChange rejects array as current
+      ---
+      duration_ms: 0.12699
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects array as previous
+    ok 71 - AC-9: notchCalculator rejects array as previous
+      ---
+      duration_ms: 0.125395
+      type: 'test'
+      ...
+    # Subtest: AC-9: notchCalculator rejects array as current
+    ok 72 - AC-9: notchCalculator rejects array as current
+      ---
+      duration_ms: 0.165017
+      type: 'test'
+      ...
+    # Subtest: AC-9: both functions reject new String("BBB+") in either position (no coercion, message built safely)
+    ok 73 - AC-9: both functions reject new String("BBB+") in either position (no coercion, message built safely)
+      ---
+      duration_ms: 0.461044
+      type: 'test'
+      ...
+    # Subtest: AC-9: both functions reject Symbol("BBB") in either position (no coercion, message built safely)
+    ok 74 - AC-9: both functions reject Symbol("BBB") in either position (no coercion, message built safely)
+      ---
+      duration_ms: 0.626418
+      type: 'test'
+      ...
+    # Subtest: AC-9: both functions reject Object.create(null) in either position (no coercion, message built safely)
+    ok 75 - AC-9: both functions reject Object.create(null) in either position (no coercion, message built safely)
+      ---
+      duration_ms: 0.268035
+      type: 'test'
+      ...
+    # Subtest: AC-9: one-argument calls throw RangeError
+    ok 76 - AC-9: one-argument calls throw RangeError
+      ---
+      duration_ms: 0.226968
+      type: 'test'
+      ...
+    # Subtest: AC-9: zero-argument calls throw RangeError
+    ok 77 - AC-9: zero-argument calls throw RangeError
+      ---
+      duration_ms: 0.292935
+      type: 'test'
+      ...
+    # Subtest: AC-9: the thrown error is a RangeError, not a TypeError, for a number that is a valid index
+    ok 78 - AC-9: the thrown error is a RangeError, not a TypeError, for a number that is a valid index
+      ---
+      duration_ms: 0.24456
+      type: 'test'
+      ...
+    1..78
+ok 6 - AC-9: invalid input throws RangeError (P0)
+  ---
+  duration_ms: 19.467909
+  type: 'suite'
+  ...
+# Subtest: AC-10: error type for table F calls (message wording is reviewed, not tested)
+    # Subtest: AC-10: table F calls throw RangeError
+    ok 1 - AC-10: table F calls throw RangeError
+      ---
+      duration_ms: 0.429123
+      type: 'test'
+      ...
+    1..1
+ok 7 - AC-10: error type for table F calls (message wording is reviewed, not tested)
+  ---
+  duration_ms: 0.589365
+  type: 'suite'
+  ...
+# Subtest: AC-11: public contract
+    # Subtest: AC-11: RATING_SCALE, notchChange and notchCalculator are exported
+    ok 1 - AC-11: RATING_SCALE, notchChange and notchCalculator are exported
+      ---
+      duration_ms: 0.253301
+      type: 'test'
+      ...
+    # Subtest: AC-11: both functions declare exactly 2 parameters
+    ok 2 - AC-11: both functions declare exactly 2 parameters
+      ---
+      duration_ms: 0.291197
+      type: 'test'
+      ...
+    # Subtest: AC-11: an extra argument has no effect
+    ok 3 - AC-11: an extra argument has no effect
+      ---
+      duration_ms: 0.256903
+      type: 'test'
+      ...
+    1..3
+ok 8 - AC-11: public contract
+  ---
+  duration_ms: 1.046903
+  type: 'suite'
+  ...
+# Subtest: AC-12: purity and synchronous behaviour
+    # Subtest: AC-12: notchCalculator result is not a Promise
+    ok 1 - AC-12: notchCalculator result is not a Promise
+      ---
+      duration_ms: 0.309642
+      type: 'test'
+      ...
+    # Subtest: AC-12: notchChange result is a plain number, not a Promise
+    ok 2 - AC-12: notchChange result is a plain number, not a Promise
+      ---
+      duration_ms: 0.296758
+      type: 'test'
+      ...
+    # Subtest: AC-12: two calls with the same input return deep-equal results
+    ok 3 - AC-12: two calls with the same input return deep-equal results
+      ---
+      duration_ms: 0.524938
+      type: 'test'
+      ...
+    # Subtest: AC-12: mutating a returned object does not change the next result
+    ok 4 - AC-12: mutating a returned object does not change the next result
+      ---
+      duration_ms: 0.312179
+      type: 'test'
+      ...
+    # Subtest: AC-12: calls leave RATING_SCALE unchanged, including after rejected input
+    ok 5 - AC-12: calls leave RATING_SCALE unchanged, including after rejected input
+      ---
+      duration_ms: 0.339855
+      type: 'test'
+      ...
+    # Subtest: AC-12: previous is validated first when both arguments are invalid
+    ok 6 - AC-12: previous is validated first when both arguments are invalid
+      ---
+      duration_ms: 0.29597
+      type: 'test'
+      ...
+    1..6
+ok 9 - AC-12: purity and synchronous behaviour
+  ---
+  duration_ms: 2.638704
+  type: 'suite'
+  ...
+# Subtest: notch of an unchanged rating
+not ok 10 - notch of an unchanged rating
+  ---
+  duration_ms: 2.360686
+  type: 'test'
+  location: '<work>/repo/.work/JOB-20261021-1317-rating-notch-calculator-and-coun/wt/T-01/test/integration/ratings/notch.integration.test.mjs:331:30'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file://<work>/repo/.work/JOB-20261021-1317-rating-notch-calculator-and-coun/wt/T-01/test/integration/ratings/notch.integration.test.mjs:331:124)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..10
+# tests 137
+# suites 9
+# pass 136
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 420.973792

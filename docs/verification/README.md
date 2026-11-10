@@ -14,6 +14,8 @@ quotes what it relies on from them (turns, cost, what an agent said).
 | [04-live-munder/seats/](04-live-munder/seats/) | the floor with a person per role seat, no subagents: report, who did which task, frames of people at work (`at-work/`) |
 | [06-live-interactive/](06-live-interactive/) | `tests/e2e-interactive.sh`: a person at the terminal with Michael — report, screen snapshots, the delivered job |
 | [05-evidence/](05-evidence/) | measurements that decisions rest on (e.g. background agents under `claude -p`) |
+| [16-fix-cards-live/](16-fix-cards-live/) | run 70: a regression injected on the job branch (disclosed) and fixed through `dl fix open` → Lead → BA → `dl fix add`; report, events, the fix files |
+| [17-live-0.18-paths/](17-live-0.18-paths/) | runs 71–75: `suite_runs` end and batch, a hung suite, QA's own wrong test, a late regression — and what each run found |
 | [HISTORY.md](HISTORY.md) | every live run, including the failed ones, what each one found and what was changed |
 
 ## Requirements → decisions → implementation → evidence

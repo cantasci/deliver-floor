@@ -1,0 +1,86 @@
+2026-10-21T13:17:55Z	new	Rating notch calculator and country indicator
+2026-10-21T13:18:11Z	jobset	stack: .stack=["node"]
+2026-10-21T13:18:11Z	jobset	roles: .roles=[
+{"role":"ba","agent":"business-analyst","why":"always"},
+{"role":"backend-lead","agent":"ecc:architect","why":"REQ-03-12: indicator domain logic in src/ratings and src/indicators"},
+{"role":"backend","agent":"backend-dev","why":"REQ-06-02: notchCalculator implementation (Node ESM modules)"},
+{"role":"qa","agent":"qa-tester","why":"always"},
+{"role":"reviewer","agent":"ecc:typescript-reviewer","why":"stack node/javascript: plain Node ESM (.mjs)"}
+]
+2026-10-21T13:18:12Z	jobset	assumptions: .assumptions += ["Stack is plain Node.js ESM per the request (\"Plain Node ESM, no dependencies\") and CLAUDE.md; tests via node --test."]
+2026-10-21T13:18:12Z	shape-auto	not shaped: the request states requirement ids, acceptance criteria, and a contract — a specification already, not shaped
+2026-10-21T13:18:13Z	roles	ba backend-lead backend qa reviewer
+2026-10-21T13:18:13Z	phase	readiness
+2026-10-21T13:18:34Z	dispatch	business-analyst
+2026-10-21T13:21:51Z	agent	business-analyst aa6d23d0bd7602dff: {"items":[ {"id":"PRD-goal","status":"decided","answer":"This delivers two parts of the Watchlist POC. The first is a notch calculator helper: it takes a previo
+2026-10-21T13:22:28Z	readiness	33 items: 18 decided, 12 n/a, 3 open
+2026-10-21T13:22:36Z	decide	X-trim: Use String.prototype.trim() (all Unicode whitespace at both ends); inner whitespace stays rejected — C1 states 'Input is trimmed'; in a JS contract that is trim(), the most permissive reading of the request's own word; no business rule changes. Michael decided; BA had tagged it business.
+2026-10-21T13:22:36Z	decide	X-scale-immutable: Export RATING_SCALE as a frozen array — Internal robustness only; values and order unchanged (C1).
+2026-10-21T13:22:36Z	decide	X-error-message: RangeError message names the argument (previous/current) and the rejected value; previous is checked first; tests assert the type only — Contract fixes only the error type (C1); a descriptive message helps debugging.
+2026-10-21T13:22:37Z	jobset	roles: .roles += [{"role":"blind","agent":"ecc:code-reviewer","why":"WL values drive credit watchlist decisions: a wrong threshold (C2/C6) is a P1 core-feature defect"}]
+2026-10-21T13:22:37Z	roles	ba backend-lead backend qa reviewer blind
+2026-10-21T13:22:37Z	phase	readiness
+2026-10-21T13:22:38Z	readiness	33 items: 21 decided, 12 n/a, 0 open
+2026-10-21T13:22:39Z	baseline	PASS (node --test, 0 min)
+2026-10-21T13:22:39Z	freeze	readiness + architecture frozen (d3fa84f0e2fc)
+2026-10-21T13:22:39Z	roles	ba backend-lead backend qa reviewer blind
+2026-10-21T13:22:39Z	phase	planning
+2026-10-21T13:22:46Z	dispatch	business-analyst
+2026-10-21T13:24:32Z	agent	business-analyst a0895183a7d5fbdde: # Plan > Produced by the Business Analyst (MODE PLAN), written to this file by Michael. Keep the headings as they are — the ACs are checked one by one at clos
+2026-10-21T13:25:21Z	dispatch	ecc:architect
+2026-10-21T13:26:12Z	agent	ecc:architect a5db37f8c9e3260d6: ```json [ { "tmp_id": "B1", "title": "Rating scale, notchChange and notchCalculator (src/ratings/notch.mjs)", "role": "backend", "component": "rating-indicators
+2026-10-21T13:26:45Z	dispatch	business-analyst
+2026-10-21T13:29:16Z	agent	business-analyst a2ac1658f91e62d12: === T-01 === # T-01: Rating scale, notchChange and notchCalculator (src/ratings/notch.mjs) ## User story As a credit analyst using the Watchlist POC, I want to 
+2026-10-21T13:30:23Z	phase	executing
+2026-10-21T13:30:31Z	checkpoint	executing, 0 card(s) merged — a fresh session goes on from here
+2026-10-21T13:31:06Z	assign	T-01 → backend-dev (backend#1) attempt=1
+2026-10-21T13:31:11Z	qa-start	T-01 → QA writes its tests in <work>/repo/.work/JOB-20261021-1317-rating-notch-calculator-and-coun/wt/T-01-qa (branch job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-01-qa) while the dev builds
+2026-10-21T13:31:22Z	dispatch	backend-dev
+2026-10-21T13:31:28Z	dispatch	qa-tester
+2026-10-21T13:32:57Z	agent	backend-dev aff69acee5452d6c3: status: done (commit made, push blocked) commit: baf2bd1 verify: passed (`node --test test/ratings/notch.test.mjs`: 151 tests, 0 failures; the tests failed firs
+2026-10-21T13:33:27Z	agent	qa-tester acc3f922387b8599a: The tests are written and committed in the QA worktree, but the push to origin was blocked, so the commit is local only. The hook ("deliver bash-guard") said "t
+2026-10-21T13:33:35Z	gate	T-01 PASS
+2026-10-21T13:33:42Z	qa-join	T-01: QA's tests (1 commit(s)) joined the card branch
+2026-10-21T13:34:38Z	agent	qa-tester acc3f922387b8599a: The failing test is fixed. In the card worktree, `qa_verify` now gives 136 of 136 passing, and the full `node --test` gives 287 of 287. I committed the fix as `
+2026-10-21T13:34:47Z	qa	T-01 pass (qa_verify PASS) — AC-1: AC-1: deep-equals the 19-step scale, best first; AC-2 unit: RATING_SCALE is frozen (AC-2); AC-3: AC-3: sign is index(current) - index(previous) for every pair of the scale; AC-4: AC-4: WL boundaries 1 -> 0, 2 -> 1, 3 -> 2, 18 -> 2; AC-5: AC-5: result.notches === notchChange(previous, current) for every row of tables B and C; AC-8: AC-8: every trim() whitespace character is stripped at either end, in either argument, in both functions; AC-9: AC-9: one-argument calls throw RangeError; AC-10: AC-10: table F calls throw RangeError; AC-11: AC-11: both functions declare exactly 2 parameters; AC-12: AC-12: notchCalculator result is not a Promise
+2026-10-21T13:34:53Z	followup	T-01: Unattributed commit 01b059a 'test: unchanged rating' appeared on card branch T-01 after QA-join (wrong expectation: notchChange(BBB,BBB)===1); QA removed it in 4693529. Origin unknown.
+2026-10-21T13:34:59Z	dispatch	ecc:typescript-reviewer
+2026-10-21T13:35:02Z	dispatch	ecc:code-reviewer
+2026-10-21T13:35:12Z	agent	ecc:typescript-reviewer a1db48a39e8b0c4d8: ```json {"verdict":"approve","blocking":[],"nits":["src/ratings/notch.mjs: describeValue returns Object.prototype.toString output ('[object Object]') for object
+2026-10-21T13:35:23Z	agent	ecc:code-reviewer af82096a2737072c8: {"findings":[{"file":"src/ratings/notch.mjs","line":59,"issue":"Watchlist level is capped at 2 for any downgrade of 3 or more notches. The documented WL range i
+2026-10-21T13:35:34Z	review	T-01 reviewer approve — no blocking items; nits only
+2026-10-21T13:35:35Z	review	T-01 blind approve — nits only (WL cap, trim, long message) all match spec
+2026-10-21T13:35:36Z	integrate	T-01 merged
+2026-10-21T13:35:37Z	merge-check	T-01 PASS (rating-indicators suite)
+2026-10-21T13:35:45Z	checkpoint	executing, 1 card(s) merged — a fresh session goes on from here
+2026-10-21T13:36:06Z	assign	T-02 → backend-dev (backend#1) attempt=1
+2026-10-21T13:36:18Z	dispatch	backend-dev
+2026-10-21T13:37:13Z	agent	backend-dev ab82b81f6fdbfd2be: status: done commit: dd7de39 verify: passed (`node --test test/indicators/countryRating.test.mjs`: 13/13; full `node --test`: 300/300) open issues: The push fai
+2026-10-21T13:37:15Z	qa-start	T-02 → QA writes its tests in <work>/repo/.work/JOB-20261021-1317-rating-notch-calculator-and-coun/wt/T-02-qa (branch job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-02-qa) while the dev builds
+2026-10-21T13:37:19Z	gate	T-02 PASS
+2026-10-21T13:37:27Z	dispatch	qa-tester
+2026-10-21T13:38:43Z	agent	qa-tester af499b2013f5d84af: The tests are written and committed, and all 74 pass against the dev's commit. The push of the QA branch was blocked by a hook, so the commit exists only locall
+2026-10-21T13:38:47Z	qa-join	T-02: QA's tests (1 commit(s)) joined the card branch
+2026-10-21T13:38:49Z	qa	T-02 pass (qa_verify PASS) — AC-6: AC-6 downgrade rows + C6 contrast tests; AC-7: upgrade/unchanged rows test; AC-8: table B normalisation tests; AC-9: table C x both positions RangeError tests; AC-10: table D RangeError message test; AC-11: export function length 2 test; AC-12: not-Promise/repeat/static import tests
+2026-10-21T13:38:59Z	dispatch	ecc:typescript-reviewer
+2026-10-21T13:39:02Z	dispatch	ecc:code-reviewer
+2026-10-21T13:39:17Z	agent	ecc:typescript-reviewer acdc9a045602e2711: ```json {"verdict":"approve","blocking":[],"nits":["AC-10 wording checked by running the module. The messages are 'Invalid rating for previous: \"XX\"', 'Invali
+2026-10-21T13:39:17Z	agent	ecc:code-reviewer a3e36455a5cceed11: ```json {"findings":[{"file":"test/integration/indicators/countryRating.integration.test.mjs","line":259,"issue":"The AC-12 purity test reads the source file an
+2026-10-21T13:39:21Z	review	T-02 reviewer approve — AC met, single import, no own logic, messages OK
+2026-10-21T13:39:22Z	review	T-02 blind approve — only nits
+2026-10-21T13:39:23Z	integrate	T-02 merged
+2026-10-21T13:39:23Z	merge-check	T-02 PASS (rating-indicators suite)
+2026-10-21T13:39:27Z	checkpoint	executing, 2 card(s) merged — a fresh session goes on from here
+2026-10-21T13:39:54Z	phase	integrating
+2026-10-21T13:39:54Z	verify-all	PASS
+2026-10-21T13:39:58Z	phase	closing
+2026-10-21T13:40:11Z	checkpoint	closing, 2 card(s) merged — a fresh session goes on from here
+2026-10-21T13:40:45Z	dispatch	business-analyst
+2026-10-21T13:41:58Z	agent	business-analyst a6ce56a62b39d6f72: ## Closing check: JOB-20261021-1317, rating notch calculator and country indicator All 12 ACs are met and NFR-security is PASS. I re-ran the full suite on the j
+2026-10-21T13:42:28Z	followup	T-01: Commit 01b059a ('test: unchanged rating', no card prefix) added a QA test asserting notchChange('BBB','BBB')===1, against AC-3; QA removed it in 4693529 before merge, but it stays in history and the gate did not catch it
+2026-10-21T13:42:28Z	followup	T-01: Card-worktree branch upload was rejected by the deliver bash-guard in T-01 (worktree not recognised); check guard detection
+2026-10-21T13:42:28Z	followup	Node 18 (CLAUDE.md minimum) not run; gates ran on Node 22
+2026-10-21T13:42:29Z	followup	Tell business: BBB+ -> BB+ is 3 notches / WL 2 per clarification C2, not the POC text's 2 notches / WL 1
+2026-10-21T13:42:29Z	followup	Out of scope for later parts: auto-fetch of country rating (C4), override/audit of editable value (C7), full Indicator 13, WL aggregation
+2026-10-21T13:42:40Z	record	the job's record committed to job/JOB-20261021-1317-rating-notch-calculator-and-coun: .deliver/jobs/JOB-20261021-1317-rating-notch-calculator-and-coun/
+2026-10-21T13:42:40Z	ship	local merge into main

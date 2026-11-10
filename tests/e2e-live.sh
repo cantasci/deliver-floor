@@ -29,6 +29,19 @@
 #   Costs real tokens (a scenario ≈ 3–6 USD, 10–25 min). Env: PERMISSION_MODE (default bypassPermissions), E2E_ROUNDS (8).
 #   E2E_MISMATCH=<readiness id>  the human first answers that item with an unrelated answer: Michael must not build on it,
 #                                must ask it again (still the start), and deliver after the right answer (R2)
+#   E2E_INJECT=regression        fault injection, disclosed in the report: a git post-merge hook breaks the rating scale on the
+#                                job branch once, right after the merge that brings it (BBB- and BB+ swapped) — a finding after
+#                                the start: Michael opens a fix, the Lead cuts it, the BA specs it, dl fix add (F23)
+#   E2E_INJECT=late-regression   (disclosed) the same swap, after the job branch's second merge (the last planned card of
+#                                `complete`): no later card meets it, so verify-all must find it and name the card (blame)
+#   E2E_INJECT=qa-round          (disclosed) when QA's tests join a card branch, the card's scale is broken AND one wrong
+#                                assertion is added to QA's tests: QA fails the card, the dev fixes the code, QA fixes its own
+#                                test — when that lands on top of the dev's fix, Michael records it (dl qa-commit)
+#   E2E_INJECT=hang              (disclosed) the same hook adds a test that never ends to the job branch after its first merge:
+#                                the suite after the merge must be stopped (STALLED) and fixed through a fix card
+#   E2E_INJECT=qa-wrong          (disclosed) when QA's tests join a card branch, one wrong assertion is appended to one of them:
+#                                the gate fails on QA's own test, QA fixes it, the next gate takes it as QA's (qa_fix)
+#   E2E_SUITE_RUNS=card|batch|end, E2E_SUITE_TIMEOUT_MIN=<min>   written to .deliver.json (suite_runs, suite_timeout_min)
 #   E2E_MAX_ATTEMPTS=1           one attempt per card: a review change blocks a card; Michael must decide it himself — split
 #                                or drop, recorded and listed in the PR — and ask nothing (R3). No blocked card = not exercised
 set -uo pipefail
@@ -47,6 +60,7 @@ case $SC in
   idea)       REQ="$EX/JOB-idea.md";       ORACLE=watchlist.oracle.test.mjs ;;
   *) echo "unknown scenario: $SC" >&2; exit 2 ;;
 esac
+export PICK_REQUEST="$(basename "$REQ")"   # answers that belong to one request (`requests`) reach only its scenario
 ANSWERS="$EX/HUMAN_ANSWERS.json"; [[ $SC == idea ]] && ANSWERS="$EX/HUMAN_ANSWERS-idea.json"   # what the scenario's human knows
 SHAPED_SC=0; [[ $SC == shaped || $SC == idea ]] && SHAPED_SC=1
 W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; W="$(cd "$W/$SC" && pwd)"
@@ -98,6 +112,44 @@ fi
 if [[ -n ${E2E_MAX_ATTEMPTS:-} ]]; then
   jq --argjson n "$E2E_MAX_ATTEMPTS" '.max_attempts = $n' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
   git -C "$SB" commit -qam "deliver: max_attempts $E2E_MAX_ATTEMPTS" && log "max_attempts = $E2E_MAX_ATTEMPTS (one review change blocks a card)"
+fi
+if [[ -n ${E2E_INJECT:-} ]]; then   # fault injection, disclosed in report.md: a post-merge hook that fires once and deletes itself
+  case $E2E_INJECT in
+    regression) on='job/*--*) exit 0 ;; job/*) ;;'; act='f=src/ratings/notch.mjs; [ -f "$f" ] || exit 0
+perl -0pi -e '"'"'s/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/$4BB+$5$3$1BBB-$2/'"'"' "$f"
+git diff --quiet -- "$f" && exit 0
+rm -f "$0"; git commit -q -am "refactor: tidy the rating scale"' ;;
+    late-regression) on='job/*--*) exit 0 ;; job/*) ;;'; act='git log -1 --format=%s | grep -q "QA tests" && exit 0
+n=$(( $(cat "$0.n" 2>/dev/null || echo 0) + 1 )); echo $n > "$0.n"; [ $n -ge 2 ] || exit 0
+f=src/ratings/notch.mjs; [ -f "$f" ] || exit 0
+perl -0pi -e '"'"'s/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/$4BB+$5$3$1BBB-$2/'"'"' "$f"
+git diff --quiet -- "$f" && exit 0
+rm -f "$0" "$0.n"; git commit -q -am "refactor: tidy the rating scale"' ;;
+    hang) on='job/*--*) exit 0 ;; job/*) ;;'; act='mkdir -p test; printf '"'"'import { test } from "node:test";\ntest("rating scale stays loaded", async () => { await new Promise(() => setInterval(() => {}, 1000)); });\n'"'"' > test/zz-scale-loaded.test.mjs
+rm -f "$0"; git add test/zz-scale-loaded.test.mjs && git commit -q -m "test: the rating scale stays loaded"' ;;
+    qa-wrong) on='job/*--*) ;;'; act='git log -1 --format=%s | grep -q "QA tests" || exit 0
+f="$(git diff --name-only HEAD^1 HEAD | grep -E "\.test\.mjs$" | head -1)"; [ -n "$f" ] || exit 0
+printf '"'"'\n;(await import("node:test")).test("notch of an unchanged rating", async () => (await import("node:assert/strict")).default.equal((await import("%s")).notchChange("BBB", "BBB"), 1));\n'"'"' "$(dirname "$f" | awk -F/ '"'"'{ for (i = 1; i <= NF; i++) printf "../" }'"'"')src/ratings/notch.mjs" >> "$f"
+rm -f "$0"; git commit -q -am "test: unchanged rating"' ;;
+    qa-round) on='job/*--*) ;;'; act='git log -1 --format=%s | grep -q "QA tests" || exit 0
+f="$(git diff --name-only HEAD^1 HEAD | grep -E "\.test\.mjs$" | head -1)"; s=src/ratings/notch.mjs; [ -n "$f" ] && [ -f "$s" ] || exit 0
+perl -0pi -e '"'"'s/(["\x27])BBB-(["\x27])(\s*,\s*)(["\x27])BB\+(["\x27])/$4BB+$5$3$1BBB-$2/'"'"' "$s"
+git diff --quiet -- "$s" && exit 0
+rm -f "$0"; git commit -q -am "refactor: tidy the rating scale"
+printf '"'"'\n;(await import("node:test")).test("notch of an unchanged rating", async () => (await import("node:assert/strict")).default.equal((await import("%s")).notchChange("BBB", "BBB"), 1));\n'"'"' "$(dirname "$f" | awk -F/ '"'"'{ for (i = 1; i <= NF; i++) printf "../" }'"'"')src/ratings/notch.mjs" >> "$f"
+git commit -q -am "test: unchanged rating"' ;;
+    *) echo "unknown E2E_INJECT: $E2E_INJECT" >&2; exit 2 ;;
+  esac
+  { printf '#!/bin/sh\n# e2e fault injection (%s), disclosed in report.md — fires once, then deletes itself\n' "$E2E_INJECT"
+    printf 'case "$(git symbolic-ref --short HEAD 2>/dev/null)" in %s *) exit 0 ;; esac\n' "$on"
+    printf '%s\n' "$act"
+    printf 'echo "injected (%s) at $(git rev-parse HEAD) on $(git symbolic-ref --short HEAD), after: $(git log -1 --format=%%s HEAD^)" >> "%s"\n' "$E2E_INJECT" "$W/injected.log"
+  } > "$SB/.git/hooks/post-merge"
+  chmod +x "$SB/.git/hooks/post-merge"; log "fault injection (E2E_INJECT=$E2E_INJECT): a post-merge hook in the sandbox, once — see injected.log"
+fi
+if [[ -n ${E2E_SUITE_RUNS:-}${E2E_SUITE_TIMEOUT_MIN:-} ]]; then
+  jq --arg r "${E2E_SUITE_RUNS:-}" --arg t "${E2E_SUITE_TIMEOUT_MIN:-}" '(if $r != "" then .suite_runs = $r else . end) | (if $t != "" then .suite_timeout_min = ($t | tonumber) else . end)' "$SB/.deliver.json" > "$SB/.deliver.json.t" && mv "$SB/.deliver.json.t" "$SB/.deliver.json"
+  git -C "$SB" commit -qam "deliver: suite_runs ${E2E_SUITE_RUNS:-card}${E2E_SUITE_TIMEOUT_MIN:+, suite_timeout_min $E2E_SUITE_TIMEOUT_MIN}" && log "suite_runs ${E2E_SUITE_RUNS:-card}${E2E_SUITE_TIMEOUT_MIN:+ · suite_timeout_min $E2E_SUITE_TIMEOUT_MIN}"
 fi
 iso_env "$HERE/scripts/doctor.sh" "$SB" > "$W/doctor.log" 2>&1 && ok "doctor: $(tail -1 "$W/doctor.log")" || bad "doctor: $(tail -1 "$W/doctor.log")"
 DL="$ISO_HOME/.claude/skills/deliver/bin/dl"
@@ -202,7 +254,7 @@ for c in $(jq -r '.cards[] | select(.state=="merged") | .id' "$B"); do
   total="$(git -C "$SB" ls-files | wc -l)"; [[ $((total - n)) -gt 0 ]] && qa_files=$((qa_files + total - n))
 done
 [[ $qa_files -gt 0 ]] && ok "QA's integration tests are on main ($qa_files file(s) in the cards' qa_scope)" || bad "no QA test files on main"
-for a in business-analyst $([[ $SC == light ]] || echo ecc:architect) qa-tester; do grep -q $'\tagent\t'"$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
+for a in business-analyst $([[ $SC == light || "$(jq -r '.track // "full"' "$JJ")" == light ]] || echo ecc:architect) qa-tester; do grep -q $'\tagent\t'"$a" "$J/events.log" && ok "role really ran: $a" || bad "no $a run in events.log"; done
 grep -qE $'\tagent\t(backend|frontend|mobile|database)-dev' "$J/events.log" && ok "role really ran: a dev agent" || bad "no dev agent run"
 grep -qE $'\tagent\tecc:[a-z-]*reviewer' "$J/events.log" && ok "role really ran: a stack reviewer" || bad "no reviewer run"
 ! grep -q $'\ttracker-error\t' "$J/events.log" && ok "no tracker errors" || bad "tracker errors in events.log"
@@ -358,6 +410,55 @@ if [[ $SC == light ]]; then
     "$HERE/scripts/check-oracle.sh" "$SB" main "$EXN" light.oracle.test.mjs > /dev/null 2>&1 && ok "…and the first change still passes its oracle" || bad "the second change broke the first"
     cp "$J2/readiness.md" "$W/readiness2.md" 2>/dev/null; cp "$J2/report.md" "$W/job-report2.md" 2>/dev/null; cp "$J2/events.log" "$W/events2.log" 2>/dev/null
   else bad "no second job was created"; fi
+fi
+step "0.18 · inputs only when the work needs them"
+chk "DEL-inputs: no input asked for by default (a .env file is never needed unless the work reads it)" jq -e '(.items // .) | map(select(.id=="DEL-inputs")) | .[0].status == "n_a" or ((.[0].inputs // []) | length == 0)' "$J/readiness.json"
+! grep -qiE '\.env|api key' "$J/QUESTIONS.md" 2>/dev/null && ok "…and the human was not asked for a .env file or a key" || bad "the human was asked for an input: $(grep -iE '\.env|api key' "$J/QUESTIONS.md" | head -2)"
+vac="$(grep -c $'\tverify-all\t' "$J/events.log")"; vrun="$(grep $'\tverify-all\t' "$J/events.log" | grep -vc 'kept:')"
+log "verify-all: $vac call(s), $vrun run(s) of the suite — $(grep $'\tverify-all\t' "$J/events.log" | cut -f3 | tr '\n' ';')"
+if [[ -n ${E2E_INJECT:-} ]]; then
+  step "fault injected ($E2E_INJECT, disclosed): what the team did with it"
+  if gq '^injected' "$W/injected.log" 2>/dev/null; then log "injection: $(cat "$W/injected.log")"; else bad "the injection did not happen"; fi
+  grep -E $'\t(fix-open|fix-add|merge-check|verify-all|qa-fix|gate|qa|integrate|settings)\t' "$J/events.log" | cut -c1-260 | sed 's/^/    /' >> "$REP"
+  if gq '^injected' "$W/injected.log" 2>/dev/null && [[ $E2E_INJECT != qa-wrong ]]; then
+    chk "Michael opened a fix (dl fix open)" gq $'\tfix-open\t' "$J/events.log"
+    log "fixes: $(jq -c '[.fixes[]? | {id, from, state, cards, finding: .finding[0:120]}]' "$JJ")"
+    chk "…and added it from the Lead's cards with the BA's specs (dl fix add)" gq $'\tfix-add\t' "$J/events.log"
+    fc="$(jq -r '[.cards[] | select(.fix) | .id] | join(" ")' "$B")"
+    [[ -n $fc ]] && ok "fix card(s) on the board: $fc" || bad "no card names a fix"
+    for c in $fc; do
+      [[ -f $J/specs/$c.md && -f "$J/out/fix-$(jq -r --arg id "$c" '.cards[] | select(.id==$id) | .fix' "$B")/cards.json" ]] && ok "$c: the Lead's card (out/fix-…/cards.json) and the BA's spec (specs/$c.md)" || bad "$c: no Lead card file or no spec"
+    done
+    lead="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | grep -c 'MODE: FIX')"; ba="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | grep -c 'MODE: CARD SPECS')"
+    [[ $lead -gt 0 ]] && ok "the Lead was asked in MODE: FIX (transcripts: $lead)" || bad "no MODE: FIX prompt in the transcripts"
+    [[ $ba -gt 0 ]] && ok "the BA was asked for card specs (transcripts: $ba)" || bad "no MODE: CARD SPECS prompt in the transcripts"
+  fi
+  case $E2E_INJECT in
+    hang)
+      chk "the hung suite was stopped by dl (STALLED), not waited for" bash -c "grep -E \$'\t(merge-check|qa|gate|verify-all)\t' '$J/events.log' | grep -q STALLED || grep -l 'STALLED' '$J'/gates/*.log >/dev/null"
+      chk "…and the hanging test is gone from main" bash -c "! git -C '$SB' cat-file -e main:test/zz-scale-loaded.test.mjs 2>/dev/null || ! git -C '$SB' show main:test/zz-scale-loaded.test.mjs | grep -q setInterval" ;;
+    qa-round)
+      chk "QA failed the card (the broken scale is the dev's to fix)" bash -c "jq -e '[.cards[] | select(.attempts >= 2)] | length > 0' '$B'"
+      if gq $'\tqa-commit\t' "$J/events.log"; then ok "Michael recorded QA's own commit on top of the dev's (dl qa-commit): $(grep $'\tqa-commit\t' "$J/events.log" | cut -f3 | head -2 | tr '\n' ';')"
+        chk "…and the gate took it as QA's round, no attempt lost" gq $'\tqa-fix\t' "$J/events.log"
+      else log "QA's own fix did not land on top of the dev's fix in this run — the qa-commit path was not reached"; fi ;;
+    qa-wrong)   # QA's own wrong test must be caught before the merge and fixed by QA, with no dev attempt: by QA's own run
+      # (dl qa refuses the pass) or, when a gate meets it first, by the gate (qa_fix) — run 73: QA's run caught it
+      ic="$(git -C "$SB" branch --contains "$(awk '{print $4}' "$W/injected.log")" --format='%(refname:short)' 2>/dev/null | grep -o 'T-[0-9]*' | head -1)"
+      log "injected into $ic"
+      chk "QA's wrong test was caught before the merge (a QA run refused it, or the gate failed on it)" bash -c "grep -q 'fail 1' '$J'/gates/$ic-qa-*.log 2>/dev/null || grep -q \$'\tgate\t$ic FAIL' '$J/events.log'"
+      chk "…QA fixed its own test (qa_scope only) and no new dev attempt was used" bash -c "[[ \$(jq -r --arg c '$ic' '.cards[] | select(.id==\$c) | .attempts' '$B') == 1 ]] && ! git -C '$SB' show main:\$(git -C '$SB' show --name-only --format= \$(awk '{print \$4}' '$W/injected.log') | head -1) | grep -q 'notch of an unchanged rating'"
+      if gq $'\tqa-fix\t' "$J/events.log"; then log "the gate met it first: qa_fix $(jq -c '[.cards[] | select(.qa_fix) | {id, qa_fix}]' "$B")"
+      else log "QA's own run met it first (dl qa refused the pass); the gate path (qa_fix) was not reached"; fi ;;
+  esac
+  if [[ ${E2E_SUITE_RUNS:-} == end ]]; then
+    chk "suite_runs end: no suite after a merge" bash -c "! grep -q \$'\tmerge-check\t' '$J/events.log'"
+    [[ $E2E_INJECT == *regression ]] && chk "verify-all named the card the failures point to (LIKELY T-…)" bash -c "cat '$SB'/.work/runs/*.jsonl | grep -q 'LIKELY  T-'"
+  fi
+fi
+if [[ ${E2E_SUITE_RUNS:-} == batch ]]; then
+  if gq 'DEFERRED' "$J/events.log"; then ok "suite_runs batch: a merge waited for its partner — $(grep DEFERRED "$J/events.log" | cut -f3 | head -2 | tr '\n' ';')"
+  else log "suite_runs batch: no two cards of one component were ready to merge at the same moment — not exercised in this run"; fi
 fi
 cost="$(cat "$SB"/.work/runs/*.jsonl 2>/dev/null | jq -s '[.[] | select(.type=="result") | .total_cost_usd // 0] | add // 0')"
 step "result"

@@ -1,0 +1,79 @@
+# gate: T-01  attempt: 1  2026-10-21T13:42:53Z
+ok    on job/JOB-20261021-1326-indicators-2-and-3-repayment-del--T-01
+ok    working tree clean
+ok    1 commit(s)
+ok    all changes within scope ["src/indicators/daysWithDelay.mjs","test/indicators/daysWithDelay.test.mjs"] (+ QA tests ["test/integration/daysWithDelay/**"])
+ok    QA tests untouched by the dev
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/daysWithDelay.test.mjs
+TAP version 13
+# Subtest: AC-1: each option maps to its Watchlist level
+ok 1 - AC-1: each option maps to its Watchlist level
+  ---
+  duration_ms: 1.79422
+  type: 'test'
+  ...
+# Subtest: AC-1: every listed option maps to a number in {0,2,3,4}, never 1 or above 4
+ok 2 - AC-1: every listed option maps to a number in {0,2,3,4}, never 1 or above 4
+  ---
+  duration_ms: 1.899682
+  type: 'test'
+  ...
+# Subtest: AC-2: option list is exactly the 5 strings in order, ASCII <=
+ok 3 - AC-2: option list is exactly the 5 strings in order, ASCII <=
+  ---
+  duration_ms: 1.032903
+  type: 'test'
+  ...
+# Subtest: AC-3: option list is frozen and cannot be extended
+ok 4 - AC-3: option list is frozen and cannot be extended
+  ---
+  duration_ms: 0.759921
+  type: 'test'
+  ...
+# Subtest: AC-4: surrounding whitespace is trimmed
+ok 5 - AC-4: surrounding whitespace is trimmed
+  ---
+  duration_ms: 0.312486
+  type: 'test'
+  ...
+# Subtest: AC-5: strings that are not exactly an option throw RangeError
+ok 6 - AC-5: strings that are not exactly an option throw RangeError
+  ---
+  duration_ms: 0.815121
+  type: 'test'
+  ...
+# Subtest: AC-6: non-string arguments throw RangeError, never TypeError
+ok 7 - AC-6: non-string arguments throw RangeError, never TypeError
+  ---
+  duration_ms: 0.546214
+  type: 'test'
+  ...
+# Subtest: AC-6: calling with no argument throws RangeError
+ok 8 - AC-6: calling with no argument throws RangeError
+  ---
+  duration_ms: 0.274476
+  type: 'test'
+  ...
+# Subtest: AC-13: error message names the function and lists all options
+ok 9 - AC-13: error message names the function and lists all options
+  ---
+  duration_ms: 0.70659
+  type: 'test'
+  ...
+# Subtest: AC-14: repeated calls are stable and synchronous
+ok 10 - AC-14: repeated calls are stable and synchronous
+  ---
+  duration_ms: 0.453834
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 97.398382
+ok    verify passed

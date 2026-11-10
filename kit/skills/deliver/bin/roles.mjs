@@ -106,6 +106,11 @@ export function checkJobRoles(job, cat) {
     if (r.always && !(job.roles ?? []).some((s) => s.role === name)) errors.push(`role '${name}' is always selected`);
   const devs = (job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev");
   if (!devs.length) errors.push("no dev role selected — nobody could build the cards");
+  // The Leads cut the cards (the BA only on the light path, dl track light). Live run 75: the job was on the full path, the
+  // Lead role was dropped and the BA cut the cards — from planning on a full-path job keeps a lead role.
+  const cutting = !["intake", "shaping", "readiness", "awaiting_clarification"].includes(job.phase ?? "intake");
+  if (cutting && (job.track ?? "full") !== "light" && devs.length && !(job.roles ?? []).some((r) => cat.roles[r.role]?.kind === "lead"))
+    errors.push("no lead role on a full-path job — the Leads cut the cards (tech-lead, backend-lead, …); only the light path (dl track light) has the BA cut them");
   // The stack reviewer follows the language. In a repo without code the language is decided at readiness (ARC-stack — the
   // request or the human, never a default), so until then the job may have no reviewer yet; from planning on it must.
   const stackOpen = !(job.stack ?? []).length && ["intake", "shaping", "readiness", "awaiting_clarification"].includes(job.phase);

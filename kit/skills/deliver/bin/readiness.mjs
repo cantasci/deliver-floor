@@ -280,7 +280,9 @@ export function decide(jobDir, id, decision, rationale) { // the PM closes an im
 }
 
 // Before the freeze, an answer that does not answer its question goes back to the human: the item is open again with
-// the same question (and why the answer did not settle it); the rejected answer stays in its history.
+// the same question (and why the answer did not settle it); the rejected answer stays in its history. Michael's own decision
+// (source "pm: …") goes back to Michael, with its question as it was: nobody else is asked (live run 75: he reopened his own
+// wording, the note went to the human as a question, and the run stopped there).
 export function reopen(jobDir, id, why) {
   const file = join(jobDir, "readiness.json");
   const raw = JSON.parse(readFileSync(file, "utf8"));
@@ -290,7 +292,8 @@ export function reopen(jobDir, id, why) {
   if (i.status !== "decided") throw new Error(`${id} is ${i.status} — only a decided item can be reopened`);
   const asked = [...(i.history ?? [])].reverse().find((h) => h.question)?.question ?? i.question ?? `What is the answer for ${id}?`;
   i.history = [...(i.history ?? []), { status: i.status, answer: i.answer, source: i.source, rejected: why, at: new Date().toISOString() }];
-  Object.assign(i, { status: "open", owner: "business", question: `${asked} (Asked again: the recorded answer did not answer it — ${why})` });
+  if (String(i.source ?? "").startsWith("pm:")) Object.assign(i, { status: "open", owner: "pm", question: asked });
+  else Object.assign(i, { status: "open", owner: "business", question: `${asked} (Asked again: the recorded answer did not answer it — ${why})` });
   delete i.answer; delete i.source; delete i.quote;
   writeFileSync(file, JSON.stringify(raw, null, 2) + "\n");
   return i;
@@ -337,7 +340,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       const [id, ...why] = rest;
       if (!id || !why.length) throw new Error('usage: readiness.mjs reopen <job dir> <id> "<why the answer did not answer it>"');
       const i = reopen(jobDir, id, why.join(" "));
-      console.log(`${i.id}: open again for the human`);
+      console.log(i.owner === "pm" ? `${i.id}: your own decision, open again for you — decide it anew: dl decide ${i.id} "<decision>" "<why>"` : `${i.id}: open again for the human`);
     } else throw new Error("usage: readiness.mjs applicable|check|clarify|decide|reopen <job dir> …");
   } catch (e) { console.error(`readiness: ${e.message}`); process.exit(1); }
 }

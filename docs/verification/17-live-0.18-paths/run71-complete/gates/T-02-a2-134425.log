@@ -1,0 +1,835 @@
+# gate: T-02  attempt: 2  2026-10-21T13:44:25Z
+ok    on job/JOB-20261021-1317-rating-notch-calculator-and-coun--T-02
+ok    working tree clean
+ok    6 commit(s)
+ok    all changes within scope ["src/indicators/countryRating.mjs","test/indicators/countryRating.test.mjs"] (+ QA tests ["test/integration/indicators/countryRating.contract.test.mjs"])
+FAIL  the dev changed a QA test (qa_scope belongs to the QA role): test/integration/indicators/countryRating.contract.test.mjs
+ok    no AI attribution in commits
+----- verify: node --test test/indicators/countryRating.test.mjs
+TAP version 13
+# Subtest: AC-5: a 1-notch downgrade gives WL 1 (differs from the calculator, C6)
+ok 1 - AC-5: a 1-notch downgrade gives WL 1 (differs from the calculator, C6)
+  ---
+  duration_ms: 1.981796
+  type: 'test'
+  ...
+# Subtest: AC-5: 2-notch, 3-notch and maximal downgrades give WL 2
+ok 2 - AC-5: 2-notch, 3-notch and maximal downgrades give WL 2
+  ---
+  duration_ms: 0.385924
+  type: 'test'
+  ...
+# Subtest: AC-6: upgrades give WL 0
+ok 3 - AC-6: upgrades give WL 0
+  ---
+  duration_ms: 0.283531
+  type: 'test'
+  ...
+# Subtest: AC-6: an unchanged rating gives WL 0
+ok 4 - AC-6: an unchanged rating gives WL 0
+  ---
+  duration_ms: 0.17744
+  type: 'test'
+  ...
+# Subtest: AC-5/AC-6: every pair of the 19x19 scale follows the rule on notchChange
+ok 5 - AC-5/AC-6: every pair of the 19x19 scale follows the rule on notchChange
+  ---
+  duration_ms: 2.691949
+  type: 'test'
+  ...
+# Subtest: AC-7: case and surrounding whitespace are ignored
+ok 6 - AC-7: case and surrounding whitespace are ignored
+  ---
+  duration_ms: 0.213965
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid empty string throws RangeError as previous
+ok 7 - AC-8: invalid empty string throws RangeError as previous
+  ---
+  duration_ms: 0.750084
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid empty string throws RangeError as current
+ok 8 - AC-8: invalid empty string throws RangeError as current
+  ---
+  duration_ms: 0.213456
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid blank string throws RangeError as previous
+ok 9 - AC-8: invalid blank string throws RangeError as previous
+  ---
+  duration_ms: 0.368718
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid blank string throws RangeError as current
+ok 10 - AC-8: invalid blank string throws RangeError as current
+  ---
+  duration_ms: 0.488651
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid inner space throws RangeError as previous
+ok 11 - AC-8: invalid inner space throws RangeError as previous
+  ---
+  duration_ms: 0.197268
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid inner space throws RangeError as current
+ok 12 - AC-8: invalid inner space throws RangeError as current
+  ---
+  duration_ms: 0.101653
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid double plus throws RangeError as previous
+ok 13 - AC-8: invalid double plus throws RangeError as previous
+  ---
+  duration_ms: 0.139454
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid double plus throws RangeError as current
+ok 14 - AC-8: invalid double plus throws RangeError as current
+  ---
+  duration_ms: 0.079565
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid AAA- throws RangeError as previous
+ok 15 - AC-8: invalid AAA- throws RangeError as previous
+  ---
+  duration_ms: 0.080356
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid AAA- throws RangeError as current
+ok 16 - AC-8: invalid AAA- throws RangeError as current
+  ---
+  duration_ms: 0.08205
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid D throws RangeError as previous
+ok 17 - AC-8: invalid D throws RangeError as previous
+  ---
+  duration_ms: 0.075488
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid D throws RangeError as current
+ok 18 - AC-8: invalid D throws RangeError as current
+  ---
+  duration_ms: 0.069301
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid NR throws RangeError as previous
+ok 19 - AC-8: invalid NR throws RangeError as previous
+  ---
+  duration_ms: 0.067112
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid NR throws RangeError as current
+ok 20 - AC-8: invalid NR throws RangeError as current
+  ---
+  duration_ms: 0.069132
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid Baa1 throws RangeError as previous
+ok 21 - AC-8: invalid Baa1 throws RangeError as previous
+  ---
+  duration_ms: 0.261787
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid Baa1 throws RangeError as current
+ok 22 - AC-8: invalid Baa1 throws RangeError as current
+  ---
+  duration_ms: 0.121812
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid full-width throws RangeError as previous
+ok 23 - AC-8: invalid full-width throws RangeError as previous
+  ---
+  duration_ms: 0.103581
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid full-width throws RangeError as current
+ok 24 - AC-8: invalid full-width throws RangeError as current
+  ---
+  duration_ms: 0.099398
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid null throws RangeError as previous
+ok 25 - AC-8: invalid null throws RangeError as previous
+  ---
+  duration_ms: 0.073082
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid null throws RangeError as current
+ok 26 - AC-8: invalid null throws RangeError as current
+  ---
+  duration_ms: 0.070061
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid undefined throws RangeError as previous
+ok 27 - AC-8: invalid undefined throws RangeError as previous
+  ---
+  duration_ms: 0.063971
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid undefined throws RangeError as current
+ok 28 - AC-8: invalid undefined throws RangeError as current
+  ---
+  duration_ms: 0.065777
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid number throws RangeError as previous
+ok 29 - AC-8: invalid number throws RangeError as previous
+  ---
+  duration_ms: 0.185573
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid number throws RangeError as current
+ok 30 - AC-8: invalid number throws RangeError as current
+  ---
+  duration_ms: 0.083725
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid NaN throws RangeError as previous
+ok 31 - AC-8: invalid NaN throws RangeError as previous
+  ---
+  duration_ms: 0.068886
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid NaN throws RangeError as current
+ok 32 - AC-8: invalid NaN throws RangeError as current
+  ---
+  duration_ms: 1.359036
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid true throws RangeError as previous
+ok 33 - AC-8: invalid true throws RangeError as previous
+  ---
+  duration_ms: 0.088701
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid true throws RangeError as current
+ok 34 - AC-8: invalid true throws RangeError as current
+  ---
+  duration_ms: 0.076642
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid bigint throws RangeError as previous
+ok 35 - AC-8: invalid bigint throws RangeError as previous
+  ---
+  duration_ms: 0.18804
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid bigint throws RangeError as current
+ok 36 - AC-8: invalid bigint throws RangeError as current
+  ---
+  duration_ms: 0.103182
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid symbol throws RangeError as previous
+ok 37 - AC-8: invalid symbol throws RangeError as previous
+  ---
+  duration_ms: 0.069935
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid symbol throws RangeError as current
+ok 38 - AC-8: invalid symbol throws RangeError as current
+  ---
+  duration_ms: 0.095086
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid plain object throws RangeError as previous
+ok 39 - AC-8: invalid plain object throws RangeError as previous
+  ---
+  duration_ms: 0.067865
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid plain object throws RangeError as current
+ok 40 - AC-8: invalid plain object throws RangeError as current
+  ---
+  duration_ms: 0.08275
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid null-prototype object throws RangeError as previous
+ok 41 - AC-8: invalid null-prototype object throws RangeError as previous
+  ---
+  duration_ms: 0.067026
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid null-prototype object throws RangeError as current
+ok 42 - AC-8: invalid null-prototype object throws RangeError as current
+  ---
+  duration_ms: 0.065851
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid array throws RangeError as previous
+ok 43 - AC-8: invalid array throws RangeError as previous
+  ---
+  duration_ms: 0.070029
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid array throws RangeError as current
+ok 44 - AC-8: invalid array throws RangeError as current
+  ---
+  duration_ms: 0.069108
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid object with toString throws RangeError as previous
+ok 45 - AC-8: invalid object with toString throws RangeError as previous
+  ---
+  duration_ms: 0.091531
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid object with toString throws RangeError as current
+ok 46 - AC-8: invalid object with toString throws RangeError as current
+  ---
+  duration_ms: 0.069329
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid String object throws RangeError as previous
+ok 47 - AC-8: invalid String object throws RangeError as previous
+  ---
+  duration_ms: 0.165206
+  type: 'test'
+  ...
+# Subtest: AC-8: invalid String object throws RangeError as current
+ok 48 - AC-8: invalid String object throws RangeError as current
+  ---
+  duration_ms: 0.079232
+  type: 'test'
+  ...
+# Subtest: AC-8: a missing argument throws RangeError
+ok 49 - AC-8: a missing argument throws RangeError
+  ---
+  duration_ms: 0.183726
+  type: 'test'
+  ...
+# Subtest: the RangeError from notchChange propagates unchanged (no fallback 0)
+ok 50 - the RangeError from notchChange propagates unchanged (no fallback 0)
+  ---
+  duration_ms: 0.248373
+  type: 'test'
+  ...
+# Subtest: AC-9: the module exports only countryRatingChangeWl
+ok 51 - AC-9: the module exports only countryRatingChangeWl
+  ---
+  duration_ms: 1.188092
+  type: 'test'
+  ...
+# Subtest: AC-9: the source imports notchChange and holds no rating list
+ok 52 - AC-9: the source imports notchChange and holds no rating list
+  ---
+  duration_ms: 0.536411
+  type: 'test'
+  ...
+1..52
+# tests 52
+# suites 0
+# pass 52
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 167.468322
+ok    verify passed
+----- qa_verify (QA's integration/e2e tests): node --test test/integration/indicators/countryRating.contract.test.mjs
+TAP version 13
+# Subtest: AC-5: downgrades (Indicator 12: 1 notch gives WL 1, 2+ notches give WL 2)
+    # Subtest: AC-5: A -> A- is a 1-notch downgrade and gives 1 (differs from the calculator's wl 0, C6)
+    ok 1 - AC-5: A -> A- is a 1-notch downgrade and gives 1 (differs from the calculator's wl 0, C6)
+      ---
+      duration_ms: 1.366229
+      type: 'test'
+      ...
+    # Subtest: AC-5: A -> BBB+ is a 2-notch downgrade and gives 2
+    ok 2 - AC-5: A -> BBB+ is a 2-notch downgrade and gives 2
+      ---
+      duration_ms: 0.378234
+      type: 'test'
+      ...
+    # Subtest: AC-5: A -> BBB is a 3-notch downgrade and gives 2
+    ok 3 - AC-5: A -> BBB is a 3-notch downgrade and gives 2
+      ---
+      duration_ms: 0.18012
+      type: 'test'
+      ...
+    # Subtest: AC-5: AAA -> CCC- is the largest downgrade (18 notches) and gives 2
+    ok 4 - AC-5: AAA -> CCC- is the largest downgrade (18 notches) and gives 2
+      ---
+      duration_ms: 1.81607
+      type: 'test'
+      ...
+    # Subtest: AC-5: result is a number (not a string, boolean or object)
+    ok 5 - AC-5: result is a number (not a string, boolean or object)
+      ---
+      duration_ms: 0.382892
+      type: 'test'
+      ...
+    # Subtest: AC-5: 1-notch downgrade at the top and bottom of the scale gives 1
+    ok 6 - AC-5: 1-notch downgrade at the top and bottom of the scale gives 1
+      ---
+      duration_ms: 0.1466
+      type: 'test'
+      ...
+    1..6
+ok 1 - AC-5: downgrades (Indicator 12: 1 notch gives WL 1, 2+ notches give WL 2)
+  ---
+  duration_ms: 6.084108
+  type: 'suite'
+  ...
+# Subtest: AC-6: upgrades and unchanged give 0
+    # Subtest: AC-6: A- -> A is a 1-notch upgrade and gives 0
+    ok 1 - AC-6: A- -> A is a 1-notch upgrade and gives 0
+      ---
+      duration_ms: 0.573434
+      type: 'test'
+      ...
+    # Subtest: AC-6: CCC- -> AAA is the largest upgrade (18 notches) and gives 0
+    ok 2 - AC-6: CCC- -> AAA is the largest upgrade (18 notches) and gives 0
+      ---
+      duration_ms: 0.330504
+      type: 'test'
+      ...
+    # Subtest: AC-6: BB -> BB is unchanged and gives 0
+    ok 3 - AC-6: BB -> BB is unchanged and gives 0
+      ---
+      duration_ms: 0.333781
+      type: 'test'
+      ...
+    # Subtest: AC-6: unchanged gives 0 at both ends of the scale
+    ok 4 - AC-6: unchanged gives 0 at both ends of the scale
+      ---
+      duration_ms: 0.315738
+      type: 'test'
+      ...
+    # Subtest: AC-6: result is the number 0 (not -0, false or null)
+    ok 5 - AC-6: result is the number 0 (not -0, false or null)
+      ---
+      duration_ms: 0.193169
+      type: 'test'
+      ...
+    1..5
+ok 2 - AC-6: upgrades and unchanged give 0
+  ---
+  duration_ms: 2.174991
+  type: 'suite'
+  ...
+# Subtest: AC-5/AC-6: full 19x19 sweep against the rule
+    # Subtest: AC-5/AC-6: every pair gives n >= 2 ? 2 : n === 1 ? 1 : 0 with n = notchChange(p, c)
+    ok 1 - AC-5/AC-6: every pair gives n >= 2 ? 2 : n === 1 ? 1 : 0 with n = notchChange(p, c)
+      ---
+      duration_ms: 1.060733
+      type: 'test'
+      ...
+    # Subtest: AC-5: boundaries of n: 0 -> 0, 1 -> 1, 2 -> 2, 3 and above -> 2, any negative -> 0
+    ok 2 - AC-5: boundaries of n: 0 -> 0, 1 -> 1, 2 -> 2, 3 and above -> 2, any negative -> 0
+      ---
+      duration_ms: 0.238363
+      type: 'test'
+      ...
+    1..2
+ok 3 - AC-5/AC-6: full 19x19 sweep against the rule
+  ---
+  duration_ms: 1.43504
+  type: 'suite'
+  ...
+# Subtest: AC-7: trim and case-insensitive input
+    # Subtest: AC-7: (" a ", "a-") gives 1
+    ok 1 - AC-7: (" a ", "a-") gives 1
+      ---
+      duration_ms: 0.170874
+      type: 'test'
+      ...
+    # Subtest: AC-7: (" bbb\\n", "BB+") gives 2
+    ok 2 - AC-7: (" bbb\\n", "BB+") gives 2
+      ---
+      duration_ms: 0.09638
+      type: 'test'
+      ...
+    # Subtest: AC-7: ("\\u00A0bbb\\n", "BB+") gives 2 (NBSP is trimmed)
+    ok 3 - AC-7: ("\\u00A0bbb\\n", "BB+") gives 2 (NBSP is trimmed)
+      ---
+      duration_ms: 0.099727
+      type: 'test'
+      ...
+    # Subtest: AC-7: ("aaa", "ccc-") gives 2
+    ok 4 - AC-7: ("aaa", "ccc-") gives 2
+      ---
+      duration_ms: 0.078343
+      type: 'test'
+      ...
+    # Subtest: AC-7: mixed case, tab, newline and spaces work in both positions
+    ok 5 - AC-7: mixed case, tab, newline and spaces work in both positions
+      ---
+      duration_ms: 0.230938
+      type: 'test'
+      ...
+    # Subtest: AC-7: normalised input gives the same result as canonical input for every pair
+    ok 6 - AC-7: normalised input gives the same result as canonical input for every pair
+      ---
+      duration_ms: 1.947536
+      type: 'test'
+      ...
+    # Subtest: AC-7/AC-8: whitespace inside a rating and full-width characters are rejected, not folded
+    ok 7 - AC-7/AC-8: whitespace inside a rating and full-width characters are rejected, not folded
+      ---
+      duration_ms: 0.765311
+      type: 'test'
+      ...
+    1..7
+ok 4 - AC-7: trim and case-insensitive input
+  ---
+  duration_ms: 3.64281
+  type: 'suite'
+  ...
+# Subtest: AC-8: invalid input throws RangeError (never TypeError, no fallback)
+    # Subtest: AC-8: invalid previous empty string throws RangeError
+    ok 1 - AC-8: invalid previous empty string throws RangeError
+      ---
+      duration_ms: 0.538771
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current empty string throws RangeError
+    ok 2 - AC-8: invalid current empty string throws RangeError
+      ---
+      duration_ms: 0.314698
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous whitespace only throws RangeError
+    ok 3 - AC-8: invalid previous whitespace only throws RangeError
+      ---
+      duration_ms: 0.137487
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current whitespace only throws RangeError
+    ok 4 - AC-8: invalid current whitespace only throws RangeError
+      ---
+      duration_ms: 0.076913
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous inner space BBB + throws RangeError
+    ok 5 - AC-8: invalid previous inner space BBB + throws RangeError
+      ---
+      duration_ms: 0.207272
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current inner space BBB + throws RangeError
+    ok 6 - AC-8: invalid current inner space BBB + throws RangeError
+      ---
+      duration_ms: 0.162806
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous double plus BB++ throws RangeError
+    ok 7 - AC-8: invalid previous double plus BB++ throws RangeError
+      ---
+      duration_ms: 0.099187
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current double plus BB++ throws RangeError
+    ok 8 - AC-8: invalid current double plus BB++ throws RangeError
+      ---
+      duration_ms: 0.065384
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous AAA- throws RangeError
+    ok 9 - AC-8: invalid previous AAA- throws RangeError
+      ---
+      duration_ms: 0.141671
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current AAA- throws RangeError
+    ok 10 - AC-8: invalid current AAA- throws RangeError
+      ---
+      duration_ms: 0.068915
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous D throws RangeError
+    ok 11 - AC-8: invalid previous D throws RangeError
+      ---
+      duration_ms: 0.079491
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current D throws RangeError
+    ok 12 - AC-8: invalid current D throws RangeError
+      ---
+      duration_ms: 0.061544
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous NR throws RangeError
+    ok 13 - AC-8: invalid previous NR throws RangeError
+      ---
+      duration_ms: 0.100246
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current NR throws RangeError
+    ok 14 - AC-8: invalid current NR throws RangeError
+      ---
+      duration_ms: 0.128008
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous Moody's Baa1 throws RangeError
+    ok 15 - AC-8: invalid previous Moody's Baa1 throws RangeError
+      ---
+      duration_ms: 0.103899
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current Moody's Baa1 throws RangeError
+    ok 16 - AC-8: invalid current Moody's Baa1 throws RangeError
+      ---
+      duration_ms: 0.081886
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous full-width ＢＢＢ throws RangeError
+    ok 17 - AC-8: invalid previous full-width ＢＢＢ throws RangeError
+      ---
+      duration_ms: 0.235363
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current full-width ＢＢＢ throws RangeError
+    ok 18 - AC-8: invalid current full-width ＢＢＢ throws RangeError
+      ---
+      duration_ms: 0.164858
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous null throws RangeError
+    ok 19 - AC-8: invalid previous null throws RangeError
+      ---
+      duration_ms: 0.206896
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current null throws RangeError
+    ok 20 - AC-8: invalid current null throws RangeError
+      ---
+      duration_ms: 0.165955
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous undefined throws RangeError
+    ok 21 - AC-8: invalid previous undefined throws RangeError
+      ---
+      duration_ms: 0.119779
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current undefined throws RangeError
+    ok 22 - AC-8: invalid current undefined throws RangeError
+      ---
+      duration_ms: 0.150314
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous number 3 throws RangeError
+    ok 23 - AC-8: invalid previous number 3 throws RangeError
+      ---
+      duration_ms: 0.110826
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current number 3 throws RangeError
+    ok 24 - AC-8: invalid current number 3 throws RangeError
+      ---
+      duration_ms: 0.084374
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous NaN throws RangeError
+    ok 25 - AC-8: invalid previous NaN throws RangeError
+      ---
+      duration_ms: 0.129108
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current NaN throws RangeError
+    ok 26 - AC-8: invalid current NaN throws RangeError
+      ---
+      duration_ms: 0.089376
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous true throws RangeError
+    ok 27 - AC-8: invalid previous true throws RangeError
+      ---
+      duration_ms: 0.096609
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current true throws RangeError
+    ok 28 - AC-8: invalid current true throws RangeError
+      ---
+      duration_ms: 0.07319
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous BigInt 10n throws RangeError
+    ok 29 - AC-8: invalid previous BigInt 10n throws RangeError
+      ---
+      duration_ms: 0.219362
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current BigInt 10n throws RangeError
+    ok 30 - AC-8: invalid current BigInt 10n throws RangeError
+      ---
+      duration_ms: 0.08573
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous Symbol("BBB") throws RangeError
+    ok 31 - AC-8: invalid previous Symbol("BBB") throws RangeError
+      ---
+      duration_ms: 0.106718
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current Symbol("BBB") throws RangeError
+    ok 32 - AC-8: invalid current Symbol("BBB") throws RangeError
+      ---
+      duration_ms: 0.077199
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous {} throws RangeError
+    ok 33 - AC-8: invalid previous {} throws RangeError
+      ---
+      duration_ms: 0.089575
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current {} throws RangeError
+    ok 34 - AC-8: invalid current {} throws RangeError
+      ---
+      duration_ms: 0.08591
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous Object.create(null) throws RangeError
+    ok 35 - AC-8: invalid previous Object.create(null) throws RangeError
+      ---
+      duration_ms: 0.110125
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current Object.create(null) throws RangeError
+    ok 36 - AC-8: invalid current Object.create(null) throws RangeError
+      ---
+      duration_ms: 0.080739
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous ["BBB"] throws RangeError
+    ok 37 - AC-8: invalid previous ["BBB"] throws RangeError
+      ---
+      duration_ms: 0.2017
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current ["BBB"] throws RangeError
+    ok 38 - AC-8: invalid current ["BBB"] throws RangeError
+      ---
+      duration_ms: 0.086454
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous { toString: () => "BBB" } throws RangeError
+    ok 39 - AC-8: invalid previous { toString: () => "BBB" } throws RangeError
+      ---
+      duration_ms: 0.128415
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current { toString: () => "BBB" } throws RangeError
+    ok 40 - AC-8: invalid current { toString: () => "BBB" } throws RangeError
+      ---
+      duration_ms: 0.084194
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid previous new String("BBB") throws RangeError
+    ok 41 - AC-8: invalid previous new String("BBB") throws RangeError
+      ---
+      duration_ms: 0.117214
+      type: 'test'
+      ...
+    # Subtest: AC-8: invalid current new String("BBB") throws RangeError
+    ok 42 - AC-8: invalid current new String("BBB") throws RangeError
+      ---
+      duration_ms: 0.158726
+      type: 'test'
+      ...
+    # Subtest: AC-8: assert.throws(fn, RangeError) form: spec examples
+    ok 43 - AC-8: assert.throws(fn, RangeError) form: spec examples
+      ---
+      duration_ms: 0.329941
+      type: 'test'
+      ...
+    # Subtest: AC-8: explicit Symbol in either position throws RangeError, not the TypeError of String(symbol)
+    ok 44 - AC-8: explicit Symbol in either position throws RangeError, not the TypeError of String(symbol)
+      ---
+      duration_ms: 0.240801
+      type: 'test'
+      ...
+    # Subtest: AC-8: explicit Object.create(null) in either position throws RangeError, not a TypeError
+    ok 45 - AC-8: explicit Object.create(null) in either position throws RangeError, not a TypeError
+      ---
+      duration_ms: 0.162333
+      type: 'test'
+      ...
+    # Subtest: AC-8: explicit BigInt 10n in either position throws RangeError
+    ok 46 - AC-8: explicit BigInt 10n in either position throws RangeError
+      ---
+      duration_ms: 0.13834
+      type: 'test'
+      ...
+    # Subtest: AC-8: a missing argument throws RangeError (countryRatingChangeWl('BBB'))
+    ok 47 - AC-8: a missing argument throws RangeError (countryRatingChangeWl('BBB'))
+      ---
+      duration_ms: 0.160169
+      type: 'test'
+      ...
+    # Subtest: AC-8: a missing first argument and no arguments at all throw RangeError
+    ok 48 - AC-8: a missing first argument and no arguments at all throw RangeError
+      ---
+      duration_ms: 0.156028
+      type: 'test'
+      ...
+    # Subtest: AC-8: both arguments invalid throws RangeError
+    ok 49 - AC-8: both arguments invalid throws RangeError
+      ---
+      duration_ms: 0.154558
+      type: 'test'
+      ...
+    # Subtest: AC-8: an invalid value never returns (no fallback 0), at both ends of the scale
+    ok 50 - AC-8: an invalid value never returns (no fallback 0), at both ends of the scale
+      ---
+      duration_ms: 1.736029
+      type: 'test'
+      ...
+    # Subtest: AC-8: the RangeError is the one notchChange throws (propagated, same class as notchChange)
+    ok 51 - AC-8: the RangeError is the one notchChange throws (propagated, same class as notchChange)
+      ---
+      duration_ms: 0.8513
+      type: 'test'
+      ...
+    1..51
+ok 5 - AC-8: invalid input throws RangeError (never TypeError, no fallback)
+  ---
+  duration_ms: 11.194785
+  type: 'suite'
+  ...
+# Subtest: AC-9: public surface (the source checks are the dev's unit test)
+    # Subtest: AC-9: the module's only export is countryRatingChangeWl
+    ok 1 - AC-9: the module's only export is countryRatingChangeWl
+      ---
+      duration_ms: 1.22279
+      type: 'test'
+      ...
+    # Subtest: AC-9: countryRatingChangeWl takes exactly two parameters (no override parameter, C7)
+    ok 2 - AC-9: countryRatingChangeWl takes exactly two parameters (no override parameter, C7)
+      ---
+      duration_ms: 0.327209
+      type: 'test'
+      ...
+    # Subtest: AC-9: a third argument is ignored (no override)
+    ok 3 - AC-9: a third argument is ignored (no override)
+      ---
+      duration_ms: 0.363897
+      type: 'test'
+      ...
+    # Subtest: AC-9: pure, deterministic and does not mutate its inputs
+    ok 4 - AC-9: pure, deterministic and does not mutate its inputs
+      ---
+      duration_ms: 0.515668
+      type: 'test'
+      ...
+    1..4
+ok 6 - AC-9: public surface (the source checks are the dev's unit test)
+  ---
+  duration_ms: 5.334222
+  type: 'suite'
+  ...
+1..6
+# tests 75
+# suites 6
+# pass 75
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 185.333539
+ok    QA tests pass
