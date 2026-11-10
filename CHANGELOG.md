@@ -22,6 +22,11 @@ job's tokens.
   the merges that go in together; verify-all runs the whole suite at the end. Seen live: 23 QA passes each ran a 19-minute
   suite, 7.7 hours. `card` brings the suite back to every QA pass and merge.
 
+**What a role writes is in proportion to the work** (`settings.limits`): a card's spec is at most 8 KB, a fix card's 3 KB
+(only the criteria of the behaviour the fix changes), a card's `context` 3000 characters — `dl validate` refuses more and
+says what to cut; `0` turns a limit off. On 71 specs of live jobs the median was 6.6 KB and the longest 15.8 KB, read in full
+by every dev, QA and reviewer of the card.
+
 **The playbook is one file per phase.** `SKILL.md` was 50 KB and every session read all of it. It now holds setup, the
 invariants and resume (10 KB); the steps of a phase are in `phases/<file>.md` (4–15 KB each), and `dl next` names the file
 of the phase the job is in on its first line (`PLAYBOOK …`). `dl playbook <phase>` prints it.

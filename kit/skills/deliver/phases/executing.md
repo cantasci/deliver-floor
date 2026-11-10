@@ -174,7 +174,8 @@ OUTPUT — only a JSON array, as in planning: [{"tmp_id":"X1","title":"…","rol
 
    Write its answer to `.work/<job>/out/fix-F-n/cards.json`.
 3. `FIX-SPEC F-n` — the BA specs them: `MODE: CARD SPECS` as in planning, with `CARDS:` those cards and `FINDING:` the
-   finding. The BA writes no files: it answers with one spec per card under `=== <tmp_id> ===` lines — split the answer there
+   finding. A fix card's spec holds only the criteria of the behaviour the fix changes — at most 3 KB
+   (`settings.limits.fix_spec_bytes`; `dl validate` refuses more). The BA writes no files: it answers with one spec per card under `=== <tmp_id> ===` lines — split the answer there
    and write each part, as it is, to `.work/<job>/out/fix-F-n/<tmp_id>.md` (live run 70: the BA was asked to write the file
    itself, refused by its role card, and answered with the text).
 4. `FIX-ADD F-n` — `"$DL" fix add F-n`: the cards get their T-ids (tmp ids in depends_on rewritten), the agent of their role

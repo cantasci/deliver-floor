@@ -46,6 +46,10 @@
       "type": "object",
       "properties": { "plan": { "type": "boolean", "default": false, "description": "true: you approve the plan and board before any code." } }
     },
+    "limits": { "type": "object", "additionalProperties": false, "description": "How much a role may write for a card — dl validate refuses more. 0 = no limit.", "properties": {
+      "spec_bytes": { "type": "integer", "minimum": 0, "default": 8000, "description": "A card's spec (specs/T-xx.md), in bytes. Every dev, QA and reviewer of the card reads all of it." },
+      "fix_spec_bytes": { "type": "integer", "minimum": 0, "default": 3000, "description": "A fix card's spec: only the criteria of the behaviour the fix changes." },
+      "context_chars": { "type": "integer", "minimum": 0, "default": 3000, "description": "A card's context field, in characters." } } },
     "gate_timeout": { "type": "integer", "default": 1800, "description": "Seconds a card's verify / qa_verify may run." },
     "stop_guard_max": { "type": "integer", "default": 5 },
     "push_branches": { "enum": ["auto", true, false], "default": "auto" },

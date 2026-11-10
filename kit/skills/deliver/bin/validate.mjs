@@ -212,6 +212,26 @@ if (job && (job.roles ?? []).some((r) => r.role === "ba"))
       errors.push(`${c.id}: specs/${c.id}.md has no Given/When/Then acceptance criteria`);
   }
 
+// What a role writes is in proportion to the work (settings.limits; 0 or absent = no limit — a job started before the limits
+// keeps none). Measured on 71 specs of live jobs: median 6.6 KB, the longest 15.8 KB — every dev, QA and reviewer of the card
+// reads all of it. A fix card's spec states only the behaviour that changes. A card under way keeps the spec it started with.
+const lim = job?.settings?.limits ?? {};
+const kb = (n) => (n / 1000).toFixed(1);
+for (const c of cards) {
+  if (c.state !== "ready" && c.state !== "blocked") continue;
+  const ctx = String(c.context ?? "").length;
+  if (lim.context_chars > 0 && ctx > lim.context_chars)
+    errors.push(`${c.id}: context is ${ctx} characters, the limit is ${lim.context_chars} (settings.limits.context_chars) — keep why, the files and the exact names; what the spec says is not repeated here`);
+  const sp = join(dir, "specs", `${c.id}.md`);
+  if (!existsSync(sp)) continue;
+  const size = Buffer.byteLength(readFileSync(sp, "utf8"));
+  const max = c.fix ? lim.fix_spec_bytes : lim.spec_bytes;
+  if (max > 0 && size > max)
+    errors.push(c.fix
+      ? `${c.id}: specs/${c.id}.md is ${kb(size)} KB, a fix card's spec is at most ${kb(max)} KB (settings.limits.fix_spec_bytes) — only the criteria of the behaviour the fix changes, with their test design; the rest stays in the spec of the card it fixes`
+      : `${c.id}: specs/${c.id}.md is ${kb(size)} KB, the limit is ${kb(max)} KB (settings.limits.spec_bytes) — one line per criterion, test data only for the values the criteria name, nothing repeated from the plan; a card that cannot be said in that is two cards`);
+}
+
 for (const c of cards)
   for (const d of c.depends_on ?? []) {
     if (d === c.id) errors.push(`${c.id}: depends on itself`);

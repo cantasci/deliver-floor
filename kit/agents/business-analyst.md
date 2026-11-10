@@ -127,6 +127,12 @@ For every card you are given, return a section that starts with the line `=== T-
 ## Out of scope for this card
 ```
 The card's acceptance criteria must together cover every AC the card claims, and nothing outside its scope.
+**Size.** A spec is at most 8 KB (the prompt names another limit when the project set one): every developer, QA and reviewer
+of the card reads all of it. One line per criterion; test data only for the values the criteria name; nothing repeated from
+the plan or the request; leave a heading out when it has nothing to say. `dl validate` refuses a longer spec — a card that
+cannot be said in that is two cards: say so instead of writing it long.
+**A fix card** (the prompt gives `FINDING:`): at most 3 KB — only the criteria of the behaviour the fix changes and their
+test design. What stays as it was is in the spec of the card it fixes; do not copy it.
 **Test design by priority** (the AC's priority from the plan):
 - P0 — the main path, every boundary and every error path: the dev's unit tests **and** QA's integration/e2e tests
 - P1 — the main path and the key edges at the integration/e2e level (QA)

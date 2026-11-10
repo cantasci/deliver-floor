@@ -252,6 +252,17 @@ spec T-01; spec T-02; echo "# T-03 no criteria" > "$R/.work/$JOB/specs/T-03.md"
 expect_fail 1 "a spec without Given/When/Then is rejected" "$DL" validate
 spec T-03
 expect_ok "valid board passes" "$DL" validate
+# What a role writes is in proportion to the work (settings.limits): measured on live jobs, a spec's median was 6.6 KB, the longest 15.8 KB
+{ spec T-03; printf '%09000d\n' 0; } >> "$R/.work/$JOB/specs/T-03.md"
+contains "a spec over the limit is refused, with what to cut" "$("$DL" validate 2>&1)" "T-03: specs/T-03.md is 9.1 KB, the limit is 8.0 KB (settings.limits.spec_bytes) — one line per criterion"
+bedit "$B" '.cards[2].fix="F-1"'; spec T-03; printf '%03500d\n' 0 >> "$R/.work/$JOB/specs/T-03.md"
+contains "…a fix card's spec is smaller: only the behaviour the fix changes" "$("$DL" validate 2>&1)" "a fix card's spec is at most 3.0 KB (settings.limits.fix_spec_bytes)"
+bedit "$B" '.cards[2] |= del(.fix)'; expect_ok "…the same spec passes on a planned card" "$DL" validate
+ctx0="$(jq -c '.cards[0].context' "$B")"; bedit "$B" '.cards[0].context = ("x" * 3001)'
+contains "a card's context over the limit is refused" "$("$DL" validate 2>&1)" "T-01: context is 3001 characters, the limit is 3000 (settings.limits.context_chars)"
+"$DL" jobset '.settings.limits.context_chars=0' >/dev/null; expect_ok "…a limit set to 0 is off" "$DL" validate
+"$DL" jobset '.settings.limits.context_chars=3000' >/dev/null; bedit "$B" ".cards[0].context = $ctx0"; spec T-03
+expect_ok "…back within the limits" "$DL" validate
 bedit "$B" '.cards[0].agent="frontend-dev"'
 expect_fail 1 "agent outside selected roles rejected" "$DL" validate
 bedit "$B" '.cards[0].agent="backend-dev" | .cards[0].acceptance=["AC-9: x"]'
