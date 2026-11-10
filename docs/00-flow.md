@@ -13,7 +13,7 @@ bookkeeping and refuses anything out of order, hooks enforce isolation.
  ┌─ MICHAEL — PM + orchestrator (main session, deliver skill). Assigns everything, writes no code ─┐
  │                                                                                                  │
  │  0 INTAKE ──── dl new · detect stack · roles FROM THE REQUEST (roles.yaml, each with a reason)    │
- │       │        per role optionally: provider (claude/codex/gemini/grok/…) + model, count (seats)  │
+ │       │        per role optionally: a model, and a count (seats)                                  │
  │       │        dl phase readiness ──► role cards: roles/<role>.md = rules + company standards     │
  │       │                                          + lessons (memory) + code graph + project facts │
  │  0.5 READINESS Agent(business-analyst) MODE READINESS: every item of readiness.yaml one by one   │
@@ -31,7 +31,7 @@ bookkeeping and refuses anything out of order, hooks enforce isolation.
  │       │        [optional plan gate — off by default]                                             │
  │  3 ASSIGN ───► every ready card, as soon as a seat of its role is free:  dl wt add T-xx          │
  │       │          (= Michael assigns; seat backend#1, backend#2 … ; tracker → In Progress)        │
- │       │          dev agent / floor worker in its own worktree: unit tests first (TDD), commits   │
+ │       │          dev agent in its own worktree: unit tests first (TDD), commits                  │
  │       │          (agents may push their own card branch — never main, never the job branch)      │
  │  4 PER CARD ─► dl gate T-xx      branch · clean tree · commits · no AI attribution · scope ·     │
  │       │                          unit verify (+ QA tests on a retry)          → tracker: QA      │
@@ -70,7 +70,7 @@ you can move a running job to another one with /deliver:tracker — docs/10-trac
 | 2 Cards | Lead per area | `ecc:architect` (opus, read-only) | `plan.md`, repo | cards JSON → Michael writes `board.json` | no |
 | 2 Specs | Business Analyst | `business-analyst` | plan, cards | spec per card → `specs/T-xx.md` | no |
 | 3 Assign | **Michael** | — | board | `dl wt add` (assignment record) | no |
-| 3 Build | Dev seat per card (`backend#1`, `backend#2`, …) | `backend-dev` / `frontend-dev` / `mobile-dev` / `database-dev` (any provider/model) | card, spec, role card, worktree | code + **unit tests (TDD)** in its worktree, handoff | **yes, only in `scope`** |
+| 3 Build | Dev seat per card (`backend#1`, `backend#2`, …) | `backend-dev` / `frontend-dev` / `mobile-dev` / `database-dev` (any model) | card, spec, role card, worktree | code + **unit tests (TDD)** in its worktree, handoff | **yes, only in `scope`** |
 | 4 Gate | `dl` | — | worktree | `gates/T-xx-*.log`, card.gate | — |
 | 4 QA | QA/Test | `qa-tester` | card, spec, worktree | **integration/e2e tests per AC, only in `qa_scope`**; verdict per AC → `dl qa` | tests only |
 | 4 Review | every reviewer of the card | `ecc:<stack>-reviewer` + specialists the readiness decisions require | diff, QA result | verdict → `dl review --by <role>` | no |
@@ -170,7 +170,7 @@ job/JOB-…  ●──────────●(T-01)────────�
 <repo>/.work/                         (git-ignored via .git/info/exclude)
 ├── ACTIVE                            id of the running job
 └── JOB-20261003-0759-notch-calculator/
-    ├── job.json                      phase, stack, roles (+why, provider, model, count), frozen hashes, PR, settings
+    ├── job.json                      phase, stack, roles (+why, model, count), frozen hashes, PR, settings
     ├── ROLES.md · roles/<role>.md    the role cards each agent reads first
     ├── readiness.json · .md          every readiness item: decided / n_a / open, with its source — a decision taken from the
     │                                 request quotes the words that state it (`quote`, checked by dl); an undefined term is open;

@@ -2,11 +2,10 @@
 // What a repo itself says about how it is tested and set up — read from its files, never assumed. Used when .deliver.json
 // is written (dl config --init, the first /deliver, scripts/init.sh). Every value carries the file it came from; what the
 // repo does not say stays empty (verify_full "" in a repo without code: it is set once the stack is decided).
-//   node detect.mjs <repo>   → {"verify_full", "worktree_setup", "worktree_exclude", "merge_mode", "hive_root", "evidence"}
+//   node detect.mjs <repo>   → {"verify_full", "worktree_setup", "worktree_exclude", "merge_mode", "evidence"}
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
-import { homedir, platform } from "node:os";
 
 const read = (p) => { try { return readFileSync(p, "utf8"); } catch { return ""; } };
 const json = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } };
@@ -168,22 +167,13 @@ export function detect(repo) {
   try { execFileSync("git", ["-C", root, "remote", "get-url", "origin"], { stdio: "ignore" }); remote = true; } catch { /* none */ }
   evidence.merge_mode = remote ? "origin remote → a PR you merge" : "no origin remote → merged locally";
 
-  // the floor this repo is registered on (scripts/init.sh --munder --repo …, or the app's own repo list)
-  let hive = "";
-  const win = platform() === "win32", mac = platform() === "darwin";
-  const base = win ? (process.env.APPDATA ?? join(homedir(), "AppData", "Roaming")) : mac ? join(homedir(), "Library", "Application Support") : (process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"));
-  for (const name of ["munder-difflin", "Munder Difflin"]) {
-    const c = json(join(base, name, "config.json"));
-    if (c?.harnessHome && (c.registeredRepos ?? []).some((r) => resolve(r) === root)) { hive = c.harnessHome; evidence.hive_root = `Munder Difflin (${name}/config.json) lists this repo`; break; }
-  }
-
   const cc = commitConvention(root);
   evidence.commit = `${cc.source}${cc.enforced ? " — enforced: every commit must follow it" : ""}`;
 
   const fixed = fixedPorts(root);
   if (fixed.length) evidence.ports = `the test setup binds fixed ports — ${fixed.map((f) => `${f.file}: ${f.ports.join(", ")}`).join("; ")} — parallel QA runs collide there: name each port here ({"WEB_PORT": 0, "API_PORT": 1} → the port base + 0, + 1) and make the setup read them`;
 
-  return { verify_full: verify, worktree_setup: setup, worktree_exclude: exclude, merge_mode: remote ? "human" : "local", hive_root: hive, commit_convention: cc.convention, fixed_ports: fixed, evidence };
+  return { verify_full: verify, worktree_setup: setup, worktree_exclude: exclude, merge_mode: remote ? "human" : "local", commit_convention: cc.convention, fixed_ports: fixed, evidence };
 }
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("detect.mjs")) {

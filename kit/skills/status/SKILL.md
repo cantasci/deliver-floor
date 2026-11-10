@@ -1,6 +1,6 @@
 ---
 name: status
-description: "(for you, the human — Claude does not run it) The active /deliver job — phase, board, next steps — or the request still waiting for Michael on the floor."
+description: "(for you, the human — Claude does not run it) The active /deliver job — phase, board, next steps."
 disable-model-invocation: true
 allowed-tools: Bash(bash "${CLAUDE_SKILL_DIR}/run.sh":*)
 ---

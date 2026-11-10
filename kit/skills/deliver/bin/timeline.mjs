@@ -2,7 +2,7 @@
 // timeline.mjs — where a job's time went, from its event log only (nothing is estimated).
 //   node timeline.mjs <job dir> [--json]
 // · phases: how long each phase lasted
-// · seats / agents: how long each one worked (floor: md-send → md-done; subagents: dispatch → its SubagentStop) and
+// · seats / agents: how long each one worked (dispatch → its SubagentStop) and
 //   what share of the job that is — a seat busy 10 % of the time is waiting on someone else 90 %
 // · cards: assigned → gate passed → QA recorded → review recorded → merged
 // · tests: how long dl's own test runs took per card (gate, QA, the whole suite at the QA pass — from board.json): each
@@ -31,9 +31,7 @@ if (phases.length && ev[0].t < phases[0].start) phases.unshift({ phase: "intake"
 // work intervals: who worked when
 const work = []; const open = new Map(); const queue = new Map();
 for (const e of ev) {
-  if (e.kind === "md-send") { const m = e.msg.match(/^(\S+) (\S+#\d+)/); if (m) open.set(m[2], { who: m[2], task: m[1], start: e.t }); }
-  else if (e.kind === "md-done") { const m = e.msg.match(/^(\S+) (\S+#\d+):/); const o = m && open.get(m[2]); if (o) { work.push({ ...o, end: e.t }); open.delete(m[2]); } }
-  else if (e.kind === "dispatch") { const k = e.msg.trim(); (queue.get(k) ?? queue.set(k, []).get(k)).push(e.t); }
+  if (e.kind === "dispatch") { const k = e.msg.trim(); (queue.get(k) ?? queue.set(k, []).get(k)).push(e.t); }
   else if (e.kind === "agent") { const k = e.msg.split(" ")[0]; const q = queue.get(k); if (q?.length) work.push({ who: k, task: "", start: q.shift(), end: e.t }); }
 }
 for (const o of open.values()) work.push({ ...o, end, unfinished: true });

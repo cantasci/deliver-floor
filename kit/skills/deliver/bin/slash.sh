@@ -16,12 +16,11 @@ export DELIVER_HUMAN_CMD=1 DELIVER_APPROVER="${DELIVER_APPROVER:-${USER:-human}}
 case $cmd in
   status)   run status ;;
   board)    run kanban ;;
-  seats)    run md-seats ;;
+  seats)    run seats ;;
   timeline) run timeline ;;
   answer)   need "$rest" "<question id> <your answer>"; run clarify "$first" "$rest" ;;
   approve)  run approve plan "${args:-approved}" ;;
   reject)   need "$args" "<what to change in the plan>"; run reject plan "$args" ;;
-  mode)     need "$rest" "munder|subagent <why>"; run dispatch "$first" "$rest" ;;
   retry)    need "$first" "<card id, e.g. T-03>"; run card "$first" retry ;;
   reseal)   need "$args" "<what was changed outside dl and why it is accepted>"; run reseal "$args" ;;
   unfreeze) need "$args" "<why the frozen decisions must change>"; run unfreeze "$args" ;;
@@ -34,7 +33,7 @@ case $cmd in
   doctor)   bash "$DL" version 2>&1
             if cfg="$(bash "$DL" config 2>&1)"; then
               printf '%s\n' "$cfg" | sed -n 1p
-              printf '%s\n' "$cfg" | sed 1d | jq -r '"dispatch: \(.dispatch) · merge_mode: \(.merge_mode) · verify_full: \(.verify_full // "" | if . == "" then "(none)" else . end)\(if (.munder.hive_root // "") != "" then " · floor: " + .munder.hive_root else "" end)"' 2>/dev/null
+              printf '%s\n' "$cfg" | sed 1d | jq -r '"merge_mode: \(.merge_mode) · verify_full: \(.verify_full // "" | if . == "" then "(none)" else . end)"' 2>/dev/null
             else printf '%s\n' "$cfg"; fi
             node "$(dirname "$DL")/../../../hooks/deliver/setup.mjs" --report 2>&1; exit 0 ;;
   *)        echo "unknown command: $cmd"; exit 0 ;;

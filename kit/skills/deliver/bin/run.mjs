@@ -60,7 +60,7 @@ class Limit extends Error {}
 const sessions = existsSync(join(OUT, "sessions.json")) ? JSON.parse(readFileSync(join(OUT, "sessions.json"), "utf8")) : {};
 let runs = 0, cost = 0;
 
-// agent(<key>, <agent>, <role>, <prompt>, {cwd, resume}) → the agent's answer. Its own session: AGENT_ID marks it as a role
+// agent(<key>, <agent>, <role>, <prompt>, {cwd, resume}) → the agent's answer. Its own session: DELIVER_AGENT_ID marks it as a role
 // agent for the guards (never Michael). resume: continue the session this key ran before (QA-RUN after QA-WRITE, a dev's
 // second attempt) — it has the spec and its own work in its history, nothing is read again.
 function agent(key, name, role, prompt, { cwd = ROOT, resume = false } = {}) {
@@ -73,7 +73,7 @@ function agent(key, name, role, prompt, { cwd = ROOT, resume = false } = {}) {
   writeFileSync(join(OUT, `${id}.prompt.md`), prompt);
   event("dispatch", name);
   return new Promise((done, fail) => {
-    const c = spawn(CLAUDE, args, { cwd, env: { ...process.env, AGENT_ID: id, DELIVER_HEADLESS: "1", CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1" } });
+    const c = spawn(CLAUDE, args, { cwd, env: { ...process.env, DELIVER_AGENT_ID: id, DELIVER_HEADLESS: "1", CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1" } });
     let out = "", err = "";
     c.stdout.on("data", (d) => (out += d)); c.stderr.on("data", (d) => (err += d));
     c.on("error", (e) => fail(new Error(`${CLAUDE}: ${e.message}`)));
@@ -189,7 +189,7 @@ async function develop(id, feedback) {
   say(`${id} → ${c.agent}${feedback ? " (again)" : ""}`);
   const text = await agent(`${id}-dev`, c.agent, c.role, devPrompt(c, wt, feedback), { cwd: wt, resume: Boolean(feedback) });
   if (small()) keepAcMap(id, text);
-  if (/^\s*status:\s*stuck/im.test(text)) return give(id, `the developer is stuck — ${join(OUT, `run-${id}-dev-*.md`)}; decide it (SKILL.md, Blocked)`);
+  if (/^\s*status:\s*stuck/im.test(text)) return give(id, `the developer is stuck — ${join(OUT, `run-${id}-dev-*.md`)}; decide it (phases/executing.md, Blocked)`);
   const g = await dl("gate", id);
   say(`${id} gate: ${lastLine(g.out)}`);
 }
@@ -252,7 +252,7 @@ async function integrate(id) {
   const r = await dl("integrate", id);
   say(`${id}: ${r.out.split("\n").find((l) => /^(MERGED|CONFLICT|BROKEN|STALLED)/.test(l)) ?? lastLine(r.out)}`);
   if (r.code === 3) return develop(id, `Conflict with the job branch: run \`git merge ${job().branch}\` in your worktree, resolve, run verify, commit.`);
-  if (r.code !== 0) give(id, `dl integrate: ${lastLine(r.out)} (exit 5: the repo's commit rules refuse the merge message — SKILL.md Phase 4.4)`);
+  if (r.code !== 0) give(id, `dl integrate: ${lastLine(r.out)} (exit 5: the repo's commit rules refuse the merge message — phases/executing.md, Phase 4.4)`);
 }
 function feedbackOf(line) {
   const log = line.match(/feedback: (\S+\.log)/)?.[1];
@@ -281,7 +281,8 @@ try {
   for (;;) {
     if (limit) { if (busy.size) await Promise.all(busy.values()); throw limit; }
     if (job().phase !== "executing") finish(0, `phase ${job().phase}: not the driver's`);
-    const nx = (await dl("next")).out;
+    // the PLAYBOOK line is for a model (which file to read) — not a step of the board
+    const nx = (await dl("next")).out.split("\n").filter((l) => !l.startsWith("PLAYBOOK ")).join("\n");
     const lines = nx.split("\n").filter(Boolean);
     let phase = false; const forMichael = [];
     for (const line of lines) {

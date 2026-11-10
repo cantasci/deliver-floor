@@ -25,7 +25,7 @@ if have node; then
   nv="$(node -v | tr -d v)"; [[ ${nv%%.*} -ge 18 ]] && pass "node $nv" || fail "node $nv — need 18+"
 else fail "node 18+ — brew install node"; fi
 
-# How Claude Code signs in — Michael and every Claude seat use the same: a login, an API key, a cloud provider, or a gateway
+# How Claude Code signs in — Michael and every role agent use the same: a login, an API key, a cloud provider, or a gateway
 echo "Claude authentication"
 senv() { [[ -n ${!1:-} ]] || jq -e --arg k "$1" '.env[$k] // empty' "$HOME/.claude/settings.json" >/dev/null 2>&1; }
 if senv CLAUDE_CODE_USE_BEDROCK; then pass "Amazon Bedrock (CLAUDE_CODE_USE_BEDROCK) — AWS credentials from the usual AWS chain"
@@ -109,55 +109,6 @@ fi
 [[ $found -eq 1 ]] || fail "deliver kit not installed → /plugin install deliver@deliver-floor (or scripts/init.sh)"
 note "your commands are /deliver:<command> in Claude Code (/deliver:status, /deliver:answer …) — no dl needed in a terminal"
 
-echo "Munder Difflin (the default run mode)"
-if [[ -n ${HIVE_ROOT:-} ]]; then
-  pass "running inside Munder Difflin (HIVE_ROOT=$HIVE_ROOT)"
-  [[ -d $HIVE_ROOT/spawn-requests ]] && pass "spawn-requests/ exists (dispatch=munder possible once Settings → Autonomy allows worker spawning)" \
-    || note "no spawn-requests/ yet — dispatch=munder needs worker spawning enabled in Settings → Autonomy & Budgets"
-elif compgen -G "$HOME/Library/Application Support/*[Mm]under*" >/dev/null || compgen -G "${XDG_CONFIG_HOME:-$HOME/.config}/*[Mm]under*" >/dev/null; then
-  pass "Munder Difflin app data found (run doctor from an agent terminal on the floor to check the hive)"
-  # Michael's terminal on the floor is an interactive claude: in a HOME that never finished Claude Code's first run it
-  # opens on the first-run screens and swallows the first message (docs/07 § 5).
-  jq -e '.hasCompletedOnboarding == true' "$HOME/.claude.json" >/dev/null 2>&1 \
-    && pass "Claude Code first run completed (Michael's terminal on the floor opens ready)" \
-    || note "Claude Code's first run is not completed in this HOME — run 'claude' once before opening the floor (docs/07-munder-difflin.md § 5)"
-  # /deliver seats a person per role for the whole job (dl md-hire): Michael must be allowed to seat people, seats wait
-  # between tasks and must not be reaped after the default 20 idle minutes, and a job's 6–10 seats must not queue behind 4.
-  mcfg="$(ls -d "$HOME/Library/Application Support/munder-difflin/config.json" "${XDG_CONFIG_HOME:-$HOME/.config}/munder-difflin/config.json" 2>/dev/null | head -1)"
-  if [[ -n $mcfg ]]; then
-    jq -e '.orchestratorMaySpawn == true' "$mcfg" >/dev/null 2>&1 && pass "Michael may seat people (orchestratorMaySpawn)" \
-      || fail "orchestratorMaySpawn is off — Michael cannot seat anyone: Settings → Autonomy & Budgets, or scripts/init.sh --munder"
-    v="$(jq -r '.workerIdleTimeoutMinutes // 20' "$mcfg")"
-    (( v >= 480 )) && pass "seats are not sent home while they wait (workerIdleTimeoutMinutes $v)" \
-      || fail "workerIdleTimeoutMinutes is $v — seats waiting between tasks get reaped: set ≥ 480 in $mcfg (scripts/init.sh --munder does)"
-    v="$(jq -r '.maxConcurrentWorkers // 4' "$mcfg")"
-    (( v >= 12 )) && pass "room for a whole team (maxConcurrentWorkers $v)" \
-      || fail "maxConcurrentWorkers is $v — a job's seats queue behind it: set ≥ 12 in $mcfg (scripts/init.sh --munder does)"
-  fi
-else
-  md_missing=1
-  note "Munder Difflin not detected — it is the default run mode: scripts/init.sh --munder --hive <dir>, or choose Claude Code subagents by hand (\"dispatch\": \"subagent\" in .deliver.json — docs/07-munder-difflin.md#choosing-the-mode)"
-fi
-# Which Munder Difflin: /deliver's seats need the fork's floor fixes (a spawn-queue worker gets a first prompt and appears on
-# the floor). Upstream lacks them and its seats never start. The fix leaves a fingerprint in the build: the first prompt.
-md_fixed() { grep -q 'Your task was sent to your hive inbox' "$1/out/main/index.js" 2>/dev/null; }
-mddir="${MUNDER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/munder-difflin}"
-if [[ -d $mddir/.git ]]; then
-  mdhead="$(git -C "$mddir" rev-parse HEAD 2>/dev/null)"
-  pass "init's Munder Difflin: $(git -C "$mddir" remote get-url origin 2>/dev/null) @ ${mdhead:0:7} ($mddir)"
-  if [[ ! -f $mddir/out/main/index.js ]]; then fail "…not built — scripts/init.sh --munder --hive <hive>"
-  elif md_fixed "$mddir"; then pass "…built with the floor fixes (seats get a first prompt and appear on the floor)"
-  else fail "…built without the floor fixes: /deliver seats never start — scripts/init.sh --munder --hive <hive> installs the fork"; fi
-  [[ "$(cat "$mddir/out/.built-from" 2>/dev/null)" == "$mdhead" ]] \
-    || note "…its build is not from the checked-out commit — rebuild: cd $mddir && npm run build (or scripts/init.sh --munder)"
-fi
-# The running app can come from another checkout than init's: judge the one that runs (preview runs <checkout>/out).
-while IFS= read -r d; do
-  [[ -n $d ]] || continue
-  if md_fixed "$d"; then pass "running Munder Difflin from $d — with the floor fixes"
-  else fail "running Munder Difflin from $d — without the floor fixes (/deliver seats never start): quit it, start $mddir"; fi
-done < <(ps -axo command= 2>/dev/null | sed -n -E 's#^(/.*)/node_modules/electron/dist/(Electron\.app/Contents/MacOS/Electron|electron) \.$#\1#p' | sort -u)
-
 if [[ -n $repo ]]; then
   echo "Repo: $repo"
   if git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
@@ -172,7 +123,7 @@ if [[ -n $repo ]]; then
   fi
   if [[ -f $repo/.deliver.json ]]; then
     if jq -e . "$repo/.deliver.json" >/dev/null 2>&1; then
-      pass ".deliver.json valid: $(jq -c '{verify_full,worktree_setup,merge_mode,dispatch}' "$repo/.deliver.json")"
+      pass ".deliver.json valid: $(jq -c '{verify_full,worktree_setup,merge_mode}' "$repo/.deliver.json")"
       mm="$(jq -r '.merge_mode // (if .merge_strategy == "local" then "local" else "human" end)' "$repo/.deliver.json")"
       case $mm in human|semi|auto|local) ;; *) fail "merge_mode '$mm' — use human | semi | auto | local" ;; esac
       if [[ $mm != local ]] && ! git -C "$repo" remote get-url origin >/dev/null 2>&1; then fail "merge_mode=$mm opens a PR but there is no remote — set \"merge_mode\": \"local\""; fi
@@ -181,29 +132,16 @@ if [[ -n $repo ]]; then
   else
     note "no .deliver.json yet — the first /deliver (or dl config --init) writes one from what the repo says (test script, lockfile, remote). See docs/03-settings.md"
   fi
-  disp="$(jq -r '.dispatch // empty' "$repo/.deliver.json" 2>/dev/null || true)"
-  [[ -n $disp ]] || disp="$(jq -r '.dispatch // empty' "${DELIVER_HOME:-$HOME/.deliver}/config.json" 2>/dev/null || true)"   # the user's own config
-  if [[ ${disp:-munder} == munder ]]; then
-    pass "run mode: Munder Difflin floor (${disp:+chosen}${disp:-the default}) — give /deliver to Michael in the app"
-    [[ ${md_missing:-0} == 1 ]] && fail "this repo runs on the Munder Difflin floor but the app is not installed — scripts/init.sh --munder --hive <dir> --repo $repo, or \"dispatch\": \"subagent\" in .deliver.json"
-    [[ "$(jq -r '.munder.model // empty' "$repo/.deliver.json" 2>/dev/null)" == "" ]] && note "seats run on the kit's default model (munder.model: sonnet) — set munder.model to choose another; never the app's default"
-  else
-    pass "run mode: Claude Code subagents (dispatch: $disp, chosen in .deliver.json or ${DELIVER_HOME:-$HOME/.deliver}/config.json)"
-  fi
   # what applies in this repo: kit defaults ⊕ the user's config ⊕ .deliver.json (as dl reads it)
   KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/kit/skills/deliver"
   eff="$(cat "$KIT/config.json")"
   for f in "${DELIVER_HOME:-$HOME/.deliver}/config.json" "$repo/.deliver.json"; do
     [[ -f $f ]] && eff="$(jq -s '.[0] * .[1]' <(printf '%s' "$eff") "$f" 2>/dev/null || printf '%s' "$eff")"
   done
-  # Roles on other vendors' CLIs (Codex, Gemini, …) run only as seats on the floor; each CLI signs in its own way
+  # Every role runs on Claude Code: a role that names another vendor's CLI cannot run
   while IFS=$'\t' read -r role prov; do
     [[ -n $role ]] || continue
-    [[ "$(jq -r '.dispatch' <<<"$eff")" == munder ]] || { fail "role $role runs on $prov — other CLIs run only on the Munder Difflin floor (dispatch munder)"; continue; }
-    case $prov in codex) bin=codex ;; gemini) bin=gemini ;; qwen) bin=qwen ;; opencode) bin=opencode ;; crush) bin=crush ;; copilot) bin=copilot ;; cursor) bin=cursor-agent ;; *) bin="" ;; esac
-    if [[ -z $bin ]]; then note "role $role runs on $prov — make sure its CLI is installed and signed in on this machine (Munder Difflin starts it)"
-    elif have "$bin"; then pass "role $role runs on $prov ($(command -v "$bin")) — signed in with its own login or key (not checked)"
-    else fail "role $role runs on $prov but '$bin' is not on PATH — install and sign in to it, or drop the provider"; fi
+    fail "role $role names provider $prov — every role runs on Claude Code: drop the provider and name a model"
   done < <(jq -r '(.roles // {}) | to_entries[] | select((.value.provider // "claude") != "claude") | [.key, .value.provider] | @tsv' <<<"$eff")
   tk="$(jq -r '.tracker.kind // "local"' <<<"$eff")"; need=""
   case $tk in

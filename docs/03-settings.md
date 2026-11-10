@@ -9,7 +9,7 @@ kit/skills/deliver/config.json   shipped defaults                 (installed to 
 .work/<job>/job.json .settings   snapshot taken at `dl new`       (what this job actually uses; sealed)
 ```
 
-Put your own defaults (e.g. `{"dispatch": "munder"}`) in `~/.deliver/config.json`, not in the installed `config.json`: a
+Put your own defaults (e.g. `{"max_parallel": 2}`) in `~/.deliver/config.json`, not in the installed `config.json`: a
 reinstall and a plugin update replace the installed copy. `scripts/install.sh` moves what you had changed there into
 `~/.deliver/config.json` before it replaces it ("kept your settings: …"), comparing with the defaults it installed last time.
 
@@ -22,9 +22,8 @@ human accepts it with `/deliver:reseal <reason>`.
 | Key | Default | Effect |
 | --- | --- | --- |
 | `base_branch` | `"auto"` | Branch the job starts from and the PR targets (`auto` = the main checkout's current branch) |
-| `dispatch` | `"munder"` | `munder` (default): every role is a person at a seat on the Munder Difflin floor, and only the app's Michael drives the job. `subagent`: roles run as Claude Code subagents of Michael in one `claude` session — chosen by hand, needed for unattended runs. Switching: [07 § Choosing the mode](07-munder-difflin.md#choosing-the-mode) |
 | `max_parallel` | `3` | Max cards running at once (all roles together). Seats per role are set on the role (`"count": N`) |
-| `driver` | `michael` | Who runs the cards in the executing phase of an unattended run. `code`: `dl run` reads `dl next`, calls each role's agent in its own session and runs gate, QA, review and merge itself; Michael is called only where judgment is needed (a fix, a blocked card, a blind reviewer's blocking finding). Seen live: Michael used 60 % of a large job's tokens, most of it on steps that need no judgment |
+| `driver` | `michael` | Who runs the cards in the executing phase of an unattended run (`scripts/run-headless.sh`). `michael`: his own session dispatches every agent as a subagent and runs every step. `code`: `dl run` reads `dl next`, calls each role's agent in its own session and runs gate, QA, review and merge itself; Michael is called only where judgment is needed (a fix, a blocked card, a blind reviewer's blocking finding). Seen live: Michael used 60 % of a large job's tokens, most of it on steps that need no judgment |
 | `qa_early` | `true` | QA writes each card's tests from the spec **while the developer builds it** (`dl wt qa`, its own worktree), they join the card after the gate (`dl qa-join`), and QA then only runs them. `false`: QA writes and runs after the gate |
 | `max_attempts` | `2` | Tries per card (gate fail, QA fail, review "changes", conflict) before it is `blocked` and the human decides |
 | `gates.plan` | `false` | `true` = the human approves plan + board before any code. Off by default: the human is asked at readiness (only open business questions) and at the PR |
@@ -44,7 +43,7 @@ human accepts it with `/deliver:reseal <reason>`.
 | `light.qa` | `false` | On the light path the developer writes the card's code **and all of its tests**, and one reviewer checks every acceptance criterion against a test — no QA agent (seen live: a two-function job took 13–20 agent runs; the developer was 12 % of its time). `true` keeps the QA role, as on the full path |
 | `merge_verify` | `true` | Right after `dl integrate`, the job branch runs the merged card's component suite (`verify` on the component in `readiness.json`): the card that breaks the branch is named at once (`BROKEN`, and `dl next` asks for a fix card in that component), not found by the next card's QA. Only for components with their own suite; the whole suite still runs at the end |
 | `keep_awake` | `true` | While `dl` runs tests the machine does not go to sleep — macOS `caffeinate`, Linux `systemd-inhibit`, Windows (Git Bash) `SetThreadExecutionState` through PowerShell; the hold ends with that `dl` run (seen live: a sleeping laptop turned test runs into 6–10 minute timeouts). Every test run `dl` makes also gets `DELIVER_PORT_BASE` (its own 50 ports: T-07 → 20700, its QA worktree → 20750, the job branch → 20000) and `DELIVER_RUN_ID`; agents get them with `dl env <card>` |
-| `checkpoints` | `true` | Headless (`scripts/run-headless.sh`): at every phase change and after every wave of cards (none running or in review) `dl next` says `CHECKPOINT`; Michael runs `dl checkpoint`, ends his turn, and the next round goes on in a fresh session — his context stays small (live job: one 65-hour session was 427 M tokens, 95 % of them re-reading itself). No effect in an interactive session or on the floor |
+| `checkpoints` | `true` | Headless (`scripts/run-headless.sh`): at every phase change and after every wave of cards (none running or in review) `dl next` says `CHECKPOINT`; Michael runs `dl checkpoint`, ends his turn, and the next round goes on in a fresh session — his context stays small (live job: one 65-hour session was 427 M tokens, 95 % of them re-reading itself). No effect in an interactive session |
 | `ports` | `{}` | Your names for the ports the test setup starts servers on, each an offset into a test run's 50 ports: `{"WEB_PORT": 0, "API_PORT": 1}` → T-07's run gets `WEB_PORT=20700 API_PORT=20701`, its QA worktree 20750/20751, the job branch 20000/20001. `dl` exports them for every test run, `dl env <card>` prints them for an agent's own runs. Make the test setup read them with the old port as the fallback (`port: Number(process.env.WEB_PORT ?? 5173)`), and a frontend and a backend card's QA run side by side instead of waiting for each other (seen live: both started the stack on 5173 and 8101). `dl config --init` and `dl next` (planning: `PORTS`) name the fixed ports they find |
 | `verify_full` | `""` | The full suite on the job branch after all cards merged (`dl verify-all`). Read from the repo when `.deliver.json` is written — see [what is read from the repo](#what-is-read-from-the-repo); never a guess, so a repo without tests or without code gets `""` until the stack is decided |
 | `worktree_setup` | `""` | Runs inside every new card worktree (deps, env). Read from the repo's lockfile (`npm ci`, `pnpm install --frozen-lockfile`, `uv sync`, …) — [02 § 4.1](02-setup.md#41-deliverjson--how-this-repo-is-verified-and-delivered) |
@@ -52,10 +51,11 @@ human accepts it with `/deliver:reseal <reason>`.
 | `gate_timeout` | `1800` | Seconds a card's `verify` / `qa_verify` may run in the gate |
 | `stop_guard_max` | `5` | How many times the Stop hook may hold Michael before letting him stop (loop protection) |
 
+An older `.deliver.json` may still carry `"dispatch": "subagent"`: the key is accepted and does nothing — delete it.
+
 ## What is read from the repo
 
-The first `/deliver` in a repo — on the floor too: typed in a terminal, it writes the file before opening the app, with the
-floor it opens as `munder.hive_root` — (or `dl config --init`, or `scripts/init.sh --repo`) writes `.deliver.json` from what the
+The first `/deliver` in a repo (or `dl config --init`, or `scripts/init.sh --repo`) writes `.deliver.json` from what the
 repo itself says, and prints where each value came from (`kit/skills/deliver/bin/detect.mjs`):
 
 | Value | Read from |
@@ -65,7 +65,6 @@ repo itself says, and prints where each value came from (`kit/skills/deliver/bin
 | `worktree_exclude` | the kit's list plus what that setup creates (`node_modules`, `.venv`, per folder) |
 | `merge_mode` | `human` with an `origin` remote, `local` without |
 | `commit.convention` | commitlint (config file, `package.json`, a husky/lefthook commit-msg hook), commitizen, a pre-commit commit-msg hook → `conventional`; else the last 30 commits (≥ 70 % Conventional → `conventional`), otherwise `plain` |
-| `munder.hive_root` | the floor whose app config lists this repo |
 
 Everything else comes from the kit defaults and your own `$DELIVER_HOME/config.json`. An existing `.deliver.json` is never
 rewritten.
@@ -106,24 +105,13 @@ There is exactly one human approval in `human` / `semi`: the PR. `dl pr` syncs t
 
 Details: [10-trackers](10-trackers.md).
 
-## Munder Difflin
-
-| Key | Default | Effect |
-| --- | --- | --- |
-| `munder.hive_root` | `""` | This repo's floor (the app's folder). Filled in when the repo is registered on a floor (`scripts/init.sh --munder --hive <dir> --repo <repo>`, or the app lists the repo); inside the app `HIVE_ROOT` is set |
-| `munder.claude_command` | `"claude"` | The command floor workers of Claude roles run (`<command> --agent <agent>`): a wrapper, a pinned path |
-| `munder.model` | `"sonnet"` | Model of every Claude seat whose role names none (a role's own `model` wins, a re-seat's `--model` wins over both). Seats never start on the app's default model |
-| `munder.seat_timeout_minutes` | `5` | A seat with no `seated` message this long after hiring (or a request the app never picks up) is `failed` in `dl md-seats` — [07 § 2a](07-munder-difflin.md#2a-seats-that-fail--seen-explained-re-seated) |
-| `munder.token_cap` | `0` | Token cap per floor worker (0 = none) |
-
 ## Per role (`job.roles[]`, set by Michael at intake)
 
 | Field | Example | Effect |
 | --- | --- | --- |
 | `role`, `agent`, `why` | `"backend"`, `"backend-dev"`, `"REQ-03-12: indicator rule"` | the role, its agent, the request text it serves |
 | `count` | `2` | seats: `backend#1`, `backend#2` work in parallel on their own branches |
-| `provider` | `"codex"` | which CLI runs the role (needs `dispatch: munder` for non-Claude) — [04](04-roles.md#models-and-clis-per-role) |
-| `model` | `"opus"`, `"gpt-5-codex"` | the model for that role (Agent tool `model`, or the floor worker's `--model`) |
+| `model` | `"opus"` | the model for that role (the Agent tool's `model`, or the model of the role session the code driver starts) |
 
 Components (with their path, stack, dev owner and reviewer) are not set on roles: the readiness review records them in
 `readiness.json → architecture.components`, and each role card lists the components that role builds, reviews or tests.
@@ -153,12 +141,12 @@ Components (with their path, stack, dev owner and reviewer) are not set on roles
 | `DELIVER_HOME` | Where the job registry and knowledge live (default `~/.deliver`) |
 | `DELIVER_KNOWLEDGE` | Company standards directory (default `~/.deliver/knowledge`) |
 | `DELIVER_HEADLESS=1` | Set by `scripts/run-headless.sh`: foreground agents, questions go to `QUESTIONS.md` / `APPROVAL.md` |
-| `DELIVER_AGENT_NS=<plugin>` | Names the kit's agents `<plugin>:<agent>` in ROLES.md, role cards and floor workers. Detected automatically when Claude Code has the kit installed as a plugin (from its cache or a local marketplace folder); set it for `claude --plugin-dir kit`, or to `""` to switch it off |
+| `DELIVER_AGENT_ID` | Set by the code driver (`dl run`) in every role session it starts: the hooks treat that session as a role, not as Michael |
+| `DELIVER_AGENT_NS=<plugin>` | Names the kit's agents `<plugin>:<agent>` in ROLES.md and the role cards. Detected automatically when Claude Code has the kit installed as a plugin (from its cache or a local marketplace folder); set it for `claude --plugin-dir kit`, or to `""` to switch it off |
 | `DELIVER_APPROVER` | Name recorded on human answers/approvals (default `$USER`) |
 | `DELIVER_GH` | The GitHub CLI to use (default `gh`; tests point it at a stub) |
 | `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN`, or `JIRA_PAT` | Jira credentials — [10](10-trackers.md#2-credentials--environment-only-never-in-deliverjson) |
 | `ASANA_TOKEN` · `LINEAR_API_KEY` · `GITHUB_TOKEN` (or `GH_TOKEN`) | Asana, Linear, GitHub Projects credentials — [10](10-trackers.md#asana-linear-github-projects) |
-| `HIVE_ROOT`, `KG_CLI`, `KG_ROOT` | Set by Munder Difflin in its terminals: hive folder, knowledge graph CLI and store |
 | `PERMISSION_MODE` | `scripts/run-headless.sh` permission mode (`auto` default) |
 | `LIMIT_WAITS` | `scripts/run-headless.sh`: how many usage limits it waits out (until a minute past the reset) before it stops (default 30) |
 | `DL_VERBOSE=1` | `dl` prints a failed run's whole tail (25–40 lines) instead of its last 8 and the log's path |
@@ -174,6 +162,5 @@ Components (with their path, stack, dev owner and reviewer) are not set on roles
 | Large monorepo, independent packages | `max_parallel: 4`, a component per package, `verify` per package |
 | Costs too high | devs on a cheaper model (`"model":"sonnet"`), no `tech-lead` on small jobs, `max_attempts: 1` |
 | Quality too low | add `security`/`quality` reviewers, stricter `verify` (lint + typecheck + tests), company standards with `## Must` lists |
-| A role on another vendor's model | `dispatch: "munder"`, `{"role":"backend","provider":"codex","model":"gpt-5-codex"}` |
 | No GitHub / no remote | `merge_mode: "local"` |
 | You never want to merge by hand | `merge_mode: "auto"` (with CI on the PR) |

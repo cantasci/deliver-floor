@@ -22,11 +22,9 @@
 //   node knowledge.mjs learn <repo> <job dir> <json: {role, text, topic, evidence[], scope}>   propose a lesson (this job)
 //   node knowledge.mjs promote <repo> <job dir> <json: {topic, rule, applies_to[], scope}>     propose a standard (this job)
 //   node knowledge.mjs publish <repo> <job dir> <dir to write into> <project|shared>          write what this job proposed
-//   node knowledge.mjs sync-md <repo>                        ingest everything into Munder Difflin's Knowledge Graph
 import { readFileSync, readdirSync, existsSync, mkdirSync, appendFileSync, statSync, writeFileSync } from "node:fs";
 import { join, basename, dirname, resolve } from "node:path";
 import { homedir } from "node:os";
-import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
 export const orgDir = () => process.env.DELIVER_KNOWLEDGE || join(process.env.DELIVER_HOME || join(homedir(), ".deliver"), "knowledge");
@@ -152,8 +150,6 @@ export function section(repo, ctx) {
     out.push("### Lessons from earlier jobs (memory)", "", ...a.lessons.map((l) => `- ${l.text} _(${l.at}${l.topic ? `, ${l.topic}` : ""}; ${l.origin})_`), "");
   }
   if (a.graph) out.push("### Code knowledge graph", "", `A graphify report of this codebase exists: \`${a.graph}\` (graph.json beside it). Use it to find modules, callers and dependencies before grepping.`, "");
-  if (process.env.KG_CLI && process.env.KG_ROOT)
-    out.push("### Munder Difflin knowledge graph", "", `These standards are also in the floor's Knowledge Graph: \`node "$KG_CLI" search "<topic>"\`.`, "");
   return out.join("\n");
 }
 
@@ -165,9 +161,6 @@ export function learn(repo, jobDir, l) {
   const lesson = { at: new Date().toISOString().slice(0, 10), job: job.id ?? basename(jobDir), role: l.role, topic: l.topic,
     text: String(l.text).replace(/\s+/g, " ").trim(), evidence: l.evidence ?? [], scope: l.scope ?? "project", stack: job.stack ?? [] };
   const f = join(jobDir, "lessons.json"); const all = readJson(f, []); all.push(lesson); writeFileSync(f, JSON.stringify(all, null, 2) + "\n");
-  // On the Munder Difflin floor the lesson also goes into Michael's own memory (mined into the floor's MemPalace).
-  const god = process.env.HIVE_ROOT && join(process.env.HIVE_ROOT, "agents", "god");
-  if (god && existsSync(god)) appendFileSync(join(god, "memory.md"), `- /deliver lesson for ${basename(resolve(repo))} (${lesson.role}, ${lesson.topic}): ${lesson.text}\n`);
   const jobs = lesson.scope === "kit" ? [] : topicJobs(repo, jobDir, lesson.topic);
   return { lesson, jobs: jobs.length, promote: jobs.length >= 3 && !hasStandard(repo, lesson.topic) };
 }
@@ -197,25 +190,6 @@ export function publish(repo, jobDir, into, scope) {
     written.push(sf);
   }
   return written;
-}
-
-/** Ingest standards + lessons into Munder Difflin's Knowledge Graph (needs KG_CLI + KG_ROOT, set on the floor). */
-export function syncMunder(repo) {
-  const cli = process.env.KG_CLI, root = process.env.KG_ROOT;
-  if (!cli || !root) throw new Error("KG_CLI / KG_ROOT are not set — run this from an agent terminal in Munder Difflin with the Knowledge Graph enabled (Settings → Knowledge Graph)");
-  const core = createRequire(import.meta.url)(join(dirname(cli), "kg-core.cjs"));
-  const k = collect(repo);
-  const items = [...k.docs.map((d) => ({ path: d.path, title: d.title, tags: ["deliver", "standards", d.origin, ...d.applies_to, ...d.stack] })),
-    ...[[projectLessons(repo), `Lessons — ${basename(resolve(repo))}`, "project"], [sharedDir() && join(sharedDir(), "lessons.md"), "Lessons — shared", "shared"],
-      [lessonsFile(repo), `Lessons — ${basename(resolve(repo))} (older, this machine)`, "local"]]
-      .filter(([f]) => f && existsSync(f)).map(([path, title, o]) => ({ path, title, tags: ["deliver", "lessons", o] }))];
-  let replaced = 0;
-  for (const it of items) {
-    const source = `deliver:${it.path}`;
-    for (const m of core.list(root)) if (m.source === source && core.removeDoc(root, m.id)) replaced++;
-    core.ingest(root, { srcPath: it.path, title: it.title, tags: it.tags, source });
-  }
-  return { ingested: items.length, replaced };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -262,8 +236,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const [jobDir] = rest; const by = {};
     for (const l of allLessons(repo, jobDir)) if (l.topic) (by[l.topic] ??= new Set()).add(l.job || l.at);
     console.log(JSON.stringify(Object.fromEntries(Object.entries(by).map(([t, j]) => [t, { jobs: j.size, standard: hasStandard(repo, t) }]))));
-  } else if (cmd === "sync-md") {
-    try { const r = syncMunder(repo); console.log(`Munder Difflin knowledge graph: ${r.ingested} document(s) ingested (${r.replaced} older version(s) replaced)`); }
-    catch (e) { console.error(`knowledge: ${e.message}`); process.exit(1); }
-  } else { console.error("usage: knowledge.mjs list|learn|sync-md <repo> …"); process.exit(2); }
+  } else { console.error("usage: knowledge.mjs list|learn|promote|publish|topics <repo> …"); process.exit(2); }
 }
