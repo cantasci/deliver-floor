@@ -254,17 +254,15 @@ suite_timeout() {
   (( b > 0 )) && { echo $(( b * 3 > 1200 ? b * 3 : 1200 )); return 0; }
   echo 3600
 }
-# suite_runs → when the whole (or the component's) suite runs besides the baseline and verify-all (settings.suite_runs):
-#   card  — at every QA pass (on the card's commit) and after every merge (on the job branch): a break is named at once
-#   batch — at every QA pass; after a merge only when no other card of that component is ready to merge too — merges back
-#           to back share one run (live job: four fix merges into one service each ran its 13–20 min suite, 1.5 h of lane)
+# suite_runs → when the whole (or the component's) suite runs besides the baseline and verify-all (settings.suite_runs).
+# A card is checked with its own tests (verify at the gate, qa_verify at the QA pass); the suite is for what cards do to each other:
+#   batch — (default) after a merge, once per group of merges into a component: a card that passed QA and waits for its review
+#           or merge is merged first (live job: 23 QA passes each ran the ~19 min suite, 7.7 h; four fix merges into one
+#           service each ran it again, 1.5 h of lane)
+#   card  — also at every QA pass (on the card's commit) and after every single merge: a break is named at once, at that price
 #   end   — only at the start (baseline) and the end (verify-all): the fastest lane; a break is found late, and verify-all
 #           names the cards whose files its failures point to
-# dev_tests → the light path (dl track light), unless settings.light.qa is true: the developer writes the card's code AND all
-# of its tests (qa_scope too), one reviewer checks every acceptance criterion against a test — no QA agent. A small change
-# went through five agents per card (BA spec, dev, QA-WRITE, QA, reviewers); the developer was 12 % of a small job's time.
-dev_tests() { [[ "$(jq -r '.track // "full"' "$JOBJ")" == light && "$(setting light.qa)" != true ]]; }
-suite_runs() { local r; r="$(setting suite_runs)"; case $r in batch|end) echo "$r" ;; *) echo card ;; esac; }
+suite_runs() { local r; r="$(setting suite_runs)"; case $r in card|end) echo "$r" ;; *) echo batch ;; esac; }
 
 # qa_mark <card> [jq list of heads] — the newest commit recorded as QA's on the card: dl qa, dl qa-join, or QA's commits
 # after a failed gate (qa_fix) — the next gate compares QA's tests from there
@@ -882,21 +880,6 @@ cmd_phase() {
         ! context_unproposed || refuse 1 "the human confirmed the project's architecture — write it down first: dl context propose <the confirmed file> ($JOB_DIR/context.draft.md with their answers); dl ship commits it with this PR"
         baseline_holds
         local bsec; bsec="$(jq -r '.baseline.seconds // 0' "$JOBJ")"
-        if (( bsec > 600 )) && [[ -z "$(setting suite_runs)" ]]; then   # a slow suite: merges back to back share one run
-          jq_inplace "$JOBJ" '.settings.suite_runs = "batch"'
-          log_event settings "suite_runs batch: the baseline took $(( bsec / 60 )) min (card would run it at every QA pass and merge)"
-          echo "note: the whole suite took $(( bsec / 60 )) min — suite_runs is batch for this job (merges back to back share one run). card runs it at every merge; end only at the start and in verify-all (a break is found late). Change it: dl jobset '.settings.suite_runs=\"card|end\"'" >&2
-        fi ;;
-      awaiting_plan_approval)
-        node "$BIN_DIR/roles.mjs" check "$JOBJ" >/dev/null || refuse 1 "the selected roles are not valid — dl roles"
-        node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
-      executing)
-        # only after planning (the readiness review and its freeze), or back from later for a fix card — never skipping them
-        [[ " planning awaiting_plan_approval executing integrating closing awaiting_pr_merge " == *" $cur "* ]] \
-          || refuse 1 "executing comes after planning — the readiness review and the plan first (now: $cur)"
-        if [[ "$(jq -r .settings.gates.plan "$JOBJ")" != false && "$(jq -r '.gates.plan.status // ""' "$JOBJ")" != approved ]]; then
-          refuse 1 "the plan is not approved by the human (gates.plan). Ask them; record with dl approve plan"
-        fi
         node "$BIN_DIR/validate.mjs" "$BOARD" >/dev/null || refuse 1 "board is not valid — run: dl validate" ;;
       integrating)
         [[ $cur == executing || $cur == integrating ]] || refuse 1 "integrating comes after executing (now: $cur)"
@@ -1997,7 +1980,7 @@ cmd_qa() {
   local full comp suite="whole suite (verify_full)"; full="$(setting verify_full)"; comp="$(card_get "$card" '.component // ""')"
   local csuite=""; [[ -n $comp && -f $JOB_DIR/readiness.json ]] && csuite="$(jq -r --arg c "$comp" '[.architecture.components[]? | select(.id==$c) | .verify // empty][0] // ""' "$JOB_DIR/readiness.json")"
   [[ -n $csuite ]] && { full="$csuite"; suite="$comp component's suite (architecture)"; }
-  if [[ $verdict == pass && -n $full && "$(setting qa_verify_full)" != false && "$(suite_runs)" != end ]]; then
+  if [[ $verdict == pass && -n $full && "$(setting qa_verify_full)" != false && "$(suite_runs)" == card ]]; then
     local flog="${qlog%.log}-full.log" frc=0 fto; t0=$(date +%s); fto="$(suite_timeout)"
     { echo "# the $suite on $card's commit (dev + QA tests together): $full"; (cd "$wt" && test_env "$card" && run_timed "$fto" "$full") 2>&1; } > "$flog" 2>&1 || frc=$?
     [[ $frc -eq 0 ]] || qres=FAIL

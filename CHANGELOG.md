@@ -17,6 +17,10 @@ job's tokens.
 - **The light path has no QA agent** (`settings.light.qa: false`, the default): the developer writes the card's code and
   all of its tests, `dl` runs them and the suite, and one reviewer checks every acceptance criterion against a test. Two
   agent runs per card instead of five. `light.qa: true` keeps the QA role.
+- **The suite runs per group of merges, not per card** (`suite_runs: "batch"` is the default; was `card`): a card is
+  checked with its own tests — `verify` at the gate, `qa_verify` at the QA pass — and the component's suite runs once after
+  the merges that go in together; verify-all runs the whole suite at the end. Seen live: 23 QA passes each ran a 19-minute
+  suite, 7.7 hours. `card` brings the suite back to every QA pass and merge.
 
 ## 0.18.2 — 2026-10-21
 

@@ -425,7 +425,7 @@ Commit your tests in this repo's commit format (your role card, "Commits"), leav
    that shows it (a P3 one the test design left to the dev: `AC-4 unit: <test>`; `dl` refuses a pass that leaves one out) —
    `dl` checks that QA only wrote in `qa_scope`, that
    there are QA tests, and runs `qa_verify` itself (a "pass" with failing QA tests is refused; not run twice when the gate
-   already passed it on the same commit). A pass also runs the whole
+   already passed it on the same commit). With `suite_runs: "card"` a pass also runs the whole
    suite (`verify_full`) on the card's commit, with the dev's and QA's tests together: tests that pass alone can break it
    together (two helpers with the same module name). Refused → record `dl qa T-xx fail "<what>"`; a clashing file in
    `qa_scope` goes back to QA, any other to the dev. Append the JSON under `## QA` in the handoff. `fail` → re-dispatch the dev with the failing QA tests as PREVIOUS FEEDBACK; the next gate runs them too.

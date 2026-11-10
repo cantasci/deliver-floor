@@ -1357,10 +1357,10 @@ out="$(KG_CLI="$TMP/res/kg.cjs" KG_ROOT="$TMP/kgroot" "$DL" knowledge sync-md)"
 contains "sync-md re-ingests without duplicates" "$out" "3 document(s) ingested (3 older version(s) replaced)"
 [[ "$(jq length "$TMP/kgroot/idx.json")" == 3 ]] && ok "knowledge graph holds the 3 standards (lessons join once a PR accepted them)" || bad "kg docs: $(cat "$TMP/kgroot/idx.json")"
 
-echo "QA pass runs the whole suite: tests that pass alone can break it together (seen live: two sovereign_support.py helpers)"
+echo "suite_runs card — QA pass runs the whole suite: tests that pass alone can break it together (seen live: two sovereign_support.py helpers)"
 QF="$TMP/qafull"; mkdir -p "$QF" && cd "$QF" && git init -q -b main
 # verify_full stands in for pytest: two test modules with the same name in one run break it (each set alone passes)
-jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"test -z \"$(find test -name \"*.mjs\" | sed \"s#.*/##\" | sort | uniq -d)\""}' > .deliver.json
+jq -n '{dispatch:"subagent", merge_mode:"local", suite_runs:"card", verify_full:"test -z \"$(find test -name \"*.mjs\" | sed \"s#.*/##\" | sort | uniq -d)\""}' > .deliver.json
 git add -A && git commit -qm i
 "$DL" new "QA full" "x" >/dev/null 2>&1; QJ="$QF/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.stack=["python"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:python-reviewer"}]' >/dev/null
@@ -1386,7 +1386,7 @@ contains "after QA renames its helper the pass goes through" "$("$DL" qa T-01 pa
 contains "dl timeline shows each card's test runs and how long Michael waited on them" "$("$DL" timeline 2>&1)" "Michael waited on test runs"
 echo "A QA pass runs the card's component suite when the architecture gives it one (live job: 23 whole-suite runs, 19 min median)"
 QC="$TMP/qacomp"; mkdir -p "$QC" && cd "$QC" && git init -q -b main
-jq -n '{dispatch:"subagent", merge_mode:"local", verify_full:"touch \"$HOME/whole-suite\""}' > .deliver.json && git add -A && git commit -qm i
+jq -n '{dispatch:"subagent", merge_mode:"local", suite_runs:"card", verify_full:"touch \"$HOME/whole-suite\""}' > .deliver.json && git add -A && git commit -qm i
 "$DL" new "QA component" "x" >/dev/null 2>&1; QJ="$QC/.work/$(cat .work/ACTIVE)"
 "$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
 "$DL" phase readiness >/dev/null
@@ -1439,7 +1439,7 @@ srprep() { # srprep <card> <dir> [extra file at the root] [noreview] — dev, ga
   git -C "$w" add -A && git -C "$w" commit -qm "$1: $2" && "$DL" gate "$1" >/dev/null 2>&1 && echo t > "$w/it/$2/t" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: $2" \
     && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && { [[ -n ${4:-} ]] || "$DL" review "$1" approve ok >/dev/null 2>&1; }
 }
-"$DL" jobset '.settings.suite_runs="batch"' >/dev/null
+[[ "$(jq -r '.settings.suite_runs // "unset"' "$SRJ/job.json")" == unset ]] || bad "the fixture sets suite_runs"   # batch is the default
 srprep T-01 a && srprep T-02 b "" noreview || bad "T-01/T-02 not ready to merge"
 rm -f "$HOME/app-suite-runs"
 out="$("$DL" integrate T-01 2>&1)"
