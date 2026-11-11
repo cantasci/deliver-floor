@@ -2109,7 +2109,13 @@ expect_ok "merge" "$DL" integrate T-01
 out="$("$DL" verify-all 2>&1)"
 contains "verify-all reuses the gate's run of the whole suite — the merged files are the files it ran on" "$out" "PASSED — not run again: the same files passed verify_full before (the gate of T-01"
 [[ "$(qruns)" == 2 ]] && ok "…the suite ran twice in the whole job: the baseline and the gate" || bad "suite runs in the job: $(qruns)"
-"$DL" phase closing >/dev/null
+out="$("$DL" fix open "subtract(2, 5) returns 3, it must return -3" --from review 2>&1)"
+contains "a fix on a quick job is one command: dl cuts the card itself (no Lead, no BA)" "$out" "F-1 → T-02 — a fix on the quick path"
+contains "…the finding is the card's spec; the repo its scope, the whole suite its verify" "$(jq -c '.cards[1] | {fix, scope, c:(.context | test("must return -3")), s:.state}' "$QJ/board.json")" '{"fix":"F-1","scope":["**"],"c":true,"s":"ready"}'
+contains "…the job is back in executing by itself" "$(jq -r .phase "$QJ/job.json")" "executing"
+contains "…and dl next dispatches the fix card" "$("$DL" next)" "DISPATCH T-02"
+"$DL" card T-02 state archived "test: the finding was wrong" >/dev/null 2>&1
+"$DL" phase integrating >/dev/null; "$DL" verify-all >/dev/null 2>&1; "$DL" phase closing >/dev/null
 contains "dl next: Michael writes the report from the developer's criteria and the review" "$("$DL" next)" "REPORT  (quick)"
 printf '# Delivery report — subtract\n\n| AC | Status | Evidence |\n| --- | --- | --- |\n| AC-1 | ✅ | test/subtract.test.mjs (gate log) |\n' > "$QJ/report.md"
 expect_ok "ship (local)" "$DL" ship

@@ -1703,6 +1703,20 @@ cmd_fix() {
       mkdir -p "$(fix_dir "$id")"; printf '%s\n' "$finding" > "$(fix_dir "$id")/finding.md"
       jq_inplace "$JOBJ" --arg i "$id" --arg f "$finding" --arg s "$from" --arg t "$(now)" '.fixes = ((.fixes // []) + [{"id":$i,"finding":$f,"from":$s,"state":"open","at":$t}])'
       log_event fix-open "$id${from:+ ($from)}: $finding"
+      if is_quick; then   # no Lead and no BA on a quick job: dl cuts the fix card as it cut the first — the finding is its spec
+        local qd qc qn; qd="$(fix_dir "$id")"; qc="$qd/card.json"
+        jq -n --arg f "$finding" --arg i "$id" --arg v "$(setting verify_full)" --argjson r "$(jq -c '[.roles[] | select(.role | startswith("reviewer") | not)][0]' "$JOBJ")" \
+          '{title:("Fix: " + ($f | gsub("\\s+"; " ") | .[0:60])), role:$r.role, agent:$r.agent, depends_on:[], scope:["**"], verify:$v, fix:$i,
+            acceptance:["AC-1: the request, as written — with this finding fixed"],
+            context:("A fix on the quick path — the finding is your spec: state the criteria you meet, then a test that fails because of it, then the fix.\n\n" + $f[0:2400])}' > "$qc"
+        qn="$(DL_ADD_VIA=fix cmd_card_add "$qc" "$id: $(tr -s '[:space:]' ' ' <<<"$finding" | cut -c1-160)" 2>&1)" || { echo "$qn" >&2; refuse 1 "$id: the fix card could not be added"; }
+        qn="$(tail -1 <<<"$qn")"
+        jq_inplace "$JOBJ" --arg i "$id" --arg c "$qn" --arg t "$(now)" '.fixes |= map(if .id == $i then . + {"state":"added","cards":[$c],"added_at":$t} else . end)'
+        log_event fix-add "$id → $qn (quick)"
+        # found after the merge (integrating): the board is open again — back to executing, no phase command to remember
+        if [[ "$(phase_now)" == integrating ]]; then jq_inplace "$JOBJ" '.phase="executing"'; log_event phase "executing (a fix card on the quick path)"; fi
+        echo "$id → $qn — a fix on the quick path: the same developer role, the finding as its spec. Dispatch it (dl next)"; return 0
+      fi
       echo "$id opened — the Lead cuts it (dl next: FIX-CUT $id); its JSON array goes to $(fix_dir "$id")/cards.json" ;;
     add) # dl fix add F-n — the Lead's cards with the BA's specs onto the board
       local id=${1:-}; [[ $id =~ ^F-[0-9]+$ ]] || die "usage: dl fix add F-n"
