@@ -4,7 +4,7 @@
 //   node roles.mjs check <job.json>        → every selected role/agent exists in the catalog (exit 1 if not)
 //   node roles.mjs render <job dir>        → .work/<job>/roles/<role>.md + ROLES.md
 // A role card = rules.all + rules.<kind> + the role's own rules + facts about this project and job.
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { section as knowledgeSection } from "./knowledge.mjs";
@@ -90,10 +90,10 @@ function scalar(s) {
 export const loadCatalog = (file = join(SKILL_DIR, "roles.yaml")) => parseYaml(readFileSync(file, "utf8"), "roles.yaml");
 
 // --- checks ---------------------------------------------------------------------------------------------------------
-/** dl quick: the stack from the repo's own files (never a default), the developer role it means and its stack reviewer. */
-export function quickTeam(repo) {
-  const cat = loadCatalog(), has = (f) => existsSync(join(repo, f));
-  const read = (f) => { try { return readFileSync(join(repo, f), "utf8"); } catch { return ""; } };
+/** The stack one folder's own files name (never a default); [] when it holds no project file. */
+function stackOf(dir) {
+  const has = (f) => existsSync(join(dir, f));
+  const read = (f) => { try { return readFileSync(join(dir, f), "utf8"); } catch { return ""; } };
   const stack = [];
   if (has("package.json")) {
     let deps = {}; try { const p = JSON.parse(read("package.json")); deps = { ...p.dependencies, ...p.devDependencies }; } catch { /* unreadable: plain js */ }
@@ -116,10 +116,27 @@ export function quickTeam(repo) {
   if (has("Package.swift")) stack.push("swift");
   if (has("composer.json")) stack.push("php");
   if (has("CMakeLists.txt")) stack.push("cpp");
-  if (!stack.length) return { error: "no code this command knows in the repo root (package.json, pyproject.toml, go.mod, Cargo.toml, build.gradle, pom.xml, pubspec.yaml, Package.swift, composer.json, CMakeLists.txt) — a quick change is a change to existing code: use /deliver <request> for the planned way" };
-  const role = stack.some((s) => ["android", "flutter", "react-native", "swift"].includes(s)) ? "mobile" : stack.some((s) => ["react", "vue"].includes(s)) ? "frontend" : "backend";
+  return stack;
+}
+const roleOfStack = (stack) => stack.some((s) => ["android", "flutter", "react-native", "swift"].includes(s)) ? "mobile" : stack.some((s) => ["react", "vue"].includes(s)) ? "frontend" : "backend";
+
+/** dl quick: the stack from the repo's own files — its root and the folders one level below (frontend/, backend/, apps
+ *  of a monorepo; live: a repo with its code in sub-folders was refused) — the developer role it means and its stack
+ *  reviewer. Folders of more than one kind (a frontend and a backend): `want` names the one this change is for. */
+export function quickTeam(repo, want) {
+  const cat = loadCatalog();
+  const skip = new Set(["node_modules", "vendor", "dist", "build", "out", "target", "docs", "examples", "coverage"]);
+  let subs = []; try { subs = readdirSync(repo, { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.startsWith(".") && !skip.has(e.name)).map((e) => e.name).sort(); } catch { /* unreadable */ }
+  const parts = [".", ...subs].map((d) => ({ dir: d, stack: stackOf(join(repo, d)) })).filter((x) => x.stack.length).map((x) => ({ ...x, role: roleOfStack(x.stack) }));
+  if (!parts.length) return { error: "no code this command knows in the repo root or one folder below it (package.json, pyproject.toml, go.mod, Cargo.toml, build.gradle, pom.xml, pubspec.yaml, Package.swift, composer.json, CMakeLists.txt) — a quick change is a change to existing code: use /deliver <request> for the planned way" };
+  const roles = [...new Set(parts.map((x) => x.role))];
+  const where = parts.map((x) => `${x.dir} (${x.role}: ${x.stack.join(", ")})`).join("; ");
+  if (want && !roles.includes(want)) return { error: `--role ${want}: this repo has no ${want} code — its code: ${where}` };
+  if (!want && roles.length > 1) return { error: `this repo has code of more than one kind — ${where}. Say which one this change is for, from the request: dl quick --role ${roles.join("|")} "<title>" "<request>"` };
+  const role = want ?? roles[0], mine = parts.filter((x) => x.role === role);
+  const stack = [...new Set(mine.flatMap((x) => x.stack))];
   const key = [...stack].reverse().find((s) => cat.stack_reviewers?.[s]);
-  return { stack, dev: { role, agent: cat.roles[role].agent }, reviewer: cat.stack_reviewers?.[key] ?? cat.stack_reviewers?.default };
+  return { stack, paths: mine.map((x) => x.dir), dev: { role, agent: cat.roles[role].agent }, reviewer: cat.stack_reviewers?.[key] ?? cat.stack_reviewers?.default };
 }
 
 export function checkJobRoles(job, cat) {
@@ -261,7 +278,7 @@ export function render(jobDir) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [cmd, arg] = process.argv.slice(2);
+  const [cmd, arg, arg2] = process.argv.slice(2);
   if (cmd === "catalog") console.log(JSON.stringify(loadCatalog(), null, 2));
   else if (cmd === "check") {
     const errs = checkJobRoles(JSON.parse(readFileSync(arg, "utf8")), loadCatalog());
@@ -274,10 +291,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log(String((job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev").reduce((n, r) => n + (r.count ?? 1), 0)));
   }
   else if (cmd === "quick") { // the team of a quick job, read from the repo's files: its stack, one developer, the stack reviewer
-    const t = quickTeam(arg ?? ".");
+    const t = quickTeam(arg ?? ".", arg2 || undefined);
     if (t.error) { console.error(t.error); process.exit(1); }
     console.log(JSON.stringify(t));
   }
   else if (cmd === "kind") console.log(roleEntry({ role: arg }, loadCatalog())?.kind ?? "");   // dev | qa | review | ba | lead …
-  else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir> | dev-seats <job.json> | kind <role> | quick <repo>"); process.exit(2); }
+  else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir> | dev-seats <job.json> | kind <role> | quick <repo> [role]"); process.exit(2); }
 }

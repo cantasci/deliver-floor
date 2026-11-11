@@ -4,6 +4,16 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.20.1 — 2026-11-11
+
+Two things the first real use of 0.20.0 ran into.
+- **`/deliver:abort` finishes.** `dl abort` (and `dl cleanup`) stopped with git's error when `wt/` held a folder git no
+  longer knew as a worktree: the job was left aborted but still active, and the next one could not start until the folder
+  was deleted by hand. Such a leftover is now deleted.
+- **The quick path finds code one folder below the root** (`frontend/`, `backend/`): a repo without a project file in its
+  root was refused. A repo with more than one kind of code gets `dl quick --role frontend|backend|mobile` — `dl` names the
+  folders and what each holds, and Michael chooses from what the request changes.
+
 ## 0.20.0 — 2026-11-11
 
 **Asking for work is lighter, and the suite runs less.** A fix went through the same twelve steps as a product; a small job

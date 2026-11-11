@@ -2126,8 +2126,24 @@ out="$("$DL" gate T-01 2>&1)"
 contains "a change over the quick limit goes on, and says it is more than a quick change" "$out" "NOTE: T-01 changes 1 file(s), 4 line(s) — more than a quick change (settings.quick: 15 files, 3 lines)"
 contains "…recorded on the card" "$(jq -c '.cards[0].quick.over' "$QJ/board.json")" "true"
 contains "…and in the event log" "$(grep $'\tquick-over\t' "$QJ/events.log")" "T-01: 1 files, 4 lines"
+# a monorepo: the code is one folder below the root; and a leftover folder in wt/ does not stop an abort (both seen live)
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1
+MO="$TMP/quick-mono"; mkdir -p "$MO/frontend" "$MO/backend" && cd "$MO" && git init -q -b main
+echo '{"dependencies":{"react":"^18"},"devDependencies":{"typescript":"^5"}}' > frontend/package.json; printf '[project]\nname = "x"\ndependencies = ["fastapi"]\n' > backend/pyproject.toml
+jq -n '{merge_mode:"local", verify_full:"test -d frontend"}' > .deliver.json && git add -A && git commit -qm i
+out="$("$DL" quick "Logo" "Make the logo bigger" 2>&1)"
+contains "code in sub-folders is found; a frontend and a backend: dl asks which one, and names both" "$out" 'backend (backend: python, fastapi); frontend (frontend: typescript, react). Say which one this change is for'
+[[ ! -e .work/ACTIVE ]] && ok "…no job is opened until it is said" || bad "a job was opened without a role"
+contains "…--role frontend: the frontend developer and the React reviewer" "$("$DL" quick --role frontend "Logo" "Make the logo bigger" 2>&1)" "stack typescript, react (in: frontend); frontend (frontend-dev) builds T-01, ecc:react-reviewer reviews it"
+contains "…a role the repo has no code for is refused" "$("$DL" quick --role mobile "x" "y" 2>&1)" "this repo has no mobile code"
+MJ="$MO/.work/$(cat .work/ACTIVE)"; "$DL" wt add T-01 >/dev/null; mkdir -p "$MJ/wt/T-09-qa" && echo left > "$MJ/wt/T-09-qa/f"
+out="$("$DL" abort "shipped by hand" 2>&1)"
+contains "dl abort is not stopped by a folder in wt/ that git does not know as a worktree" "$out" "aborted (shipped by hand)"
+[[ ! -e .work/ACTIVE && ! -e $MJ/wt/T-09-qa && ! -e $MJ/wt/T-01 ]] && ok "…the leftover and the card worktree are gone, nothing is active" || bad "abort left: $(ls "$MJ/wt" 2>&1) active=$(cat .work/ACTIVE 2>&1)"
+expect_ok "…and the next job starts" "$DL" quick --role backend "Fix" "Fix the rounding"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$QK"
 contains "an agent cannot open a quick job (Michael does)" "$(printf '%s' '{"tool_input":{"command":"dl quick x y"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
-"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+cd "$R"
 
 echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"
 CTX="$HERE/kit/skills/deliver/bin/context.mjs"

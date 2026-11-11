@@ -14,7 +14,7 @@
 #                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
-#   dl quick "<title>" "<request>"  a small change or a fix, in one step: the job, its team and one card read from the
+#   dl quick [--role r] "<title>" "<request>"  (--role: a repo with a frontend and a backend — which one) a small change or a fix, in one step: the job, its team and one card read from the
 #                                  repo — no readiness review, no BA, no Lead, no QA role; the developer states the criteria,
 #                                  writes tests and code, one reviewer checks them (settings.quick: when it was bigger)
 #   dl track light|full "<why>" [--quote "<request words>"]   the light path for a small change to existing code (fewer
@@ -1064,9 +1064,10 @@ report_decisions() {
 #     data or an integration comes back from the developer as stuck — that is planned work (/deliver <request>)
 cmd_quick() {
   resolve_root
+  local qrole=""; [[ ${1:-} == --role ]] && { qrole=${2:-}; shift 2 2>/dev/null || shift $#; }
   local title=${1:-} request=${2:-${1:-}}
-  [[ -n $title ]] || die 'usage: dl quick "<short title>" "<the request: what should change, or what is wrong>"'
-  local q; q="$(node "$BIN_DIR/roles.mjs" quick "$ROOT" 2>&1)" || refuse 1 "$q"
+  [[ -n $title ]] || die 'usage: dl quick [--role backend|frontend|mobile] "<short title>" "<the request: what should change, or what is wrong>"'
+  local q; q="$(node "$BIN_DIR/roles.mjs" quick "$ROOT" "$qrole" 2>&1)" || refuse 1 "$q"
   cmd_new "$title" "$request" >/dev/null
   load_job
   local vf; vf="$(setting verify_full)"
@@ -1092,7 +1093,7 @@ cmd_quick() {
   node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"
   pm_decision "the quick path: one card, the developer states the criteria and writes tests and code, one review" "dl quick — taken as a small change; the gate measures it (settings.quick) and the PR says when it was bigger"
   reset_stop_guard; log_event phase "executing (dl quick)"
-  echo "quick: $JOB — stack $(jq -r '.stack | join(", ")' "$JOBJ"); $(jq -r .dev.role <<<"$q") ($(jq -r .dev.agent <<<"$q")) builds T-01, $(jq -r .reviewer <<<"$q") reviews it. Next: dl next"
+  echo "quick: $JOB — stack $(jq -r '.stack | join(", ")' "$JOBJ") (in: $(jq -r '.paths | join(", ")' <<<"$q")); $(jq -r .dev.role <<<"$q") ($(jq -r .dev.agent <<<"$q")) builds T-01, $(jq -r .reviewer <<<"$q") reviews it. Next: dl next"
 }
 # quick_size <card> <head> — how big the quick change is; over settings.quick it goes on, and the PR says so
 quick_size() {
@@ -2647,7 +2648,10 @@ cmd_cleanup() {
   load_job
   local d
   for d in "$JOB_DIR"/wt/*; do
-    [[ -d $d && $(basename "$d") != _integration ]] && git -C "$ROOT" worktree remove --force "$d"
+    [[ -d $d && $(basename "$d") != _integration ]] || continue
+    # a folder git no longer knows as a worktree (its record was pruned, or the removal was cut off half way) is a leftover:
+    # it is deleted, never a reason to stop — live: the human's abort died here (exit 128) and the job stayed active, half aborted
+    git -C "$ROOT" worktree remove --force "$d" 2>/dev/null || { [[ $d == "$JOB_DIR"/wt/* ]] && rm -rf "$d"; }
   done
   if [[ ${1:-} == --all ]]; then git -C "$ROOT" worktree remove --force "$IWT" 2>/dev/null || true; fi
   [[ "$(cat "$WORK/ACTIVE" 2>/dev/null)" == "$JOB" ]] && rm -f "$WORK/ACTIVE"
