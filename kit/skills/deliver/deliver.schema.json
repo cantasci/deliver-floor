@@ -46,6 +46,7 @@
       "type": "object",
       "properties": { "plan": { "type": "boolean", "default": false, "description": "true: you approve the plan and board before any code." } }
     },
+    "suite_reuse": { "type": "boolean", "default": true, "description": "A suite that passed is not run again on the same files: the PASS is remembered for the repo by the command and the content it ran on (the next job's baseline, verify-all after the last merge's suite, an unchanged merge-check), and the suite after the last open card's merge is the whole suite, which verify-all then reuses. false: every suite runs every time. dl verify-all --again / dl baseline --again run one anyway." },
     "limits": { "type": "object", "additionalProperties": false, "description": "How much a role may write for a card — dl validate refuses more. 0 = no limit.", "properties": {
       "spec_bytes": { "type": "integer", "minimum": 0, "default": 8000, "description": "A card's spec (specs/T-xx.md), in bytes. Every dev, QA and reviewer of the card reads all of it." },
       "fix_spec_bytes": { "type": "integer", "minimum": 0, "default": 3000, "description": "A fix card's spec: only the criteria of the behaviour the fix changes." },

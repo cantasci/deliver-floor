@@ -66,9 +66,10 @@
 #                                  itself — dev, gate, QA, review, merge — and stops for Michael only where judgment is
 #                                  needed (exit 10, out/run/HANDOVER.md)
 #   dl merge-check <card>          the component's suite after <card>'s merge, again (its dl was stopped half way)
-#   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
+#   dl baseline [--again]          run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
-#   dl verify-all [--again]        run verify_full in the integration worktree (a pass on the same head is kept)
+#   dl verify-all [--again]        run verify_full in the integration worktree (a pass on the same head, or of the same
+#                                  command on the same files — settings.suite_reuse — is kept; --again runs it anyway)
 #   dl checkpoint                  headless: end this session at a safe point (dl next: CHECKPOINT) — the next round is fresh
 #   dl env <card> [--qa] | integration   the DELIVER_PORT_BASE / DELIVER_RUN_ID of a test run in that worktree
 #                                  (every test command dl runs gets them; agents: eval "$(dl env T-xx)")
@@ -2265,6 +2266,13 @@ cmd_integrate() {
   # — the suite runs once, after the last of them. (Approved only was too late: live run 72b, Michael reviews and merges one
   # card after the other, so no partner was ever approved yet.) A partner that then does not merge leaves the suite owed: dl next
   # says CHECK, and integrating waits for it.
+  # The last open card: the suite after its merge is the whole suite (verify_full), not the component's — verify-all asks for
+  # the same command on the same commit a moment later and finds it passed (suite_seen): one run instead of two.
+  local vfull; vfull="$(setting verify_full)"
+  if [[ -n $msuite && -n $vfull && "$(setting suite_reuse)" != false && "$(setting merge_verify)" != false && "$(suite_runs)" != end ]] \
+     && jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null; then
+    msuite="$vfull"; echo "the last open card: the whole suite (verify_full) runs now — verify-all will not run it again on this commit"
+  fi
   local partner=""
   if [[ -n $msuite && "$(suite_runs)" == batch ]]; then
     local pid pbr ph
@@ -2291,7 +2299,9 @@ run_merge_suite() {
   local mlog="$JOB_DIR/gates/$card-merged-$(date +%H%M%S).log" mres=FAIL t0 mh mrc=0 mto; t0=$(date +%s); mh="$(branch_head "$JOB_BRANCH")"; mto="$(suite_timeout)"
   card_set "$card" '(.cards[] | select(.id==$id)).merge_check = {"result":"RUNNING","component":$c,"head":$h,"pid":($p|tonumber),"log":$l,"n":([.cards[] | select(.state=="merged")] | length),"at":$t}' \
     --arg c "$comp" --arg h "$mh" --arg p "$$" --arg l "$mlog" --arg t "$(now)"
-  { echo "# the $comp suite on $JOB_BRANCH right after $card merged (${mh:0:12}): $msuite"; (cd "$IWT" && test_env integration && run_timed "$mto" "$msuite") 2>&1; } > "$mlog" 2>&1 || mrc=$?
+  local seen=""
+  if seen="$(suite_seen "$mh" "$msuite")"; then echo "# the $comp suite on $JOB_BRANCH after $card merged (${mh:0:12}) was not run again: the same files passed it — $seen" > "$mlog"
+  else { echo "# the $comp suite on $JOB_BRANCH right after $card merged (${mh:0:12}): $msuite"; (cd "$IWT" && test_env integration && run_timed "$mto" "$msuite") 2>&1; } > "$mlog" 2>&1 || mrc=$?; fi
   [[ $mrc -eq 0 ]] && mres=PASS
   [[ $mrc -eq 124 ]] && { mres=STALLED; echo "STALLED: the $comp suite did not finish in $(( mto / 60 )) min (settings.suite_timeout_min) — dl stopped it" >> "$mlog"; }
   # the cards merged into this component since its suite last ran (suite_runs batch) share the result
@@ -2300,6 +2310,7 @@ run_merge_suite() {
   card_set "$card" '(.cards[] | select(.id==$id)).merge_check = {"result":$r,"component":$c,"head":$h,"seconds":($s|tonumber),"log":$l,"n":([.cards[] | select(.state=="merged")] | length),"at":$t}' \
     --arg r "$mres" --arg c "$comp" --arg h "$mh" --arg s "$(( $(date +%s) - t0 ))" --arg l "$mlog" --arg t "$(now)"
   [[ -n $batch ]] && card_set "$card" '(.cards[] | select(.id==$id)).merge_check.batch = ($b | split(" "))' --arg b "$batch"
+  [[ $mres != PASS || -n $seen ]] || suite_remember "$mh" "$msuite" "the suite after $card's merge" "$mlog"
   for pid in $batch; do card_set "$pid" '(.cards[] | select(.id==$id)).merge_check.result = $r' --arg r "$mres"; done
   log_event merge-check "$card $mres ($comp suite${batch:+, with $batch})"; tracker note "$card" integrate "the $comp suite on $JOB_BRANCH after the merge: $mres"
   if [[ $mres == PASS ]]; then echo "ok    the $comp suite passes on $JOB_BRANCH after the merge${batch:+ (with $batch)}"
@@ -2323,6 +2334,26 @@ cmd_merge_check() { # dl merge-check <card> — run the suite after <card>'s mer
   run_merge_suite "$card" "$comp" "$msuite"
 }
 
+# A suite that passed on these files passes on them again. A PASS is remembered for the repo (.work/suite-passes.json) by
+# the command and the content it ran on — every tracked file but the job records under .deliver/knowledge and .deliver/jobs —
+# and is not run a second time: the next job's baseline on what the last job verified and merged, verify-all after the last
+# merge's suite, a merge-check on a branch that did not change. Live: a 19-minute suite ran at the baseline, after the last
+# merge and again in verify-all, on the same files. settings.suite_reuse false runs every suite; dl verify-all --again and
+# dl baseline --again run one anyway.
+content_key() { # content_key <commit> <command>
+  { git -C "$ROOT" ls-tree -r "$1" | { grep -v "$(printf '\t')\.deliver/\(knowledge\|jobs\)/" || true; }; printf '%s\n' "$2"; } | git hash-object --stdin
+}
+suite_seen() { # suite_seen <commit> <command> → where the same content passed this command before; 1 when it has not
+  [[ "$(setting suite_reuse)" != false && -z ${SUITE_AGAIN:-} && -f $WORK/suite-passes.json ]] || return 1
+  jq -er --arg k "$(content_key "$1" "$2")" '.[$k] // empty | "\(.what) of \(.job), \(.at) (log: \(.log))"' "$WORK/suite-passes.json" 2>/dev/null
+}
+suite_remember() { # suite_remember <commit> <command> <what ran> <log>
+  [[ "$(setting suite_reuse)" != false ]] || return 0
+  local f="$WORK/suite-passes.json" k; k="$(content_key "$1" "$2")"; [[ -f $f ]] || echo '{}' > "$f"
+  jq --arg k "$k" --arg j "$JOB" --arg t "$(now)" --arg w "$3" --arg l "$4" \
+    '.[$k] = {job:$j, at:$t, what:$w, log:$l} | to_entries | sort_by(.value.at) | .[-200:] | from_entries' "$f" > "$f.tmp.$$" && mv "$f.tmp.$$" "$f"
+}
+
 # The baseline: the whole suite on the job branch before any card changes it. A suite that is already red would fail every
 # card's QA run and the final verify-all for reasons that are not the job's — so it is found here, at the start, while the
 # human is still asked: fix the base first (then dl baseline again), or make verify_full the suite that is meant to pass.
@@ -2338,6 +2369,11 @@ run_baseline() {
     jq_inplace "$JOBJ" --arg h "$head" --arg t "$(now)" '.baseline = {"result":"NONE","head":$h,"at":$t}'
     log_event baseline "no verify_full yet — nothing to run"; echo "baseline: no verify_full yet (a repo without a suite) — nothing to run"; return 0
   fi
+  local seen
+  if seen="$(suite_seen "$head" "$cmd")"; then
+    jq_inplace "$JOBJ" --arg h "$head" --arg c "$cmd" --arg t "$(now)" --arg s "$seen" '.baseline = {"result":"PASS","head":$h,"command":$c,"reused":$s,"seconds":0,"at":$t}'
+    log_event baseline "PASS (not run: the same files passed it — $seen)"; echo "baseline: PASS — not run again: the same files passed $cmd before ($seen). Run it anyway: dl baseline --again"; return 0
+  fi
   log="$JOB_DIR/gates/baseline-$(date +%H%M%S).log"; mkdir -p "$JOB_DIR/gates"
   local t0 brc=0 bto; t0=$(date +%s); bto="$(min_to_s "$(setting suite_timeout_min)")"; [[ -n "$(setting suite_timeout_min)" ]] || bto=5400
   { echo "# baseline: $cmd on $JOB_BRANCH at ${head:0:12}, before any card"; (cd "$IWT" && test_env integration && run_timed "$bto" "$cmd") 2>&1; } > "$log" 2>&1 || brc=$?
@@ -2347,6 +2383,7 @@ run_baseline() {
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" --arg sec "$(( $(date +%s) - t0 ))" '.baseline = {"result":$r,"head":$h,"command":$c,"log":$l,"seconds":($sec|tonumber),"at":$t}'
   log_event baseline "$result ($cmd, $(( ($(date +%s) - t0) / 60 )) min)"; echo "baseline: $result  ($cmd · $(( ($(date +%s) - t0) / 60 )) min · log: $log)"
   [[ $result == PASS ]] || { show_tail 25 "$log" < "$log"; return 1; }
+  suite_remember "$head" "$cmd" baseline "$log"
 }
 baseline_holds() {
   local b; b="$(jq -c '.baseline // {}' "$JOBJ")"
@@ -2356,7 +2393,7 @@ baseline_holds() {
   [[ "$(jq -r .result <<<"$b")" == NONE && -z "$(setting verify_full)" ]] && return 0
   run_baseline >&2 || refuse 1 "the whole suite (verify_full) already fails on $JOB_BRANCH before any card — every card's QA run and the final verify-all would fail for reasons that are not the job's. This is the human's call, at the start: fix the base branch first, then: dl baseline; or record the suite that is meant to pass in .deliver.json (verify_full) and dl jobset it. Log: $(jq -r '.baseline.log' "$JOBJ")"
 }
-cmd_baseline() { load_job; run_baseline; }
+cmd_baseline() { load_job; [[ ${1:-} != --again ]] || SUITE_AGAIN=1; run_baseline; }
 
 # blame_log <log> — the merged cards whose scope or qa_scope holds a file the failing log names: where a fix card starts
 blame_log() {
@@ -2390,6 +2427,13 @@ cmd_verify_all() {
     echo "PASSED — already on this job branch ($(jq -r '.verify_all.head[0:12]' "$JOBJ"), log: $(jq -r .verify_all.log "$JOBJ")); nothing has changed since. Run it anyway: dl verify-all --again"
     return 0
   fi
+  local seen
+  if [[ $again -eq 0 ]] && seen="$(suite_seen "$head" "$cmd")"; then   # e.g. the whole suite ran after the last card's merge
+    jq_inplace "$JOBJ" --arg h "$head" --arg c "$cmd" --arg t "$(now)" --arg s "$seen" '.verify_all = {"result":"PASS","head":$h,"command":$c,"log":($s | capture("log: (?<l>[^)]*)").l),"reused":$s,"at":$t}'
+    reset_stop_guard; log_event verify-all "PASS (not run: the same files passed it — $seen)"
+    echo "PASSED — not run again: the same files passed verify_full before ($seen). Run it anyway: dl verify-all --again"
+    return 0
+  fi
   echo "verify_full: $cmd  (log: $log)"
   local result=FAIL vto vrc=0; vto="$(suite_timeout)"
   (cd "$IWT" && test_env integration && run_timed "$vto" "$cmd") > "$log" 2>&1 || vrc=$?
@@ -2398,7 +2442,7 @@ cmd_verify_all() {
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; result=FAIL; }
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" '.verify_all = {"result":$r,"head":$h,"command":$c,"log":$l,"at":$t}'
   reset_stop_guard; log_event verify-all "$result"
-  if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; blame_log "$log"; exit 1; fi
+  if [[ $result == PASS ]]; then suite_remember "$head" "$cmd" verify-all "$log"; echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; blame_log "$log"; exit 1; fi
 }
 
 # Stack tests: a card's tests that need other cards' work (an e2e flow across services) run on the job branch as soon as the
@@ -2696,7 +2740,7 @@ main() {
     env) cmd_env "$@" ;;
     awake) cmd_awake "$@" ;;
     checkpoint) cmd_checkpoint ;;
-    baseline) cmd_baseline ;;
+    baseline) cmd_baseline "$@" ;;
     ship) cmd_ship ;;
     pr) cmd_pr ;;
     approve) cmd_approve "$@" ;;

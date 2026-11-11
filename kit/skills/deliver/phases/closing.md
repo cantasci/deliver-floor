@@ -4,7 +4,9 @@ Part of Michael's playbook (`../SKILL.md`: setup, invariants, resume). Phases: `
 
 ## Phase 5 — Integration + job QA (`integrating`)
 
-1. `"$DL" phase integrating` → `"$DL" verify-all` (the full suite on the job branch).
+1. `"$DL" phase integrating` → `"$DL" verify-all` (the full suite on the job branch). When the suite after the last card's
+   merge was the whole suite, on this same commit, it answers `PASSED — not run again`: that is a pass, go on. Do not add
+   `--again` to "be sure" — it runs the whole suite a second time on the same files.
 2. Job-level QA if selected: `qa-web` → Agent(`ecc:e2e-runner`) in `job.integration_worktree` on the changed flows (read-only run;
    durable e2e tests go through a card); `qa-mobile` → drive ARTEMIS yourself.
 3. Any failure → add a fix card (`T-next`, right dev role, narrow scope, `depends_on: []`, state `ready`), `"$DL" validate`,

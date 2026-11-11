@@ -22,6 +22,16 @@ job's tokens.
   the merges that go in together; verify-all runs the whole suite at the end. Seen live: 23 QA passes each ran a 19-minute
   suite, 7.7 hours. `card` brings the suite back to every QA pass and merge.
 
+**A suite that passed is not run again on the same files** (`settings.suite_reuse`, default `true`). A small job ran the same
+suite three times on the same files: at the baseline, after the last merge, and in verify-all.
+- `dl` remembers a pass by the command and the content it ran on (`.work/suite-passes.json`, per repo, across jobs). The next
+  job's baseline on what the last job verified and merged, verify-all after the last merge's suite and a merge-check on an
+  unchanged branch answer from it — `PASS (not run …)`, with the run it came from.
+- The suite after the **last open card's** merge is the whole suite (`verify_full`), not the component's: verify-all on that
+  commit then runs nothing.
+- `dl verify-all --again` and `dl baseline --again` run one anyway; `suite_reuse: false` runs every suite every time (for a
+  suite that depends on something outside the repo's files).
+
 **What a role writes is in proportion to the work** (`settings.limits`): a card's spec is at most 8 KB, a fix card's 3 KB
 (only the criteria of the behaviour the fix changes), a card's `context` 3000 characters — `dl validate` refuses more and
 says what to cut; `0` turns a limit off. On 71 specs of live jobs the median was 6.6 KB and the longest 15.8 KB, read in full

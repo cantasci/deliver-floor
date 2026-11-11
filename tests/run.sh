@@ -10,9 +10,10 @@ TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # r
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
 # The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) and shaping (auto since 0.17.0)
-# — they run without them, as a user who turned them off would; their own sections run with the kit's defaults or set them.
+# and the reuse of a suite's pass (0.19.0) — they run without them, as a user who turned them off would; their own sections
+# run with the kit's defaults or set them.
 # Removed before "install / uninstall".
-mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"}}' > "$DELIVER_HOME/config.json"
+mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"},"suite_reuse":false}' > "$DELIVER_HOME/config.json"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO CLAUDE_PROJECT_DIR
 
@@ -1255,6 +1256,46 @@ contains "verify-all names the merged cards whose files its failures point to" "
 contains "…also when the runner names them by their absolute path in the worktree (node's file:///…: live run 74 named no card)" "$out" "LIKELY  T-02 — the failures name it/b/t.test.mjs"
 [[ "$(grep -c '^LIKELY' <<<"$out")" == 2 ]] && ! grep -q '^LIKELY.*x\.js' <<<"$out" && ok "…and only those (a path outside the worktree names no card)" || bad "blame: $out"
 rm -f "$HOME/vf-fail" "$HOME/setup-runs"; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+echo "A suite that passed is not run again on the same files (suite_reuse): the last merge runs the whole suite, verify-all and the next baseline reuse it"
+RU="$TMP/reuse"; mkdir -p "$RU" && cd "$RU" && git init -q -b main
+jq -n '{merge_mode:"local", suite_reuse:true, verify_full:"echo run >> \"$HOME/whole-runs\""}' > .deliver.json && git add -A && git commit -qm i
+runs() { [[ -f $HOME/$1 ]] && wc -l < "$HOME/$1" | tr -d ' ' || echo 0; }
+rm -f "$HOME/whole-runs" "$HOME/app-runs"
+"$DL" new "reuse" "x" >/dev/null 2>&1; RUJ="$RU/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"test -d . && echo run >> \"$HOME/app-runs\""}]}' ready_all
+"$DL" phase planning >/dev/null 2>&1
+[[ "$(runs whole-runs)" == 1 ]] && ok "the baseline runs the whole suite once" || bad "baseline runs: $(runs whole-runs)"
+for c in T-01 T-02; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$RUJ/specs/$c.md"; done
+jq -n --argjson a "$(srcard T-01 a)" --argjson b "$(srcard T-02 b)" '{cards:[$a,$b]}' > "$RUJ/board.json"
+"$DL" phase executing >/dev/null
+srprep T-01 a && srprep T-02 b || bad "T-01/T-02 not ready to merge"
+"$DL" integrate T-01 >/dev/null 2>&1
+[[ "$(runs whole-runs)" == 1 && "$(runs app-runs)" == 0 ]] && ok "the first of two merges runs no suite (batch: the other card merges next)" || bad "after T-01: whole $(runs whole-runs), app $(runs app-runs)"
+out="$("$DL" integrate T-02 2>&1)"
+contains "the last open card's merge runs the whole suite, and says so" "$out" "the last open card: the whole suite (verify_full) runs now"
+[[ "$(runs whole-runs)" == 2 && "$(runs app-runs)" == 0 ]] && ok "…once, in place of the component's suite" || bad "after T-02: whole $(runs whole-runs), app $(runs app-runs)"
+contains "…both merges share its result" "$(jq -c '[.cards[] | .merge_check.result]' "$RUJ/board.json")" '"PASS"'
+"$DL" phase integrating >/dev/null
+out="$("$DL" verify-all 2>&1)"
+contains "verify-all on the same commit does not run it again" "$out" "PASSED — not run again: the same files passed verify_full before (the suite after T-02's merge"
+[[ "$(runs whole-runs)" == 2 && "$(jq -r '.verify_all.result' "$RUJ/job.json")" == PASS ]] && ok "…no third run, and the pass is recorded with where it came from" || bad "verify-all: runs $(runs whole-runs), $(jq -c .verify_all "$RUJ/job.json")"
+contains "…the event log says it was not run" "$(grep $'\tverify-all\t' "$RUJ/events.log" | tail -1)" "PASS (not run: the same files passed it"
+"$DL" verify-all --again >/dev/null 2>&1; [[ "$(runs whole-runs)" == 3 ]] && ok "dl verify-all --again runs it anyway" || bad "--again: $(runs whole-runs)"
+# the job is merged; the next job's baseline is on the files the last one verified
+jb="$(jq -r .branch "$RUJ/job.json")"; "$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; git merge -q "$jb"
+"$DL" new "reuse two" "y" >/dev/null 2>&1; RUJ="$RU/.work/$(cat .work/ACTIVE)"
+out="$("$DL" baseline 2>&1)"
+contains "the next job's baseline on the files the last job verified is not run" "$out" "baseline: PASS — not run again: the same files passed"
+[[ "$(runs whole-runs)" == 3 && "$(jq -r '.baseline.result' "$RUJ/job.json")" == PASS ]] && ok "…recorded as a pass, with where it came from" || bad "baseline reuse: runs $(runs whole-runs), $(jq -c .baseline "$RUJ/job.json")"
+"$DL" baseline --again >/dev/null 2>&1; [[ "$(runs whole-runs)" == 4 ]] && ok "dl baseline --again runs it anyway" || bad "baseline --again: $(runs whole-runs)"
+echo change > extra.txt && git add -A && git commit -qm "the base moved"
+"$DL" baseline >/dev/null 2>&1; [[ "$(runs whole-runs)" == 5 ]] && ok "changed files: the suite runs" || bad "changed files: $(runs whole-runs)"
+"$DL" jobset '.settings.suite_reuse=false' >/dev/null; "$DL" baseline >/dev/null 2>&1
+[[ "$(runs whole-runs)" == 6 ]] && ok "suite_reuse false: every suite runs every time" || bad "suite_reuse false: $(runs whole-runs)"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+
 echo "The code driver (dl run, settings.driver code): the cards are run by a program, Michael only where judgment is needed"
 DR="$TMP/driver"; mkdir -p "$DR" && cd "$DR" && git init -q -b main
 echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2,"driver":"code"}' > .deliver.json && git add -A && git commit -qm i
