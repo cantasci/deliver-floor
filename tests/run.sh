@@ -2109,7 +2109,13 @@ expect_ok "merge" "$DL" integrate T-01
 out="$("$DL" verify-all 2>&1)"
 contains "verify-all reuses the gate's run of the whole suite — the merged files are the files it ran on" "$out" "PASSED — not run again: the same files passed verify_full before (the gate of T-01"
 [[ "$(qruns)" == 2 ]] && ok "…the suite ran twice in the whole job: the baseline and the gate" || bad "suite runs in the job: $(qruns)"
-"$DL" phase closing >/dev/null
+out="$("$DL" fix open "subtract(2, 5) returns 3, it must return -3" --from review 2>&1)"
+contains "a fix on a quick job is one command: dl cuts the card itself (no Lead, no BA)" "$out" "F-1 → T-02 — a fix on the quick path"
+contains "…the finding is the card's spec; the repo its scope, the whole suite its verify" "$(jq -c '.cards[1] | {fix, scope, c:(.context | test("must return -3")), s:.state}' "$QJ/board.json")" '{"fix":"F-1","scope":["**"],"c":true,"s":"ready"}'
+contains "…the job is back in executing by itself" "$(jq -r .phase "$QJ/job.json")" "executing"
+contains "…and dl next dispatches the fix card" "$("$DL" next)" "DISPATCH T-02"
+"$DL" card T-02 state archived "test: the finding was wrong" >/dev/null 2>&1
+"$DL" phase integrating >/dev/null; "$DL" verify-all >/dev/null 2>&1; "$DL" phase closing >/dev/null
 contains "dl next: Michael writes the report from the developer's criteria and the review" "$("$DL" next)" "REPORT  (quick)"
 printf '# Delivery report — subtract\n\n| AC | Status | Evidence |\n| --- | --- | --- |\n| AC-1 | ✅ | test/subtract.test.mjs (gate log) |\n' > "$QJ/report.md"
 expect_ok "ship (local)" "$DL" ship
@@ -2126,8 +2132,24 @@ out="$("$DL" gate T-01 2>&1)"
 contains "a change over the quick limit goes on, and says it is more than a quick change" "$out" "NOTE: T-01 changes 1 file(s), 4 line(s) — more than a quick change (settings.quick: 15 files, 3 lines)"
 contains "…recorded on the card" "$(jq -c '.cards[0].quick.over' "$QJ/board.json")" "true"
 contains "…and in the event log" "$(grep $'\tquick-over\t' "$QJ/events.log")" "T-01: 1 files, 4 lines"
+# a monorepo: the code is one folder below the root; and a leftover folder in wt/ does not stop an abort (both seen live)
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1
+MO="$TMP/quick-mono"; mkdir -p "$MO/frontend" "$MO/backend" && cd "$MO" && git init -q -b main
+echo '{"dependencies":{"react":"^18"},"devDependencies":{"typescript":"^5"}}' > frontend/package.json; printf '[project]\nname = "x"\ndependencies = ["fastapi"]\n' > backend/pyproject.toml
+jq -n '{merge_mode:"local", verify_full:"test -d frontend"}' > .deliver.json && git add -A && git commit -qm i
+out="$("$DL" quick "Logo" "Make the logo bigger" 2>&1)"
+contains "code in sub-folders is found; a frontend and a backend: dl asks which one, and names both" "$out" 'backend (backend: python, fastapi); frontend (frontend: typescript, react). Say which one this change is for'
+[[ ! -e .work/ACTIVE ]] && ok "…no job is opened until it is said" || bad "a job was opened without a role"
+contains "…--role frontend: the frontend developer and the React reviewer" "$("$DL" quick --role frontend "Logo" "Make the logo bigger" 2>&1)" "stack typescript, react (in: frontend); frontend (frontend-dev) builds T-01, ecc:react-reviewer reviews it"
+contains "…a role the repo has no code for is refused" "$("$DL" quick --role mobile "x" "y" 2>&1)" "this repo has no mobile code"
+MJ="$MO/.work/$(cat .work/ACTIVE)"; "$DL" wt add T-01 >/dev/null; mkdir -p "$MJ/wt/T-09-qa" && echo left > "$MJ/wt/T-09-qa/f"
+out="$("$DL" abort "shipped by hand" 2>&1)"
+contains "dl abort is not stopped by a folder in wt/ that git does not know as a worktree" "$out" "aborted (shipped by hand)"
+[[ ! -e .work/ACTIVE && ! -e $MJ/wt/T-09-qa && ! -e $MJ/wt/T-01 ]] && ok "…the leftover and the card worktree are gone, nothing is active" || bad "abort left: $(ls "$MJ/wt" 2>&1) active=$(cat .work/ACTIVE 2>&1)"
+expect_ok "…and the next job starts" "$DL" quick --role backend "Fix" "Fix the rounding"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$QK"
 contains "an agent cannot open a quick job (Michael does)" "$(printf '%s' '{"tool_input":{"command":"dl quick x y"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
-"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+cd "$R"
 
 echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"
 CTX="$HERE/kit/skills/deliver/bin/context.mjs"

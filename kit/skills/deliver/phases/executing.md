@@ -162,6 +162,10 @@ Summary: starts with ACCEPTANCE: and those criteria; ends with AC-MAP: <criterio
    ran the suite on these files) → `"$DL" phase closing`. Write `report.md` yourself: the table row `AC-1` with its status
    and evidence, and under it the developer's criteria, each with its test. Then `"$DL" ship`.
 
+**Something fails after the merge** (verify-all, a defect the human reports before the PR is merged): one command —
+`"$DL" fix open "<the finding: what fails, where, the evidence>" --from <verify-all|review|…>` cuts the fix card itself
+(`F-n → T-0n`; no Lead and no BA on a quick job: the finding is the card's spec). Then steps 1–4 for that card.
+
 **The developer answers `status: stuck`:** with a question about the request → this is the quick path's one question: ask
 the human (headless: write it to QUESTIONS.md and stop), then dispatch the developer again with the answer. Because it
 needs a new dependency, data or an integration → it is not a quick change: tell the human, who stops it

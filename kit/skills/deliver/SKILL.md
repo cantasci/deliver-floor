@@ -22,7 +22,8 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
   (`REPO: /path`); then call every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
 - **A fix or a small change takes the quick path.** When the request is one behaviour in code that exists — a fix, a
   tweak, a small addition — or the human says "quick" (`/deliver:quick`): `"$DL" quick "<title, ≤6 words>" "<the request, in
-  their words>"`, then **Quick path** in `phases/executing.md`. It opens the job, reads the stack, the one developer and the
+  their words>"`, then **Quick path** in `phases/executing.md` (a repo with a frontend and a backend: `dl` says so — add
+  `--role frontend|backend|mobile`, chosen from what the request changes). It opens the job, reads the stack, the one developer and the
   stack reviewer from the repo and cuts the one card: no stack decision, no triage, no roles to pick, no readiness review, no
   BA, no question to the human unless the developer comes back with one. Unsure whether it is small? Take it quick — the
   gate measures the change and the PR says when it was bigger. The planned way (`dl new`, `phases/intake.md` on) is for what
