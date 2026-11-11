@@ -10,9 +10,10 @@ TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # r
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
 # The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) and shaping (auto since 0.17.0)
-# — they run without them, as a user who turned them off would; their own sections run with the kit's defaults or set them.
+# and the reuse of a suite's pass (0.20.0) — they run without them, as a user who turned them off would; their own sections
+# run with the kit's defaults or set them.
 # Removed before "install / uninstall".
-mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"}}' > "$DELIVER_HOME/config.json"
+mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"},"suite_reuse":false}' > "$DELIVER_HOME/config.json"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO CLAUDE_PROJECT_DIR
 
@@ -252,6 +253,17 @@ spec T-01; spec T-02; echo "# T-03 no criteria" > "$R/.work/$JOB/specs/T-03.md"
 expect_fail 1 "a spec without Given/When/Then is rejected" "$DL" validate
 spec T-03
 expect_ok "valid board passes" "$DL" validate
+# What a role writes is in proportion to the work (settings.limits): measured on live jobs, a spec's median was 6.6 KB, the longest 15.8 KB
+{ spec T-03; printf '%09000d\n' 0; } >> "$R/.work/$JOB/specs/T-03.md"
+contains "a spec over the limit is refused, with what to cut" "$("$DL" validate 2>&1)" "T-03: specs/T-03.md is 9.1 KB, the limit is 8.0 KB (settings.limits.spec_bytes) — one line per criterion"
+bedit "$B" '.cards[2].fix="F-1"'; spec T-03; printf '%03500d\n' 0 >> "$R/.work/$JOB/specs/T-03.md"
+contains "…a fix card's spec is smaller: only the behaviour the fix changes" "$("$DL" validate 2>&1)" "a fix card's spec is at most 3.0 KB (settings.limits.fix_spec_bytes)"
+bedit "$B" '.cards[2] |= del(.fix)'; expect_ok "…the same spec passes on a planned card" "$DL" validate
+ctx0="$(jq -c '.cards[0].context' "$B")"; bedit "$B" '.cards[0].context = ("x" * 3001)'
+contains "a card's context over the limit is refused" "$("$DL" validate 2>&1)" "T-01: context is 3001 characters, the limit is 3000 (settings.limits.context_chars)"
+"$DL" jobset '.settings.limits.context_chars=0' >/dev/null; expect_ok "…a limit set to 0 is off" "$DL" validate
+"$DL" jobset '.settings.limits.context_chars=3000' >/dev/null; bedit "$B" ".cards[0].context = $ctx0"; spec T-03
+expect_ok "…back within the limits" "$DL" validate
 bedit "$B" '.cards[0].agent="frontend-dev"'
 expect_fail 1 "agent outside selected roles rejected" "$DL" validate
 bedit "$B" '.cards[0].agent="backend-dev" | .cards[0].acceptance=["AC-9: x"]'
@@ -1244,6 +1256,46 @@ contains "verify-all names the merged cards whose files its failures point to" "
 contains "…also when the runner names them by their absolute path in the worktree (node's file:///…: live run 74 named no card)" "$out" "LIKELY  T-02 — the failures name it/b/t.test.mjs"
 [[ "$(grep -c '^LIKELY' <<<"$out")" == 2 ]] && ! grep -q '^LIKELY.*x\.js' <<<"$out" && ok "…and only those (a path outside the worktree names no card)" || bad "blame: $out"
 rm -f "$HOME/vf-fail" "$HOME/setup-runs"; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+echo "A suite that passed is not run again on the same files (suite_reuse): the last merge runs the whole suite, verify-all and the next baseline reuse it"
+RU="$TMP/reuse"; mkdir -p "$RU" && cd "$RU" && git init -q -b main
+jq -n '{merge_mode:"local", suite_reuse:true, verify_full:"echo run >> \"$HOME/whole-runs\""}' > .deliver.json && git add -A && git commit -qm i
+runs() { [[ -f $HOME/$1 ]] && wc -l < "$HOME/$1" | tr -d ' ' || echo 0; }
+rm -f "$HOME/whole-runs" "$HOME/app-runs"
+"$DL" new "reuse" "x" >/dev/null 2>&1; RUJ="$RU/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null
+ARCH='{"style":"library","components":[{"id":"app","kind":"library","stack":["generic"],"path":".","owner":"backend","reviewer":"reviewer","verify":"test -d . && echo run >> \"$HOME/app-runs\""}]}' ready_all
+"$DL" phase planning >/dev/null 2>&1
+[[ "$(runs whole-runs)" == 1 ]] && ok "the baseline runs the whole suite once" || bad "baseline runs: $(runs whole-runs)"
+for c in T-01 T-02; do printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$RUJ/specs/$c.md"; done
+jq -n --argjson a "$(srcard T-01 a)" --argjson b "$(srcard T-02 b)" '{cards:[$a,$b]}' > "$RUJ/board.json"
+"$DL" phase executing >/dev/null
+srprep T-01 a && srprep T-02 b || bad "T-01/T-02 not ready to merge"
+"$DL" integrate T-01 >/dev/null 2>&1
+[[ "$(runs whole-runs)" == 1 && "$(runs app-runs)" == 0 ]] && ok "the first of two merges runs no suite (batch: the other card merges next)" || bad "after T-01: whole $(runs whole-runs), app $(runs app-runs)"
+out="$("$DL" integrate T-02 2>&1)"
+contains "the last open card's merge runs the whole suite, and says so" "$out" "the last open card: the whole suite (verify_full) runs now"
+[[ "$(runs whole-runs)" == 2 && "$(runs app-runs)" == 0 ]] && ok "…once, in place of the component's suite" || bad "after T-02: whole $(runs whole-runs), app $(runs app-runs)"
+contains "…both merges share its result" "$(jq -c '[.cards[] | .merge_check.result]' "$RUJ/board.json")" '"PASS"'
+"$DL" phase integrating >/dev/null
+out="$("$DL" verify-all 2>&1)"
+contains "verify-all on the same commit does not run it again" "$out" "PASSED — not run again: the same files passed verify_full before (the suite after T-02's merge"
+[[ "$(runs whole-runs)" == 2 && "$(jq -r '.verify_all.result' "$RUJ/job.json")" == PASS ]] && ok "…no third run, and the pass is recorded with where it came from" || bad "verify-all: runs $(runs whole-runs), $(jq -c .verify_all "$RUJ/job.json")"
+contains "…the event log says it was not run" "$(grep $'\tverify-all\t' "$RUJ/events.log" | tail -1)" "PASS (not run: the same files passed it"
+"$DL" verify-all --again >/dev/null 2>&1; [[ "$(runs whole-runs)" == 3 ]] && ok "dl verify-all --again runs it anyway" || bad "--again: $(runs whole-runs)"
+# the job is merged; the next job's baseline is on the files the last one verified
+jb="$(jq -r .branch "$RUJ/job.json")"; "$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; git merge -q "$jb"
+"$DL" new "reuse two" "y" >/dev/null 2>&1; RUJ="$RU/.work/$(cat .work/ACTIVE)"
+out="$("$DL" baseline 2>&1)"
+contains "the next job's baseline on the files the last job verified is not run" "$out" "baseline: PASS — not run again: the same files passed"
+[[ "$(runs whole-runs)" == 3 && "$(jq -r '.baseline.result' "$RUJ/job.json")" == PASS ]] && ok "…recorded as a pass, with where it came from" || bad "baseline reuse: runs $(runs whole-runs), $(jq -c .baseline "$RUJ/job.json")"
+"$DL" baseline --again >/dev/null 2>&1; [[ "$(runs whole-runs)" == 4 ]] && ok "dl baseline --again runs it anyway" || bad "baseline --again: $(runs whole-runs)"
+echo change > extra.txt && git add -A && git commit -qm "the base moved"
+"$DL" baseline >/dev/null 2>&1; [[ "$(runs whole-runs)" == 5 ]] && ok "changed files: the suite runs" || bad "changed files: $(runs whole-runs)"
+"$DL" jobset '.settings.suite_reuse=false' >/dev/null; "$DL" baseline >/dev/null 2>&1
+[[ "$(runs whole-runs)" == 6 ]] && ok "suite_reuse false: every suite runs every time" || bad "suite_reuse false: $(runs whole-runs)"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+
 echo "The code driver (dl run, settings.driver code): the cards are run by a program, Michael only where judgment is needed"
 DR="$TMP/driver"; mkdir -p "$DR" && cd "$DR" && git init -q -b main
 echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2,"driver":"code"}' > .deliver.json && git add -A && git commit -qm i
@@ -1808,6 +1860,7 @@ sl() { (cd "$SR" && printf '%s' "$2" | bash "$HERE/kit/skills/$1/run.sh" "$1"); 
 contains "/deliver:status with no job: dl's words and that nothing was done — never an empty answer (a failed command shows nothing)" "$(sl status '')" "no active job — start one with /deliver:new <request>"
 (cd "$SR" && sl status '' >/dev/null; echo $? > "$TMP/slrc"); [[ "$(cat "$TMP/slrc")" == 0 ]] && ok "…exit 0 even when dl refuses (Claude Code drops a failed command's output)" || bad "slash exit code"
 contains "/deliver:new with no job active" "$(sl new 'build it')" "NO ACTIVE JOB"
+contains "/deliver:quick with no job active" "$(sl quick 'fix it')" "NO ACTIVE JOB"
 (cd "$SR" && "$DL" new t "r" >/dev/null 2>&1)
 contains "/deliver:new with a job active says which" "$(sl new 'build it')" "ACTIVE JOB — a new job cannot start while this one is active"
 TXT='because "the plan" is $HOME `id` it'"'"'s fine'
@@ -2009,6 +2062,72 @@ jq '.phase = "done" | .shipped = true' "$LJ/job.json" > "$LJ/j.t" && mv "$LJ/j.t
 "$DL" new "Tax" "Round every tax to two decimals" >/dev/null 2>&1; [[ "$(cat .work/ACTIVE)" == *-tax ]] \
   && ok "a finished one does not (seen live: the second request in a repo resumed the first, done job)" || bad "after a done job: $(cat .work/ACTIVE)"
 cd "$R"
+
+echo "The quick path (dl quick): a small change or a fix in one step — no readiness review, no BA, no Lead, no QA role; one card, one developer, one review"
+QK="$TMP/quick"; mkdir -p "$QK/src" "$QK/test" && cd "$QK" && git init -q -b main
+echo '{"name":"q","private":true,"scripts":{"test":"node --test"}}' > package.json
+echo 'export const add = (a, b) => a + b;' > src/math.mjs
+printf 'import { test } from "node:test"; import assert from "node:assert";\nimport { add } from "../src/math.mjs";\ntest("add", () => assert.equal(add(1, 2), 3));\n' > test/math.test.mjs
+jq -n '{merge_mode:"local", suite_reuse:true, verify_full:"node --test test/*.test.mjs && echo run >> \"$HOME/quick-suite-runs\""}' > .deliver.json
+git add -A && git commit -qm init
+rm -f "$HOME/quick-suite-runs"; qruns() { [[ -f $HOME/quick-suite-runs ]] && wc -l < "$HOME/quick-suite-runs" | tr -d ' ' || echo 0; }
+EMPTY="$TMP/quick-empty"; mkdir -p "$EMPTY" && (cd "$EMPTY" && git init -q -b main && git commit -q --allow-empty -m i)
+contains "a repo without code is not a quick change: the planned way decides its stack" "$(cd "$EMPTY" && "$DL" quick "x" "y" 2>&1)" "a quick change is a change to existing code"
+[[ ! -e $EMPTY/.work/ACTIVE ]] && ok "…and no job was opened for it" || bad "a job was opened in a repo without code"
+jq '.verify_full = ""' .deliver.json > "$TMP/d.json" && cp .deliver.json "$TMP/d.keep" && cp "$TMP/d.json" .deliver.json
+contains "a repo without a test command: refused, with what to set" "$("$DL" quick "x" "y" 2>&1)" "this repo has no test command (verify_full)"
+[[ ! -e .work/ACTIVE ]] && ok "…and the job it opened is closed again: nothing is left half open" || bad "a quick job that could not start stayed active"
+cp "$TMP/d.keep" .deliver.json
+out="$("$DL" quick "Subtract" "Add a subtract(a, b) function next to add, returning a - b." 2>&1)"
+contains "dl quick opens the job, reads the team from the repo and cuts the one card" "$out" "backend (backend-dev) builds T-01, ecc:typescript-reviewer reviews it"
+QJ="$QK/.work/$(cat .work/ACTIVE)"
+contains "…no BA, no Lead, no QA role: one developer and the stack reviewer" "$(jq -c '[.roles[].role]' "$QJ/job.json")" '["backend","reviewer"]'
+contains "…straight to executing, on the quick track, with the stack from the repo's files" "$(jq -c '{p:.phase,t:.track,s:.stack}' "$QJ/job.json")" '{"p":"executing","t":"quick","s":["javascript"]}'
+[[ ! -e $QJ/readiness.json ]] && ok "…without a readiness review" || bad "a readiness.json was written"
+contains "…the card: the repo as its scope, the whole suite as its verify, the request as its spec" "$(jq -c '.cards[0] | {scope, v:(.verify | test("node --test")), c:(.context | test("subtract"))}' "$QJ/board.json")" '{"scope":["**"],"v":true,"c":true}'
+contains "…listed in the PR as Michael's decision" "$(jq -r '.pm_decisions[-1].what' "$QJ/job.json")" "the quick path"
+contains "the developer's role card: the request is the spec, the criteria come first" "$(cat "$QJ/roles/backend.md")" "start your summary with them under a line \`ACCEPTANCE:\`"
+contains "…an unclear request comes back as a question, not a guess" "$(cat "$QJ/roles/backend.md")" "do not choose one"
+contains "the reviewer's role card: the criteria against the request and against the tests" "$(cat "$QJ/roles/reviewer.md")" "the developer's ACCEPTANCE lines are the contract"
+[[ "$(qruns)" == 1 ]] && ok "the baseline ran the suite once" || bad "baseline runs: $(qruns)"
+contains "dl next: dispatch the one card" "$("$DL" next)" "DISPATCH T-01"
+w="$("$DL" wt add T-01)"
+echo 'export const subtract = (a, b) => a - b;' >> "$w/src/math.mjs"
+printf 'import { test } from "node:test"; import assert from "node:assert";\nimport { subtract } from "../src/math.mjs";\ntest("subtract", () => assert.equal(subtract(5, 2), 3));\n' > "$w/test/subtract.test.mjs"
+git -C "$w" add -A && git -C "$w" commit -qm "T-01: subtract"
+out="$("$DL" gate T-01 2>&1)"
+contains "the gate runs the whole suite on the card" "$out" "GATE PASSED: T-01"
+[[ "$(qruns)" == 2 ]] && ok "…one run" || bad "gate runs: $(qruns)"
+contains "…its pass is the QA pass: the developer's tests ran there, no QA step" "$(jq -c '.cards[0].qa | {verdict, s:(.summary | test("quick path"))}' "$QJ/board.json")" '{"verdict":"pass","s":true}'
+contains "…and the change is measured (2 files, 4 lines: a quick change)" "$(jq -c '.cards[0].quick | {files, lines, over}' "$QJ/board.json")" '{"files":2,"lines":4,"over":false}'
+out="$("$DL" next)"
+contains "dl next goes straight to the review" "$out" "REVIEW  T-01"
+[[ $out != *"QA      "* ]] && ok "…no QA line" || bad "a QA line on the quick path: $out"
+expect_ok "one review" "$DL" review T-01 approve "the criteria cover the request; each has a test"
+expect_ok "merge" "$DL" integrate T-01
+"$DL" phase integrating >/dev/null
+out="$("$DL" verify-all 2>&1)"
+contains "verify-all reuses the gate's run of the whole suite — the merged files are the files it ran on" "$out" "PASSED — not run again: the same files passed verify_full before (the gate of T-01"
+[[ "$(qruns)" == 2 ]] && ok "…the suite ran twice in the whole job: the baseline and the gate" || bad "suite runs in the job: $(qruns)"
+"$DL" phase closing >/dev/null
+contains "dl next: Michael writes the report from the developer's criteria and the review" "$("$DL" next)" "REPORT  (quick)"
+printf '# Delivery report — subtract\n\n| AC | Status | Evidence |\n| --- | --- | --- |\n| AC-1 | ✅ | test/subtract.test.mjs (gate log) |\n' > "$QJ/report.md"
+expect_ok "ship (local)" "$DL" ship
+QR="$QK/.deliver/jobs/$(basename "$QJ")"
+contains "the PR says how it was checked" "$(cat "$QR/report.md")" "The quick path (\`dl quick\`): no readiness review, no BA spec, no QA role"
+contains "…and how big the change was" "$(cat "$QR/report.md")" "T-01: 2 file(s), 4 line(s) changed."
+[[ -f $QK/test/subtract.test.mjs && "$(jq -r .phase "$QJ/job.json")" == done ]] && ok "delivered: the change is on main, phase done" || bad "quick ship: $(jq -r .phase "$QJ/job.json")"
+# the next fix starts on what this job verified: no baseline run; a change over the limit goes on and the PR says so
+out="$("$DL" quick "Multiply" "Add multiply(a, b)." 2>&1)"; QJ="$QK/.work/$(cat .work/ACTIVE)"
+[[ "$(qruns)" == 2 ]] && ok "the next quick job's baseline is not run: the last job verified these files" || bad "second job baseline: $(qruns) — $out"
+"$DL" jobset '.settings.quick.max_lines=3' >/dev/null
+w="$("$DL" wt add T-01)"; printf 'export const multiply = (a, b) => a * b;\n// one\n// two\n// three\n' >> "$w/src/math.mjs"; git -C "$w" add -A && git -C "$w" commit -qm "T-01: multiply"
+out="$("$DL" gate T-01 2>&1)"
+contains "a change over the quick limit goes on, and says it is more than a quick change" "$out" "NOTE: T-01 changes 1 file(s), 4 line(s) — more than a quick change (settings.quick: 15 files, 3 lines)"
+contains "…recorded on the card" "$(jq -c '.cards[0].quick.over' "$QJ/board.json")" "true"
+contains "…and in the event log" "$(grep $'\tquick-over\t' "$QJ/events.log")" "T-01: 1 files, 4 lines"
+contains "an agent cannot open a quick job (Michael does)" "$(printf '%s' '{"tool_input":{"command":"dl quick x y"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 
 echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"
 CTX="$HERE/kit/skills/deliver/bin/context.mjs"

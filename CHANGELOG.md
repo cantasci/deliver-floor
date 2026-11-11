@@ -4,6 +4,40 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.20.0 — 2026-11-11
+
+**Asking for work is lighter, and the suite runs less.** A fix went through the same twelve steps as a product; a small job
+ran the same suite three times on the same files; a spec was as long as its author liked.
+
+**A fix or a small change takes one step: the quick path** (`/deliver:quick <request>`, `dl quick`). Asking for a fix went
+through twelve steps before the first line of code — stack, architecture, triage, roles with reasons, a readiness review of
+11 to 37 items, the BA's plan, the cards, a spec per card. The quick path assumes the job is small and measures it, instead
+of having it argued small in advance:
+- `dl quick "<title>" "<request>"` opens the job, reads the stack, the one developer and the stack reviewer from the repo's
+  files, cuts one card (scope: the repo; verify: the whole suite) and is in `executing`. No readiness review, no BA, no
+  Lead, no QA role, no question to the human unless the developer comes back with one.
+- The developer states the acceptance criteria it meets, writes the tests and the change. The gate's pass is the QA pass.
+  One reviewer checks the criteria against the request and against the tests. Two agent runs.
+- The whole suite runs once, in the gate; the merge and verify-all reuse that pass, and so does the next job's baseline.
+- A change over `settings.quick` (15 files, 400 lines) goes on, and the PR says it was more than a quick change. A request
+  that needs a new dependency, data or an integration comes back from the developer as stuck: that is planned work.
+- All or nothing: a quick job that cannot start (no code, no test command, a red suite) is closed again.
+
+**A suite that passed is not run again on the same files** (`settings.suite_reuse`, default `true`). A small job ran the same
+suite three times on the same files: at the baseline, after the last merge, and in verify-all.
+- `dl` remembers a pass by the command and the content it ran on (`.work/suite-passes.json`, per repo, across jobs). The next
+  job's baseline on what the last job verified and merged, verify-all after the last merge's suite and a merge-check on an
+  unchanged branch answer from it — `PASS (not run …)`, with the run it came from.
+- The suite after the **last open card's** merge is the whole suite (`verify_full`), not the component's: verify-all on that
+  commit then runs nothing.
+- `dl verify-all --again` and `dl baseline --again` run one anyway; `suite_reuse: false` runs every suite every time (for a
+  suite that depends on something outside the repo's files).
+
+**What a role writes is in proportion to the work** (`settings.limits`): a card's spec is at most 8 KB, a fix card's 3 KB
+(only the criteria of the behaviour the fix changes), a card's `context` 3000 characters — `dl validate` refuses more and
+says what to cut; `0` turns a limit off. On 71 specs of live jobs the median was 6.6 KB and the longest 15.8 KB, read in full
+by every dev, QA and reviewer of the card.
+
 ## 0.19.0 — 2026-11-10
 
 **Less process per card.** A two-function job took 25–37 minutes and 13–20 agent runs; the developer was 12 % of that

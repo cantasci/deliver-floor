@@ -14,6 +14,9 @@
 #                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
+#   dl quick "<title>" "<request>"  a small change or a fix, in one step: the job, its team and one card read from the
+#                                  repo — no readiness review, no BA, no Lead, no QA role; the developer states the criteria,
+#                                  writes tests and code, one reviewer checks them (settings.quick: when it was bigger)
 #   dl track light|full "<why>" [--quote "<request words>"]   the light path for a small change to existing code (fewer
 #                                  readiness items, the BA cuts ≤ light.max_cards cards, no Leads) or the full one (default)
 #   dl shape install|run|wait|status|ledger [open]   shaping with the BMad Method (settings.upstream.engine: bmad): BMad
@@ -66,9 +69,10 @@
 #                                  itself — dev, gate, QA, review, merge — and stops for Michael only where judgment is
 #                                  needed (exit 10, out/run/HANDOVER.md)
 #   dl merge-check <card>          the component's suite after <card>'s merge, again (its dl was stopped half way)
-#   dl baseline                    run verify_full on the job branch before any card (also run by dl phase planning,
+#   dl baseline [--again]          run verify_full on the job branch before any card (also run by dl phase planning,
 #                                  which refuses while it fails: a suite already red is the human's call, at the start)
-#   dl verify-all [--again]        run verify_full in the integration worktree (a pass on the same head is kept)
+#   dl verify-all [--again]        run verify_full in the integration worktree (a pass on the same head, or of the same
+#                                  command on the same files — settings.suite_reuse — is kept; --again runs it anyway)
 #   dl checkpoint                  headless: end this session at a safe point (dl next: CHECKPOINT) — the next round is fresh
 #   dl env <card> [--qa] | integration   the DELIVER_PORT_BASE / DELIVER_RUN_ID of a test run in that worktree
 #                                  (every test command dl runs gets them; agents: eval "$(dl env T-xx)")
@@ -252,7 +256,8 @@ suite_timeout() {
 # dev_tests → the light path (dl track light), unless settings.light.qa is true: the developer writes the card's code AND all
 # of its tests (qa_scope too), one reviewer checks every acceptance criterion against a test — no QA agent. A small change
 # went through five agents per card (BA spec, dev, QA-WRITE, QA, reviewers); the developer was 12 % of a small job's time.
-dev_tests() { [[ "$(jq -r '.track // "full"' "$JOBJ")" == light && "$(setting light.qa)" != true ]]; }
+dev_tests() { local t; t="$(jq -r '.track // "full"' "$JOBJ")"; [[ $t == quick ]] || [[ $t == light && "$(setting light.qa)" != true ]]; }
+is_quick() { [[ "$(jq -r '.track // "full"' "$JOBJ")" == quick ]]; }
 suite_runs() { local r; r="$(setting suite_runs)"; case $r in card|end) echo "$r" ;; *) echo batch ;; esac; }
 
 # qa_mark <card> [jq list of heads] — the newest commit recorded as QA's on the card: dl qa, dl qa-join, or QA's commits
@@ -821,7 +826,7 @@ cmd_next() {
         echo "QA      job-level QA roles if selected (failure → fix card + dl phase executing), then: dl phase closing"
       fi ;;
     closing)
-      if cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md"; then echo "REPORT  $([[ "$(jq -r '.track // "full"' "$JOBJ")" == light ]] && echo "(light) you write it from the cards' QA verdicts" || echo "BA closing check") (every AC with evidence$([[ "$(setting test_design.risk)" == true ]] && echo "; every decided NFR-* PASS / CONCERNS / FAIL — not PASS: a fix card or dl waive")) → report.md"
+      if cmp -s "$JOB_DIR/report.md" "$SKILL_DIR/templates/report.md"; then echo "REPORT  $(if is_quick; then echo "(quick) you write it from the developer's ACCEPTANCE lines and the review"; elif [[ "$(jq -r '.track // "full"' "$JOBJ")" == light ]]; then echo "(light) you write it from the cards' QA verdicts"; else echo "BA closing check"; fi) (every AC with evidence$([[ "$(setting test_design.risk)" == true ]] && echo "; every decided NFR-* PASS / CONCERNS / FAIL — not PASS: a fix card or dl waive")) → report.md"
       else echo "SHIP    dl ship  (merge_mode=$(setting merge_mode))"; fi ;;
     awaiting_pr_merge)
       echo "WAIT    PR $(jq -r '.pr.url // "?"' "$JOBJ") is with the human (merge_mode=$(setting merge_mode)). Check: dl pr — then dl cleanup when done"
@@ -1044,6 +1049,69 @@ report_decisions() {
   { printf '\n<!-- deliver:pm-decisions -->\n## Decisions Michael took himself\n\nTaken without asking you (you are asked only at the start); each with its reason.\n\n'
     if [[ $n -eq 0 ]]; then echo "None: every decision was taken with the human before planning."
     else jq -r '.pm_decisions[] | "- " + (if .card then "**\(.card)** — " else "" end) + "\(.what) — _\(.why)_ (\(.at))"' "$JOBJ"; fi
+  } >> "$JOB_DIR/report.md"
+}
+
+# dl quick "<title>" "<request>" — a small change or a fix, taken in one step. Asking for a fix went through twelve steps
+# before the first line of code (stack, architecture, triage, roles with reasons, a readiness review of 11–37 items, the BA's
+# plan, the cards, a spec per card …). Here the job is assumed small and measured, not argued small in advance:
+#   · the stack, the one developer and the stack reviewer are read from the repo's files (roles.mjs quick) — never asked
+#   · one card whose scope is the repo and whose verify is the whole suite (verify_full); the request is its spec
+#   · the developer states the acceptance criteria it meets, writes the tests and the change; the gate's pass is the QA pass
+#     (its tests ran there); one reviewer checks the criteria against the request and against the tests
+#   · the whole suite runs once, in the gate: the merge and verify-all reuse that pass (suite_reuse)
+#   · a change bigger than settings.quick (files, lines) goes on and the PR says so; a request that needs a new dependency,
+#     data or an integration comes back from the developer as stuck — that is planned work (/deliver <request>)
+cmd_quick() {
+  resolve_root
+  local title=${1:-} request=${2:-${1:-}}
+  [[ -n $title ]] || die 'usage: dl quick "<short title>" "<the request: what should change, or what is wrong>"'
+  local q; q="$(node "$BIN_DIR/roles.mjs" quick "$ROOT" 2>&1)" || refuse 1 "$q"
+  cmd_new "$title" "$request" >/dev/null
+  load_job
+  local vf; vf="$(setting verify_full)"
+  # all or nothing: a quick job that cannot start is closed again — nothing is left half open for the next request
+  quick_fail() { jq_inplace "$JOBJ" '.phase="aborted"'; log_event phase "aborted (dl quick could not start: ${1:0:160})"; cmd_cleanup --all >/dev/null 2>&1 || true; refuse 1 "$1"; }
+  if [[ -z $vf ]]; then
+    quick_fail "this repo has no test command (verify_full): a quick change is checked by the repo's own suite. Set it in .deliver.json (\"verify_full\": \"<command>\"), or use /deliver <request> — the planned way decides the test command"
+  fi
+  jq_inplace "$JOBJ" --argjson q "$q" --arg t "$(now)" '.track = "quick" | .stack = $q.stack
+    | .roles = [{role:$q.dev.role, agent:$q.dev.agent, why:"quick: the one developer, from the repo'"'"'s stack"}, {role:"reviewer", agent:$q.reviewer, why:"quick: the stack reviewer"}]
+    | .tracks = [{to:"quick", why:"dl quick", at:$t}]'
+  apply_role_defaults
+  node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || quick_fail "the team read from the repo is not valid — use /deliver <request> (the planned way)"
+  printf '# Plan — %s\n\nThe quick path: the request is the specification (job.json → request). The developer states the acceptance criteria it\nmeets before it writes code; the reviewer checks them against the request and against the tests.\n\n## Acceptance criteria\n\n- **AC-1** [P2] The change the request asks for, as written: %s\n' \
+    "$title" "$(tr -s '[:space:]' ' ' <<<"$request" | cut -c1-240)" > "$JOB_DIR/plan.md"
+  jq -n --arg t "$title" --arg role "$(jq -r .dev.role <<<"$q")" --arg agent "$(jq -r .dev.agent <<<"$q")" --arg v "$vf" --arg req "$request" \
+    '{cards:[{id:"T-01", title:$t, role:$role, agent:$agent, state:"ready", depends_on:[], scope:["**"], verify:$v,
+       acceptance:["AC-1: the request, as written"], context:("The request is your spec — state the criteria you meet, then tests, then the change:\n\n" + $req[0:2400]),
+       attempts:0, notes:[]}]}' > "$BOARD"
+  local verr; verr="$(node "$BIN_DIR/validate.mjs" "$BOARD" 2>&1)" || quick_fail "the quick card is not valid: $(grep '^ERROR' <<<"$verr" | head -3 | tr '\n' ' ')"
+  ( baseline_holds ) || quick_fail "the repo's suite (verify_full) already fails before any change — fix the base first, or tell Michael which suite is meant to pass (/deliver <request>, the planned way, asks)"
+  jq_inplace "$JOBJ" '.phase="executing"'; seal "$BOARD"; tracker open
+  node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"
+  pm_decision "the quick path: one card, the developer states the criteria and writes tests and code, one review" "dl quick — taken as a small change; the gate measures it (settings.quick) and the PR says when it was bigger"
+  reset_stop_guard; log_event phase "executing (dl quick)"
+  echo "quick: $JOB — stack $(jq -r '.stack | join(", ")' "$JOBJ"); $(jq -r .dev.role <<<"$q") ($(jq -r .dev.agent <<<"$q")) builds T-01, $(jq -r .reviewer <<<"$q") reviews it. Next: dl next"
+}
+# quick_size <card> <head> — how big the quick change is; over settings.quick it goes on, and the PR says so
+quick_size() {
+  local base files lines mf ml over=false; base="$(git -C "$ROOT" merge-base "$JOB_BRANCH" "$2")"
+  files="$(git -C "$ROOT" diff --name-only "$base" "$2" | wc -l | tr -d ' ')"
+  lines="$(git -C "$ROOT" diff --numstat "$base" "$2" | awk '{a += $1 + $2} END {print a + 0}')"
+  mf="$(setting quick.max_files)"; ml="$(setting quick.max_lines)"; mf=${mf:-15}; ml=${ml:-400}
+  if (( files > mf || lines > ml )); then over=true; fi
+  card_set "$1" '(.cards[] | select(.id==$id)).quick = {"files":($f|tonumber),"lines":($n|tonumber),"max_files":($mf|tonumber),"max_lines":($ml|tonumber),"over":($o == "true")}' \
+    --arg f "$files" --arg n "$lines" --arg mf "$mf" --arg ml "$ml" --arg o "$over"
+  [[ $over == false ]] && return 0
+  log_event quick-over "$1: $files files, $lines lines (settings.quick: $mf files, $ml lines)"
+  echo "NOTE: $1 changes $files file(s), $lines line(s) — more than a quick change (settings.quick: $mf files, $ml lines). It goes on; the PR says so, for the human to read it as a normal change."
+}
+report_quick() {
+  is_quick || return 0
+  grep -q '<!-- deliver:quick -->' "$JOB_DIR/report.md" && return 0
+  { printf '\n<!-- deliver:quick -->\n## How this was checked\n\nThe quick path (`dl quick`): no readiness review, no BA spec, no QA role. The request was the spec; the developer stated the\nacceptance criteria, wrote the tests and the change; the repo'"'"'s whole suite ran in the gate; one reviewer checked the criteria\nagainst the request and the tests.\n'
+    jq -r '.cards[] | select(.quick != null) | "\n\(.id): \(.quick.files) file(s), \(.quick.lines) line(s) changed" + (if .quick.over then " — **more than a quick change** (limit: \(.quick.max_files) files, \(.quick.max_lines) lines). Read it as a normal change." else "." end)' "$BOARD"
   } >> "$JOB_DIR/report.md"
 }
 
@@ -1918,6 +1986,13 @@ cmd_gate() {
   if [[ $fail -eq 0 ]]; then
     push_card "$card"
     log_event gate "$card PASS"; echo "GATE PASSED: $card  (log: $log)"
+    if is_quick; then   # the developer's tests ran in verify: there is no QA step — the reviewer checks the criteria against them
+      card_set "$card" '(.cards[] | select(.id==$id)).qa = {"verdict":"pass","head":$h,"gate_head":$h,"qa_verify":"PASS","seconds":0,"suite_seconds":null,"suite":null,"log":$l,"summary":"quick path: the tests the developer wrote ran in the gate (verify)","at":$t}' \
+        --arg h "$head" --arg l "$log" --arg t "$(now)"
+      quick_size "$card" "$head"
+    fi
+    # a gate whose verify is the whole suite is a pass of the whole suite on these files (the merge and verify-all reuse it)
+    [[ "$(card_get "$card" .verify)" != "$(setting verify_full)" ]] || suite_remember "$head" "$(setting verify_full)" "the gate of $card" "$log"
   else
     log_event gate "$card FAIL"
     echo "GATE FAILED: $card  (log: $log)"; grep '^FAIL' "$log"
@@ -2265,6 +2340,13 @@ cmd_integrate() {
   # — the suite runs once, after the last of them. (Approved only was too late: live run 72b, Michael reviews and merges one
   # card after the other, so no partner was ever approved yet.) A partner that then does not merge leaves the suite owed: dl next
   # says CHECK, and integrating waits for it.
+  # The last open card: the suite after its merge is the whole suite (verify_full), not the component's — verify-all asks for
+  # the same command on the same commit a moment later and finds it passed (suite_seen): one run instead of two.
+  local vfull; vfull="$(setting verify_full)"
+  if [[ -n $msuite && -n $vfull && "$(setting suite_reuse)" != false && "$(setting merge_verify)" != false && "$(suite_runs)" != end ]] \
+     && jq -e '[.cards[] | select(.state | IN("ready","running","review","blocked"))] | length == 0' "$BOARD" >/dev/null; then
+    msuite="$vfull"; echo "the last open card: the whole suite (verify_full) runs now — verify-all will not run it again on this commit"
+  fi
   local partner=""
   if [[ -n $msuite && "$(suite_runs)" == batch ]]; then
     local pid pbr ph
@@ -2291,7 +2373,9 @@ run_merge_suite() {
   local mlog="$JOB_DIR/gates/$card-merged-$(date +%H%M%S).log" mres=FAIL t0 mh mrc=0 mto; t0=$(date +%s); mh="$(branch_head "$JOB_BRANCH")"; mto="$(suite_timeout)"
   card_set "$card" '(.cards[] | select(.id==$id)).merge_check = {"result":"RUNNING","component":$c,"head":$h,"pid":($p|tonumber),"log":$l,"n":([.cards[] | select(.state=="merged")] | length),"at":$t}' \
     --arg c "$comp" --arg h "$mh" --arg p "$$" --arg l "$mlog" --arg t "$(now)"
-  { echo "# the $comp suite on $JOB_BRANCH right after $card merged (${mh:0:12}): $msuite"; (cd "$IWT" && test_env integration && run_timed "$mto" "$msuite") 2>&1; } > "$mlog" 2>&1 || mrc=$?
+  local seen=""
+  if seen="$(suite_seen "$mh" "$msuite")"; then echo "# the $comp suite on $JOB_BRANCH after $card merged (${mh:0:12}) was not run again: the same files passed it — $seen" > "$mlog"
+  else { echo "# the $comp suite on $JOB_BRANCH right after $card merged (${mh:0:12}): $msuite"; (cd "$IWT" && test_env integration && run_timed "$mto" "$msuite") 2>&1; } > "$mlog" 2>&1 || mrc=$?; fi
   [[ $mrc -eq 0 ]] && mres=PASS
   [[ $mrc -eq 124 ]] && { mres=STALLED; echo "STALLED: the $comp suite did not finish in $(( mto / 60 )) min (settings.suite_timeout_min) — dl stopped it" >> "$mlog"; }
   # the cards merged into this component since its suite last ran (suite_runs batch) share the result
@@ -2300,6 +2384,7 @@ run_merge_suite() {
   card_set "$card" '(.cards[] | select(.id==$id)).merge_check = {"result":$r,"component":$c,"head":$h,"seconds":($s|tonumber),"log":$l,"n":([.cards[] | select(.state=="merged")] | length),"at":$t}' \
     --arg r "$mres" --arg c "$comp" --arg h "$mh" --arg s "$(( $(date +%s) - t0 ))" --arg l "$mlog" --arg t "$(now)"
   [[ -n $batch ]] && card_set "$card" '(.cards[] | select(.id==$id)).merge_check.batch = ($b | split(" "))' --arg b "$batch"
+  [[ $mres != PASS || -n $seen ]] || suite_remember "$mh" "$msuite" "the suite after $card's merge" "$mlog"
   for pid in $batch; do card_set "$pid" '(.cards[] | select(.id==$id)).merge_check.result = $r' --arg r "$mres"; done
   log_event merge-check "$card $mres ($comp suite${batch:+, with $batch})"; tracker note "$card" integrate "the $comp suite on $JOB_BRANCH after the merge: $mres"
   if [[ $mres == PASS ]]; then echo "ok    the $comp suite passes on $JOB_BRANCH after the merge${batch:+ (with $batch)}"
@@ -2323,6 +2408,26 @@ cmd_merge_check() { # dl merge-check <card> — run the suite after <card>'s mer
   run_merge_suite "$card" "$comp" "$msuite"
 }
 
+# A suite that passed on these files passes on them again. A PASS is remembered for the repo (.work/suite-passes.json) by
+# the command and the content it ran on — every tracked file but the job records under .deliver/knowledge and .deliver/jobs —
+# and is not run a second time: the next job's baseline on what the last job verified and merged, verify-all after the last
+# merge's suite, a merge-check on a branch that did not change. Live: a 19-minute suite ran at the baseline, after the last
+# merge and again in verify-all, on the same files. settings.suite_reuse false runs every suite; dl verify-all --again and
+# dl baseline --again run one anyway.
+content_key() { # content_key <commit> <command>
+  { git -C "$ROOT" ls-tree -r "$1" | { grep -v "$(printf '\t')\.deliver/\(knowledge\|jobs\)/" || true; }; printf '%s\n' "$2"; } | git hash-object --stdin
+}
+suite_seen() { # suite_seen <commit> <command> → where the same content passed this command before; 1 when it has not
+  [[ "$(setting suite_reuse)" != false && -z ${SUITE_AGAIN:-} && -f $WORK/suite-passes.json ]] || return 1
+  jq -er --arg k "$(content_key "$1" "$2")" '.[$k] // empty | "\(.what) of \(.job), \(.at) (log: \(.log))"' "$WORK/suite-passes.json" 2>/dev/null
+}
+suite_remember() { # suite_remember <commit> <command> <what ran> <log>
+  [[ "$(setting suite_reuse)" != false ]] || return 0
+  local f="$WORK/suite-passes.json" k; k="$(content_key "$1" "$2")"; [[ -f $f ]] || echo '{}' > "$f"
+  jq --arg k "$k" --arg j "$JOB" --arg t "$(now)" --arg w "$3" --arg l "$4" \
+    '.[$k] = {job:$j, at:$t, what:$w, log:$l} | to_entries | sort_by(.value.at) | .[-200:] | from_entries' "$f" > "$f.tmp.$$" && mv "$f.tmp.$$" "$f"
+}
+
 # The baseline: the whole suite on the job branch before any card changes it. A suite that is already red would fail every
 # card's QA run and the final verify-all for reasons that are not the job's — so it is found here, at the start, while the
 # human is still asked: fix the base first (then dl baseline again), or make verify_full the suite that is meant to pass.
@@ -2338,6 +2443,11 @@ run_baseline() {
     jq_inplace "$JOBJ" --arg h "$head" --arg t "$(now)" '.baseline = {"result":"NONE","head":$h,"at":$t}'
     log_event baseline "no verify_full yet — nothing to run"; echo "baseline: no verify_full yet (a repo without a suite) — nothing to run"; return 0
   fi
+  local seen
+  if seen="$(suite_seen "$head" "$cmd")"; then
+    jq_inplace "$JOBJ" --arg h "$head" --arg c "$cmd" --arg t "$(now)" --arg s "$seen" '.baseline = {"result":"PASS","head":$h,"command":$c,"reused":$s,"seconds":0,"at":$t}'
+    log_event baseline "PASS (not run: the same files passed it — $seen)"; echo "baseline: PASS — not run again: the same files passed $cmd before ($seen). Run it anyway: dl baseline --again"; return 0
+  fi
   log="$JOB_DIR/gates/baseline-$(date +%H%M%S).log"; mkdir -p "$JOB_DIR/gates"
   local t0 brc=0 bto; t0=$(date +%s); bto="$(min_to_s "$(setting suite_timeout_min)")"; [[ -n "$(setting suite_timeout_min)" ]] || bto=5400
   { echo "# baseline: $cmd on $JOB_BRANCH at ${head:0:12}, before any card"; (cd "$IWT" && test_env integration && run_timed "$bto" "$cmd") 2>&1; } > "$log" 2>&1 || brc=$?
@@ -2347,6 +2457,7 @@ run_baseline() {
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" --arg sec "$(( $(date +%s) - t0 ))" '.baseline = {"result":$r,"head":$h,"command":$c,"log":$l,"seconds":($sec|tonumber),"at":$t}'
   log_event baseline "$result ($cmd, $(( ($(date +%s) - t0) / 60 )) min)"; echo "baseline: $result  ($cmd · $(( ($(date +%s) - t0) / 60 )) min · log: $log)"
   [[ $result == PASS ]] || { show_tail 25 "$log" < "$log"; return 1; }
+  suite_remember "$head" "$cmd" baseline "$log"
 }
 baseline_holds() {
   local b; b="$(jq -c '.baseline // {}' "$JOBJ")"
@@ -2356,7 +2467,7 @@ baseline_holds() {
   [[ "$(jq -r .result <<<"$b")" == NONE && -z "$(setting verify_full)" ]] && return 0
   run_baseline >&2 || refuse 1 "the whole suite (verify_full) already fails on $JOB_BRANCH before any card — every card's QA run and the final verify-all would fail for reasons that are not the job's. This is the human's call, at the start: fix the base branch first, then: dl baseline; or record the suite that is meant to pass in .deliver.json (verify_full) and dl jobset it. Log: $(jq -r '.baseline.log' "$JOBJ")"
 }
-cmd_baseline() { load_job; run_baseline; }
+cmd_baseline() { load_job; [[ ${1:-} != --again ]] || SUITE_AGAIN=1; run_baseline; }
 
 # blame_log <log> — the merged cards whose scope or qa_scope holds a file the failing log names: where a fix card starts
 blame_log() {
@@ -2390,6 +2501,13 @@ cmd_verify_all() {
     echo "PASSED — already on this job branch ($(jq -r '.verify_all.head[0:12]' "$JOBJ"), log: $(jq -r .verify_all.log "$JOBJ")); nothing has changed since. Run it anyway: dl verify-all --again"
     return 0
   fi
+  local seen
+  if [[ $again -eq 0 ]] && seen="$(suite_seen "$head" "$cmd")"; then   # e.g. the whole suite ran after the last card's merge
+    jq_inplace "$JOBJ" --arg h "$head" --arg c "$cmd" --arg t "$(now)" --arg s "$seen" '.verify_all = {"result":"PASS","head":$h,"command":$c,"log":($s | capture("log: (?<l>[^)]*)").l),"reused":$s,"at":$t}'
+    reset_stop_guard; log_event verify-all "PASS (not run: the same files passed it — $seen)"
+    echo "PASSED — not run again: the same files passed verify_full before ($seen). Run it anyway: dl verify-all --again"
+    return 0
+  fi
   echo "verify_full: $cmd  (log: $log)"
   local result=FAIL vto vrc=0; vto="$(suite_timeout)"
   (cd "$IWT" && test_env integration && run_timed "$vto" "$cmd") > "$log" 2>&1 || vrc=$?
@@ -2398,7 +2516,7 @@ cmd_verify_all() {
   [[ -z "$(git -C "$IWT" status --porcelain)" ]] || { echo "verify_full left changes in the integration worktree:" >>"$log"; git -C "$IWT" status --porcelain >>"$log"; result=FAIL; }
   jq_inplace "$JOBJ" --arg r "$result" --arg h "$head" --arg l "$log" --arg c "$cmd" --arg t "$(now)" '.verify_all = {"result":$r,"head":$h,"command":$c,"log":$l,"at":$t}'
   reset_stop_guard; log_event verify-all "$result"
-  if [[ $result == PASS ]]; then echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; blame_log "$log"; exit 1; fi
+  if [[ $result == PASS ]]; then suite_remember "$head" "$cmd" verify-all "$log"; echo "PASSED"; else echo "FAILED"; show_tail 40 "$log" < "$log"; blame_log "$log"; exit 1; fi
 }
 
 # Stack tests: a card's tests that need other cards' work (an e2e flow across services) run on the job branch as soon as the
@@ -2472,7 +2590,7 @@ cmd_ship() {
       || refuse 1 "report.md does not account for every decided non-functional requirement (readiness NFR-*) — its \"## Non-functional requirements\" table: | NFR-x | PASS / CONCERNS / FAIL | evidence |"$'\n'"$nfrerr"
   fi
   knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
-  report_shaping; report_inputs; report_decisions; report_waivers; report_contract_changes; report_context; report_lessons; report_followups
+  report_shaping; report_inputs; report_decisions; report_waivers; report_contract_changes; report_quick; report_context; report_lessons; report_followups
   job_record_publish; head="$(branch_head "$JOB_BRANCH")"
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
@@ -2656,6 +2774,7 @@ main() {
   case $c in
     config) cmd_config "$@" ;;
     new) cmd_new "$@" ;;
+    quick) cmd_quick "$@" ;;
     status) cmd_status "$@" ;;
     next) cmd_next ;;
     run) load_job; export DELIVER_AGENT_NS; exec node "$BIN_DIR/run.mjs" "$ROOT" ;;
@@ -2696,7 +2815,7 @@ main() {
     env) cmd_env "$@" ;;
     awake) cmd_awake "$@" ;;
     checkpoint) cmd_checkpoint ;;
-    baseline) cmd_baseline ;;
+    baseline) cmd_baseline "$@" ;;
     ship) cmd_ship ;;
     pr) cmd_pr ;;
     approve) cmd_approve "$@" ;;

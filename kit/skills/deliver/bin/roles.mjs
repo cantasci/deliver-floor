@@ -90,6 +90,38 @@ function scalar(s) {
 export const loadCatalog = (file = join(SKILL_DIR, "roles.yaml")) => parseYaml(readFileSync(file, "utf8"), "roles.yaml");
 
 // --- checks ---------------------------------------------------------------------------------------------------------
+/** dl quick: the stack from the repo's own files (never a default), the developer role it means and its stack reviewer. */
+export function quickTeam(repo) {
+  const cat = loadCatalog(), has = (f) => existsSync(join(repo, f));
+  const read = (f) => { try { return readFileSync(join(repo, f), "utf8"); } catch { return ""; } };
+  const stack = [];
+  if (has("package.json")) {
+    let deps = {}; try { const p = JSON.parse(read("package.json")); deps = { ...p.dependencies, ...p.devDependencies }; } catch { /* unreadable: plain js */ }
+    stack.push(has("tsconfig.json") || deps.typescript ? "typescript" : "javascript");
+    if (deps["react-native"]) stack.push("react-native"); else if (deps.react || deps.next) stack.push("react");
+    if (deps.vue || deps.nuxt) stack.push("vue");
+    if (deps["@nestjs/core"]) stack.push("nestjs");
+  }
+  const py = read("pyproject.toml") + read("requirements.txt") + read("setup.py");
+  if (py) { stack.push("python"); if (/django/i.test(py)) stack.push("django"); if (/fastapi/i.test(py)) stack.push("fastapi"); }
+  if (has("go.mod")) stack.push("go");
+  if (has("Cargo.toml")) stack.push("rust");
+  const gradle = read("build.gradle") + read("build.gradle.kts") + read("pom.xml");
+  if (gradle) {
+    stack.push(has("build.gradle.kts") ? "kotlin" : "java");
+    if (/spring-boot/.test(gradle)) stack.push("spring-boot");
+    if (/com\.android\./.test(gradle)) stack.push("android");
+  }
+  if (has("pubspec.yaml")) stack.push("flutter");
+  if (has("Package.swift")) stack.push("swift");
+  if (has("composer.json")) stack.push("php");
+  if (has("CMakeLists.txt")) stack.push("cpp");
+  if (!stack.length) return { error: "no code this command knows in the repo root (package.json, pyproject.toml, go.mod, Cargo.toml, build.gradle, pom.xml, pubspec.yaml, Package.swift, composer.json, CMakeLists.txt) — a quick change is a change to existing code: use /deliver <request> for the planned way" };
+  const role = stack.some((s) => ["android", "flutter", "react-native", "swift"].includes(s)) ? "mobile" : stack.some((s) => ["react", "vue"].includes(s)) ? "frontend" : "backend";
+  const key = [...stack].reverse().find((s) => cat.stack_reviewers?.[s]);
+  return { stack, dev: { role, agent: cat.roles[role].agent }, reviewer: cat.stack_reviewers?.[key] ?? cat.stack_reviewers?.default };
+}
+
 export function checkJobRoles(job, cat) {
   const errors = [];
   const known = new Set(Object.keys(cat.roles ?? {}));
@@ -103,13 +135,13 @@ export function checkJobRoles(job, cat) {
     if (cat.roles[r.role].agent !== r.agent) errors.push(`role '${r.role}' must use agent '${cat.roles[r.role].agent}', not '${r.agent}'`);
   }
   for (const [name, r] of Object.entries(cat.roles ?? {}))
-    if (r.always && !(job.roles ?? []).some((s) => s.role === name)) errors.push(`role '${name}' is always selected`);
+    if (r.always && job.track !== "quick" && !(job.roles ?? []).some((s) => s.role === name)) errors.push(`role '${name}' is always selected`);
   const devs = (job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev");
   if (!devs.length) errors.push("no dev role selected — nobody could build the cards");
   // The Leads cut the cards (the BA only on the light path, dl track light). Live run 75: the job was on the full path, the
   // Lead role was dropped and the BA cut the cards — from planning on a full-path job keeps a lead role.
   const cutting = !["intake", "shaping", "readiness", "awaiting_clarification"].includes(job.phase ?? "intake");
-  if (cutting && (job.track ?? "full") !== "light" && devs.length && !(job.roles ?? []).some((r) => cat.roles[r.role]?.kind === "lead"))
+  if (cutting && !["light", "quick"].includes(job.track ?? "full") && devs.length && !(job.roles ?? []).some((r) => cat.roles[r.role]?.kind === "lead"))
     errors.push("no lead role on a full-path job — the Leads cut the cards (tech-lead, backend-lead, …); only the light path (dl track light) has the BA cut them");
   // The stack reviewer follows the language. In a repo without code the language is decided at readiness (ARC-stack — the
   // request or the human, never a default), so until then the job may have no reviewer yet; from planning on it must.
@@ -166,6 +198,15 @@ export function renderRole(sel, job, cat) {
   let rules = [...(cat.rules?.all ?? []), ...(r.blind ? [] : cat.rules?.[r.kind] ?? []), ...(r.rules ?? [])];
   // the light path: the developer writes the card's tests too (dl's dev_tests) — the rule that keeps qa_scope from the dev is
   // replaced, and the reviewer is the one who checks every acceptance criterion against a test
+  // the quick path (dl quick): no BA and no QA role — the request is the spec, the developer states the criteria it meets
+  if (job.track === "quick") {
+    if (r.kind === "dev") rules = [...rules.filter((x) => !/qa_scope/.test(x)),
+      "The request is your spec (no BA, no QA role on this job). Before any code, write the acceptance criteria you will meet — 3 to 7 lines, Given/When/Then, concrete values — and start your summary with them under a line `ACCEPTANCE:`. Then the tests, then the change. Every criterion has a test that would fail without the change; end your summary with one line — AC-MAP: <criterion> → <test name>; … .",
+      "If the request can be read in two ways that behave differently, do not choose one: answer `status: stuck` with the one question that settles it.",
+      "Keep it a small change: no new dependency, no schema or data change, no new integration unless the request names it. If it needs one, answer `status: stuck` and say what it needs — the job then goes the planned way."];
+    if (r.kind === "review" && !r.blind) rules = [...rules,
+      "Quick path: the request (job.json → request) and the developer's ACCEPTANCE lines are the contract — there is no BA spec and no QA role. Check that the criteria cover the request (a missing or weakened one is a blocking item) and that each has a test that would fail without the change."];
+  }
   if (job.track === "light" && job.settings?.light?.qa !== true) {
     if (r.kind === "dev") rules = [...rules.filter((x) => !/qa_scope/.test(x)),
       "You write ALL of this card's tests: unit tests test-first in scope, and in the card's qa_scope at least one integration test per acceptance criterion, named after it (\"AC-2: …\"). No QA role works on this job. End your summary with one line — AC-MAP: AC-1: <test name>; AC-2: <test name>; … — naming every acceptance criterion of the card."];
@@ -232,6 +273,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     // a string: console.log colours a number under FORCE_COLOR (set in some terminals), and dl could not read it
     console.log(String((job.roles ?? []).filter((r) => cat.roles[r.role]?.kind === "dev").reduce((n, r) => n + (r.count ?? 1), 0)));
   }
+  else if (cmd === "quick") { // the team of a quick job, read from the repo's files: its stack, one developer, the stack reviewer
+    const t = quickTeam(arg ?? ".");
+    if (t.error) { console.error(t.error); process.exit(1); }
+    console.log(JSON.stringify(t));
+  }
   else if (cmd === "kind") console.log(roleEntry({ role: arg }, loadCatalog())?.kind ?? "");   // dev | qa | review | ba | lead …
-  else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir> | dev-seats <job.json> | kind <role>"); process.exit(2); }
+  else { console.error("usage: roles.mjs catalog | check <job.json> | render <job dir> | dev-seats <job.json> | kind <role> | quick <repo>"); process.exit(2); }
 }

@@ -4,6 +4,8 @@ Part of Michael's playbook (`../SKILL.md`: setup, invariants, resume). Phases: `
 
 ## Phase 0 — Intake (`intake`)
 
+A fix or a small change does not come through here: `"$DL" quick` (SKILL.md, setup) — this phase is the planned way.
+
 1. `"$DL" new "<short title, ≤6 words>" "<the full request text>"` → prints the job id.
    (For a requirements file the request text is: `Requirements: <abs path>` + its content.)
 2. **The stack comes from the repo — or, in a repo without code, it is chosen for the requirements.** Detect it from the

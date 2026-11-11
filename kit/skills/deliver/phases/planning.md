@@ -51,7 +51,8 @@ Rules:
 - qa_scope = where the QA role writes this card's integration/e2e tests, apart from scope (e.g. "test/integration/orders/**").
 - qa_verify = the command that runs them, e.g. "node --test test/integration/orders/*.test.mjs".
 - acceptance = which AC-n this card satisfies, phrased as checks ("AC-2: … → …"). Every AC of the plan is covered by a card.
-- context = everything a developer who has not seen the plan needs: why, files, decisions, contracts (exact names/signatures).
+- context = everything a developer who has not seen the plan needs: why, files, decisions, contracts (exact names/signatures)
+  — at most 3000 characters (`settings.limits.context_chars`; `dl validate` refuses more): what the spec will say is not repeated here.
 - component = the architecture component the card belongs to; scope and qa_scope stay inside its path; role = its owner.
 - Order with depends_on using temporary ids (B1, B2… / F1…). Cards that touch the same files are never parallel.
 - A skeleton card's tests never require a stub to stay empty (later cards fill it). Test file names are unique within a component.

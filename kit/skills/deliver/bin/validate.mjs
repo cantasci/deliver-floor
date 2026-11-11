@@ -44,7 +44,8 @@ for (const c of cards) {
   if (Array.isArray(c.scope)) {
     for (const p of c.scope) {
       if (typeof p !== "string" || !p.trim()) { errors.push(`${id}: empty scope entry`); continue; }
-      if (/^(\*\*?|\*\*\/\*)$/.test(p) || p.startsWith("/") || p.split("/").includes(".."))
+      // (the quick path has one card and no other lane to keep it out of: its scope is the repo)
+      if ((/^(\*\*?|\*\*\/\*)$/.test(p) && !(job?.track === "quick" && p === "**")) || p.startsWith("/") || p.split("/").includes(".."))
         errors.push(`${id}: scope '${p}' is too broad or escapes the repo ('**', '*', '/…', '..' are not allowed)`);
       if (p.startsWith(".work/") || p.startsWith(".git/")) errors.push(`${id}: scope '${p}' points into .work/ or .git/`);
       try { globToRegExp(p); } catch { errors.push(`${id}: scope '${p}' is not a valid glob`); }
@@ -171,7 +172,7 @@ if (plan && existsSync(join(dir, "shaping.json"))) {
 // Risk-based test design (settings.test_design.risk): every AC of the plan has a priority, every card's spec says how its
 // ACs are tested, and a card with a P0/P1 criterion gets a blind review (settings.review.blind). Every decided
 // non-functional requirement is in the plan with how it is checked.
-if (job?.settings?.test_design?.risk === true && plan) {
+if (job?.settings?.test_design?.risk === true && plan && job.track !== "quick") {
   const acs = riskACs(plan);
   const miss = acs.filter((a) => !a.priority).map((a) => a.ac);
   if (miss.length) errors.push(`plan.md: ${miss.join(", ")} without a priority — each AC line carries [P0] … [P3] (P0: money, data, security or the core flow lost; P3: cosmetic)`);
@@ -201,6 +202,12 @@ if (job?.track === "light") {
   if (planned.length > max) errors.push(`the light path takes at most ${max} card(s) (settings.light.max_cards), the plan has ${planned.length} — this job is not small: dl track full "<why>" (the full readiness review and the Leads' cards)`);
 }
 
+// The quick path (dl quick) is one card. More work than that is planned: /deliver <request>.
+if (job?.track === "quick") {
+  const planned = cards.filter((c) => c.state !== "archived" && !(c.history ?? []).some((h) => h.change === "added"));
+  if (planned.length > 1) errors.push(`the quick path is one card, the board has ${planned.length} — more than that is planned work: /deliver <request>`);
+}
+
 // The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.
 if (job && (job.roles ?? []).some((r) => r.role === "ba"))
   for (const c of cards) {
@@ -211,6 +218,26 @@ if (job && (job.roles ?? []).some((r) => r.role === "ba"))
     if (!/acceptance criteria/i.test(t) || !/given/i.test(t) || !/then/i.test(t))
       errors.push(`${c.id}: specs/${c.id}.md has no Given/When/Then acceptance criteria`);
   }
+
+// What a role writes is in proportion to the work (settings.limits; 0 or absent = no limit — a job started before the limits
+// keeps none). Measured on 71 specs of live jobs: median 6.6 KB, the longest 15.8 KB — every dev, QA and reviewer of the card
+// reads all of it. A fix card's spec states only the behaviour that changes. A card under way keeps the spec it started with.
+const lim = job?.settings?.limits ?? {};
+const kb = (n) => (n / 1000).toFixed(1);
+for (const c of cards) {
+  if (c.state !== "ready" && c.state !== "blocked") continue;
+  const ctx = String(c.context ?? "").length;
+  if (lim.context_chars > 0 && ctx > lim.context_chars)
+    errors.push(`${c.id}: context is ${ctx} characters, the limit is ${lim.context_chars} (settings.limits.context_chars) — keep why, the files and the exact names; what the spec says is not repeated here`);
+  const sp = join(dir, "specs", `${c.id}.md`);
+  if (!existsSync(sp)) continue;
+  const size = Buffer.byteLength(readFileSync(sp, "utf8"));
+  const max = c.fix ? lim.fix_spec_bytes : lim.spec_bytes;
+  if (max > 0 && size > max)
+    errors.push(c.fix
+      ? `${c.id}: specs/${c.id}.md is ${kb(size)} KB, a fix card's spec is at most ${kb(max)} KB (settings.limits.fix_spec_bytes) — only the criteria of the behaviour the fix changes, with their test design; the rest stays in the spec of the card it fixes`
+      : `${c.id}: specs/${c.id}.md is ${kb(size)} KB, the limit is ${kb(max)} KB (settings.limits.spec_bytes) — one line per criterion, test data only for the values the criteria name, nothing repeated from the plan; a card that cannot be said in that is two cards`);
+}
 
 for (const c of cards)
   for (const d of c.depends_on ?? []) {
