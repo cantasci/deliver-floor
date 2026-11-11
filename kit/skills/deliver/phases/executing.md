@@ -1,6 +1,6 @@
 # /deliver — executing: assign, gate → QA → review → merge per card, blocked cards, fix cards
 
-Part of Michael's playbook (`../SKILL.md`: setup, invariants, resume). Phases: `executing`. `DL` and every invariant there apply here.
+Part of Michael's playbook (`../SKILL.md`: setup, invariants, resume). Phases: `executing` — a quick job (`dl quick`) starts here, at **Quick path**. `DL` and every invariant there apply here.
 
 ## Phase 3 — Assign and execute (`executing`)
 
@@ -134,6 +134,38 @@ OUTPUT — only JSON: {"findings":[{"file":"…","line":0,"issue":"…","shows":
 5. **Stack tests** — `dl next` says `STACK dl stack-test T-xx` the moment a card and the cards its stack tests need
    (`stack_after`) are merged: run it then, not at the end. A failure (`FIX`) gets a fix card now (**Fix cards**, `--from stack`), and the
    stack test runs again once it is merged. `dl phase integrating` is refused while one is due or failing.
+
+## Quick path (`dl quick`) — a fix or a small change: one card, one developer, one review
+
+`"$DL" quick "<title>" "<request>"` has opened the job in `executing` with card T-01 (scope: the repo; verify: the repo's
+whole suite). There is no readiness review, no BA spec and no QA role; the request is the spec. Loop on `"$DL" next`:
+
+1. **DISPATCH T-01** → `WT=$("$DL" wt add T-01)`, then Agent(the card's `agent`):
+
+```text
+MODE: QUICK — the request is your spec.
+ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/<role>.md>
+REQUEST: <job.json → request, in full>
+WORKTREE: <WT> — work only there. VERIFY (the repo's whole suite; it must pass): <card.verify>
+First the acceptance criteria you will meet (3–7 lines, Given/When/Then), then the tests, then the change; commit.
+Summary: starts with ACCEPTANCE: and those criteria; ends with AC-MAP: <criterion> → <test name>; …
+```
+
+2. **GATE** `"$DL" gate T-01` — runs the whole suite on the card. Its pass is the QA pass: there is no `dl qa` step. A
+   failed gate → the same developer again (SendMessage; else `dl wt add T-01` and a new agent) with the failing lines.
+   `NOTE: … more than a quick change` → go on; say it in your hand-over (the PR says it too).
+3. **REVIEW T-01** → Agent(the reviewer): its role card, the request, the developer's ACCEPTANCE and AC-MAP lines, the diff
+   (`git -C <WT> diff <job branch>...HEAD`). It checks that the criteria cover the request and each has a test that would
+   fail without the change → `"$DL" review T-01 approve|changes "<summary>"`. Changes → back to the developer, then gate
+   and review again.
+4. `"$DL" integrate T-01` → `"$DL" phase integrating` → `"$DL" verify-all` (it answers `PASSED — not run again`: the gate
+   ran the suite on these files) → `"$DL" phase closing`. Write `report.md` yourself: the table row `AC-1` with its status
+   and evidence, and under it the developer's criteria, each with its test. Then `"$DL" ship`.
+
+**The developer answers `status: stuck`:** with a question about the request → this is the quick path's one question: ask
+the human (headless: write it to QUESTIONS.md and stop), then dispatch the developer again with the answer. Because it
+needs a new dependency, data or an integration → it is not a quick change: tell the human, who stops it
+(`/deliver:abort <why>`) and gives it to `/deliver <request>` — the planned way decides those first.
 
 ## Blocked
 

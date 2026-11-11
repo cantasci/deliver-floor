@@ -44,7 +44,8 @@ for (const c of cards) {
   if (Array.isArray(c.scope)) {
     for (const p of c.scope) {
       if (typeof p !== "string" || !p.trim()) { errors.push(`${id}: empty scope entry`); continue; }
-      if (/^(\*\*?|\*\*\/\*)$/.test(p) || p.startsWith("/") || p.split("/").includes(".."))
+      // (the quick path has one card and no other lane to keep it out of: its scope is the repo)
+      if ((/^(\*\*?|\*\*\/\*)$/.test(p) && !(job?.track === "quick" && p === "**")) || p.startsWith("/") || p.split("/").includes(".."))
         errors.push(`${id}: scope '${p}' is too broad or escapes the repo ('**', '*', '/…', '..' are not allowed)`);
       if (p.startsWith(".work/") || p.startsWith(".git/")) errors.push(`${id}: scope '${p}' points into .work/ or .git/`);
       try { globToRegExp(p); } catch { errors.push(`${id}: scope '${p}' is not a valid glob`); }
@@ -171,7 +172,7 @@ if (plan && existsSync(join(dir, "shaping.json"))) {
 // Risk-based test design (settings.test_design.risk): every AC of the plan has a priority, every card's spec says how its
 // ACs are tested, and a card with a P0/P1 criterion gets a blind review (settings.review.blind). Every decided
 // non-functional requirement is in the plan with how it is checked.
-if (job?.settings?.test_design?.risk === true && plan) {
+if (job?.settings?.test_design?.risk === true && plan && job.track !== "quick") {
   const acs = riskACs(plan);
   const miss = acs.filter((a) => !a.priority).map((a) => a.ac);
   if (miss.length) errors.push(`plan.md: ${miss.join(", ")} without a priority — each AC line carries [P0] … [P3] (P0: money, data, security or the core flow lost; P3: cosmetic)`);
@@ -199,6 +200,12 @@ if (job?.track === "light") {
   const max = job.settings?.light?.max_cards ?? 2;
   const planned = cards.filter((c) => c.state !== "archived" && !(c.history ?? []).some((h) => h.change === "added"));
   if (planned.length > max) errors.push(`the light path takes at most ${max} card(s) (settings.light.max_cards), the plan has ${planned.length} — this job is not small: dl track full "<why>" (the full readiness review and the Leads' cards)`);
+}
+
+// The quick path (dl quick) is one card. More work than that is planned: /deliver <request>.
+if (job?.track === "quick") {
+  const planned = cards.filter((c) => c.state !== "archived" && !(c.history ?? []).some((h) => h.change === "added"));
+  if (planned.length > 1) errors.push(`the quick path is one card, the board has ${planned.length} — more than that is planned work: /deliver <request>`);
 }
 
 // The Business Analyst writes a spec per card (specs/T-xx.md); devs build and QA tests against it.

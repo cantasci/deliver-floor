@@ -87,6 +87,7 @@ Everything you do is a slash command in Claude Code — you never run `dl` yours
 | Command | What it does |
 | --- | --- |
 | `/deliver:deliver <request>` · `/deliver:new <request>` | start a job (text or a requirements `.md`); `new` first tells you when a job is still active |
+| `/deliver:quick <what should change, or what is wrong>` | a fix or a small change, without the planning: the job, its team and one card are read from the repo; one developer states the criteria and writes tests and code, one reviewer checks them |
 | `/deliver:status` · `/deliver:board` · `/deliver:seats` · `/deliver:timeline` | where the job is · the kanban · which role seats are busy or idle · where the time went |
 | `/deliver:answer <id> <answer>` | answer a readiness question |
 | `/deliver:approve [note]` · `/deliver:reject <what to change>` | the plan, when you switched the plan gate on |

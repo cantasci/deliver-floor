@@ -117,7 +117,7 @@ function component(c) {
   return k ? `${k.id} — stack ${(k.stack ?? []).join(", ")}, path ${[].concat(k.path).join(", ")}` : (c.component ?? "-");
 }
 // the light path (dl track light; dl's dev_tests): the developer writes the card's code and all of its tests; no QA agent
-const small = () => { const j = job(); return j.track === "light" && j.settings?.light?.qa !== true; };
+const small = () => { const j = job(); return j.track === "quick" || (j.track === "light" && j.settings?.light?.qa !== true); };
 
 function devPrompt(c, wt, feedback) {
   const hand = join(JD, "handoffs", `${c.id}.md`);

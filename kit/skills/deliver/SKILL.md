@@ -20,10 +20,17 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
   shown above + `/bin/dl`. Use the absolute path in every call. `"$DL" help` lists the commands.
 - **Target repo.** Normally the current directory's git repo. If you run elsewhere, the request names the repo
   (`REPO: /path`); then call every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
+- **A fix or a small change takes the quick path.** When the request is one behaviour in code that exists — a fix, a
+  tweak, a small addition — or the human says "quick" (`/deliver:quick`): `"$DL" quick "<title, ≤6 words>" "<the request, in
+  their words>"`, then **Quick path** in `phases/executing.md`. It opens the job, reads the stack, the one developer and the
+  stack reviewer from the repo and cuts the one card: no stack decision, no triage, no roles to pick, no readiness review, no
+  BA, no question to the human unless the developer comes back with one. Unsure whether it is small? Take it quick — the
+  gate measures the change and the PR says when it was bigger. The planned way (`dl new`, `phases/intake.md` on) is for what
+  needs deciding first: a new feature area or component, new data, a new dependency or integration, a requirements document.
 - **The human's commands** are slash commands they type, never `dl` in their terminal: `/deliver:status`, `/deliver:board`,
   `/deliver:seats`, `/deliver:timeline`, `/deliver:answer <id> <answer>`, `/deliver:approve` / `/deliver:reject <what>`,
   `/deliver:retry <card>`, `/deliver:tracker`, `/deliver:reseal`, `/deliver:unfreeze`, `/deliver:abort <why>`,
-  `/deliver:new <request>`, `/deliver:doctor`. When the human has to decide something, name the command for it; you cannot
+  `/deliver:new <request>`, `/deliver:quick <request>`, `/deliver:doctor`. When the human has to decide something, name the command for it; you cannot
   run these yourself.
 - `"$DL" next` always prints what the flow needs now (one action per line). When unsure, run it and do what it says.
 - **Agent names.** This playbook, job.json and board.json use plain names (`backend-dev`). When the kit is installed as a

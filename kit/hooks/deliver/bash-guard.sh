@@ -77,7 +77,7 @@ if [[ -n ${DELIVER_SHAPING:-} ]]; then
   grep -Eq '(^|[^[:alnum:]_-])git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?(commit|push|merge|rebase|reset|checkout|switch)([[:space:]]|$)' <<<"$cmd" \
     && deny "a BMad session writes its artifacts only; it does not change the repo's history."
 fi
-if grep -Eq "${dl_re}(new|phase|jobset|roles|readiness|input|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|stack-test|checkpoint|track|waive|context[[:space:]]+(draft|propose)|ship|approve|reject|cleanup|shape)([[:space:]]|$)" <<<"$cmd"; then
+if grep -Eq "${dl_re}(new|quick|phase|jobset|roles|readiness|input|clarify|decide|pm-decide|reopen|learn|followup|knowledge[[:space:]]+promote|wt|card|gate|qa|qa-join|review|integrate|verify-all|stack-test|checkpoint|track|waive|context[[:space:]]+(draft|propose)|ship|approve|reject|cleanup|shape)([[:space:]]|$)" <<<"$cmd"; then
   is_agent && deny "only the orchestrator (Michael) runs state-changing dl commands. Report back in your summary instead."
 fi
 if grep -Eq "${dl_re}(approve|reject|clarify|input[[:space:]]+defer)([[:space:]]|$)" <<<"$cmd"; then
