@@ -4,6 +4,29 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.21.0 — 2026-11-12
+
+Four things that made a job slower than its work.
+- **The readiness review is not repeated.** 14 of its items describe the project, not the request: architecture style, UI,
+  layer, stack, test strategy, CI checks, deployment, docs … (`project: true` in `readiness.yaml`). `dl ship` now keeps what
+  a job decided for them with the code (`.deliver/knowledge/decisions.json`), and every later job carries them as decided
+  (source `project: <job>`): the BA is not given them, Michael does not verify them, the human is not asked again. On a
+  backend repo the second job answers 21 items instead of 30. The BA answers a carried item itself only when the request
+  changes it. `readiness.carry: false` turns it off.
+- **A fix in one card's own work is one command — on every path.** `dl fix open "<finding>" --card T-xx` cuts the fix card
+  with that card's contract (role, component, scope, tests, criteria, reviewers) and writes its spec from the finding: no
+  Lead call, no BA call, no `dl fix add`; found after the merge, the job returns to `executing` by itself. A fix that needs
+  another scope, another role or several cards is still cut by the Lead and specified by the BA.
+- **`quick.verify`: a quick card's gate need not run the whole suite.** Every attempt of a quick card ran `verify_full`. A
+  repo with a long suite sets a faster check for the gate; the whole suite then runs once, after the merge. `dl` suggests
+  it when a quick gate took more than 5 minutes.
+- **`suite_reuse` knows about what is outside the repo.** A pass was remembered for the tracked files only. Now also for
+  the files the human provided for the job (readiness inputs) and for what `suite_reuse_key` prints (a command: an image
+  id, a schema version, tool versions) — and only for `suite_reuse_hours` (24), because a service changes without any file
+  changing.
+
+**Fixed:** `dl next` in `readiness`, before the BA's answer existed, ended after the `PLAYBOOK` line without naming the step.
+
 ## 0.20.1 — 2026-11-11
 
 Two things the first real use of 0.20.0 ran into.

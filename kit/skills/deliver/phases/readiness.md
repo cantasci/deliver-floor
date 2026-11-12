@@ -17,6 +17,8 @@ JOB REQUEST:
 <the full request>
 REPO: <absolute repo root>   STACK: <stack>   ROLES: <job.roles>
 READINESS ITEMS (answer every one): <output of: node <skill dir>/bin/readiness.mjs applicable <job dir>>
+CARRIED (decided for this project by earlier jobs — settled: leave them out of your answer. Answer one yourself only where
+  this request changes it, and say so): <output of: node <skill dir>/bin/readiness.mjs carried <job dir>>
 STANDARDS (company + project — a standard settles an item only where it states it: source "standard: <file>", quote its
   words verbatim): <output of: "$DL" knowledge list>
 SHAPED (only a shaped job — binding: what BMad wrote, decided with the human): <output of: node <skill dir>/bin/bmad.mjs artifacts <job dir>>
@@ -26,7 +28,9 @@ PROJECT ARCHITECTURE: <abs path to <repo>/.deliver/knowledge/architecture.md (a 
   (not confirmed: an option of ARC-style / ARC-components, never their answer) | none — a repo without code>
 ```
 
-2. **Verify the BA's work yourself, item by item** — you are the PM. Items marked `ask: human` in `readiness.yaml` (scope,
+2. **Verify the BA's work yourself, item by item** — you are the PM. Carried items (`dl readiness` puts them into
+   `readiness.json`, source `project: <job> — …`) were verified in the job that decided them: you do not check them again,
+   only that this request does not contradict one (then the BA answers that item itself, by the normal rules). Items marked `ask: human` in `readiness.yaml` (scope,
    architecture, UI, API/middleware, new dependencies, data, integrations, deployment) are never yours or the BA's to settle: only the
    request's own words, a company or project standard that states it (`standard: <file>`, its words quoted — e.g. the brand's
    colours from `brand-visual.md`) or the human's answer close them (`dl readiness` refuses any other repo file or a convention

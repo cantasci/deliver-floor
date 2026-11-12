@@ -13,7 +13,9 @@
 #   dl phase <phase>               set phase (intake shaping readiness awaiting_clarification planning awaiting_plan_approval executing
 #                                  integrating closing awaiting_pr_merge done aborted) — guarded
 #   dl jobset '<jq expr>'          update job.json            e.g. dl jobset '.stack=["typescript","react"]'
-#   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md)
+#   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md);
+#                                  what earlier jobs decided about the project itself is carried in, not asked again
+#                                  (.deliver/knowledge/decisions.json, written by dl ship; settings.readiness.carry)
 #   dl quick [--role r] "<title>" "<request>"  (--role: a repo with a frontend and a backend — which one) a small change or a fix, in one step: the job, its team and one card read from the
 #                                  repo — no readiness review, no BA, no Lead, no QA role; the developer states the criteria,
 #                                  writes tests and code, one reviewer checks them (settings.quick: when it was bigger)
@@ -705,8 +707,9 @@ cmd_next() {
       esac ;;
     readiness|awaiting_clarification)
       local rc=0; node "$BIN_DIR/readiness.mjs" check "$JOB_DIR" >/dev/null 2>&1 || rc=$?
-      jq -r '(.items // .)[] | select(.status=="open" and .owner=="pm") | "DECIDE  (PM) \(.id) — \(.question)  (record: dl decide \(.id) \"<decision>\" \"<rationale>\")"' "$JOB_DIR/readiness.json" 2>/dev/null
-      if [[ ! -f $JOB_DIR/readiness.json ]]; then echo "READINESS BA reviews every requirement against readiness.yaml → .work/$JOB/readiness.json, then: dl readiness"
+      jq -r '(.items // .)[] | select(.status=="open" and .owner=="pm") | "DECIDE  (PM) \(.id) — \(.question)  (record: dl decide \(.id) \"<decision>\" \"<rationale>\")"' "$JOB_DIR/readiness.json" 2>/dev/null || true   # no readiness.json yet: jq's exit 2 ended dl next before it said the step
+      if [[ ! -f $JOB_DIR/readiness.json ]]; then local ncar; ncar="$(node "$BIN_DIR/readiness.mjs" carried "$JOB_DIR" 2>/dev/null | jq length 2>/dev/null || echo 0)"
+        echo "READINESS BA reviews every requirement against readiness.yaml → .work/$JOB/readiness.json, then: dl readiness$([[ ${ncar:-0} -gt 0 ]] && echo " · $ncar item(s) are decided for this project by earlier jobs and carried (node readiness.mjs carried): not asked, not answered again")"
       elif [[ $rc -eq 1 ]]; then echo "FIX     readiness.json is incomplete — dl readiness lists what is missing"
       elif [[ $rc -eq 3 ]]; then
         [[ $phase == readiness ]] && echo "PHASE   dl phase awaiting_clarification"
@@ -1059,9 +1062,12 @@ report_decisions() {
 #   · one card whose scope is the repo and whose verify is the whole suite (verify_full); the request is its spec
 #   · the developer states the acceptance criteria it meets, writes the tests and the change; the gate's pass is the QA pass
 #     (its tests ran there); one reviewer checks the criteria against the request and against the tests
-#   · the whole suite runs once, in the gate: the merge and verify-all reuse that pass (suite_reuse)
+#   · the whole suite runs once, in the gate: the merge and verify-all reuse that pass (suite_reuse). A repo whose suite
+#     is long sets settings.quick.verify — a faster check for the gate (every attempt runs it); the whole suite then runs
+#     once, after the merge (verify-all)
 #   · a change bigger than settings.quick (files, lines) goes on and the PR says so; a request that needs a new dependency,
 #     data or an integration comes back from the developer as stuck — that is planned work (/deliver <request>)
+quick_verify() { local v; v="$(setting quick.verify)"; echo "${v:-$(setting verify_full)}"; }
 cmd_quick() {
   resolve_root
   local qrole=""; [[ ${1:-} == --role ]] && { qrole=${2:-}; shift 2 2>/dev/null || shift $#; }
@@ -1083,7 +1089,7 @@ cmd_quick() {
   node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || quick_fail "the team read from the repo is not valid — use /deliver <request> (the planned way)"
   printf '# Plan — %s\n\nThe quick path: the request is the specification (job.json → request). The developer states the acceptance criteria it\nmeets before it writes code; the reviewer checks them against the request and against the tests.\n\n## Acceptance criteria\n\n- **AC-1** [P2] The change the request asks for, as written: %s\n' \
     "$title" "$(tr -s '[:space:]' ' ' <<<"$request" | cut -c1-240)" > "$JOB_DIR/plan.md"
-  jq -n --arg t "$title" --arg role "$(jq -r .dev.role <<<"$q")" --arg agent "$(jq -r .dev.agent <<<"$q")" --arg v "$vf" --arg req "$request" \
+  jq -n --arg t "$title" --arg role "$(jq -r .dev.role <<<"$q")" --arg agent "$(jq -r .dev.agent <<<"$q")" --arg v "$(quick_verify)" --arg req "$request" \
     '{cards:[{id:"T-01", title:$t, role:$role, agent:$agent, state:"ready", depends_on:[], scope:["**"], verify:$v,
        acceptance:["AC-1: the request, as written"], context:("The request is your spec — state the criteria you meet, then tests, then the change:\n\n" + $req[0:2400]),
        attempts:0, notes:[]}]}' > "$BOARD"
@@ -1111,7 +1117,8 @@ quick_size() {
 report_quick() {
   is_quick || return 0
   grep -q '<!-- deliver:quick -->' "$JOB_DIR/report.md" && return 0
-  { printf '\n<!-- deliver:quick -->\n## How this was checked\n\nThe quick path (`dl quick`): no readiness review, no BA spec, no QA role. The request was the spec; the developer stated the\nacceptance criteria, wrote the tests and the change; the repo'"'"'s whole suite ran in the gate; one reviewer checked the criteria\nagainst the request and the tests.\n'
+  { printf '\n<!-- deliver:quick -->\n## How this was checked\n\nThe quick path (`dl quick`): no readiness review, no BA spec, no QA role. The request was the spec; the developer stated the\nacceptance criteria, wrote the tests and the change; %s; one reviewer checked the criteria\nagainst the request and the tests.\n' \
+      "$(if [[ -n "$(setting quick.verify)" ]]; then echo "the quick check (\`$(setting quick.verify)\`) ran in the gate and the repo's whole suite after the merge"; else echo "the repo's whole suite ran in the gate"; fi)"
     jq -r '.cards[] | select(.quick != null) | "\n\(.id): \(.quick.files) file(s), \(.quick.lines) line(s) changed" + (if .quick.over then " — **more than a quick change** (limit: \(.quick.max_files) files, \(.quick.max_lines) lines). Read it as a normal change." else "." end)' "$BOARD"
   } >> "$JOB_DIR/report.md"
 }
@@ -1673,7 +1680,7 @@ cmd_card_add() { # dl card add <card.json> "<reason>"
   # once work has started a card is cut the way planning cuts them: the Lead cuts it, the BA specs it (the user's rule —
   # live job: Michael wrote fix and continuation cards himself, and the roles were bypassed). dl fix open → dl fix add.
   if [[ "$(phase_now)" =~ ^(executing|integrating)$ && -z ${DL_ADD_VIA:-} ]]; then
-    refuse 1 "work has started: a new card goes through the planning roles — dl fix open \"<the finding>\" --from <T-xx|merge-check|stack|verify-all|review|blocked>; the Lead cuts it, the BA specs it (dl next says each step), then dl fix add F-n"
+    refuse 1 "work has started: a new card goes through the planning roles — dl fix open \"<the finding>\" --from <T-xx|merge-check|stack|verify-all|review|blocked>; the Lead cuts it, the BA specs it (dl next says each step), then dl fix add F-n. A finding in one card's own work: dl fix open \"<the finding>\" --card T-xx (dl cuts it)"
   fi
   local id; id="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
   cp "$BOARD" "$BOARD.bak"
@@ -1690,14 +1697,47 @@ cmd_card_add() { # dl card add <card.json> "<reason>"
 #   .work/<job>/out/fix-F-n/cards.json   the Lead's JSON array (tmp ids, as in planning)
 #   .work/<job>/out/fix-F-n/<tmp_id>.md  the BA's spec of each, with its acceptance criteria and test design
 fix_dir() { echo "$JOB_DIR/out/fix-$1"; }
+# dl fix open "<finding>" --card T-xx — the finding is in one card's own work. The fix then has that card's contract: its
+# role, component, scope, tests, criteria and reviewers. Nothing is left for a Lead to cut or a BA to specify, so dl cuts the
+# card and writes its spec from the finding: two agent calls and three steps less per fix. A fix that needs another scope,
+# another role or several cards is cut by the Lead as before (no --card); so is one dl could not cut from the card.
+fix_from_card() { # fix_from_card <F-n> <T-xx> "<finding>"
+  local id=$1 p=$2 finding=$3 d nid acs got; d="$(fix_dir "$id")"
+  nid="$(jq -r '"T-" + ([.cards[].id | ltrimstr("T-") | tonumber] | (max // 0) + 1 | tostring | if length < 2 then "0" + . else . end)' "$BOARD")"
+  acs="$(card_get "$p" '[(.acceptance // [])[] | scan("AC-[0-9]+")] | unique | join(", ")')"; acs=${acs:-The criteria of $p}
+  jq --arg p "$p" --arg f "$finding" --arg i "$id" --arg n "$nid" '.cards[] | select(.id == $p)
+      | {title:("Fix of \($p): " + ($f | gsub("\\s+"; " ") | .[0:60])), role, agent, component, scope, qa_scope, verify, qa_verify, acceptance, reviewers, inputs,
+         depends_on:(if (.state | IN("merged", "archived")) then [] else [$p] end), fix:$i,
+         context:("A fix of \($p): the finding is the spec (specs/\($n).md); what specs/\($p).md states still holds. First a test that fails because of the finding, then the fix.\n\n" + $f[0:1500])}
+      | with_entries(select(.value != null))' "$BOARD" > "$d/card.json"
+  mkdir -p "$JOB_DIR/specs"
+  { printf '# Fix of %s (%s)\n\n## Finding\n\n%s\n\n## Acceptance criteria\n\n' "$p" "$id" "$(printf '%s' "$finding" | head -c 1500)"
+    printf -- '- %s — Given the situation the finding describes, when it is repeated, then the behaviour is what specs/%s.md states: the finding no longer occurs.\n' "$acs" "$p"
+    printf -- '- Given the tests of %s, when they run, then they still pass.\n\n## Test design\n\n' "$p"
+    printf -- '- %s — unit (dev): a test that fails because of the finding before the fix and passes after it.' "$acs"
+    if [[ "$(card_get "$p" '(.qa_scope // []) | length')" -gt 0 ]]; then printf ' Integration/e2e (QA): the scenario of the finding, end to end.'; fi
+    printf '\n'
+  } > "$JOB_DIR/specs/$nid.md"
+  got="$(DL_ADD_VIA=fix cmd_card_add "$d/card.json" "$id (fix of $p): $(tr -s '[:space:]' ' ' <<<"$finding" | cut -c1-160)" 2>&1)" \
+    || { rm -f "$JOB_DIR/specs/$nid.md"; echo "$got" >&2; refuse 1 "$id: the fix card could not be cut from $p (above) — $id stays open and the Lead cuts it (dl next: FIX-CUT $id)"; }
+  got="$(tail -1 <<<"$got")"
+  jq_inplace "$JOBJ" --arg i "$id" --arg c "$got" --arg p "$p" --arg t "$(now)" '.fixes |= map(if .id == $i then . + {"state":"added","cards":[$c],"of":$p,"added_at":$t} else . end)'
+  log_event fix-add "$id → $got (cut from $p)"
+  if [[ "$(phase_now)" == integrating ]]; then jq_inplace "$JOBJ" '.phase="executing"'; log_event phase "executing (a fix card of $p)"; fi
+  echo "$id → $got — the fix of $p, with its role, scope, tests, criteria and reviewers; dl wrote specs/$got.md from the finding (no Lead, no BA). Dispatch it (dl next)"
+}
 cmd_fix() {
   load_job
   local sub=${1:-list}; [[ $# -gt 0 ]] && shift
   case $sub in
     open) # dl fix open "<finding>" [--from <source>]
-      local finding=${1:-} from=""; shift || true
-      [[ ${1:-} == --from ]] && from=${2:-}
-      [[ -n $finding ]] || die 'usage: dl fix open "<the finding: what fails, where, the evidence>" [--from T-xx|merge-check|stack|verify-all|review|blocked]'
+      local finding=${1:-} from="" pcard=""; shift || true
+      while [[ $# -gt 0 ]]; do
+        if [[ $1 == --from ]]; then from=${2:-}; shift; elif [[ $1 == --card ]]; then pcard=${2:-}; shift; fi
+        shift || true
+      done
+      [[ -n $finding ]] || die 'usage: dl fix open "<the finding: what fails, where, the evidence>" [--card T-xx] [--from T-xx|merge-check|stack|verify-all|review|blocked]'
+      [[ -z $pcard ]] || card_exists "$pcard"
       [[ "$(phase_now)" =~ ^(executing|integrating)$ ]] || refuse 1 "a fix is opened while the board is active (executing/integrating — now: $(phase_now)); in planning the Lead cuts every card"
       local id; id="F-$(( $(jq '(.fixes // []) | length' "$JOBJ") + 1 ))"
       mkdir -p "$(fix_dir "$id")"; printf '%s\n' "$finding" > "$(fix_dir "$id")/finding.md"
@@ -1705,7 +1745,7 @@ cmd_fix() {
       log_event fix-open "$id${from:+ ($from)}: $finding"
       if is_quick; then   # no Lead and no BA on a quick job: dl cuts the fix card as it cut the first — the finding is its spec
         local qd qc qn; qd="$(fix_dir "$id")"; qc="$qd/card.json"
-        jq -n --arg f "$finding" --arg i "$id" --arg v "$(setting verify_full)" --argjson r "$(jq -c '[.roles[] | select(.role | startswith("reviewer") | not)][0]' "$JOBJ")" \
+        jq -n --arg f "$finding" --arg i "$id" --arg v "$(quick_verify)" --argjson r "$(jq -c '[.roles[] | select(.role | startswith("reviewer") | not)][0]' "$JOBJ")" \
           '{title:("Fix: " + ($f | gsub("\\s+"; " ") | .[0:60])), role:$r.role, agent:$r.agent, depends_on:[], scope:["**"], verify:$v, fix:$i,
             acceptance:["AC-1: the request, as written — with this finding fixed"],
             context:("A fix on the quick path — the finding is your spec: state the criteria you meet, then a test that fails because of it, then the fix.\n\n" + $f[0:2400])}' > "$qc"
@@ -1717,7 +1757,8 @@ cmd_fix() {
         if [[ "$(phase_now)" == integrating ]]; then jq_inplace "$JOBJ" '.phase="executing"'; log_event phase "executing (a fix card on the quick path)"; fi
         echo "$id → $qn — a fix on the quick path: the same developer role, the finding as its spec. Dispatch it (dl next)"; return 0
       fi
-      echo "$id opened — the Lead cuts it (dl next: FIX-CUT $id); its JSON array goes to $(fix_dir "$id")/cards.json" ;;
+      if [[ -n $pcard ]]; then fix_from_card "$id" "$pcard" "$finding"; return 0; fi
+      echo "$id opened — the Lead cuts it (dl next: FIX-CUT $id); its JSON array goes to $(fix_dir "$id")/cards.json. (A finding in one card's own work: dl fix open \"<finding>\" --card T-xx cuts it without the Lead and the BA.)" ;;
     add) # dl fix add F-n — the Lead's cards with the BA's specs onto the board
       local id=${1:-}; [[ $id =~ ^F-[0-9]+$ ]] || die "usage: dl fix add F-n"
       jq -e --arg i "$id" '(.fixes // []) | any(.id == $i and .state == "open")' "$JOBJ" >/dev/null || refuse 1 "$id is not an open fix (dl fix list)"
@@ -1752,7 +1793,7 @@ cmd_fix() {
       log_event fix-add "$id →${ids}"
       echo "$id →${ids}" ;;
     list) jq -r '(.fixes // [])[] | [.id, .state, (.from // ""), ((.cards // []) | join(" ")), .finding[0:100]] | @tsv' "$JOBJ" | table ;;
-    *) die 'usage: dl fix open "<finding>" [--from <source>] | add F-n | list' ;;
+    *) die 'usage: dl fix open "<finding>" [--card T-xx] [--from <source>] | add F-n | list' ;;
   esac
 }
 
@@ -2005,6 +2046,10 @@ cmd_gate() {
       card_set "$card" '(.cards[] | select(.id==$id)).qa = {"verdict":"pass","head":$h,"gate_head":$h,"qa_verify":"PASS","seconds":0,"suite_seconds":null,"suite":null,"log":$l,"summary":"quick path: the tests the developer wrote ran in the gate (verify)","at":$t}' \
         --arg h "$head" --arg l "$log" --arg t "$(now)"
       quick_size "$card" "$head"
+      local gs; gs="$(card_get "$card" '.gate.seconds // 0')"
+      if [[ "$(card_get "$card" .verify)" == "$(setting verify_full)" && $gs -gt 300 ]]; then
+        echo "NOTE: the gate ran the whole suite ($(( gs / 60 )) min), and every attempt of a quick card does. A faster check for quick changes: \"quick\": {\"verify\": \"<command>\"} in .deliver.json — the whole suite then runs once, after the merge."
+      fi
     fi
     # a gate whose verify is the whole suite is a pass of the whole suite on these files (the merge and verify-all reuse it)
     [[ "$(card_get "$card" .verify)" != "$(setting verify_full)" ]] || suite_remember "$head" "$(setting verify_full)" "the gate of $card" "$log"
@@ -2270,6 +2315,10 @@ job_record_publish() {
   if [[ -f $JOB_DIR/shaping.json ]]; then   # what BMad was given, what it wrote and every decision taken on it
     mkdir -p "$d/bmad"; cp "$JOB_DIR/shaping.json" "$d/bmad/"; cp -R "$JOB_DIR/bmad/inputs" "$JOB_DIR/bmad/out" "$d/bmad/" 2>/dev/null || true
   fi
+  # what this job decided about the project itself (readiness.yaml: project: true) — the next job is not asked it again
+  if [[ -f $JOB_DIR/readiness.json && "$(setting readiness.carry)" != false ]]; then
+    if node "$BIN_DIR/readiness.mjs" remember "$JOB_DIR" "$IWT" >/dev/null 2>&1 && [[ -f $IWT/.deliver/knowledge/decisions.json ]]; then git -C "$IWT" add -f -- ".deliver/knowledge/decisions.json"; fi
+  fi
   git -C "$IWT" add -f -- ".deliver/jobs/$JOB"
   if ! git -C "$IWT" diff --cached --quiet; then
     dl_commit "$IWT" "docs(deliver): record of ${JOB%%-[a-z]*}" "Record of $JOB" \
@@ -2429,12 +2478,28 @@ cmd_merge_check() { # dl merge-check <card> — run the suite after <card>'s mer
 # merge's suite, a merge-check on a branch that did not change. Live: a 19-minute suite ran at the baseline, after the last
 # merge and again in verify-all, on the same files. settings.suite_reuse false runs every suite; dl verify-all --again and
 # dl baseline --again run one anyway.
+# The tracked files are not all a suite reads. Also part of what a pass is remembered for:
+#   · the files the human provided for this job (readiness.json → inputs: a .env, a key file) — their content
+#   · what settings.suite_reuse_key prints (a command, run in the repo): the state of whatever else the suite depends on —
+#     a database image's id, a schema version, the tool versions. A command that fails means "unknown": nothing is reused.
+# And a pass is reused only for settings.suite_reuse_hours (24; 0 = no limit): a service outside the repo changes without
+# any file changing, so an old pass says less every hour.
 content_key() { # content_key <commit> <command>
-  { git -C "$ROOT" ls-tree -r "$1" | { grep -v "$(printf '\t')\.deliver/\(knowledge\|jobs\)/" || true; }; printf '%s\n' "$2"; } | git hash-object --stdin
+  local k f; k="$(setting suite_reuse_key)"
+  { git -C "$ROOT" ls-tree -r "$1" | { grep -v "$(printf '\t')\.deliver/\(knowledge\|jobs\)/" || true; }; printf '%s\n' "$2"
+    if [[ -f ${JOB_DIR:-}/readiness.json ]]; then
+      { jq -r '(.inputs // [])[]?.file // empty' "$JOB_DIR/readiness.json" 2>/dev/null || true; } | while IFS= read -r f; do
+        if [[ -f $f ]]; then printf 'input %s %s\n' "$f" "$(git hash-object "$f")"; fi
+      done
+    fi
+    if [[ -n $k ]]; then echo "suite_reuse_key:"; (cd "$ROOT" && bash -c "$k" 2>&1) || echo "failed $$ $RANDOM $(date +%s)"; fi
+  } | git hash-object --stdin
 }
 suite_seen() { # suite_seen <commit> <command> → where the same content passed this command before; 1 when it has not
   [[ "$(setting suite_reuse)" != false && -z ${SUITE_AGAIN:-} && -f $WORK/suite-passes.json ]] || return 1
-  jq -er --arg k "$(content_key "$1" "$2")" '.[$k] // empty | "\(.what) of \(.job), \(.at) (log: \(.log))"' "$WORK/suite-passes.json" 2>/dev/null
+  local h; h="$(setting suite_reuse_hours)"; [[ $h =~ ^[0-9]+$ ]] || h=24
+  jq -er --arg k "$(content_key "$1" "$2")" --argjson h "$h" '.[$k] // empty | select($h == 0 or (now - (.at | fromdateiso8601)) < $h * 3600)
+    | "\(.what) of \(.job), \(.at) (log: \(.log))"' "$WORK/suite-passes.json" 2>/dev/null
 }
 suite_remember() { # suite_remember <commit> <command> <what ran> <log>
   [[ "$(setting suite_reuse)" != false ]] || return 0

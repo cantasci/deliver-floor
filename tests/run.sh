@@ -10,10 +10,10 @@ TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # r
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
 # The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) and shaping (auto since 0.17.0)
-# and the reuse of a suite's pass (0.20.0) — they run without them, as a user who turned them off would; their own sections
+# and the reuse of a suite's pass (0.20.0) and carried project decisions (0.21.0) — they run without them, as a user who turned them off would; their own sections
 # run with the kit's defaults or set them.
 # Removed before "install / uninstall".
-mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"},"suite_reuse":false}' > "$DELIVER_HOME/config.json"
+mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"},"suite_reuse":false,"readiness":{"carry":false}}' > "$DELIVER_HOME/config.json"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO CLAUDE_PROJECT_DIR
 
@@ -2150,6 +2150,126 @@ expect_ok "…and the next job starts" "$DL" quick --role backend "Fix" "Fix the
 "$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$QK"
 contains "an agent cannot open a quick job (Michael does)" "$(printf '%s' '{"tool_input":{"command":"dl quick x y"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
 cd "$R"
+
+echo "A fix in one card's own work is cut by dl (dl fix open --card); what a job decided about the project is carried to the next one (readiness.carry)"
+FC="$TMP/fixcard"; mkdir -p "$FC" && cd "$FC" && git init -q -b main
+jq -n '{merge_mode:"local", readiness:{carry:true}, verify_full:"test -d ."}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "fixcard" "Add the a module to the library" >/dev/null 2>&1; FCJ="$FC/.work/$(cat .work/ACTIVE)"; FC1="$(basename "$FCJ")"
+FCROLES='.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]'
+"$DL" jobset "$FCROLES" >/dev/null; "$DL" phase readiness >/dev/null
+RDY="$HERE/kit/skills/deliver/bin/readiness.mjs"
+[[ "$(node "$RDY" carried "$FCJ" | jq length)" == 0 ]] && ok "the first job of a repo: nothing is carried, every item is answered" || bad "carried in the first job: $(node "$RDY" carried "$FCJ")"
+FCN1="$(node "$RDY" applicable "$FCJ" | jq length)"
+contains "dl next in readiness, before the BA's answer exists, says the step (it ended without one)" "$("$DL" next 2>&1)" "READINESS BA reviews every requirement against readiness.yaml"
+ready_all; "$DL" phase planning >/dev/null 2>&1
+printf '# Plan\n\n## Acceptance criteria\n\n- AC-1 the a module\n' > "$FCJ/plan.md"
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$FCJ/specs/T-01.md"
+jq -n '{cards:[{id:"T-01",title:"a",role:"backend",agent:"backend-dev",component:"app",state:"ready",depends_on:[],scope:["src/a/**"],qa_scope:["it/a/**"],
+  verify:"test -f src/a/f",qa_verify:"test -f it/a/t",acceptance:["AC-1: x"],context:"c",attempts:0,notes:[]}]}' > "$FCJ/board.json"
+"$DL" phase executing >/dev/null
+fcprep() { # fcprep <card> <src file> <qa file> — dev, gate, QA pass, review
+  local w; w="$("$DL" wt add "$1")"; mkdir -p "$w/src/a" "$w/it/a" && echo x > "$w/src/a/$2" && git -C "$w" add -A && git -C "$w" commit -qm "$1: $2" && "$DL" gate "$1" >/dev/null 2>&1 \
+    && echo t > "$w/it/a/$3" && git -C "$w" add -A && git -C "$w" commit -qm "$1 QA: $3" && "$DL" qa "$1" pass "AC-1 pass" >/dev/null 2>&1 && "$DL" review "$1" approve ok >/dev/null 2>&1
+}
+fcprep T-01 f t || bad "T-01 not ready to merge"
+"$DL" integrate T-01 >/dev/null 2>&1; "$DL" phase integrating >/dev/null
+contains "a card that does not exist is refused" "$("$DL" fix open "x" --card T-09 2>&1)" "no such card: T-09"
+[[ "$(jq '(.fixes // []) | length' "$FCJ/job.json")" == 0 ]] && ok "…and no fix is opened for it" || bad "a fix was opened for a card that does not exist"
+out="$("$DL" fix open "a returns 1 for an empty list, the spec says 0" --card T-01 --from verify-all 2>&1)"
+contains "dl fix open --card cuts the fix card itself: no Lead, no BA" "$out" "F-1 → T-02 — the fix of T-01"
+contains "…with the card's role, component, scope, tests and criteria; it names its fix" \
+  "$(jq -c '.cards[] | select(.id=="T-02") | [.role,.agent,.component,.scope,.qa_scope,.verify,.qa_verify,.acceptance,.fix,.depends_on,.state]' "$FCJ/board.json")" \
+  '["backend","backend-dev","app",["src/a/**"],["it/a/**"],"test -f src/a/f","test -f it/a/t",["AC-1: x"],"F-1",[],"ready"]'
+contains "…its spec is written from the finding: the finding" "$(cat "$FCJ/specs/T-02.md")" "a returns 1 for an empty list, the spec says 0"
+contains "…a criterion that names the card's ACs and its spec" "$(cat "$FCJ/specs/T-02.md")" "AC-1 — Given the situation the finding describes, when it is repeated, then the behaviour is what specs/T-01.md states"
+contains "…and a test design for the dev and for QA" "$(sed -n '/^## Test design/,$p' "$FCJ/specs/T-02.md")" "AC-1 — unit (dev): a test that fails because of the finding before the fix and passes after it. Integration/e2e (QA)"
+[[ "$(jq -r .phase "$FCJ/job.json")" == executing ]] && ok "…found after the merge: the job is back in executing by itself" || bad "phase after the fix: $(jq -r .phase "$FCJ/job.json")"
+out="$("$DL" next)"
+contains "dl next: dispatch the fix card" "$out" "DISPATCH T-02"
+[[ $out != *FIX-CUT* && $out != *FIX-SPEC* && $out != *FIX-ADD* ]] && ok "…no Lead step, no BA step, no dl fix add" || bad "fix steps for a card dl cut: $out"
+contains "dl fix list: the fix and the card it became" "$("$DL" fix list)" "T-02"
+contains "the event log says who cut it" "$(grep $'\tfix-add\t' "$FCJ/events.log")" "F-1 → T-02 (cut from T-01)"
+fcprep T-02 g t2 || bad "the fix card T-02 did not go through gate, QA and review"
+expect_ok "the fix card merges" "$DL" integrate T-02
+"$DL" phase integrating >/dev/null; "$DL" verify-all >/dev/null 2>&1; "$DL" phase closing >/dev/null 2>&1
+report_ok "$FCJ" "Delivery report — fixcard"
+expect_ok "ship (local)" "$DL" ship
+FCD="$FC/.deliver/knowledge/decisions.json"
+[[ -f $FCD ]] && ok "dl ship keeps the job's project decisions with the code (.deliver/knowledge/decisions.json)" || bad "no decisions.json after ship: $(ls "$FC/.deliver" "$FC/.deliver/knowledge" 2>&1)"
+contains "…the items that describe the project, with their answer, source and job" "$(jq -c --arg j "$FC1" '.items["ARC-style"] | [.status, .answer, .source, (.job == $j)]' "$FCD" 2>&1)" '["decided","test decision","the request",true]'
+[[ "$(jq -r '.items | has("PRD-goal") or has("PRD-scope") or has("CON-interface")' "$FCD" 2>&1)" == false ]] && ok "…not the items that are about the request (goal, scope, contracts)" || bad "request items were kept: $(jq -c '.items | keys' "$FCD" 2>&1)"
+git -C "$FC" log --oneline -3 -- .deliver/knowledge/decisions.json | gq . && ok "…committed with the job's record" || bad "decisions.json is not committed"
+# the next job in the same repo
+"$DL" new "second" "Add the b module to the library" >/dev/null 2>&1; FCJ="$FC/.work/$(cat .work/ACTIVE)"
+"$DL" jobset "$FCROLES" >/dev/null; "$DL" phase readiness >/dev/null
+FCC="$(node "$RDY" carried "$FCJ" | jq length)"; FCN2="$(node "$RDY" applicable "$FCJ" | jq length)"
+[[ $FCC -ge 5 && $(( FCN2 + FCC )) -eq $FCN1 ]] && ok "the next job: $FCC decision(s) are carried, the BA answers $FCN2 item(s) instead of $FCN1" || bad "carried $FCC, to answer $FCN2, the first job answered $FCN1"
+[[ "$(node "$RDY" applicable "$FCJ" | jq -c '[.[].id] | [index("ARC-style"), (index("PRD-goal") != null)]')" == '[null,true]' ]] && ok "…ARC-style is not asked again, PRD-goal is" || bad "applicable: $(node "$RDY" applicable "$FCJ" | jq -c '[.[].id]')"
+contains "dl next says how many are carried" "$("$DL" next)" "$FCC item(s) are decided for this project by earlier jobs and carried"
+ready_all
+contains "dl readiness is complete with the BA's shorter answer" "$("$DL" readiness 2>&1)" "0 open for the human"
+contains "…the carried decisions are in readiness.json, with where they come from" \
+  "$(jq -c --arg j "$FC1" '.items[] | select(.id=="ARC-style") | [.status, .answer, .source, (.carried == $j)]' "$FCJ/readiness.json")" "[\"decided\",\"test decision\",\"project: $FC1 — the request\",true]"
+contains "…and in readiness.md, the binding context of every later role" "$(grep 'ARC-style' "$FCJ/readiness.md")" "project: $FC1 — the request"
+cp "$FCJ/readiness.json" "$FCJ/r.keep"
+jq '(.items[] | select(.id=="ARC-style")).answer = "microservices"' "$FCJ/r.keep" > "$FCJ/readiness.json"
+contains "a carried decision that was changed by hand is refused" "$("$DL" readiness 2>&1)" "ARC-style: source \"project: …\" is for a decision dl carried from an earlier job"
+jq --arg q "$(jq -r '.request[0:24]' "$FCJ/job.json")" '(.items[] | select(.id=="ARC-style")) |= {id, status:"decided", answer:"microservices", source:"the request", quote:$q}' "$FCJ/r.keep" > "$FCJ/readiness.json"
+contains "an item the BA answers itself (the request changes it) goes by the normal rules" "$("$DL" readiness 2>&1)" "0 open for the human"
+"$DL" jobset '.settings.readiness.carry=false' >/dev/null
+[[ "$(node "$RDY" applicable "$FCJ" | jq length)" == "$FCN1" ]] && ok "readiness.carry false: every item is asked in every job" || bad "carry false: $(node "$RDY" applicable "$FCJ" | jq length) of $FCN1"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+
+echo "quick.verify: a faster check in the gate of a quick card — the whole suite runs once, after the merge"
+QV="$TMP/quickv"; mkdir -p "$QV/src" "$QV/test" && cd "$QV" && git init -q -b main
+echo '{"name":"q","private":true,"scripts":{"test":"node --test"}}' > package.json
+echo 'export const add = (a, b) => a + b;' > src/math.mjs
+printf 'import { test } from "node:test"; import assert from "node:assert";\nimport { add } from "../src/math.mjs";\ntest("add", () => assert.equal(add(1, 2), 3));\n' > test/math.test.mjs
+jq -n '{merge_mode:"local", suite_reuse:true, quick:{verify:"node --test test/math.test.mjs"}, verify_full:"echo run >> \"$HOME/qv-runs\"; node --test test/*.test.mjs"}' > .deliver.json
+git add -A && git commit -qm init
+rm -f "$HOME/qv-runs"; qvruns() { [[ -f $HOME/qv-runs ]] && wc -l < "$HOME/qv-runs" | tr -d ' ' || echo 0; }
+"$DL" quick "Subtract" "Add a subtract(a, b) function next to add, returning a - b." >/dev/null 2>&1; QVJ="$QV/.work/$(cat .work/ACTIVE)"
+contains "the quick card's verify is the quick check, not the whole suite" "$(jq -r '.cards[0].verify' "$QVJ/board.json")" "node --test test/math.test.mjs"
+w="$("$DL" wt add T-01)"; echo 'export const subtract = (a, b) => a - b;' >> "$w/src/math.mjs"; git -C "$w" add -A && git -C "$w" commit -qm "T-01: subtract"
+contains "the gate passes on the quick check" "$("$DL" gate T-01 2>&1)" "GATE PASSED: T-01"
+[[ "$(qvruns)" == 1 ]] && ok "…the whole suite did not run in the gate (once so far: the baseline)" || bad "whole-suite runs after the gate: $(qvruns)"
+"$DL" review T-01 approve ok >/dev/null 2>&1; "$DL" integrate T-01 >/dev/null 2>&1; "$DL" phase integrating >/dev/null
+out="$("$DL" verify-all 2>&1)"
+[[ "$(qvruns)" == 2 && $out == *PASSED* && $out != *"not run again"* ]] && ok "verify-all runs the whole suite once, after the merge" || bad "verify-all: runs $(qvruns) — $out"
+out="$("$DL" fix open "subtract(2, 5) returns 3" --from review 2>&1)"
+contains "a fix card on this job has the quick check too" "$(jq -r '.cards[1].verify' "$QVJ/board.json")" "node --test test/math.test.mjs"
+"$DL" card T-02 state archived "test: not built" >/dev/null 2>&1; "$DL" phase integrating >/dev/null 2>&1; "$DL" phase closing >/dev/null 2>&1
+printf '# Delivery report — subtract\n\n| AC | Status | Evidence |\n| --- | --- | --- |\n| AC-1 | ✅ | test/math.test.mjs (gate log) |\n' > "$QVJ/report.md"
+"$DL" ship >/dev/null 2>&1
+contains "the PR says which check ran where" "$(cat "$QV/.deliver/jobs/$(basename "$QVJ")/report.md" 2>&1)" 'the quick check (`node --test test/math.test.mjs`) ran in the gate and the repo'"'"'s whole suite after the merge'
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+
+echo "suite_reuse and what a suite reads outside the repo: suite_reuse_key, the human's input files, suite_reuse_hours"
+RK="$TMP/reusekey"; mkdir -p "$RK" && cd "$RK" && git init -q -b main
+jq -n '{merge_mode:"local", suite_reuse:true, suite_reuse_key:"cat \"$HOME/db-version\"", verify_full:"echo run >> \"$HOME/rk-runs\""}' > .deliver.json && git add -A && git commit -qm i
+rm -f "$HOME/rk-runs"; rkruns() { [[ -f $HOME/rk-runs ]] && wc -l < "$HOME/rk-runs" | tr -d ' ' || echo 0; }
+echo v1 > "$HOME/db-version"
+"$DL" new "reusekey" "x" >/dev/null 2>&1; RKJ="$RK/.work/$(cat .work/ACTIVE)"
+"$DL" baseline >/dev/null 2>&1; "$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 1 ]] && ok "the same files and the same state outside: the pass is reused" || bad "same state: $(rkruns) run(s)"
+echo v2 > "$HOME/db-version"; "$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 2 ]] && ok "what suite_reuse_key prints changed (no file in the repo did): the suite runs" || bad "changed key: $(rkruns) run(s)"
+rm -f "$HOME/db-version"; "$DL" baseline >/dev/null 2>&1; "$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 4 ]] && ok "a suite_reuse_key command that fails: the state is unknown, nothing is reused" || bad "failing key: $(rkruns) run(s)"
+echo v2 > "$HOME/db-version"; "$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 4 ]] && ok "back on a state that passed: reused again" || bad "back on v2: $(rkruns) run(s)"
+jq 'map_values(.at = "2020-01-01T00:00:00Z")' .work/suite-passes.json > .work/sp.t && mv .work/sp.t .work/suite-passes.json
+"$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 5 ]] && ok "a pass older than suite_reuse_hours (24) is not reused" || bad "old pass: $(rkruns) run(s)"
+jq 'map_values(.at = "2020-01-01T00:00:00Z")' .work/suite-passes.json > .work/sp.t && mv .work/sp.t .work/suite-passes.json
+"$DL" jobset '.settings.suite_reuse_hours=0' >/dev/null; "$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 5 ]] && ok "suite_reuse_hours 0: no age limit" || bad "hours 0: $(rkruns) run(s)"
+echo A > "$HOME/in.env"; jq -n --arg f "$HOME/in.env" '{items:[], inputs:[{id:"IN-1", what:"the API key", file:$f}]}' > "$RKJ/readiness.json"
+"$DL" baseline >/dev/null 2>&1; "$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 6 ]] && ok "a file the human provided (readiness inputs) is part of what a pass is for" || bad "with an input: $(rkruns) run(s)"
+echo B > "$HOME/in.env"; "$DL" baseline >/dev/null 2>&1
+[[ "$(rkruns)" == 7 ]] && ok "…its content changed: the suite runs" || bad "changed input: $(rkruns) run(s)"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 
 echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"
 CTX="$HERE/kit/skills/deliver/bin/context.mjs"

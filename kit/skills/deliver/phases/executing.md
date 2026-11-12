@@ -138,7 +138,8 @@ OUTPUT — only JSON: {"findings":[{"file":"…","line":0,"issue":"…","shows":
 ## Quick path (`dl quick`) — a fix or a small change: one card, one developer, one review
 
 `"$DL" quick "<title>" "<request>"` has opened the job in `executing` with card T-01 (scope: the repo; verify: the repo's
-whole suite). There is no readiness review, no BA spec and no QA role; the request is the spec. Loop on `"$DL" next`:
+whole suite — or `settings.quick.verify`, the repo's faster check, when it is set: the whole suite then runs once, in
+verify-all). There is no readiness review, no BA spec and no QA role; the request is the spec. Loop on `"$DL" next`:
 
 1. **DISPATCH T-01** → `WT=$("$DL" wt add T-01)`, then Agent(the card's `agent`):
 
@@ -146,7 +147,7 @@ whole suite). There is no readiness review, no BA spec and no QA role; the reque
 MODE: QUICK — the request is your spec.
 ROLE CARD (your rules — read first): <abs path to .work/<job>/roles/<role>.md>
 REQUEST: <job.json → request, in full>
-WORKTREE: <WT> — work only there. VERIFY (the repo's whole suite; it must pass): <card.verify>
+WORKTREE: <WT> — work only there. VERIFY (it must pass): <card.verify>
 First the acceptance criteria you will meet (3–7 lines, Given/When/Then), then the tests, then the change; commit.
 Summary: starts with ACCEPTANCE: and those criteria; ends with AC-MAP: <criterion> → <test name>; …
 ```
@@ -190,7 +191,16 @@ card impossible, that card is dropped or re-planned inside the decision — and 
 
 ## Fix cards — while the board is active, cut as in planning
 
-You orchestrate a fix; you do not write its card. After the start `dl card add` is refused; a new card comes only through:
+You orchestrate a fix; you do not write its card. After the start `dl card add` is refused.
+
+**The finding is in one card's own work** — its code or its tests are wrong, and the fix stays in that card's role and
+scope: `"$DL" fix open "<the finding: what fails, where, the evidence>" --card T-xx [--from <source>]`. `dl` cuts the fix
+card with that card's contract (role, component, scope, tests, criteria, reviewers) and writes its spec from the finding —
+no Lead, no BA, no `dl fix add`; found after the merge, the job is back in `executing` by itself. Dispatch it (`dl next`).
+This is the usual case: a broken merge-check names its card, a review or verify-all finding is mostly one card's.
+
+**Anything else** — another scope or role, several cards, a contract that changes, or a card `dl` could not cut (it says
+so and leaves `F-n` open) — is cut as in planning:
 
 1. `"$DL" fix open "<the finding: what fails, where, the evidence>" --from <T-xx|merge-check|stack|verify-all|review|blocked>`
    → `F-n`, its finding in `.work/<job>/out/fix-F-n/finding.md`.

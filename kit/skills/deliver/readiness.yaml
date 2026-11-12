@@ -16,6 +16,10 @@
 # light: true — answered on the light path too (dl track light: a small change inside existing code). The others shape a
 #   product or a new part of one — new dependencies, data, integrations, UI, deployment, performance targets …; a light job
 #   that needs one of them is not light (dl track full).
+# project: true — the item describes the project, not the request (its architecture style, stack, test strategy, how it is
+#   deployed …). Once a delivered job has decided it, dl ship keeps the decision with the code
+#   (.deliver/knowledge/decisions.json) and later jobs carry it — it is not asked again. The BA answers one itself only when
+#   the request changes it. settings.readiness.carry false asks every item in every job.
 # Format: the same small YAML subset as roles.yaml.
 
 items:
@@ -60,6 +64,7 @@ items:
 
   # ---- architecture -------------------------------------------------------------------------------------------------
   - id: ARC-style
+    project: true
     area: always
     ask: human
     q: "Architecture style: monolith, modular monolith, microservices, library? Where does this change live?"
@@ -68,14 +73,17 @@ items:
     ask: human
     q: "Every component (service, BFF, app, library, worker, database) with its stack, repo path and owning role — written to readiness.json → architecture."
   - id: ARC-ui
+    project: true
     area: always
     ask: human
     q: "Is there a user interface — none, web, desktop or mobile app? Who uses it, and with which stack?"
   - id: ARC-layer
+    project: true
     area: always
     ask: human
     q: "Which layer owns the logic: BFF/API gateway or other middleware, core/domain service, shared library, client? Is there an API, and for whom?"
   - id: ARC-stack
+    project: true
     area: always
     light: true
     q: "Languages, frameworks and runtime versions From the repo's code or the request (quoted). A repo without code and a request that names no language → the best fit for the requirements, never a default: open, owner pm, with the evidence the request gives (the libraries, tools, platforms and data sources it names) and the alternatives — Michael decides it with that evidence quoted."
@@ -97,23 +105,28 @@ items:
 
   # ---- frontend / mobile ------------------------------------------------------------------------------------------
   - id: FE-stack
+    project: true
     area: frontend
     q: "Web framework, design system/components, state management, supported browsers and screen sizes?"
   - id: MOB-stack
+    project: true
     area: mobile
     q: "Native (Kotlin/Swift) or cross-platform (Flutter/React Native)? Minimum OS versions, devices, tablets?"
   - id: MOB-offline
     area: mobile
     q: "Offline/poor-connectivity behaviour, background work, push notifications?"
   - id: MOB-release
+    project: true
     area: mobile
     q: "How is it released (stores, internal distribution, feature flags, forced update)?"
   - id: UX-a11y
+    project: true
     area: ui
     q: "Accessibility target (e.g. WCAG 2.1 AA): screen readers, contrast, keyboard/focus, dynamic type?"
     requires_role: a11y
 
   - id: UX-i18n
+    project: true
     area: ui
     q: "Languages, locale formats (dates, numbers, currency), RTL?"
   - id: UX-design
@@ -146,18 +159,22 @@ items:
     area: backend
     q: "Logging, metrics, tracing and alerting required for this change?"
   - id: NFR-compliance
+    project: true
     area: always
     q: "Domain regulations or internal policies that constrain the solution (e.g. banking regulation, model risk)?"
 
   # ---- quality & delivery -------------------------------------------------------------------------------------------
   - id: TST-strategy
+    project: true
     area: always
     light: true
     q: "Test expectations: unit (dev, TDD), integration/e2e (QA), coverage, test data, test environments?"
   - id: DEL-ci
+    project: true
     area: always
     q: "Which checks must pass to merge (lint, typecheck, tests, security scans)?"
   - id: DEL-deploy
+    project: true
     area: always
     ask: human
     q: "How and where is it deployed or consumed; feature flags; rollback; migration order?"
@@ -165,6 +182,7 @@ items:
     area: always
     q: "Does the work need something only a person can provide — credentials, API keys, accounts, sandbox access, licences, a .env file? Only with evidence: the request names a service or account to call, or the repo reads a secret (an .env.example, a config that reads an env var, a client that needs a key). No such evidence → n_a, with the evidence you checked as its source (e.g. 'no .env.example, no env reads in src/'). A .env file is never needed by default. For each input that is needed: what it is, the evidence (`evidence`: the request's words or the file that reads it), the absolute path where the human puts it (outside the repo, or git-ignored on the base branch), where the code reads it, its variable names (never values), one read-only check (e.g. a GET that reports only the HTTP status) and which work needs it — readiness.json → inputs. Michael asks the human for each one at the start; only the cards that name it (card.inputs) wait for it."
   - id: DEL-docs
+    project: true
     area: always
     q: "Documentation, changelog or runbook updates required?"
     requires_role: docs

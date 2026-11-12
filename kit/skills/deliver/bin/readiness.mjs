@@ -21,11 +21,19 @@
 //             "pm"       — an implementation detail with none of those effects → Michael (the PM) decides, with a rationale
 // Every catalog item that applies to the job must be present; the BA may add items with ids starting "X-".
 //
-//   node readiness.mjs applicable <job dir>              the catalog items that apply (JSON) — given to the BA
+// Carried: an item marked `project: true` in readiness.yaml describes the project, not the request (the architecture style,
+// the stack, the test strategy, how it is deployed …). Once a delivered job has decided it, the decision is kept with the
+// code (.deliver/knowledge/decisions.json, written by dl ship) and every later job gets it as decided — source
+// "project: <job> — <its source>" — instead of asking the BA, Michael and the human again. An item the BA answers itself
+// (the request changes it) is not carried: it goes through the normal rules, and replaces the kept decision at ship.
+//
+//   node readiness.mjs applicable <job dir>              the catalog items the BA answers (JSON): those that apply, without the carried
+//   node readiness.mjs carried <job dir>                 the carried decisions (JSON) — given to the BA as settled
+//   node readiness.mjs remember <job dir> <repo dir>     keep this job's project decisions in <repo dir> (dl ship)
 //   node readiness.mjs check <job dir>                   validate; writes readiness.md and QUESTIONS.md
 //                                                        exit 0 ready · 1 invalid · 3 open questions remain
 //   node readiness.mjs clarify <job dir> <id> <by> "<answer>"   record the human's answer
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseYaml, loadCatalog } from "./roles.mjs";
@@ -55,6 +63,38 @@ export const applicable = (job) => {
   const confirm = job.track === "light" && !hasArchitecture(job);
   return catalog().filter((i) => areasOf(job).has(i.area) && (job.track !== "light" || i.light === true || (confirm && CONFIRM_ARCH.has(i.id))));
 };
+
+const decisionsFile = (repo) => join(repo ?? ".", ".deliver", "knowledge", "decisions.json");
+const projectIds = () => new Set(catalog().filter((c) => c.project === true).map((c) => c.id));
+export function projectDecisions(job) {
+  if (job.settings?.readiness?.carry === false) return {};
+  try { return JSON.parse(readFileSync(decisionsFile(job.repo), "utf8")).items ?? {}; } catch { return {}; }
+}
+export const carriedFor = (job) => {
+  const d = projectDecisions(job), p = projectIds();
+  return applicable(job).filter((c) => p.has(c.id) && d[c.id]).map((c) => ({ id: c.id, q: c.q, status: d[c.id].status, answer: d[c.id].answer, from: d[c.id].job }));
+};
+const isCarried = (i) => /^\s*project:/i.test(String(i.source ?? ""));
+export function remember(jobDir, target) {
+  const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
+  const { items } = readReadiness(jobDir), p = projectIds(), file = decisionsFile(target);
+  let store = { items: {} };
+  try { store = JSON.parse(readFileSync(file, "utf8")); store.items ??= {}; } catch { /* the first job that decides one */ }
+  let n = 0;
+  for (const i of items) {
+    if (!p.has(i.id) || !["decided", "n_a"].includes(i.status) || isCarried(i)) continue;
+    const was = store.items[i.id];
+    if (was && was.status === i.status && (was.answer ?? "") === (i.answer ?? "")) continue;
+    store.items[i.id] = { status: i.status, answer: i.answer, source: i.source, ...(i.quote ? { quote: i.quote } : {}), job: job.id, at: new Date().toISOString().slice(0, 10) };
+    n++;
+  }
+  if (n) {
+    mkdirSync(dirname(file), { recursive: true });
+    const sorted = Object.fromEntries(Object.entries(store.items).sort(([a], [b]) => a.localeCompare(b)));
+    writeFileSync(file, JSON.stringify({ about: "Decisions about this project taken by delivered /deliver jobs (readiness.yaml: project: true). Later jobs carry them instead of asking again. Delete an entry to have the next job ask it again.", items: sorted }, null, 2) + "\n");
+  }
+  return n;
+}
 
 export const KINDS = ["service", "bff", "app", "web", "mobile", "library", "worker", "db", "infra", "docs"];
 export function readReadiness(jobDir) {
@@ -183,16 +223,36 @@ export function check(jobDir) {
   try { ({ items, architecture } = readReadiness(jobDir)); } catch (e) { return { errors: [`readiness.json: ${e.message}`], open: [], items: [] }; }
   if (!Array.isArray(items)) return { errors: ["readiness.json: items must be an array"], open: [], items: [] };
   const byId = new Map(items.map((i) => [i.id, i]));
+  // carried in before anything is checked: the project decisions of earlier jobs for the items the BA left out
+  const proj = projectDecisions(job), projIds = projectIds(), carriedIn = [];
+  if (!job.frozen) for (const c of applicable(job)) {
+    const d = proj[c.id];
+    if (!projIds.has(c.id) || !d || byId.has(c.id)) continue;
+    const it = { id: c.id, status: d.status, answer: d.answer, source: `project: ${d.job} — ${d.source}`, carried: d.job };
+    items.push(it); byId.set(c.id, it); carriedIn.push(it);
+  }
+  if (carriedIn.length) {
+    const raw = JSON.parse(readFileSync(file, "utf8"));
+    const list = Array.isArray(raw) ? raw : (raw.items ??= []);
+    for (const it of carriedIn) if (!list.some((x) => x.id === it.id)) list.push(it);
+    writeFileSync(file, JSON.stringify(raw, null, 2) + "\n");
+  }
   for (const c of applicable(job)) if (!byId.has(c.id)) errors.push(`${c.id} (${c.q}) is not answered`);
   const known = new Set(catalog().map((c) => c.id)), human = askHuman();
   for (const i of items) {
-    if (human.has(i.id) && (i.status === "decided" || i.status === "n_a")) { const e = humanError(i, job); if (e) errors.push(`${i.id}: ${e}`); }
+    const car = isCarried(i);   // settled by an earlier job: checked against what is kept, not against this request
+    if (car) {
+      const d = proj[i.id];
+      if (!projIds.has(i.id) || !d || d.status !== i.status || (d.answer ?? "") !== (i.answer ?? ""))
+        errors.push(`${i.id}: source "project: …" is for a decision dl carried from an earlier job (.deliver/knowledge/decisions.json), and this is not it — answer the item from the request, a standard or the human; or leave it out and dl carries the kept one`);
+    }
+    if (!car && human.has(i.id) && (i.status === "decided" || i.status === "n_a")) { const e = humanError(i, job); if (e) errors.push(`${i.id}: ${e}`); }
     if (human.has(i.id) && i.status === "open" && i.owner === "pm") errors.push(`${i.id}: open for the PM, but it ${ASK_HUMAN}`);
     if (!i.id) { errors.push("an item has no id"); continue; }
     if (!known.has(i.id) && !String(i.id).startsWith("X-")) errors.push(`${i.id}: unknown id (extra items start with "X-")`);
     if (!["decided", "n_a", "open"].includes(i.status)) errors.push(`${i.id}: status must be decided | n_a | open`);
     if (i.status === "decided" && (!i.answer || !i.source)) errors.push(`${i.id}: decided needs an answer and its source`);
-    if (i.status === "decided" && i.source) { const e = quoteError(i, job); if (e) errors.push(`${i.id}: ${e}`); }
+    if (!car && i.status === "decided" && i.source) { const e = quoteError(i, job); if (e) errors.push(`${i.id}: ${e}`); }
     if (i.status === "n_a" && (!i.answer || !i.source)) errors.push(`${i.id}: n_a needs the reason (answer) and its source`);
     if (i.status === "open" && !i.question) errors.push(`${i.id}: open needs a question`);
     if (i.status === "open" && !["business", "pm"].includes(i.owner)) errors.push(`${i.id}: open needs owner "business" (scope/behaviour/contract/business rule) or "pm" (implementation detail)`);
@@ -237,7 +297,7 @@ export function check(jobDir) {
   const q = (c) => catalog().find((x) => x.id === c.id)?.q ?? c.question ?? "";
   const md = [`# Readiness — ${job.id}`, "", `${items.length} item(s): ${items.filter((i) => i.status === "decided").length} decided · ` +
     `${items.filter((i) => i.status === "n_a").length} not applicable · ${open.length} open`, "",
-    "Sources: a requirement / file = from the request or the repo · `human:` = answered by the business · `pm:` = an implementation detail decided by Michael (the PM)", "",
+    "Sources: a requirement / file = from the request or the repo · `human:` = answered by the business · `pm:` = an implementation detail decided by Michael (the PM) · `project:` = decided by an earlier job of this repo and carried (.deliver/knowledge/decisions.json)", "",
     "| Item | Status | Decision / reason | Source |", "| --- | --- | --- | --- |",
     ...items.map((i) => `| **${i.id}** ${q(i)} | ${i.status} | ${(i.status === "open" ? "❓ " + i.question : i.answer ?? "").replace(/\n/g, " ")} | ${(i.source ?? "").replace(/\n/g, " ")} |`), "",
     "## Architecture (frozen once the job is planned)", "", `Style: ${architecture?.style ?? "—"}`, "",
@@ -290,11 +350,11 @@ export function reopen(jobDir, id, why) {
   const i = items.find((x) => x.id === id);
   if (!i) throw new Error(`no readiness item ${id}`);
   if (i.status !== "decided") throw new Error(`${id} is ${i.status} — only a decided item can be reopened`);
-  const asked = [...(i.history ?? [])].reverse().find((h) => h.question)?.question ?? i.question ?? `What is the answer for ${id}?`;
+  const asked = [...(i.history ?? [])].reverse().find((h) => h.question)?.question ?? i.question ?? catalog().find((c) => c.id === id)?.q ?? `What is the answer for ${id}?`;
   i.history = [...(i.history ?? []), { status: i.status, answer: i.answer, source: i.source, rejected: why, at: new Date().toISOString() }];
   if (String(i.source ?? "").startsWith("pm:")) Object.assign(i, { status: "open", owner: "pm", question: asked });
   else Object.assign(i, { status: "open", owner: "business", question: `${asked} (Asked again: the recorded answer did not answer it — ${why})` });
-  delete i.answer; delete i.source; delete i.quote;
+  delete i.answer; delete i.source; delete i.quote; delete i.carried;
   writeFileSync(file, JSON.stringify(raw, null, 2) + "\n");
   return i;
 }
@@ -316,7 +376,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try {
     if (cmd === "applicable") {
       const job = JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"));
-      console.log(JSON.stringify(applicable(job).map(({ id, area, q }) => ({ id, area, q })), null, 2));
+      const car = new Set(carriedFor(job).map((c) => c.id));
+      console.log(JSON.stringify(applicable(job).filter((c) => !car.has(c.id)).map(({ id, area, q }) => ({ id, area, q })), null, 2));
+    } else if (cmd === "carried") {
+      console.log(JSON.stringify(carriedFor(JSON.parse(readFileSync(join(jobDir, "job.json"), "utf8"))), null, 2));
+    } else if (cmd === "remember") {
+      if (!rest[0]) throw new Error("usage: readiness.mjs remember <job dir> <repo dir>");
+      console.log(`${remember(jobDir, rest[0])} project decision(s) kept`);
     } else if (cmd === "check") {
       const r = check(jobDir);
       for (const e of r.errors) console.log(`ERROR ${e}`);
@@ -341,6 +407,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       if (!id || !why.length) throw new Error('usage: readiness.mjs reopen <job dir> <id> "<why the answer did not answer it>"');
       const i = reopen(jobDir, id, why.join(" "));
       console.log(i.owner === "pm" ? `${i.id}: your own decision, open again for you — decide it anew: dl decide ${i.id} "<decision>" "<why>"` : `${i.id}: open again for the human`);
-    } else throw new Error("usage: readiness.mjs applicable|check|clarify|decide|reopen <job dir> …");
+    } else throw new Error("usage: readiness.mjs applicable|carried|check|clarify|decide|reopen|remember <job dir> …");
   } catch (e) { console.error(`readiness: ${e.message}`); process.exit(1); }
 }
