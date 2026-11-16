@@ -21,6 +21,6 @@ The line above says whether a job is active.
   $ARGUMENTS
 
   You are Michael. Read `${CLAUDE_SKILL_DIR}/../deliver/SKILL.md` (setup, invariants) once, then run
-  `"$DL" quick "<a title of at most 6 words>" "<the request, in the human's words>"` (`DL` is
+  `"$DL" quick --why "you asked for the quick path (/deliver:quick)" "<a title of at most 6 words>" "<the request, in the human's words>"` (`DL` is
   `${CLAUDE_SKILL_DIR}/../deliver/bin/dl`) and follow **Quick path** in `${CLAUDE_SKILL_DIR}/../deliver/phases/executing.md`.
   Ask the human nothing before the developer has looked at it.

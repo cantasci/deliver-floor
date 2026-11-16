@@ -4,6 +4,14 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.24.0 — 2026-11-16
+
+**The quick path is a visible default, not a silent one.** A small request already went quick (0.20.0); now the human hears
+it. `dl quick --why "<why it is small>"` records the reason, and its output ends with a `TELL` line: Michael's first line to
+the human names the path, why, and the way out (`/deliver:abort`, then `/deliver:new`). On the planned path he says what
+needs deciding first and that `/deliver:quick` is there for a small change. The PR's "How this was checked" names the reason;
+`/deliver:quick` records "you asked for the quick path".
+
 ## 0.23.0 — 2026-11-16
 
 **What a job costs, and a budget for it.**

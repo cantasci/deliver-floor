@@ -16,7 +16,7 @@
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md);
 #                                  what earlier jobs decided about the project itself is carried in, not asked again
 #                                  (.deliver/knowledge/decisions.json, written by dl ship; settings.readiness.carry)
-#   dl quick [--role r] "<title>" "<request>"  (--role: a repo with a frontend and a backend — which one) a small change or a fix, in one step: the job, its team and one card read from the
+#   dl quick [--role r] [--why "<why small>"] "<title>" "<request>"  (--role: a repo with a frontend and a backend — which one) a small change or a fix, in one step: the job, its team and one card read from the
 #                                  repo — no readiness review, no BA, no Lead, no QA role; the developer states the criteria,
 #                                  writes tests and code, one reviewer checks them (settings.quick: when it was bigger)
 #   dl track light|full "<why>" [--quote "<request words>"]   the light path for a small change to existing code (fewer
@@ -1087,9 +1087,13 @@ report_decisions() {
 quick_verify() { local v; v="$(setting quick.verify)"; echo "${v:-$(setting verify_full)}"; }
 cmd_quick() {
   resolve_root
-  local qrole=""; [[ ${1:-} == --role ]] && { qrole=${2:-}; shift 2 2>/dev/null || shift $#; }
+  local qrole="" qwhy=""
+  while [[ ${1:-} == --role || ${1:-} == --why ]]; do
+    case $1 in --role) qrole=${2:-} ;; --why) qwhy=${2:-} ;; esac; shift 2 2>/dev/null || shift $#
+  done
+  qwhy=${qwhy:-taken as a small change}
   local title=${1:-} request=${2:-${1:-}}
-  [[ -n $title ]] || die 'usage: dl quick [--role backend|frontend|mobile] "<short title>" "<the request: what should change, or what is wrong>"'
+  [[ -n $title ]] || die 'usage: dl quick [--role backend|frontend|mobile] [--why "<why it is a small change, one line>"] "<short title>" "<the request: what should change, or what is wrong>"'
   local q; q="$(node "$BIN_DIR/roles.mjs" quick "$ROOT" "$qrole" 2>&1)" || refuse 1 "$q"
   cmd_new "$title" "$request" >/dev/null
   load_job
@@ -1099,9 +1103,9 @@ cmd_quick() {
   if [[ -z $vf ]]; then
     quick_fail "this repo has no test command (verify_full): a quick change is checked by the repo's own suite. Set it in .deliver.json (\"verify_full\": \"<command>\"), or use /deliver <request> — the planned way decides the test command"
   fi
-  jq_inplace "$JOBJ" --argjson q "$q" --arg t "$(now)" '.track = "quick" | .stack = $q.stack
+  jq_inplace "$JOBJ" --argjson q "$q" --arg t "$(now)" --arg why "$qwhy" '.track = "quick" | .stack = $q.stack
     | .roles = [{role:$q.dev.role, agent:$q.dev.agent, why:"quick: the one developer, from the repo'"'"'s stack"}, {role:"reviewer", agent:$q.reviewer, why:"quick: the stack reviewer"}]
-    | .tracks = [{to:"quick", why:"dl quick", at:$t}]'
+    | .tracks = [{to:"quick", why:$why, at:$t}]'
   apply_role_defaults
   node "$BIN_DIR/roles.mjs" check "$JOBJ" >&2 || quick_fail "the team read from the repo is not valid — use /deliver <request> (the planned way)"
   printf '# Plan — %s\n\nThe quick path: the request is the specification (job.json → request). The developer states the acceptance criteria it\nmeets before it writes code; the reviewer checks them against the request and against the tests.\n\n## Acceptance criteria\n\n- **AC-1** [P2] The change the request asks for, as written: %s\n' \
@@ -1114,9 +1118,11 @@ cmd_quick() {
   ( baseline_holds ) || quick_fail "the repo's suite (verify_full) already fails before any change — fix the base first, or tell Michael which suite is meant to pass (/deliver <request>, the planned way, asks)"
   jq_inplace "$JOBJ" '.phase="executing"'; seal "$BOARD"; tracker open
   node "$BIN_DIR/roles.mjs" render "$JOB_DIR" >/dev/null && log_event roles "$(jq -r '[.roles[].role] | join(" ")' "$JOBJ")"
-  pm_decision "the quick path: one card, the developer states the criteria and writes tests and code, one review" "dl quick — taken as a small change; the gate measures it (settings.quick) and the PR says when it was bigger"
+  pm_decision "the quick path: one card, the developer states the criteria and writes tests and code, one review" "$qwhy — the gate measures it (settings.quick) and the PR says when it was bigger"
   reset_stop_guard; log_event phase "executing (dl quick)"
   echo "quick: $JOB — stack $(jq -r '.stack | join(", ")' "$JOBJ") (in: $(jq -r '.paths | join(", ")' <<<"$q")); $(jq -r .dev.role <<<"$q") ($(jq -r .dev.agent <<<"$q")) builds T-01, $(jq -r .reviewer <<<"$q") reviews it. Next: dl next"
+  # the quick path is the default for a small request — never a silent one: the human hears which path, why, and the way out
+  echo "TELL    the human first, in one line: the quick path — $qwhy. One developer, one reviewer, no planning; the PR says if it turned out bigger. Needs planning instead: /deliver:abort <why>, then /deliver:new <request>"
 }
 # quick_size <card> <head> — how big the quick change is; over settings.quick it goes on, and the PR says so
 quick_size() {
@@ -1134,8 +1140,9 @@ quick_size() {
 report_quick() {
   is_quick || return 0
   grep -q '<!-- deliver:quick -->' "$JOB_DIR/report.md" && return 0
-  { printf '\n<!-- deliver:quick -->\n## How this was checked\n\nThe quick path (`dl quick`): no readiness review, no BA spec, no QA role. The request was the spec; the developer stated the\nacceptance criteria, wrote the tests and the change; %s; one reviewer checked the criteria\nagainst the request and the tests.\n' \
-      "$(if [[ -n "$(setting quick.verify)" ]]; then echo "the quick check (\`$(setting quick.verify)\`) ran in the gate and the repo's whole suite after the merge"; else echo "the repo's whole suite ran in the gate"; fi)"
+  { printf '\n<!-- deliver:quick -->\n## How this was checked\n\nThe quick path (`dl quick`): no readiness review, no BA spec, no QA role. The request was the spec; the developer stated the\nacceptance criteria, wrote the tests and the change; %s; one reviewer checked the criteria\nagainst the request and the tests.\n\nWhy the quick path: %s.\n' \
+      "$(if [[ -n "$(setting quick.verify)" ]]; then echo "the quick check (\`$(setting quick.verify)\`) ran in the gate and the repo's whole suite after the merge"; else echo "the repo's whole suite ran in the gate"; fi)" \
+      "$(jq -r '[.tracks[]? | select(.to == "quick") | .why] | first // "taken as a small change"' "$JOBJ")"
     jq -r '.cards[] | select(.quick != null) | "\n\(.id): \(.quick.files) file(s), \(.quick.lines) line(s) changed" + (if .quick.over then " — **more than a quick change** (limit: \(.quick.max_files) files, \(.quick.max_lines) lines). Read it as a normal change." else "." end)' "$BOARD"
   } >> "$JOB_DIR/report.md"
 }

@@ -2095,8 +2095,10 @@ jq '.verify_full = ""' .deliver.json > "$TMP/d.json" && cp .deliver.json "$TMP/d
 contains "a repo without a test command: refused, with what to set" "$("$DL" quick "x" "y" 2>&1)" "this repo has no test command (verify_full)"
 [[ ! -e .work/ACTIVE ]] && ok "…and the job it opened is closed again: nothing is left half open" || bad "a quick job that could not start stayed active"
 cp "$TMP/d.keep" .deliver.json
-out="$("$DL" quick "Subtract" "Add a subtract(a, b) function next to add, returning a - b." 2>&1)"
+out="$("$DL" quick --why "one function next to an existing one" "Subtract" "Add a subtract(a, b) function next to add, returning a - b." 2>&1)"
 contains "dl quick opens the job, reads the team from the repo and cuts the one card" "$out" "backend (backend-dev) builds T-01, ecc:typescript-reviewer reviews it"
+contains "…and the quick path is never silent: Michael's first line names it, why, and the way out" "$out" "TELL    the human first, in one line: the quick path — one function next to an existing one. One developer, one reviewer, no planning"
+contains "…the way out is the planned way" "$out" "Needs planning instead: /deliver:abort <why>, then /deliver:new <request>"
 QJ="$QK/.work/$(cat .work/ACTIVE)"
 contains "…no BA, no Lead, no QA role: one developer and the stack reviewer" "$(jq -c '[.roles[].role]' "$QJ/job.json")" '["backend","reviewer"]'
 contains "…straight to executing, on the quick track, with the stack from the repo's files" "$(jq -c '{p:.phase,t:.track,s:.stack}' "$QJ/job.json")" '{"p":"executing","t":"quick","s":["javascript"]}'
@@ -2138,6 +2140,7 @@ printf '# Delivery report — subtract\n\n| AC | Status | Evidence |\n| --- | --
 expect_ok "ship (local)" "$DL" ship
 QR="$QK/.deliver/jobs/$(basename "$QJ")"
 contains "the PR says how it was checked" "$(cat "$QR/report.md")" "The quick path (\`dl quick\`): no readiness review, no BA spec, no QA role"
+contains "…and why it took the quick path" "$(cat "$QR/report.md")" "Why the quick path: one function next to an existing one."
 contains "…and how big the change was" "$(cat "$QR/report.md")" "T-01: 2 file(s), 4 line(s) changed."
 [[ -f $QK/test/subtract.test.mjs && "$(jq -r .phase "$QJ/job.json")" == done ]] && ok "delivered: the change is on main, phase done" || bad "quick ship: $(jq -r .phase "$QJ/job.json")"
 # the next fix starts on what this job verified: no baseline run; a change over the limit goes on and the PR says so

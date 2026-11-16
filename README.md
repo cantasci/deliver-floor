@@ -71,6 +71,10 @@ Then, in your repository:
 The job runs right there, in your session: Michael is that session, and the roles run as its subagents. For an unattended
 run use `scripts/run-headless.sh` ([05-run-modes](docs/05-run-modes.md)).
 
+A fix or a small change needs no planning, and gets none: `/deliver:deliver <what should change>` takes the **quick path**
+by itself — one developer writes the tests and the change, one reviewer checks them — and Michael's first line says so, with
+why and how to switch to the planned way. `/deliver:quick <request>` asks for it outright.
+
 Try it on a sandbox first — a slice of a real POC document, nothing of yours is touched:
 
 ```bash
