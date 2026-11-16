@@ -8,8 +8,10 @@
 // · tests: how long dl's own test runs took per card (gate, QA, the whole suite at the QA pass — from board.json): each
 //   holds Michael up while it runs
 // · nobody working: stretches where no seat or agent had work (Michael alone — reading, recording, deciding — or idle)
+// · cost: per role and per card, from the "usage" events (bin/usage.mjs) — tokens from Claude Code, $ from settings.prices
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { spend, budgetLine } from "./usage.mjs";
 
 const jobDir = process.argv[2];
 if (!jobDir || !existsSync(join(jobDir, "events.log"))) { console.error("usage: timeline.mjs <job dir> [--json]"); process.exit(2); }
@@ -67,6 +69,7 @@ const out = {
   tests,
   michael_waited_on_tests_min: +min(1000 * tests.reduce((a, t) => a + (t.gate_s ?? 0) + (t.qa_s ?? 0) + (t.suite_s ?? 0), 0)),
   cards: [...cards.values()].map((x) => ({ id: x.id, dev: span(x.assigned, x.gate), gate_to_qa: span(x.gate, x.qa), qa_to_review: span(x.qa, x.review), review_to_merge: span(x.review, x.merged), total: span(x.assigned, x.merged) })),
+  cost: spend(jobDir),
 };
 if (process.argv.includes("--json")) { console.log(JSON.stringify(out, null, 2)); process.exit(0); }
 console.log(`job ${min(total)} min · nobody working ${min(idle)} min (${Math.round((100 * idle) / total)} %) — Michael alone, or waiting`);
@@ -81,4 +84,12 @@ if (out.cards.length) {
 if (out.tests.length) {
   console.log(`\ntests (s)   gate     QA   whole suite   — Michael waited on test runs: ${out.michael_waited_on_tests_min} min`);
   for (const t of out.tests) console.log(`${t.id.padEnd(8)} ${String(t.gate_s ?? "-").padStart(6)} ${String(t.qa_s ?? "-").padStart(6)}   ${String(t.suite_s ?? "-").padStart(12)}`);
+}
+const cs = out.cost;
+if (cs.agents.runs || cs.michael) {
+  console.log(`\ncost ${budgetLine(cs)}${cs.exact ? "" : " — estimated (settings.prices)"}`);
+  console.log("role / card                        runs        $");
+  for (const r of [...cs.roles.map((x) => [x.role, x]), ...(cs.michael ? [["orchestrator (Michael)", cs.michael]] : []), ...cs.cards.filter((x) => x.card !== "-").map((x) => [x.card, x])])
+    console.log(`${r[0].padEnd(34)} ${String(r[1].runs ?? "-").padStart(4)} ${("$" + r[1].usd.toFixed(2)).padStart(8)}`);
+  if (cs.unpriced.length) console.log(`no price for ${cs.unpriced.join(", ")} (settings.prices): tokens counted, not dollars`);
 }

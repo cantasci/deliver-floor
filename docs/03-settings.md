@@ -93,6 +93,9 @@ There is exactly one human approval in `human` / `semi`: the PR. `dl pr` syncs t
 | --- | --- | --- |
 | `push_branches` | `"auto"` | Push each card branch to `origin` when it is assigned and after each step (`auto` = when there is an origin and `merge_mode` is not `local`; `true`/`false` to force). Agents may push only their own card branch (bash-guard); the job branch is pushed by `dl ship`; nobody pushes main |
 | `ecc` | `"auto"` | The ECC plugin's agents and skills: the Leads' `ecc:architect`, the stack reviewers (`ecc:java-reviewer`, …), the specialists (security, a11y, performance, quality), `ecc:e2e-runner`, `ecc:doc-updater`, and the skills the role cards name. `auto`: used when Claude Code has the plugin installed. `off` — or `auto` without it: the kit's own `lead` and `reviewer` agents take their place (`roles.yaml → ecc_fallback`) and no ECC skill is named. `on`: always ECC's (the job fails to dispatch if it is not installed). |
+| `budget` | `{"usd": null, "minutes": null}` | The job's budget: what its agents and Michael may spend in dollars (`usd`) and how long it may run (`minutes` since `dl new`). `null` = no limit. At 75 % and 90 % `dl next` says so (Michael tells you at his next milestone); used up, nothing more is dispatched — the agent-guard hook refuses, the code driver stops (exit 4), the headless loop stops (exit 4) — and the job stays where it is until you raise it: `/deliver:budget usd=<n> \| minutes=<n> <why>`. Claude cannot raise it, nor change it with `dl jobset` |
+| `prices` | Anthropic's published prices | $ per million tokens per model id: `in`, `out`, `cw5m` / `cw1h` (cache writes, 5-minute / 1-hour), `cr` (cache reads). A key also matches ids that start with it. A model not listed: its tokens are counted, not its dollars (`dl budget` names it). Set your own (a discount, another model) in `~/.deliver/config.json` — merged over the kit's table |
+| `prices_as_of` | `"2026-11-03"` | The date the kit's price table was taken; shown in the PR's cost section |
 | `knowledge.repo` | `""` | The shared knowledge repo (git URL or path): its `standards/*.md` reach the role cards, shared lessons are proposed to it as a PR — [08](08-knowledge.md). Empty: each project keeps its own in `.deliver/knowledge/` |
 | `knowledge.branch` | `""` | Its branch (default: the clone's default) |
 | `commit.convention` | `"auto"` | The repo's commit message convention, followed by every commit of a job — the devs', QA's and `dl`'s own merges (`conventional` or `plain`). `auto`: detected from commitlint / commitizen / a commit-msg hook, else the history. The gate checks the card's commits (with the repo's commitlint when installed); the repo's hooks are never skipped |
@@ -134,11 +137,11 @@ Components (with their path, stack, dev owner and reviewer) are not set on roles
 
 | Hook | Event | Does |
 | --- | --- | --- |
-| `stop-guard.sh` | Stop | Holds Michael while cards are open in `executing`/`integrating`; names idle seats with work. Owner session only. Gives up after `stop_guard_max` |
-| `bash-guard.sh` | PreToolUse(Bash) | Denies push to main/master, force push, an agent pushing anything but its own card branch, deleting `.work/` or job branches; agents may not run flow-changing `dl` commands (`phase`, `integrate`, `qa`, `review`, `ship`, …); nobody but a human terminal runs `dl clarify` / `unfreeze` / `reseal` (recognised as `dl`, `…/bin/dl`, `"$DL"`; `dl` itself also refuses them under `DELIVER_HEADLESS=1`); scripts may not write `job.json`, nor `board.json` once work has started |
+| `stop-guard.sh` | Stop | Holds Michael while cards are open in `executing`/`integrating`; names idle seats with work. Owner session only. Gives up after `stop_guard_max`, and lets him stop when the budget is used up. Records his own token use |
+| `bash-guard.sh` | PreToolUse(Bash) | Denies push to main/master, force push, an agent pushing anything but its own card branch, deleting `.work/` or job branches; agents may not run flow-changing `dl` commands (`phase`, `integrate`, `qa`, `review`, `ship`, …); nobody but a human terminal runs `dl clarify` / `unfreeze` / `reseal` / `budget raise` (recognised as `dl`, `…/bin/dl`, `"$DL"`; `dl` itself also refuses them under `DELIVER_HEADLESS=1`); scripts may not write `job.json`, nor `board.json` once work has started |
 | `write-guard.sh` | PreToolUse(Edit\|Write) | Agents write only inside their card worktree; Michael writes `.work/` files but no product code |
-| `agent-guard.sh` | PreToolUse(Agent\|Task) | Headless only: refuses background agents (they die with `claude -p`) |
-| `subagent-log.sh` | SubagentStop | Appends each agent's role + summary line to `events.log` |
+| `agent-guard.sh` | PreToolUse(Agent\|Task) | Refuses a dispatch once the job's budget is used up; headless: refuses background agents (they die with `claude -p`). Records Michael's own token use (`michael-usage.json`) |
+| `subagent-log.sh` | SubagentStop | Appends each agent's role + summary line to `events.log`, and what it spent (`usage`: card, role, tokens from its transcript, $ from `prices`) |
 
 ## Environment variables
 

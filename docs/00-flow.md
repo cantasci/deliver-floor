@@ -182,7 +182,8 @@ job/JOB-…  ●──────────●(T-01)────────�
     ├── specs/T-01.md …               BA spec per card: story, Given/When/Then, edge cases, test data
     ├── handoffs/T-01.md …            what the dev did + QA verdict + review verdict
     ├── gates/T-01-a1-143512.log …    every gate run, every verify-all
-    ├── events.log                    timeline: phases, assignments, gates, QA, reviews, merges, every agent run
+    ├── events.log                    timeline: phases, assignments, gates, QA, reviews, merges, every agent run and its cost
+    ├── michael-usage.json            the orchestrator's own token use, per session (the agents' is in events.log)
     ├── report.md                     closing report (also the PR body)
     └── wt/
         ├── _integration/             worktree on job/<id> — merges land here

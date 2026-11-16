@@ -42,7 +42,11 @@
 #   dl learn <role|all> "<lesson>" --topic <slug> (--card T-xx | --evidence "…") [--scope project|shared|kit]
 #                                  propose a lesson, with what happened; it reaches .deliver/knowledge/ with this job's PR
 #   dl followup "<finding>" [--card T-xx]   a defect seen outside the job's scope — listed in the PR
-#   dl timeline [--json]           where the job's time went: phases, each seat's busy share, per card, nobody working
+#   dl timeline [--json]           where the job's time went: phases, each seat's busy share, per card, nobody working —
+#                                  and what it cost, per role and per card
+#   dl budget [--check|--json]     what the job spent (tokens from Claude Code's transcripts, $ from settings.prices) against
+#                                  its budget (settings.budget: usd, minutes); --check: exit 1 ≥ 75 %, 2 ≥ 90 %, 3 used up
+#   dl budget raise usd=<n> | minutes=<n> "<the human's words>"   the human raises the budget; the job goes on
 #   dl knowledge [list|topics|promote <topic> "<rule>"]   standards + lessons for the role cards; promote = a new
 #                                  standard (with the PR)
 #   dl validate                    board.json schema + dependency + scope-overlap check
@@ -611,6 +615,7 @@ cmd_status() {
   fi
   local te; te="$(grep -c $'\ttracker-error\t' "$JOB_DIR/events.log" 2>/dev/null || true)"
   [[ ${te:-0} -gt 0 ]] && echo "tracker: $te sync error(s) — last: $(grep $'\ttracker-error\t' "$JOB_DIR/events.log" | tail -1 | cut -f3 | cut -c1-160) (dl tracker sync retries)"
+  if budget_set || grep -q $'\tusage\t' "$JOB_DIR/events.log" 2>/dev/null; then echo "$(node "$BIN_DIR/usage.mjs" spend "$JOB_DIR" 2>/dev/null | head -n 1)  (per role: dl budget)"; fi
   echo
   echo "next:"; cmd_next | sed 's/^/  /'
 }
@@ -644,6 +649,15 @@ cmd_next() {
   if [[ -n $pf && -z ${DELIVER_NEXT_RAW:-} ]]; then
     [[ $phase == awaiting_clarification ]] && shaping_job && pf=shaping   # the decisions BMad asked for: its phase's file
     echo "PLAYBOOK $SKILL_DIR/phases/$pf.md — the steps of this phase ($phase): read it once in this session, before you act"
+  fi
+  # the job's budget (settings.budget): used up → nothing more is dispatched until the human raises it; 75 / 90 % → say so
+  if budget_set && [[ ! $phase =~ ^(awaiting_pr_merge|done|aborted)$ ]]; then
+    local bl brc=0; bl="$(node "$BIN_DIR/usage.mjs" budget "$JOB_DIR" 2>/dev/null)" || brc=$?
+    if [[ $brc -eq 3 ]]; then
+      echo "BUDGET  used up: $bl — dispatch nothing more. Tell the human what is done and what is left (dl status); only they raise it: /deliver:budget usd=<n> | minutes=<n> <why> — the job goes on from where it is"
+      return 0
+    fi
+    [[ $brc -eq 1 || $brc -eq 2 ]] && echo "BUDGET  $bl used — tell the human at your next milestone (dl budget per role); used up, nothing more is dispatched"
   fi
   # the code driver runs the cards (dl run, settings.driver "code"): Michael's session (DELIVER_DRIVER=1) is shown only what
   # needs his judgment — the rest is not his to do
@@ -953,6 +967,9 @@ _jobset_locked() {
   local bad; bad="$(jq -rn --argjson a "$(cat "$JOBJ")" --argjson b "$new" --argjson ok "$JOBSET_KEYS" \
     '[($a|keys) + ($b|keys) | unique[] | select(. as $k | ($ok | index($k)) | not) | select($a[.] != $b[.])] | join(", ")')"
   [[ -z $bad ]] || refuse 1 "dl jobset may not change: $bad (use the dl command that owns it)"
+  # the budget is the human's (dl budget raise, refused to agents and headless runs); the prices are the settings files'
+  jq -en --argjson a "$(cat "$JOBJ")" --argjson b "$new" '[$a.settings.budget, $a.settings.prices, $a.settings.prices_as_of] == [$b.settings.budget, $b.settings.prices, $b.settings.prices_as_of]' >/dev/null \
+    || refuse 1 "dl jobset does not change the budget or the price table — the budget is the human's: dl budget raise usd=<n> | minutes=<n> \"<their words>\"; prices: settings.prices in .deliver.json or ~/.deliver/config.json"
   if [[ "$(phase_now)" =~ ^(executing|integrating|closing|awaiting_pr_merge)$ ]]; then
     jq -en --argjson a "$(cat "$JOBJ")" --argjson b "$new" '($a.settings.gates == $b.settings.gates) and ($a.settings.merge_mode == $b.settings.merge_mode)' >/dev/null \
       || refuse 1 "gates and merge_mode are fixed once work has started"
@@ -1428,6 +1445,13 @@ cmd_input() { # dl input [list] | check [IN-n …] | defer <IN-n> "<the human's 
       echo "$id deferred by the human — every card that needs it (card.inputs) waits until: dl input check $id" ;;
     *) die 'usage: dl input [list] | check [IN-n …] | defer <IN-n> "<the human'"'"'s words>"' ;;
   esac
+}
+# what the job cost, per role and per card (bin/usage.mjs) — the PR body's last section
+report_cost() {
+  grep -q '<!-- deliver:cost -->' "$JOB_DIR/report.md" && return 0
+  local c; c="$(node "$BIN_DIR/usage.mjs" report "$JOB_DIR" 2>/dev/null)" || return 0
+  [[ -n $c ]] && printf '%s\n' "$c" >> "$JOB_DIR/report.md"
+  return 0
 }
 report_inputs() {
   grep -q '<!-- deliver:inputs -->' "$JOB_DIR/report.md" && return 0
@@ -2329,6 +2353,31 @@ job_record_publish() {
 }
 # dl followup "<finding>" [--card T-xx] [--evidence "<…>"] — a defect seen outside the job's scope: recorded, listed in the PR
 cmd_timeline() { load_job; node "$BIN_DIR/timeline.mjs" "$JOB_DIR" "$@"; }
+
+# The job's budget (settings.budget: usd, minutes — none by default). What it spent: every agent run (its transcript, the
+# SubagentStop hook; under the code driver Claude Code's own figure) and Michael's own sessions — bin/usage.mjs. At 75 % and
+# 90 % dl next says so; used up, nothing more is dispatched (the agent-guard hook, the code driver, the headless loop) and the
+# job stays where it is until the human raises it.
+budget_set() { jq -e '[.settings.budget.usd, .settings.budget.minutes, .budget.usd, .budget.minutes] | any(. != null and . > 0)' "$JOBJ" >/dev/null 2>&1; }
+cmd_budget() {
+  load_job
+  case ${1:-} in
+    "") node "$BIN_DIR/usage.mjs" spend "$JOB_DIR" ;;
+    --json) node "$BIN_DIR/usage.mjs" spend "$JOB_DIR" --json ;;
+    --check) node "$BIN_DIR/usage.mjs" budget "$JOB_DIR" ;;
+    raise)
+      shift; local usd="" min="" words="" a
+      for a in "$@"; do case $a in usd=*) usd=${a#usd=} ;; minutes=*) min=${a#minutes=} ;; *) words=$a ;; esac; done
+      [[ ( -n $usd || -n $min ) && -n $words ]] || die 'usage: dl budget raise usd=<n> | minutes=<n> "<the human'"'"'s words>"'
+      [[ -z $usd || $usd =~ ^[0-9]+([.][0-9]+)?$ ]] || die "usd=<dollars>, a number (got: $usd)"
+      [[ -z $min || $min =~ ^[0-9]+$ ]] || die "minutes=<whole minutes since the job began> (got: $min)"
+      jq_inplace "$JOBJ" --arg u "$usd" --arg m "$min" --arg w "$words" --arg t "$(now)" \
+        '.budget = ((.budget // {}) + (if $u != "" then {usd: ($u | tonumber)} else {} end) + (if $m != "" then {minutes: ($m | tonumber)} else {} end) + {by: $w, at: $t})'
+      log_event budget "raised by the human: ${usd:+usd=$usd }${min:+minutes=$min }— $words"; reset_stop_guard
+      echo "budget raised — $(node "$BIN_DIR/usage.mjs" budget "$JOB_DIR" || true)" ;;
+    *) die 'usage: dl budget [--check|--json] | dl budget raise usd=<n> | minutes=<n> "<the human'"'"'s words>"' ;;
+  esac
+}
 cmd_followup() {
   load_job; not_shipped
   local text=${1:-} card="" ev=""; shift || true
@@ -2670,7 +2719,7 @@ cmd_ship() {
       || refuse 1 "report.md does not account for every decided non-functional requirement (readiness NFR-*) — its \"## Non-functional requirements\" table: | NFR-x | PASS / CONCERNS / FAIL | evidence |"$'\n'"$nfrerr"
   fi
   knowledge_publish; head="$(branch_head "$JOB_BRANCH")"
-  report_shaping; report_inputs; report_decisions; report_waivers; report_contract_changes; report_quick; report_context; report_lessons; report_followups
+  report_shaping; report_inputs; report_decisions; report_waivers; report_contract_changes; report_quick; report_context; report_lessons; report_followups; report_cost
   job_record_publish; head="$(branch_head "$JOB_BRANCH")"
   if [[ $mode == local ]]; then
     local on; on="$(git -C "$ROOT" symbolic-ref --short -q HEAD || true)"
@@ -2881,6 +2930,7 @@ main() {
     learn) cmd_learn "$@" ;;
     followup) cmd_followup "$@" ;;
     timeline) cmd_timeline "$@" ;;
+    budget) cmd_budget "$@" ;;
     knowledge) cmd_knowledge "$@" ;;
     ready) cmd_ready ;;
     wt) cmd_wt "$@" ;;

@@ -36,7 +36,9 @@ are found the same way — the transcripts are Claude Code's, kept for 30 days b
 
 - Agents run in the background: Michael moves each card on the moment its agent reports and assigns the cards it unblocks.
 - Open business questions come as one AskUserQuestion with the BA's options; your words are recorded with `dl clarify` (or answer yourself: `/deliver:answer <id> <answer>`).
-- `/deliver:status`, `/deliver:board` and `/deliver:timeline` give you the live board.
+- `/deliver:status`, `/deliver:board` and `/deliver:timeline` give you the live board; `/deliver:budget` what it cost so far.
+- A budget (setting `budget`: `usd`, `minutes`) caps an unattended run: used up, the script stops (exit 4) with the job as it
+  is; `/deliver:budget usd=<n> <why>` raises it and the script goes on from there.
 - Auto mode (`Shift+Tab`) removes most permission prompts. The hooks still apply.
 
 ## 2. Headless

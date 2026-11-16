@@ -85,6 +85,10 @@ for ((i = 1; i <= rounds; i++)); do
     awaiting_pr_merge) echo "⏸  the PR is with the human: $(jq -r '.pr.url // "?"' "$jf") — then: dl pr"; exit 0 ;;
     done|aborted) echo "✔ job $job: $phase"; exit 0 ;;
   esac
+  # the job's budget (settings.budget) is used up: no round starts — the human raises it (/deliver:budget), then runs this again
+  if bl="$("$KIT/bin/dl" budget --check 2>/dev/null)"; [[ $? -eq 3 ]]; then
+    echo "⏸  the job's budget is used up: $bl — raise it: /deliver:budget usd=<n> | minutes=<n> <why> (or dl budget raise in a terminal), then run this script again"; exit 4
+  fi
   state="$phase $(wc -l < ".work/$job/events.log" 2>/dev/null)"   # events.log grows on every dl step
   if [[ $state == "$last" ]]; then echo "⚠ no progress in the last round ($phase) — stopping. Check: dl status; tail .work/$job/events.log"; exit 1; fi
   last=$state
@@ -97,6 +101,7 @@ for ((i = 1; i <= rounds; i++)); do
       0) continue ;;
       10) DELIVER_DRIVER=1 run "$DCMD resume"; if wait_for_limit "$LAST_LOG"; then last=""; i=$((i - 1)); fi; continue ;;
       3) echo "⏸  a usage limit stopped an agent of the driver — nothing was recorded; run this script again after the reset"; exit 3 ;;
+      4) echo "⏸  the job's budget is used up — raise it: /deliver:budget usd=<n> | minutes=<n> <why> (or dl budget raise in a terminal), then run this script again"; exit 4 ;;
       *) echo "⚠ dl run failed (exit $drc) — Michael takes this round"; ;;
     esac
   fi

@@ -62,6 +62,9 @@
     "gate_timeout": { "type": "integer", "default": 1800, "description": "Seconds a card's verify / qa_verify may run." },
     "stop_guard_max": { "type": "integer", "default": 5 },
     "push_branches": { "enum": ["auto", true, false], "default": "auto" },
+    "budget": { "type": "object", "additionalProperties": false, "description": "The job's budget: what its agents and the orchestrator may spend (usd, estimated from prices unless the code driver reports it) and how long it may run (minutes since it began). null = no limit. At 75 % and 90 % dl next says so; used up, nothing more is dispatched until the human raises it (dl budget raise).", "properties": { "usd": { "type": ["number", "null"], "exclusiveMinimum": 0 }, "minutes": { "type": ["integer", "null"], "exclusiveMinimum": 0 } } },
+    "prices_as_of": { "type": "string", "description": "The date the price table was taken from Anthropic's published prices." },
+    "prices": { "type": "object", "description": "$ per million tokens per model id (a key also matches ids that start with it): in, out, cw5m / cw1h (cache writes, 5-minute / 1-hour), cr (cache reads). A model not listed: its tokens are counted, not its dollars.", "additionalProperties": { "type": "object", "additionalProperties": false, "required": ["in", "out", "cw5m", "cw1h", "cr"], "properties": { "in": { "type": "number", "minimum": 0 }, "out": { "type": "number", "minimum": 0 }, "cw5m": { "type": "number", "minimum": 0 }, "cw1h": { "type": "number", "minimum": 0 }, "cr": { "type": "number", "minimum": 0 } } } },
     "ecc": { "enum": ["auto", "on", "off"], "default": "auto", "description": "The ECC plugin's agents (the Leads' architect, the stack reviewers, the specialists) and skills. auto: used when Claude Code has the plugin installed; off — or auto without it: the kit's own lead and reviewer agents take their place and no ECC skill is named." },
     "roles": {
       "type": "object",

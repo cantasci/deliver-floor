@@ -14,6 +14,17 @@ allow() {
   . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
   if owned="$(owned_job)"; then
     IFS=$'\t' read -r job root <<<"$owned"
+    # the job's budget (settings.budget, raised only by the human): reached → nothing more is dispatched; the job stays as it
+    # is and goes on once they raise it
+    if [[ -z ${DELIVER_AGENT_ID:-} && -z "$(hk .agent_id)" ]]; then   # Michael's own session, not a role agent's
+      local u="$(dirname "${BASH_SOURCE[0]}")/../../skills/deliver/bin/usage.mjs" t; t="$(hkp .transcript_path)"
+      [[ -n $t && -f $t ]] && node "$u" michael "$t" "$root/.work/$job" 2>/dev/null
+      local line rc=0; line="$(node "$u" budget "$root/.work/$job" 2>/dev/null)" || rc=$?
+      if [[ $rc -eq 3 ]]; then
+        echo "deliver agent-guard: the job's budget is used up — $line. Dispatch nothing more: tell the human what is done and what is left (dl status). Only they raise it: /deliver:budget usd=<n> | minutes=<n> <why>; the job goes on from where it is." >&2
+        exit 2
+      fi
+    fi
     printf '%s\tdispatch\t%s\n' "$(date -u +%FT%TZ)" "$(jq -r '.tool_input.subagent_type // "agent"' <<<"$input")" >> "$root/.work/$job/events.log"
   fi
   exit 0

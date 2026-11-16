@@ -12,11 +12,19 @@ command -v jq >/dev/null || exit 0
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 is_agent && exit 0   # role agents end when their task is done; only Michael is held to the board
-[[ ${DELIVER_DRIVER:-} == 1 ]] && exit 0   # the code driver runs the cards (dl run): Michael's round ends when his part is done
 owned="$(owned_job)" || exit 0
 IFS=$'\t' read -r job root <<<"$owned"
 jf="$root/.work/$job/job.json"; bf="$root/.work/$job/board.json"
+# what Michael's own session spent on this job (settings.prices) — dl timeline, the PR's cost section, the budget
+um="$(dirname "${BASH_SOURCE[0]}")/../../skills/deliver/bin/usage.mjs"; tp="$(hkp .transcript_path)"
+[[ -n $tp && -f $tp ]] && node "$um" michael "$tp" "$root/.work/$job" 2>/dev/null
+[[ ${DELIVER_DRIVER:-} == 1 ]] && exit 0   # the code driver runs the cards (dl run): Michael's round ends when his part is done
 [[ -f $bf ]] || exit 0
+# the budget is used up: nothing more may be dispatched, so the open cards are the human's to decide (dl budget raise)
+if bl="$(node "$um" budget "$root/.work/$job" 2>/dev/null)"; [[ $? -eq 3 ]]; then
+  echo "deliver stop-guard: the job's budget is used up ($bl) — you may stop. Tell the human what is done and what is left; they raise it with /deliver:budget usd=<n> | minutes=<n> <why>." >&2
+  exit 0
+fi
 
 phase="$(jq -r .phase "$jf")"
 case $phase in executing|integrating) ;; *) exit 0 ;; esac

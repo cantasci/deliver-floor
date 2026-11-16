@@ -83,8 +83,8 @@ fi
 if grep -Eq "${dl_re}(approve|reject|clarify|input[[:space:]]+defer)([[:space:]]|$)" <<<"$cmd"; then
   [[ ${DELIVER_HEADLESS:-} == 1 ]] && deny "no human is in this session (headless). Write the question down (APPROVAL.md / QUESTIONS.md) and stop; the human answers with /deliver:approve | /deliver:reject | /deliver:answer."
 fi
-grep -Eq "${dl_re}(unfreeze|reseal|abort|tracker[[:space:]]+switch)([[:space:]]|$)" <<<"$cmd" \
-  && deny "frozen decisions, seals, aborting and the tracker are a human's call, with their own slash command (/deliver:unfreeze | /deliver:reseal | /deliver:abort | /deliver:tracker)."
+grep -Eq "${dl_re}(unfreeze|reseal|abort|tracker[[:space:]]+switch|budget[[:space:]]+raise)([[:space:]]|$)" <<<"$cmd" \
+  && deny "frozen decisions, seals, aborting, the tracker and the budget are a human's call, with their own slash command (/deliver:unfreeze | /deliver:reseal | /deliver:abort | /deliver:tracker | /deliver:budget)."
 grep -Eq "${dl_re}phase[[:space:]][^;&|]*--force" <<<"$cmd" \
   && deny "'dl phase … --force' bypasses the flow's guards; only a human may run it."
 grep -Eq "${dl_re}card[[:space:]]+[^[:space:]]+[[:space:]]+retry" <<<"$cmd" && [[ ${DELIVER_HEADLESS:-} == 1 ]] \

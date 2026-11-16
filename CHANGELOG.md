@@ -4,6 +4,24 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.23.0 — 2026-11-16
+
+**What a job costs, and a budget for it.**
+- Every agent run records what it spent in `events.log` (`usage`): its card and role (from its prompt: the role card and the
+  card's worktree), its tokens — read from its own transcript by the SubagentStop hook, each message once (Claude Code writes
+  a message's usage on every one of its lines) — and their price. Michael's own sessions are counted too (the Agent and Stop
+  hooks, `michael-usage.json`). Under the code driver (`dl run`) each role session's cost is Claude Code's own figure.
+- Dollars come from a price table, `settings.prices` (Anthropic's published prices as of 2026-11-03, $ per million tokens:
+  input, output, 5-minute and 1-hour cache writes, cache reads); set your own in `~/.deliver/config.json`. A model without a
+  price is counted in tokens and named.
+- Where it shows: `dl status` (one line), `dl budget` and `/deliver:budget` (per role), `dl timeline` (per role and per card),
+  and the PR body (`## Cost`, per role and per card — estimated, with the table's date, unless the code driver reported it).
+- **Budget:** setting `budget` — `usd` and/or `minutes` since the job began, none by default. At 75 % and 90 % `dl next` says
+  so; used up, nothing more is dispatched: the agent-guard refuses, the code driver stops before its next step (exit 4, no
+  card assigned, no attempt used), the headless loop stops (exit 4), and the stop-guard lets Michael stop. The job stays where
+  it is until the human raises it with `/deliver:budget usd=<n> [minutes=<n>] <why>` (logged with their words). Claude cannot
+  raise it: bash-guard refuses `dl budget raise`, and `dl jobset` does not change the budget or the prices. Closes OPEN F20 (a).
+
 ## 0.22.0 — 2026-11-16
 
 **ECC is optional.** The install is two lines: `/plugin marketplace add https://github.com/cantasci/deliver-floor` and

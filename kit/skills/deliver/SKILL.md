@@ -74,7 +74,9 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
    **After that you do not ask.** Whatever only a person could have decided is your decision as PM: take it, record it with its
    reason (`"$DL" pm-decide "<what>" "<why>" [card]`, or `"$DL" card T-xx state archived "<why>"`), and keep going — `dl ship`
    lists every such decision in the PR. (Only a plan gate the human switched on themselves — `settings.gates.plan` — asks once
-   more, before execution.) The human takes over at the PR.
+   more, before execution.) The human takes over at the PR. The one stop on the way: `dl next` says **BUDGET used up** (the
+   job's budget, `settings.budget`) — dispatch nothing more, tell the human what is done and what is left, end your turn;
+   only they raise it (`/deliver:budget`), and the job goes on from where it is.
 8. No push to main/master, no force push (a hook enforces this too).
 9. **Card branches change only through the roles that own them and `dl`** — the same in every mode (subagents, the code
    driver). You never run git that changes a card or integration worktree (merge, reset, rebase, commit, checkout, …); a hook

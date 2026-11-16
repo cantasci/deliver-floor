@@ -21,4 +21,11 @@ fi
 # Under the code driver DELIVER_AGENT_ID says which role session ran the subagent.
 printf '%s\tagent\t%s %s%s: %s\n' "$(date -u +%FT%TZ)" "$(hk .agent_type)" "$(hk .agent_id)" "${DELIVER_AGENT_ID:+ @$DELIVER_AGENT_ID}" \
   "$(tr -s '[:space:]' ' ' <<<"$msg" | cut -c1-160)" >> "$root/.work/$job/events.log"
+# What it spent (tokens from its transcript, priced by settings.prices; card and role from its prompt): dl timeline, the PR's
+# cost section and the budget read it. Under the code driver the role session's own result counts it (run.mjs), not this.
+at="$(hkp .agent_transcript_path)"
+if [[ -z ${DELIVER_AGENT_ID:-} && -n $at && -f $at ]]; then
+  u="$(node "$(dirname "${BASH_SOURCE[0]}")/../../skills/deliver/bin/usage.mjs" event "$at" "$root/.work/$job" "$(hk .agent_type)" "$(hk .agent_id)" 2>/dev/null)"
+  [[ -n $u ]] && printf '%s\tusage\t%s\n' "$(date -u +%FT%TZ)" "$u" >> "$root/.work/$job/events.log"
+fi
 exit 0

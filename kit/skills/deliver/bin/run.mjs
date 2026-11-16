@@ -13,13 +13,15 @@
 // What it leaves to Michael (exit 10, with .work/<job>/out/run/HANDOVER.md): FIX, BLOCK, DECIDE, a stuck dev, a blind
 // reviewer's blocking finding (triaged against the spec), a verdict dl refuses, and any line it does not know.
 // Exit: 0 executing is finished (PHASE dl phase integrating) or the job is not executing · 10 Michael's turn · 3 a usage
-// limit (nothing recorded, no attempt used) · 1 an error.
+// limit (nothing recorded, no attempt used) · 4 the job's budget is used up (settings.budget — the human raises it: dl budget
+// raise) · 1 an error.
 // Test hook: DELIVER_CLAUDE names the program run in place of `claude` (tests/fake-claude.mjs).
 import { spawn } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { agentCall } from "./roles.mjs";
+import { spend, budgetLine } from "./usage.mjs";
 
 const BIN = dirname(fileURLToPath(import.meta.url));
 const DL = join(BIN, "dl");
@@ -58,6 +60,7 @@ const dl = (...args) => {
 };
 
 class Limit extends Error {}
+class Budget extends Error {}
 const sessions = existsSync(join(OUT, "sessions.json")) ? JSON.parse(readFileSync(join(OUT, "sessions.json"), "utf8")) : {};
 let runs = 0, cost = 0;
 
@@ -70,6 +73,9 @@ function agent(key, name, role, prompt, { cwd = ROOT, resume = false } = {}) {
   const args = ["-p", prompt, "--agent", ns, "--permission-mode", MODE, "--output-format", "json"];
   if (model) args.push("--model", model);
   if (resume && sessions[key]) args.push("--resume", sessions[key]);
+  // the job's budget: used up → no new agent run; the agents at work finish, the job stays where it is
+  const s = spend(JD);
+  if (s.state === "reached") return Promise.reject(new Budget(budgetLine(s)));
   const n = ++runs, id = `run-${key}-${n}`.replace(/[^A-Za-z0-9_.-]/g, "-");
   writeFileSync(join(OUT, `${id}.prompt.md`), prompt);
   event("dispatch", name);
@@ -87,6 +93,9 @@ function agent(key, name, role, prompt, { cwd = ROOT, resume = false } = {}) {
       if (r.session_id) { sessions[key] = r.session_id; writeFileSync(join(OUT, "sessions.json"), JSON.stringify(sessions, null, 2) + "\n"); }
       cost += Number(r.total_cost_usd ?? 0);
       event("agent", `${name} ${id}: ${text}`);
+      // what the run spent, as Claude Code reports it (src=cc: its dollars, not the price table's): per role and card
+      const u = r.usage ?? {}, model = Object.keys(r.modelUsage ?? {})[0] ?? job().roles?.find((x) => x.role === role)?.model ?? "-";
+      event("usage", `${name} ${id} card=${key.match(/^T-\d+/)?.[0] ?? "-"} role=${role} model=${model} in=${u.input_tokens ?? 0} out=${u.output_tokens ?? 0} cw=${u.cache_creation_input_tokens ?? 0} cr=${u.cache_read_input_tokens ?? 0} usd=${Number(r.total_cost_usd ?? 0).toFixed(4)} src=cc`);
       done(text);
     });
   });
@@ -265,7 +274,7 @@ function feedbackOf(line) {
 const busy = new Map();   // key → promise
 let limit = null;
 const start = (key, fn) => {
-  const p = fn().catch((e) => { if (e instanceof Limit) limit = e; else give(key.split(":")[0].match(/T-\d+/)?.[0] ?? null, `the driver failed on a step (${key}): ${e.message}`); }).finally(() => busy.delete(key));
+  const p = fn().catch((e) => { if (e instanceof Limit || e instanceof Budget) limit = e; else give(key.split(":")[0].match(/T-\d+/)?.[0] ?? null, `the driver failed on a step (${key}): ${e.message}`); }).finally(() => busy.delete(key));
   busy.set(key, p);
 };
 function finish(code, why) {
@@ -281,6 +290,9 @@ let steps = 0, last = "", same = 0;
 try {
   for (;;) {
     if (limit) { if (busy.size) await Promise.all(busy.values()); throw limit; }
+    // the job's budget used up: no new step (the card would be assigned and its attempt used for nothing); the agents at work finish
+    const sp = spend(JD);
+    if (sp.state === "reached") { if (busy.size) await Promise.all(busy.values()); throw new Budget(budgetLine(sp)); }
     if (job().phase !== "executing") finish(0, `phase ${job().phase}: not the driver's`);
     // the PLAYBOOK line is for a model (which file to read) — not a step of the board
     const nx = (await dl("next")).out.split("\n").filter((l) => !l.startsWith("PLAYBOOK ")).join("\n");
@@ -322,5 +334,6 @@ try {
   }
 } catch (e) {
   if (e instanceof Limit) { event("driver", `usage limit: ${e.message}`); console.log(`run: usage limit — ${e.message}`); process.exit(3); }
+  if (e instanceof Budget) { event("budget", `used up — ${e.message}: the driver dispatches nothing more`); console.log(`run: the job's budget is used up — ${e.message}. The human raises it: /deliver:budget usd=<n> | minutes=<n> <why>`); process.exit(4); }
   console.error(`run: ${e.stack ?? e}`); process.exit(1);
 }

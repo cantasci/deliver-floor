@@ -1350,6 +1350,11 @@ out="$("$DL" run 2>&1)"; rc=$?
 [[ $rc == 0 && "$(jq -r '.cards[2].state' "$DRJ/board.json")" == merged && "$(jq -r .phase "$DRJ/job.json")" == integrating && ! -e $DRJ/out/run/HANDOVER.md ]] \
   && ok "after Michael's triage the driver goes on: the dev again, both reviews, merged — and the phase moves to integrating" || bad "second run: rc=$rc $(jq -c '.cards[2] | {state, attempts, review}' "$DRJ/board.json") $(jq -r .phase "$DRJ/job.json") $out"
 contains "the event log has every agent run of the driver, as the timeline reads them" "$(grep -c $'\tdispatch\t' "$DRJ/events.log") $(grep $'\tdriver\t' "$DRJ/events.log" | tail -1)" "executing is finished: phase integrating"
+nu="$(grep -c $'\tusage\t' "$DRJ/events.log")"; nd="$(grep -c $'\tdispatch\t' "$DRJ/events.log")"; ncc="$(grep $'\tusage\t' "$DRJ/events.log" | grep -c ' src=cc$')"
+[[ $nu -gt 0 && $nu == "$nd" && $ncc == "$nu" ]] && ok "…and what each run cost, as Claude Code reports it (src=cc)" || bad "driver usage events: usage=$nu dispatch=$nd cc=$ncc"
+contains "…per card and role" "$(grep $'\tusage\t' "$DRJ/events.log")" "card=T-01 role=backend"
+contains "…so the cost is Claude Code's, not an estimate" "$("$DL" budget)" "(no budget)"
+[[ "$("$DL" budget)" != *estimated* ]] && ok "…(not marked estimated)" || bad "driver cost marked estimated: $("$DL" budget)"
 # the light path: the developer writes the card's code and all of its tests; one reviewer; no QA agent
 "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1
 "$DL" new "driver light" "x" >/dev/null 2>&1; DRJ="$DR/.work/$(cat .work/ACTIVE)"
@@ -1378,6 +1383,18 @@ echo 'echo "You have hit your usage limit · resets 3pm"' > "$FK/backend-dev.sh"
 printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$DRJ/specs/T-01.md"; jq -n --argjson a "$(drcard T-01 a)" '{cards:[$a]}' > "$DRJ/board.json"; "$DL" phase executing >/dev/null
 "$DL" run >/dev/null 2>&1; rc=$?
 [[ $rc == 3 && "$(jq -r '.cards[0] | "\(.gate // "none") \(.state)"' "$DRJ/board.json")" == "none running" ]] && ok "a usage limit in an agent stops the driver (exit 3) and records nothing against the card" || bad "limit: rc=$rc $(jq -c '.cards[0] | {state, gate, attempts}' "$DRJ/board.json")"
+# the job's budget used up: the driver starts no step (no card assigned, no attempt used) and stops for the human (exit 4)
+"$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1
+"$DL" new "driver budget" "x" >/dev/null 2>&1; DRJ="$DR/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:code-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null && ready_all && "$DL" phase planning >/dev/null
+printf '## Acceptance criteria\nGiven a, when b, then c\n' > "$DRJ/specs/T-01.md"; jq -n --argjson a "$(drcard T-01 a)" '{cards:[$a]}' > "$DRJ/board.json"; "$DL" phase executing >/dev/null
+"$DL" budget raise usd=0.01 "the human: one cent" >/dev/null
+printf '%s\tusage\tbusiness-analyst run-ba-1 card=- role=ba model=- in=0 out=0 cw=0 cr=0 usd=0.0100 src=cc\n' "$(date -u +%FT%TZ)" >> "$DRJ/events.log"
+out="$("$DL" run 2>&1)"; rc=$?
+[[ $rc == 4 && "$(jq -r '.cards[0] | "\(.state) \(.attempts)"' "$DRJ/board.json")" == "ready 0" ]] && ok "the budget used up: the driver starts nothing (no card assigned, no attempt used) and stops (exit 4)" || bad "driver budget: rc=$rc $(jq -c '.cards[0] | {state, attempts}' "$DRJ/board.json") $out"
+contains "…saying the human raises it" "$out" "/deliver:budget usd=<n>"
+grep -q '4) echo "⏸  the job'"'"'s budget is used up' "$HERE/scripts/run-headless.sh" && ok "…and the headless loop stops on it, for the human" || bad "run-headless.sh does not handle the driver's budget stop"
 unset FAKE_CLAUDE_DIR DELIVER_CLAUDE; "$DL" phase aborted >/dev/null; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
 echo "Stack tests run the moment the cards they need are merged — never left for the end (live job: 5 failures at verify-all, a 2.2-hour round)"
 ST="$TMP/stack"; mkdir -p "$ST" && cd "$ST" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","max_parallel":2}' > .deliver.json && git add -A && git commit -qm i
@@ -2319,6 +2336,74 @@ for a in lead reviewer; do
   [[ -n $tools && $tools != *Write* && $tools != *Edit* ]] && ok "the kit's $a agent is read-only ($tools)" || bad "$a tools: $tools"
 done
 
+echo "What a job costs (0.23.0): per role and per card from Claude Code's transcripts; the budget stops dispatch until the human raises it"
+CB="$TMP/cost"; mkdir -p "$CB" && cd "$CB" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","budget":{"usd":1}}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "cost" "an api change" >/dev/null 2>&1; CBJ="$CB/.work/$(cat .work/ACTIVE)"
+contains "the kit ships a price table with its date, and no budget unless one is set" "$(jq -c '[.prices["claude-opus-5-5"].out, .prices_as_of, .budget.usd]' "$HERE/kit/skills/deliver/config.json")" '[20,"2026-11-03",null]'
+# a dev's transcript as Claude Code writes it: one line per content block, each with the message's whole usage
+cat > "$TMP/cb-dev.jsonl" <<EOF
+{"type":"user","isSidechain":true,"message":{"role":"user","content":"CARD:\n{\"id\": \"T-01\"}\nROLE CARD (your rules — read first): $CBJ/roles/backend.md\nWORKTREE: $CBJ/wt/T-01"}}
+{"type":"assistant","message":{"id":"m1","model":"claude-opus-5-5","usage":{"input_tokens":1000,"output_tokens":10000,"cache_creation_input_tokens":100000,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":100000,"ephemeral_1h_input_tokens":0}}}}
+{"type":"assistant","message":{"id":"m1","model":"claude-opus-5-5","usage":{"input_tokens":1000,"output_tokens":10000,"cache_creation_input_tokens":100000,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":100000,"ephemeral_1h_input_tokens":0}}}}
+{"type":"assistant","message":{"id":"m2","model":"claude-opus-5-5","usage":{"input_tokens":0,"output_tokens":5000,"cache_creation_input_tokens":0,"cache_read_input_tokens":500000}}}
+EOF
+sstop() { jq -nc --arg t "$2" --arg c "$CB" --arg a "$1" --arg i "$3" '{agent_type:$a, agent_id:$i, agent_transcript_path:$t, last_assistant_message:"done", cwd:$c}' | CLAUDE_PROJECT_DIR="$CB" bash "$HERE/kit/hooks/deliver/subagent-log.sh"; }
+sstop backend-dev "$TMP/cb-dev.jsonl" a1
+# (1000×4 + 15000×20 + 100000×5 + 500000×0.2) / 1e6 — the repeated line counted once
+contains "SubagentStop records what the agent spent: its card and role from its prompt, tokens counted once per message" "$(grep $'\tusage\t' "$CBJ/events.log")" "backend-dev a1 card=T-01 role=backend model=claude-opus-5-5 in=1000 out=15000 cw=100000 cr=500000 usd=0.9040"
+sstop backend-dev "$TMP/cb-dev.jsonl" a1
+contains "…a resumed agent stops again with its whole transcript: counted once" "$("$DL" budget)" "backend                    1 run(s)      \$0.90"
+"$DL" budget --check >/dev/null; rc=$?
+[[ $rc == 2 ]] && ok "dl budget --check: 90 % of the budget → exit 2" || bad "budget check at 90 %: rc=$rc"
+contains "…and dl next says so" "$("$DL" next)" 'BUDGET  $0.90 of $1.00 (90 %) used — tell the human'
+cat > "$TMP/cb-rev.jsonl" <<EOF
+{"type":"user","message":{"role":"user","content":"ROLE CARD (your rules — read first): $CBJ/roles/reviewer.md\nCHANGE: run git -C $CBJ/wt/T-01 diff"}}
+{"type":"assistant","message":{"id":"r1","model":"claude-unknown-9","usage":{"input_tokens":5,"output_tokens":7,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+{"type":"assistant","message":{"id":"r2","model":"claude-sonnet-5-5","usage":{"input_tokens":10000,"output_tokens":10000,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+EOF
+sstop reviewer "$TMP/cb-rev.jsonl" a2
+contains "a model without a price: its tokens are counted, its dollars are not — and it is named" "$("$DL" budget)" "no price for claude-unknown-9"
+"$DL" budget --check >/dev/null; rc=$?
+[[ $rc == 3 ]] && ok "…the budget is used up → exit 3" || bad "budget check used up: rc=$rc"
+nx="$("$DL" next)"
+contains "dl next: used up → dispatch nothing more, tell the human (their /deliver:budget)" "$nx" "BUDGET  used up: \$1.02 of \$1.00 (102 %) — dispatch nothing more"
+[[ $nx != *INTAKE* ]] && ok "…and names nothing else to do" || bad "next after the budget: $nx"
+printf '{"type":"user","message":{"content":"%s"}}\n' "$(cat .work/ACTIVE)" > "$TMP/cb-main.jsonl"
+gin="$(jq -nc --arg c "$CB" --arg tp "$TMP/cb-main.jsonl" '{tool_input:{subagent_type:"backend-dev"}, cwd:$c, transcript_path:$tp}')"
+out="$(CLAUDE_PROJECT_DIR="$CB" bash "$HERE/kit/hooks/deliver/agent-guard.sh" <<<"$gin" 2>&1)"; rc=$?
+[[ $rc == 2 && $out == *"budget is used up"* ]] && ok "the agent-guard refuses a dispatch once the budget is used up" || bad "agent-guard over budget: rc=$rc $out"
+out="$(jq -nc --arg c '"$DL" budget raise usd=5 "more"' --arg w "$CB" '{tool_input:{command:$c}, cwd:$w}' | CLAUDE_PROJECT_DIR="$CB" bash "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1)"; rc=$?
+[[ $rc == 2 && $out == *"/deliver:budget"* ]] && ok "Claude may not raise the budget — not Michael, not an agent: it is the human's /deliver:budget" || bad "Claude raised the budget: rc=$rc $out"
+contains "/deliver:budget alone: what was spent, per role" "$(cd "$CB" && printf '' | bash "$HERE/kit/skills/budget/run.sh" budget)" "backend                    1 run(s)"
+contains "/deliver:budget without why: how to use it" "$(cd "$CB" && printf 'usd=5' | bash "$HERE/kit/skills/budget/run.sh" budget)" "usage: /deliver:budget"
+contains "/deliver:budget usd=<n> <why>: the human raises it" "$(cd "$CB" && printf 'usd=5 go on, up to "five" dollars' | bash "$HERE/kit/skills/budget/run.sh" budget)" 'budget raised — $1.02 of $5.00 (20 %)'
+contains "…logged with their words, as typed" "$(grep $'\tbudget\t' "$CBJ/events.log")" 'raised by the human: usd=5 — go on, up to "five" dollars'
+CLAUDE_PROJECT_DIR="$CB" bash "$HERE/kit/hooks/deliver/agent-guard.sh" <<<"$gin" >/dev/null 2>&1; rc=$?
+[[ $rc == 0 ]] && ok "…and the job goes on: the next dispatch is let through" || bad "agent-guard after the raise: rc=$rc"
+# Michael's own share: his session's messages since the job began, his own only (not a sidechain), per session
+cat > "$TMP/cb-main.jsonl" <<EOF
+{"type":"user","message":{"content":"$(cat .work/ACTIVE)"}}
+{"type":"assistant","timestamp":"2020-01-01T00:00:00Z","message":{"id":"old","model":"claude-opus-5-5","usage":{"input_tokens":0,"output_tokens":1000000}}}
+{"type":"assistant","timestamp":"2099-01-01T00:00:00Z","message":{"id":"x1","model":"claude-opus-5-5","usage":{"input_tokens":0,"output_tokens":10000}}}
+{"type":"assistant","isSidechain":true,"timestamp":"2099-01-01T00:00:00Z","message":{"id":"x2","model":"claude-opus-5-5","usage":{"input_tokens":0,"output_tokens":99999}}}
+EOF
+CLAUDE_PROJECT_DIR="$CB" bash "$HERE/kit/hooks/deliver/agent-guard.sh" <<<"$gin" >/dev/null 2>&1
+contains "Michael's own share: his messages since the job began, not a subagent's" "$("$DL" budget)" "orchestrator (Michael)     1 session(s)  \$0.20"
+contains "dl status shows the cost against the budget" "$("$DL" status)" 'cost: $1.22 of $5.00 (24 %) — estimated'
+tl="$("$DL" timeline)"
+contains "dl timeline: the cost per role…" "$tl" "reviewer                              1    \$0.12"
+contains "…and per card" "$tl" "T-01                                  2    \$1.02"
+rp="$(node "$SDIR/bin/usage.mjs" report "$CBJ")"
+contains "the PR's cost section: estimated, with the price table's date" "$rp" "the price table (settings.prices, as of 2026-11-03)"
+contains "…per role" "$rp" "| backend | 1 | 601k | 15k | \$0.90 |"
+contains "…per card" "$rp" "| T-01 | 2 | 611k | 25k | \$1.02 |"
+grep -q 'report_followups; report_cost' "$SDIR/bin/dl" && ok "…appended to the PR body by dl ship" || bad "dl ship does not append the cost"
+contains "dl jobset does not change the budget (it is the human's)" "$("$DL" jobset '.settings.budget.usd = 100' 2>&1)" "dl jobset does not change the budget or the price table"
+# minutes: the job's age against the time budget (a copy of the job, years old)
+mkdir -p "$TMP/cb-old" && jq '.created = "2020-01-01T00:00:00Z" | .budget.minutes = 60' "$CBJ/job.json" > "$TMP/cb-old/job.json" && : > "$TMP/cb-old/events.log"
+node "$SDIR/bin/usage.mjs" budget "$TMP/cb-old" >/dev/null; rc=$?
+[[ $rc == 3 ]] && ok "a time budget: a job older than its minutes is used up too" || bad "minutes budget: rc=$rc"
+cd "$R"
 echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"
 CTX="$HERE/kit/skills/deliver/bin/context.mjs"
 CX="$TMP/ctx"; mkdir -p "$CX/web/src" "$CX/api/app" && cd "$CX" && git init -q -b main

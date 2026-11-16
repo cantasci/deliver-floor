@@ -18,6 +18,13 @@ case $cmd in
   board)    run kanban ;;
   seats)    run seats ;;
   timeline) run timeline ;;
+  budget)   # alone: what the job spent against its budget; usd=<n> / minutes=<n> and why: the human raises it
+            [[ -n $args ]] || run budget
+            lim=""; why=""; set -f
+            for w in $args; do case $w in usd=*|minutes=*) lim="$lim $w" ;; *) why="${why:+$why }$w" ;; esac; done
+            set +f
+            [[ -n $lim && -n $why ]] || { echo "usage: /deliver:budget (what was spent) · /deliver:budget usd=<dollars> | minutes=<n> <why>"; exit 0; }
+            run budget raise $lim "$why" ;;
   answer)   need "$rest" "<question id> <your answer>"; run clarify "$first" "$rest" ;;
   approve)  run approve plan "${args:-approved}" ;;
   reject)   need "$args" "<what to change in the plan>"; run reject plan "$args" ;;
