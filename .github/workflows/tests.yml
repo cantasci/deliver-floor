@@ -1,0 +1,50 @@
+name: tests
+
+# The deterministic suite (tests/run.sh: no model, no network) on every push and pull request.
+# macOS runs it on the bash it ships with — 3.2, the one users have — not a newer one from Homebrew.
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    name: tests/run.sh (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the release check compares kit/ with origin/main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: macOS — put the system bash (3.2) first on PATH
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "$RUNNER_TEMP/bash32"
+          ln -sf /bin/bash "$RUNNER_TEMP/bash32/bash"
+          echo "$RUNNER_TEMP/bash32" >> "$GITHUB_PATH"
+
+      - name: Tools
+        run: |
+          bash --version | head -1
+          if [ "$RUNNER_OS" = macOS ]; then bash --version | head -1 | grep -q 'version 3\.2' || { echo "::error::bash is not 3.2 on macOS"; exit 1; }; fi
+          git --version; jq --version; node --version
+
+      - name: tests/run.sh
+        run: bash tests/run.sh

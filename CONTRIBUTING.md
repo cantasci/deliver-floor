@@ -3,7 +3,7 @@
 Thank you for helping. Three things keep this project trustworthy:
 
 1. **Work that is not verified is not done.** Run `tests/run.sh` (deterministic, no model needed) before every PR — it must
-   pass. A change to the flow or the guards also needs a live run (`tests/e2e-live.sh` or `tests/e2e-interactive.sh`);
+   pass; CI runs it on Linux and on macOS's bash 3.2 for every push and PR (`.github/workflows/tests.yml`). A change to the flow or the guards also needs a live run (`tests/e2e-live.sh` or `tests/e2e-interactive.sh`);
    archive it with `tests/archive-run.sh` under `docs/verification/` and add a row to
    `docs/verification/HISTORY.md` — failures included.
 2. **Code decides state.** New behaviour belongs in `dl` (and a check in `tests/run.sh`), not only in the playbook text.

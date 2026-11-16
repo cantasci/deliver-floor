@@ -26,6 +26,9 @@ is summarised away.
 
 ## Layer 1 — `tests/run.sh`
 
+CI runs it on every push and every pull request to `main` (`.github/workflows/tests.yml`): on Linux, and on macOS with the
+system bash 3.2 first on `PATH` — the bash users have, not a newer one from Homebrew. A PR is not merged while either is red.
+
 Groups (each prints ✔/✘ per check, ends with `result: N passed, M failed`): macOS bash 3.2 (`tests/lint-bash32.mjs`: no
 case statement inside `$( )`, no bare empty array under `set -u`, no bash-4 features) · scope matcher · repo + job · planning guards ·
 execution guards (gate, QA scope, review on the same commit, attempts, blocked) · integration + delivery · hooks
