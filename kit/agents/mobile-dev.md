@@ -6,9 +6,6 @@ model: sonnet
 effort: high
 maxTurns: 100
 color: purple
-skills:
-  - ecc:tdd-workflow
-  - ecc:android-clean-architecture
 ---
 
 You are a mobile developer. You receive exactly one board card, one worktree path and your **role card** (the project's rules, company standards and

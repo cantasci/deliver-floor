@@ -37,6 +37,7 @@ const has = (cmd, args = ["--version"]) => { try { execFileSync(cmd, args, { std
 // ── once per plugin version ─────────────────────────────────────────────────────────────────────────────────────────
 const version = readJson(join(kit, ".claude-plugin", "plugin.json"), {}).version ?? "dev";
 const marker = join(dataDir, `setup-${version}.done`);
+const firstRun = !report && !existsSync(marker);
 if (!report && !existsSync(marker)) {
   // an update: tell the user once what version they are on now and where the changes are listed
   const prev = (existsSync(dataDir) ? readdirSync(dataDir) : []).map((f) => f.match(/^setup-(.+)\.done$/)?.[1]).filter(Boolean)
@@ -78,8 +79,10 @@ if (Number(process.versions.node.split(".")[0]) < 18) warn.push(`node ${process.
 if (win && !findBash()) warn.push("Git Bash not found — install Git for Windows (dl and the guards run in bash), or set CLAUDE_CODE_GIT_BASH_PATH");
 const installed = readJson(join(cfgDir, "plugins", "installed_plugins.json"), {}).plugins ?? {};
 const copied = existsSync(join(cfgDir, "skills", "deliver"));
-if (!Object.keys(installed).some((k) => k.startsWith("ecc@")) && !existsSync(join(cfgDir, "agents", "architect.md")))
-  warn.push("the ECC plugin is not installed — /plugin marketplace add https://github.com/affaan-m/ECC, then /plugin install ecc@ecc (the deliver plugin installs it for you once that marketplace is added)");
+// ECC is optional (0.22.0): without it the kit's own lead and reviewer agents take the place of ECC's — said once per version
+const eccNote = "the ECC plugin is not installed — optional: /deliver uses its own lead and reviewer agents. For ECC's stack-specific reviewers, specialists and skills: /plugin marketplace add https://github.com/affaan-m/ECC, then /plugin install ecc@ecc";
+const ecc = Object.keys(installed).some((k) => k.startsWith("ecc@")) || existsSync(join(cfgDir, "agents", "architect.md"));
+if (!ecc && firstRun) done.push(eccNote);
 const asPlugin = Boolean(process.env.CLAUDE_PLUGIN_ROOT);
 if (asPlugin && Object.keys(installed).some((k) => k.startsWith("deliver@"))) {
   const removed = removeCopiedKit(cfgDir, kit);
@@ -101,7 +104,8 @@ if (report) {
   const installedAs = Object.keys(installed).filter((k) => k.startsWith("deliver@")).join(", ") || "not installed as a plugin";
   console.log(`deliver ${version} (${installedAs}) — ${kit}`);
   for (const w of warn) console.log(`⚠ ${w}`);
-  if (!warn.length) console.log(`✔ git, jq, node ${process.versions.node}, bash, the ECC plugin — nothing to fix`);
+  if (!ecc) console.log(`ℹ ${eccNote}`);
+  if (!warn.length) console.log(`✔ git, jq, node ${process.versions.node}, bash — nothing to fix`);
   process.exit(0);
 }
 if (done.length || warn.length) {

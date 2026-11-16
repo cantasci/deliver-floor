@@ -19,6 +19,7 @@ import { spawn } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { agentCall } from "./roles.mjs";
 
 const BIN = dirname(fileURLToPath(import.meta.url));
 const DL = join(BIN, "dl");
@@ -64,7 +65,7 @@ let runs = 0, cost = 0;
 // agent for the guards (never Michael). resume: continue the session this key ran before (QA-RUN after QA-WRITE, a dev's
 // second attempt) — it has the spec and its own work in its history, nothing is read again.
 function agent(key, name, role, prompt, { cwd = ROOT, resume = false } = {}) {
-  const ns = process.env.DELIVER_AGENT_NS && !name.includes(":") && existsSync(join(BIN, "..", "..", "..", "agents", `${name}.md`)) ? `${process.env.DELIVER_AGENT_NS}:${name}` : name;
+  const ns = agentCall(name, job());   // the kit's own agent for an ecc: one without ECC; the plugin's namespace
   const model = job().roles?.find((r) => r.role === role)?.model;
   const args = ["-p", prompt, "--agent", ns, "--permission-mode", MODE, "--output-format", "json"];
   if (model) args.push("--model", model);

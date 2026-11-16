@@ -33,7 +33,8 @@ assumption with `dl jobset '.assumptions += […]'`.
 
 ## Phase 2 — Lead cards (`planning`)
 
-For each selected lead role (`tech-lead`, `backend-lead`, `frontend-lead`, `mobile-lead`) call **Agent(subagent_type: "ecc:architect")**,
+For each selected lead role (`tech-lead`, `backend-lead`, `frontend-lead`, `mobile-lead`) call **Agent(subagent_type: <its agent in
+ROLES.md>)** — `ecc:architect`, or the kit's own `lead` when ECC is not used —
 in parallel (one message, several Agent calls):
 
 ```text

@@ -7,7 +7,7 @@
 | Tool | Version | Why | Install |
 | --- | --- | --- | --- |
 | Claude Code | 2.1.2xx+ | Runs Michael and every role: subagents, skills, hooks | <https://claude.com/claude-code> · keep current with `claude update` |
-| ECC plugin | 2.x (`ecc@ecc`) | The specialist library: architect, stack reviewers, security / a11y / performance / silent-failure reviewers, e2e-runner, doc-updater + skills (tdd-workflow, backend-patterns, …) | `scripts/init.sh` does it, or `claude plugin marketplace add https://github.com/affaan-m/ECC && claude plugin install ecc@ecc` |
+| ECC plugin (optional) | 2.x (`ecc@ecc`) | Without it the kit's own `lead` and `reviewer` agents do this work. The specialist library: architect, stack reviewers, security / a11y / performance / silent-failure reviewers, e2e-runner, doc-updater + skills (tdd-workflow, backend-patterns, …) | `scripts/init.sh` does it, or `claude plugin marketplace add https://github.com/affaan-m/ECC && claude plugin install ecc@ecc` |
 | git | 2.40+ | Job branch, one worktree per card, `--no-ff` merges | `brew install git` / `apt install git` |
 | jq | 1.6+ | `dl` and the hooks read/write JSON with it | `brew install jq` / `apt install jq` |
 | Node.js | 18+ (22 tested) | `validate.mjs`, `roles.mjs`, `readiness.mjs`, `knowledge.mjs`, `tracker.mjs`; ECC needs it too | `brew install node` |

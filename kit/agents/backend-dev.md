@@ -6,9 +6,6 @@ model: sonnet
 effort: high
 maxTurns: 80
 color: blue
-skills:
-  - ecc:tdd-workflow
-  - ecc:backend-patterns
 ---
 
 You are a backend developer. You receive exactly one board card, one worktree path and your **role card** (the project's rules, company standards and

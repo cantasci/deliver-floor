@@ -87,7 +87,8 @@ Commit your tests in this repo's commit format (your role card, "Commits"), leav
    together (two helpers with the same module name). Refused → record `dl qa T-xx fail "<what>"`; a clashing file in
    `qa_scope` goes back to QA, any other to the dev. Append the JSON under `## QA` in the handoff. `fail` → re-dispatch the dev with the failing QA tests as PREVIOUS FEEDBACK; the next gate runs them too.
 3. **Review** (after QA passes) — every role in the card's `reviewers`, **in parallel** (one message): the stack reviewer and
-   the ECC specialists (`ecc:a11y-architect`, `ecc:performance-optimizer`, `ecc:security-reviewer`, `ecc:silent-failure-hunter`):
+   the specialists (a11y, performance, security, quality) — each by its agent in ROLES.md (ECC's, or the kit's own `reviewer`
+   when ECC is not used; the role card says which review it is):
 
 ```text
 Role: <area> Lead reviewer. Review only; do not modify files.

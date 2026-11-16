@@ -42,7 +42,7 @@ have gh && pass "gh (PR creation)" || note "gh not found — needed for merge_mo
 have timeout && pass "timeout (gate_timeout for verify commands)" || note "timeout not found — verify commands run without a time limit (brew install coreutils)"
 have adb && pass "adb (mobile / ARTEMIS)" || note "adb not found — only for mobile jobs"
 
-echo "ECC plugin"
+echo "ECC plugin (optional — without it the kit's own lead and reviewer agents are used)"
 ipj="$HOME/.claude/plugins/installed_plugins.json"
 if jq -e '.plugins | keys[] | select(startswith("ecc@"))' "$ipj" >/dev/null 2>&1 \
    || ls -d "$HOME"/.claude/plugins/cache/ecc* >/dev/null 2>&1; then
@@ -60,9 +60,9 @@ if jq -e '.plugins | keys[] | select(startswith("ecc@"))' "$ipj" >/dev/null 2>&1
   note "ECC hook profile: $prof. GateGuard (standard/strict) asks for facts before the first edit of each file; the kit exempts .work/ bookkeeping (GATEGUARD_EXEMPT_GLOBS). Set ECC_GATEGUARD=off if agents loop on it"
 else
   if [[ -d $HOME/.claude/plugins/marketplaces/ecc ]]; then
-    fail "ECC marketplace is added but the plugin is NOT installed → in Claude Code: /plugin install ecc@ecc, then restart"
+    note "ECC marketplace is added but the plugin is not installed — the kit's own lead and reviewer are used; for ECC's: /plugin install ecc@ecc, then restart"
   else
-    fail "ECC not found → in Claude Code: /plugin marketplace add https://github.com/affaan-m/ECC  then  /plugin install ecc@ecc"
+    note "ECC not installed — the kit's own lead and reviewer are used; for ECC's stack reviewers and specialists: /plugin marketplace add https://github.com/affaan-m/ECC  then  /plugin install ecc@ecc"
   fi
 fi
 [[ -f $HOME/.claude/agents/planner.md && -f $HOME/.claude/agents/architect.md ]] \

@@ -6,10 +6,10 @@ Start with `/deliver:doctor` (or `scripts/doctor.sh <repo>`), then `/deliver:sta
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `/deliver:deliver` not found | plugin not installed or not loaded (its dependency ECC missing), or Claude Code not restarted | `/plugin install deliver@deliver-floor` (ECC with it), restart, check `/plugin` → Errors |
+| `/deliver:deliver` not found | plugin not installed or not loaded, or Claude Code not restarted | `/plugin install deliver@deliver-floor`, restart, check `/plugin` → Errors |
 | Michael runs an old version after an update | a copy of the kit in `~/.claude` shadowed the plugin (before 0.7.0) | start one Claude Code session with the plugin: it deletes the copy |
-| `ecc:architect` unknown agent | ECC marketplace added but plugin not installed | `claude plugin install ecc@ecc`, restart, check `/agents` |
-| Dev agent starts without ECC skills | a `skills:` preload did not resolve | the role card names the skills too; the agent loads them with the Skill tool. `/agents` → the dev agent shows what loaded |
+| `ecc:architect` unknown agent | the job was told to use ECC (`"ecc": "on"`) but the plugin is not installed | `claude plugin install ecc@ecc` and restart — or `"ecc": "auto"` (the default): without ECC, ROLES.md names the kit's own `lead` / `reviewer` |
+| Dev agent starts without ECC skills | ECC is not used (not installed, or `"ecc": "off"`) | expected: the role card names ECC's skills (`## Skills`) only when ECC is there |
 | `dl: jq is required` | jq missing | `brew install jq` / `apt install jq` |
 | Hooks never fire | entries missing from `settings.json` | `doctor.sh` shows which; re-run `install.sh`; `/hooks` lists the active ones |
 | Commits show `Co-Authored-By: Claude` and the gate fails | `attribution` not set (installed with `--keep-attribution`, or a project `settings.json` overrides it) | `scripts/install.sh --user` again, or set `"attribution": {"commit": "", "pr": ""}`; or allow it: `commit.ai_attribution: true` |

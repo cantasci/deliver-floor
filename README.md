@@ -52,13 +52,14 @@ model's memory:
 Inside Claude Code:
 
 ```text
-/plugin marketplace add https://github.com/affaan-m/ECC
 /plugin marketplace add https://github.com/cantasci/deliver-floor
 /plugin install deliver@deliver-floor
 ```
 
-That installs the plugin and its dependency [ECC](https://github.com/affaan-m/ECC) (the reviewer, architect and specialist
-agents). The first session does the rest of the setup by itself and tells you what it did — restart once afterwards.
+That is the whole install. Optional: [ECC](https://github.com/affaan-m/ECC) (`/plugin marketplace add
+https://github.com/affaan-m/ECC`, `/plugin install ecc@ecc`) gives stack-specific reviewers (Java, Go, React, …), the
+specialists and their skills; without it the kit's own lead and reviewer agents do that work (`ecc` in
+[03-settings](docs/03-settings.md)). The first session does the rest of the setup by itself and tells you what it did — restart once afterwards.
 Needs git, jq and Node 18+ (on Windows also Git for Windows); the first session names anything missing.
 
 Then, in your repository:

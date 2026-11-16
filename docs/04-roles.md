@@ -122,6 +122,13 @@ request, wins. Another vendor's model works through an LLM gateway: the `model` 
 
 ## How ECC is used — every role, every step
 
+ECC is optional (0.22.0, setting `ecc`: `auto` | `on` | `off`). Without it — `off`, or `auto` and the plugin not installed —
+every `ecc:` agent is replaced by the kit's own (`roles.yaml → ecc_fallback`): the Leads by `lead`, every stack reviewer and
+specialist by `reviewer` (its role card says which review it is: the stack, security, accessibility, performance, failure
+handling, blind), `ecc:e2e-runner` by `qa-tester`, `ecc:doc-updater` by `general-purpose`; the role cards name no ECC skill
+(`## Skills`, `skills to load` per component). `job.json` keeps the `ecc:` names; ROLES.md and each role card say which agent
+to call. With ECC:
+
 | Step | ECC piece | How it is wired |
 | --- | --- | --- |
 | Cards | `ecc:architect` | every lead role; read-only, so it can only propose cards |

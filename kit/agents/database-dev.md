@@ -6,8 +6,6 @@ model: sonnet
 effort: high
 maxTurns: 80
 color: orange
-skills:
-  - ecc:database-migrations
 ---
 
 You are the database developer. You receive exactly one board card, its spec, one worktree path and your **role card** (the

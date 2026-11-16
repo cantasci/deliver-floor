@@ -10,10 +10,10 @@ TMP="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/deliver-test.XXXXXX")" && pwd -P)"   # r
 trap 'rm -rf "$TMP" "$HERE/kit/skills/deliver/bin/trackers/zz-test.mjs"' EXIT
 export HOME="$TMP/home" DELIVER_HOME="$TMP/home/.deliver"; mkdir -p "$HOME"
 # The flows below predate risk-based test design, the blind review (kit defaults since 0.16.0) and shaping (auto since 0.17.0)
-# and the reuse of a suite's pass (0.20.0) and carried project decisions (0.21.0) — they run without them, as a user who turned them off would; their own sections
+# and the reuse of a suite's pass (0.20.0) and carried project decisions (0.21.0) — they run without them, and with ECC's agents (0.22.0: optional), as a user who turned them off would; their own sections
 # run with the kit's defaults or set them.
 # Removed before "install / uninstall".
-mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"},"suite_reuse":false,"readiness":{"carry":false}}' > "$DELIVER_HOME/config.json"
+mkdir -p "$DELIVER_HOME" && echo '{"test_design":{"risk":false},"review":{"blind":"off"},"upstream":{"engine":"off"},"suite_reuse":false,"readiness":{"carry":false},"ecc":"on"}' > "$DELIVER_HOME/config.json"
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 unset DELIVER_HEADLESS DELIVER_JOB DELIVER_REPO CLAUDE_PROJECT_DIR
 
@@ -1711,7 +1711,7 @@ contains "…GateGuard lets the roles write their answer files (run 53: every ou
 contains "…and the user is told to restart once" "$(jq -r .systemMessage <<<"$out")" "restart Claude Code once"
 contains "a /deliver repo gets no AI attribution — in that repo only (.claude/settings.local.json)" "$(jq -c .attribution "$SP/.claude/settings.local.json")" '{"commit":"","pr":""}'
 [[ ! -e $SH/settings.json || "$(jq -r '.attribution // "none"' "$SH/settings.json")" == none ]] && ok "…never in the user's global settings" || bad "global attribution changed"
-contains "missing prerequisites are named with the fix (ECC here)" "$(jq -r .systemMessage <<<"$out")" "ECC plugin is not installed"
+contains "ECC missing is said on the first session — as optional, with the install command" "$(jq -r .systemMessage <<<"$out")" "ECC plugin is not installed — optional"
 out2="$(su)"; [[ "$(jq -r .systemMessage <<<"$out2")" != *"first-run setup"* && "$(jq -r .systemMessage <<<"$out2")" != *"settings.local.json"* ]] && ok "the setup runs once per version; later sessions only check" || bad "setup repeated: $out2"
 mkdir -p "$SH/plugins"; echo '{"plugins":{"ecc@ecc":[{}],"deliver@deliver-floor":[{}]}}' > "$SH/plugins/installed_plugins.json"
 [[ -z "$(su)" ]] && ok "all well: the setup prints nothing" || bad "setup output when all is well: $(su)"
@@ -2270,6 +2270,54 @@ echo A > "$HOME/in.env"; jq -n --arg f "$HOME/in.env" '{items:[], inputs:[{id:"I
 echo B > "$HOME/in.env"; "$DL" baseline >/dev/null 2>&1
 [[ "$(rkruns)" == 7 ]] && ok "…its content changed: the suite runs" || bad "changed input: $(rkruns) run(s)"
 "$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$R"
+
+echo "ECC is optional (0.22.0): without it the kit's own lead and reviewer; ECC's skills only with ECC"
+EO="$TMP/ecc-off"; mkdir -p "$EO" && cd "$EO" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local","ecc":"off"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "no ecc" "an api change" >/dev/null 2>&1; EOJ="$EO/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.stack=["python"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:python-reviewer"},{"role":"security","agent":"ecc:security-reviewer"},{"role":"qa-web","agent":"ecc:e2e-runner"},{"role":"docs","agent":"ecc:doc-updater"}]' >/dev/null
+"$DL" phase readiness >/dev/null 2>&1
+EOR="$(cat "$EOJ/ROLES.md" 2>/dev/null)"
+contains "ecc off: the Lead is the kit's own lead" "$EOR" '| backend-lead | `lead` |'
+contains "…the stack reviewer and every specialist the kit's own reviewer" "$EOR" '| reviewer | `reviewer` |'
+contains "…security too (its role card says which review it is)" "$EOR" '| security | `reviewer` |'
+contains "…ecc:e2e-runner → qa-tester" "$EOR" '| qa-web | `qa-tester` |'
+contains "…ecc:doc-updater → general-purpose" "$EOR" '| docs | `general-purpose` |'
+contains "…and ROLES.md says ECC is not used" "$EOR" "The ECC plugin is not used"
+contains "the role card names the agent to call" "$(cat "$EOJ/roles/security.md")" 'Agent: `reviewer`'
+contains "…and still says which review it is" "$(head -1 "$EOJ/roles/security.md")" "Role: security — Reviewer"
+[[ "$(cat "$EOJ"/roles/*.md)" != *"ecc:"* ]] && ok "…no role card names an ECC skill or agent" || bad "ecc: in a role card: $(grep -l 'ecc:' "$EOJ"/roles/*.md)"
+contains "job.json keeps the ecc: names" "$(jq -r '[.roles[].agent] | join(",")' "$EOJ/job.json")" "ecc:architect"
+DELIVER_AGENT_NS=deliver "$DL" roles >/dev/null 2>&1
+contains "plugin install: the fallbacks are the plugin's agents (deliver:lead)" "$(cat "$EOJ/ROLES.md")" '| backend-lead | `deliver:lead` |'
+contains "…(deliver:reviewer)" "$(cat "$EOJ/ROLES.md")" '| reviewer | `deliver:reviewer` |'
+"$DL" roles >/dev/null 2>&1
+contains "the code driver calls the same agent (dl run → run.mjs → agentCall)" \
+  "$(RM="$SDIR/bin/roles.mjs" node -e 'import(process.env.RM).then((m) => console.log(m.agentCall("ecc:code-reviewer", {settings:{ecc:"off"}}), m.agentCall("backend-dev", {settings:{ecc:"off"}})))')" "reviewer backend-dev"
+grep -q 'agentCall(name, job())' "$SDIR/bin/run.mjs" && ok "…run.mjs resolves every agent through agentCall" || bad "run.mjs does not use agentCall"
+# auto (the default): ECC is used when Claude Code has the plugin installed
+EH="$TMP/ecc-home"; mkdir -p "$EH/plugins"
+eon() { DELIVER_ECC= CLAUDE_CONFIG_DIR="$EH" RM="$SDIR/bin/roles.mjs" node -e 'import(process.env.RM).then((m) => console.log(m.eccOn({settings:{ecc:"auto"}})))'; }
+contains "auto, the plugin not installed: ECC is not used" "$(eon)" "false"
+echo '{"plugins":{"ecc@ecc":[{}]}}' > "$EH/plugins/installed_plugins.json"
+contains "auto, the plugin installed: ECC is used" "$(eon)" "true"
+rm "$EH/plugins/installed_plugins.json"; mkdir -p "$EH/agents" && touch "$EH/agents/architect.md"
+contains "…or ECC's own install put its agents in ~/.claude/agents" "$(eon)" "true"
+cd "$R"
+# ecc on (this suite's default): the skills are in the role card, no longer preloaded by the agents
+EN="$TMP/ecc-on"; mkdir -p "$EN" && cd "$EN" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json && git add -A && git commit -qm i
+"$DL" new "ecc" "an api change" >/dev/null 2>&1; ENJ="$EN/.work/$(cat .work/ACTIVE)"
+"$DL" jobset '.stack=["python"] | .roles=[{"role":"ba","agent":"business-analyst"},{"role":"backend-lead","agent":"ecc:architect"},{"role":"backend","agent":"backend-dev"},{"role":"qa","agent":"qa-tester"},{"role":"reviewer","agent":"ecc:python-reviewer"}]' >/dev/null
+"$DL" phase readiness >/dev/null 2>&1
+contains "ecc on: ROLES.md calls ECC's agents" "$(cat "$ENJ/ROLES.md")" '| backend-lead | `ecc:architect` |'
+contains "…the developer's role card names its ECC skills" "$(cat "$ENJ/roles/backend.md")" 'Load before you start: `ecc:tdd-workflow`, `ecc:backend-patterns`'
+contains "…QA's too" "$(cat "$ENJ/roles/qa.md")" '`ecc:verification-loop`'
+grep -l '^skills:' "$HERE"/kit/agents/*.md >/dev/null 2>&1 && bad "skills: preloaded in $(grep -l '^skills:' "$HERE"/kit/agents/*.md)" || ok "no kit agent preloads a skill in its frontmatter (a missing ECC skill)"
+cd "$R"
+contains "the plugin depends on nothing: the install is two lines" "$(jq -c '.dependencies // "none"' "$HERE/kit/.claude-plugin/plugin.json")" '"none"'
+for a in lead reviewer; do
+  tools="$(sed -n 's/^tools: //p' "$HERE/kit/agents/$a.md")"
+  [[ -n $tools && $tools != *Write* && $tools != *Edit* ]] && ok "the kit's $a agent is read-only ($tools)" || bad "$a tools: $tools"
+done
 
 echo "a repo with code: its architecture is drafted from its files, confirmed once, then quoted as a project standard"
 CTX="$HERE/kit/skills/deliver/bin/context.mjs"

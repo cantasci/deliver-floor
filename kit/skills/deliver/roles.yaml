@@ -6,7 +6,9 @@
 #   2-space indentation · `key: value` · `- item` lists · "double-quoted" or bare scalars · `#` comments
 #
 # kind:     ba | lead | dev | review | qa      (Michael himself is the PM/orchestrator)
-# agent:    subagent type to call. "ecc:"-prefixed ones come from the ECC plugin.
+# agent:    subagent type to call. "ecc:"-prefixed ones come from the ECC plugin — optional: without it (settings.ecc "off", or
+#           "auto" and the plugin not installed) each is replaced by the kit's own agent (ecc_fallback below); job.json keeps
+#           the ecc: name, ROLES.md and the role card say which agent to call.
 # writes:   can it write files? (ECC architect/reviewers are read-only — on purpose)
 # when:     selection rule (Michael decides at intake from the request + the repo)
 # always:   selected for every job
@@ -303,3 +305,20 @@ stack_hints:
   go.mod: go
   pom.xml / build.gradle with spring-boot: "java + spring-boot"
   Cargo.toml: rust
+
+# Without the ECC plugin: the kit's own agent for each ecc: agent (default: every stack reviewer and specialist). The role card
+# still says which review it is (security, accessibility, performance, the stack), so one reviewer serves them all.
+ecc_fallback:
+  "ecc:architect": lead
+  "ecc:e2e-runner": qa-tester
+  "ecc:doc-updater": general-purpose
+  default: reviewer
+
+# Skills a role loads before it starts (ECC's — named in the role card only when ECC is there). The stack's own come from
+# stack_skills, per component.
+role_skills:
+  backend: ["ecc:tdd-workflow", "ecc:backend-patterns"]
+  frontend: ["ecc:tdd-workflow", "ecc:frontend-patterns"]
+  mobile: ["ecc:tdd-workflow", "ecc:android-clean-architecture"]
+  database: ["ecc:database-migrations"]
+  qa: ["ecc:verification-loop"]

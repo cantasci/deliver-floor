@@ -4,14 +4,31 @@
 //   node roles.mjs check <job.json>        → every selected role/agent exists in the catalog (exit 1 if not)
 //   node roles.mjs render <job dir>        → .work/<job>/roles/<role>.md + ROLES.md
 // A role card = rules.all + rules.<kind> + the role's own rules + facts about this project and job.
+import { homedir } from "node:os";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { section as knowledgeSection } from "./knowledge.mjs";
 
 const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
-// The name to invoke an agent by: under a plugin install the kit's own agents are namespaced (dl sets DELIVER_AGENT_NS).
-export const agentCall = (a) => {
+// The ECC plugin (affaan-m/ECC) gives the Leads' architect, the stack reviewers and the specialists — optional. settings.ecc:
+// "on", "off" or "auto" (the default: on when Claude Code has the plugin installed, or ECC's own install put its agents in
+// ~/.claude/agents). DELIVER_ECC overrides it (on|off|auto).
+export function eccOn(job) {
+  const mode = String(process.env.DELIVER_ECC || job?.settings?.ecc || "auto");
+  if (mode === "on") return true;
+  if (mode === "off") return false;
+  const cfg = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
+  try {
+    const p = JSON.parse(readFileSync(join(cfg, "plugins", "installed_plugins.json"), "utf8")).plugins ?? {};
+    if (Object.keys(p).some((k) => k.startsWith("ecc@"))) return true;
+  } catch { /* not installed as a plugin */ }
+  return existsSync(join(cfg, "agents", "architect.md"));
+}
+// The name to invoke an agent by. Without ECC an ecc: agent is the kit's own (roles.yaml ecc_fallback); under a plugin install
+// the kit's own agents are namespaced (dl sets DELIVER_AGENT_NS). job.json and board.json keep the canonical names.
+export const agentCall = (a, job, cat) => {
+  if (a?.startsWith("ecc:") && !eccOn(job)) { const fb = (cat ?? loadCatalog()).ecc_fallback ?? {}; a = fb[a] ?? fb.default ?? a; }
   const ns = process.env.DELIVER_AGENT_NS ?? "";
   return ns && !a.includes(":") && existsSync(join(SKILL_DIR, "..", "..", "agents", `${a}.md`)) ? `${ns}:${a}` : a;
 };
@@ -197,7 +214,7 @@ function componentsSection(sel, r, job, cat) {
   if (!arch?.components?.length) return "";
   const mine = arch.components.filter((c) => r.kind === "qa" || r.kind === "ba" || r.kind === "lead" || c.owner === sel.role || c.reviewer === sel.role);
   if (!mine.length) return "";
-  const skills = (c) => [...new Set((c.stack ?? []).flatMap((s) => cat.stack_skills?.[s] ?? []))];
+  const skills = (c) => eccOn(job) ? [...new Set((c.stack ?? []).flatMap((s) => cat.stack_skills?.[s] ?? []))] : [];
   return ["## Components (frozen architecture: " + (arch.style ?? "?") + ")", "",
     ...mine.map((c) => `- **${c.id}** (${c.kind}) — stack ${(c.stack ?? []).join(", ")} — path ${[].concat(c.path).map((x) => `\`${x}\``).join(", ")} — dev: ${c.owner}, review: ${c.reviewer}` +
       (skills(c).length ? `\n  skills to load for it: ${skills(c).map((x) => "`" + x + "`").join(", ")}` : "")),
@@ -207,6 +224,12 @@ function componentsSection(sel, r, job, cat) {
 function roleEntry(sel, cat) {
   if (sel.role?.startsWith("reviewer")) return { kind: "review", agent: sel.agent, does: "Lead review of each card's change for the job's stack." };
   return cat.roles[sel.role];
+}
+
+// The skills a role loads before it starts (roles.yaml role_skills) — ECC's, so only when ECC is there.
+function roleSkills(sel, job, cat) {
+  const s = cat.role_skills?.[sel.role] ?? [];
+  return s.length && eccOn(job) ? ["## Skills", "", `Load before you start: ${s.map((x) => "`" + x + "`").join(", ")} (the Skill tool).`, ""] : [];
 }
 
 export function renderRole(sel, job, cat) {
@@ -234,7 +257,7 @@ export function renderRole(sel, job, cat) {
     `# Role: ${sel.role} — ${KIND_TITLE[r.kind] ?? r.kind}${r.focus ? ` (${r.focus})` : ""}`,
     "",
     `Job: **${job.id}** — ${job.title}`,
-    `Agent: \`${agentCall(sel.agent)}\` · runs on: ${sel.provider ?? "claude"}${sel.model ? ` (${sel.model})` : ""} · writes files: ${r.writes ? "yes (only where the rules allow)" : "no"}`,
+    `Agent: \`${agentCall(sel.agent, job, cat)}\` · runs on: ${sel.provider ?? "claude"}${sel.model ? ` (${sel.model})` : ""} · writes files: ${r.writes ? "yes (only where the rules allow)" : "no"}`,
     `Why this role is on the job: ${sel.why ?? r.when ?? "-"}`,
     "",
     "## Mission",
@@ -249,6 +272,7 @@ export function renderRole(sel, job, cat) {
     "",
     ...projectFacts(job).map((x) => `- ${x}`),
     "",
+    ...roleSkills(sel, job, cat),
     componentsSection(sel, r, job, cat),
     job.repo ? knowledgeSection(job.repo, { kind: r.blind ? "blind" : r.kind, role: sel.role, stack: job.stack ?? [], jobDir: job.dir }) : "",
   ].join("\n");
@@ -268,10 +292,11 @@ export function render(jobDir) {
     const out = renderRole(sel, job, cat);
     const file = join(jobDir, "roles", `${sel.role}.md`);
     writeFileSync(file, out.md);
-    rows.push(`| ${sel.role} | \`${agentCall(sel.agent)}\` | ${out.entry.kind} | ${sel.why ?? ""} | roles/${sel.role}.md |`);
+    rows.push(`| ${sel.role} | \`${agentCall(sel.agent, job, cat)}\` | ${out.entry.kind} | ${sel.why ?? ""} | roles/${sel.role}.md |`);
   }
   writeFileSync(join(jobDir, "ROLES.md"), [
     `# Roles for ${job.id}`, "", "| Role | Agent | Kind | Why | Rules |", "| --- | --- | --- | --- | --- |", ...rows, "",
+    eccOn(job) ? "" : "The ECC plugin is not used (settings.ecc, or not installed): its Lead, reviewers and specialists are the kit's own agents above — job.json keeps the ecc: names.\n",
     process.env.DELIVER_AGENT_NS ? `The kit runs as the \`${process.env.DELIVER_AGENT_NS}\` plugin: call its agents by the names above (subagent_type, claude --agent). job.json and board.json keep the plain names.\n` : "",
   ].join("\n"));
   console.log(`roles: ${job.roles.length} role card(s) → ${join(jobDir, "roles")}`);

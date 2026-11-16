@@ -62,6 +62,7 @@
     "gate_timeout": { "type": "integer", "default": 1800, "description": "Seconds a card's verify / qa_verify may run." },
     "stop_guard_max": { "type": "integer", "default": 5 },
     "push_branches": { "enum": ["auto", true, false], "default": "auto" },
+    "ecc": { "enum": ["auto", "on", "off"], "default": "auto", "description": "The ECC plugin's agents (the Leads' architect, the stack reviewers, the specialists) and skills. auto: used when Claude Code has the plugin installed; off — or auto without it: the kit's own lead and reviewer agents take their place and no ECC skill is named." },
     "roles": {
       "type": "object",
       "description": "Project defaults per role, applied when Michael picks the roles. A role entry that names its own value (from the request's Staffing, or what you tell Michael at the start) keeps it. Role names: ba, backend, frontend, mobile, database, qa, backend-lead, frontend-lead, reviewer-<stack>, security, accessibility, performance, …",

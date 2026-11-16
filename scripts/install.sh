@@ -146,9 +146,9 @@ if [[ $plugin -eq 1 ]]; then
 
 Done (settings only — the plugin brings the skill, agents and hooks). Next steps:
   1. In Claude Code:   /plugin marketplace add https://github.com/cantasci/deliver-floor
-                       /plugin install deliver@deliver-floor
-                       /plugin marketplace add https://github.com/affaan-m/ECC
-                       /plugin install ecc@ecc        (if not installed yet), then restart Claude Code
+                       /plugin install deliver@deliver-floor, then restart Claude Code
+     optional:         /plugin marketplace add https://github.com/affaan-m/ECC
+                       /plugin install ecc@ecc        (ECC's stack reviewers and specialists instead of the kit's own)
   2. Start a job:      /deliver <what you want built>   (or /deliver:deliver; agents are called deliver:<name> — ROLES.md lists them)
 EOF
   exit 0
@@ -157,8 +157,8 @@ repo_arg=""; [[ $mode == project ]] && repo_arg=" $(dirname "$target")"
 cat <<EOF
 
 Done. Next steps:
-  1. In Claude Code:   /plugin marketplace add https://github.com/affaan-m/ECC
-                       /plugin install ecc@ecc        (if not installed yet), then restart Claude Code
+  1. Optional, in Claude Code: /plugin marketplace add https://github.com/affaan-m/ECC
+                       /plugin install ecc@ecc        (ECC's stack reviewers and specialists instead of the kit's own)
   2. dl on your PATH:  ln -sf "$target/skills/deliver/bin/dl" ~/.local/bin/dl     (or an alias)
   3. Check everything: $HERE/scripts/doctor.sh$repo_arg
   4. Per repo:         add .deliver.json at the repo root (verify_full, worktree_setup — docs/03-settings.md)

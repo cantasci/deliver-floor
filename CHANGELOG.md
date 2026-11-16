@@ -4,6 +4,23 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.22.0 — 2026-11-16
+
+**ECC is optional.** The install is two lines: `/plugin marketplace add https://github.com/cantasci/deliver-floor` and
+`/plugin install deliver@deliver-floor` — the plugin no longer depends on `ecc@ecc`.
+- Without ECC (setting `ecc`: `auto`, the default, and the plugin not installed — or `off`) every `ecc:` agent is replaced
+  by the kit's own (`roles.yaml → ecc_fallback`): two new agents, `lead` (cuts the cards, read-only) and `reviewer` (the stack
+  review, every specialist and the blind review — its role card says which), plus `qa-tester` for `ecc:e2e-runner` and
+  `general-purpose` for `ecc:doc-updater`. `job.json` keeps the `ecc:` names; ROLES.md, the role cards and the code driver
+  (`dl run`) call the agent that is there.
+- With ECC nothing changes, except where its skills are named: the dev and QA agents no longer preload them in their
+  frontmatter (`skills:`) — the role card names them under `## Skills` (`roles.yaml → role_skills`), and per component as
+  before. Without ECC no ECC skill is named.
+- The first session says once, as a note, that ECC is not installed and how to add it; `doctor.sh` notes it instead of
+  failing.
+
+**CI.** `tests/run.sh` runs on every push and PR: Linux, and macOS on its own bash 3.2 (`.github/workflows/tests.yml`).
+
 ## 0.21.0 — 2026-11-12
 
 Four things that made a job slower than its work.

@@ -6,9 +6,6 @@ model: sonnet
 effort: high
 maxTurns: 80
 color: green
-skills:
-  - ecc:tdd-workflow
-  - ecc:frontend-patterns
 ---
 
 You are a frontend developer. You receive exactly one board card, one worktree path and your **role card** (the project's rules, company standards and

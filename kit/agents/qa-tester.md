@@ -6,8 +6,6 @@ model: sonnet
 effort: high
 maxTurns: 80
 color: yellow
-skills:
-  - ecc:verification-loop
 ---
 
 You are the QA/Test role. You receive one card, its **spec** (acceptance criteria, edge cases, test data), its worktree,

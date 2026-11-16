@@ -41,20 +41,20 @@ ECC notes:
 The repo is a plugin marketplace (`.claude-plugin/marketplace.json` → `kit/`, plugin `deliver`). Inside Claude Code:
 
 ```text
-/plugin marketplace add https://github.com/affaan-m/ECC
 /plugin marketplace add https://github.com/cantasci/deliver-floor
 /plugin install deliver@deliver-floor
 ```
 
-That is all. The plugin depends on ECC (`"dependencies": ["ecc@ecc"]`), so installing `deliver` installs ECC too, once ECC's
-marketplace is added (`… (+ 1 dependency: ecc)`). Claude Code has no install hook, so **the first session does the setup** —
+That is all. ECC is optional since 0.22.0 (`/plugin marketplace add https://github.com/affaan-m/ECC`, `/plugin install
+ecc@ecc`): with it the Leads, stack reviewers and specialists are ECC's agents and the role cards name ECC's skills; without
+it the kit's own `lead` and `reviewer` agents take their place (setting `ecc`: `auto` | `on` | `off`). Claude Code has no install hook, so **the first session does the setup** —
 the plugin's SessionStart hook (`kit/hooks/deliver/setup.mjs`), once per plugin version:
 
 - `~/.claude/settings.json` gets the env a plugin cannot set (`GATEGUARD_EXEMPT_GLOBS`: ECC's GateGuard lets Michael write
   `.work/` files), with a backup; restart Claude Code once so it applies;
 - in a repo with `.deliver.json`, `.claude/settings.local.json` gets an empty commit/PR attribution — that repo only;
-- every session: git, jq, Node 18+, bash (Git Bash on Windows) and ECC are checked; what is missing is named with the
-  command that fixes it. Nothing is printed when all is well.
+- every session: git, jq, Node 18+ and bash (Git Bash on Windows) are checked; what is missing is named with the
+  command that fixes it. ECC missing is said once per version, as optional. Nothing is printed when all is well.
 - every session: a copy of the kit in `~/.claude` (`skills/deliver`, `hooks/deliver`, the kit's agents, their hook entries
   in `settings.json`) is deleted — the plugin is the only copy; `settings.json` is backed up, your own agents and hooks stay.
   And `~/.claude/plugins/data/deliver-deliver-floor/bin/dl` is rewritten to run the version this session loaded: the one
