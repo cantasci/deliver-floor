@@ -64,6 +64,8 @@ export PICK_REQUEST="$(basename "$REQ")"   # answers that belong to one request 
 ANSWERS="$EX/HUMAN_ANSWERS.json"; [[ $SC == idea ]] && ANSWERS="$EX/HUMAN_ANSWERS-idea.json"   # what the scenario's human knows
 SHAPED_SC=0; [[ $SC == shaped || $SC == idea ]] && SHAPED_SC=1
 W="${2:-$(mktemp -d "${TMPDIR:-/tmp}/deliver-e2e.XXXXXX")}"; mkdir -p "$W/$SC"; W="$(cd "$W/$SC" && pwd)"
+# the request is handed over from a directory of its own: next to it in examples/ lie a reference solution and the human's answers
+mkdir -p "$W/input" && cp "$REQ" "$EX/JOB-light2.md" "$W/input/" && REQ="$W/input/$PICK_REQUEST"
 export ISO_HOME="$W/home"; mkdir -p "$ISO_HOME"
 . "$HERE/tests/lib-isolated-claude.sh"
 export PERMISSION_MODE="${PERMISSION_MODE:-bypassPermissions}" IS_SANDBOX=1
@@ -81,7 +83,7 @@ pass=0 fail=0
 ok()  { printf '  \033[32m✔\033[0m %s\n' "$1"; printf -- '- ✅ %s\n' "$1" >> "$REP"; pass=$((pass+1)); }
 bad() { printf '  \033[31m✘\033[0m %s\n' "$1"; printf -- '- ❌ %s\n' "$1" >> "$REP"; fail=$((fail+1)); }
 chk() { local d=$1; shift; if "$@" >/dev/null 2>&1; then ok "$d"; else bad "$d"; fi; }
-printf '# Live E2E — scenario `%s`\n\nRequest: `%s`  ·  started %s\n' "$SC" "${REQ#$HERE/}" "$(date -u +%FT%TZ)" > "$REP"
+printf '# Live E2E — scenario `%s`\n\nRequest: `%s`  ·  started %s\n' "$SC" "examples/$EXN/$PICK_REQUEST" "$(date -u +%FT%TZ)" > "$REP"
 
 step "1 · setup: fresh HOME, ECC from GitHub, the kit, doctor, sandbox repo"
 if iso_env claude plugin list 2>/dev/null | gq "ecc@ecc"; then log "ECC already installed in this HOME"
@@ -156,7 +158,7 @@ DL="$ISO_HOME/.claude/skills/deliver/bin/dl"
 dlx() { iso_env "$DL" -C "$SB" "$@"; }
 run_rounds() { iso_env DELIVER_HEADLESS=1 "$HERE/scripts/run-headless.sh" "$SB" "${1:-}" "${E2E_ROUNDS:-8}" 2>&1 | tee -a "$W/run.log"; }
 
-step "2 · run: the only input is ${REQ#$HERE/}"
+step "2 · run: the only input is examples/$EXN/$PICK_REQUEST (handed over from $W/input)"
 start=$(date +%s)
 run_rounds "$REQ" | sed 's/^/    /'
 J="$(ls -d "$SB"/.work/JOB-* 2>/dev/null | head -1)"
@@ -214,7 +216,7 @@ for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SHAPED_SC == 1 ]] && echo 12 || 
 done
 }
 human_rounds "$J"
-log "wall time: $(( ($(date +%s) - start) / 60 )) min"
+log "wall time: $(( ($(date +%s) - start) / 60 )) min ($(( $(date +%s) - start )) s)"
 
 step "5 · verify the whole flow on disk"
 if [[ -n ${E2E_FRESH_REPO:-} ]]; then
@@ -394,7 +396,7 @@ if [[ $SC == light ]]; then
 
   step "B2 · a second small change settles its architecture from the file (JOB-light2.md)"
   git -C "$SB" checkout -q main 2>/dev/null
-  run_rounds "$EX/JOB-light2.md" | sed 's/^/    /'
+  run_rounds "$W/input/JOB-light2.md" | sed 's/^/    /'
   J2="$(ls -td "$SB"/.work/JOB-* | grep -v "^$J\$" | head -1)"
   if [[ -n $J2 && $J2 != "$J" ]]; then
     human_rounds "$J2"

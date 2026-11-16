@@ -1928,6 +1928,24 @@ node "$PA" "$HA" "$q" >/dev/null 2>&1; [[ $? == 2 ]] && ok "one shared word is n
 contains "a readiness item id names its answer" "$(PICK_REQUEST=JOB.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
 contains "…an answer that belongs to one request reaches only that scenario (live run 72: another slice's priority answer)" "$(PICK_REQUEST=JOB-parallel.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "Both are Must and ship together"
 
+echo "the bench: the oracles stay outside the repo, and the numbers come from Claude Code's own results"
+[[ -z "$(git -C "$HERE" ls-files 'examples/*/oracle/*' '*.oracle.test.mjs')" ]] && ok "no oracle in the repository — only their hashes" || bad "an oracle is tracked: $(git -C "$HERE" ls-files '*.oracle.test.mjs')"
+[[ "$(wc -l < "$HERE/examples/watchlist-poc/oracles.sha256")" -ge 5 ]] && ok "…examples/watchlist-poc/oracles.sha256 names them" || bad "oracles.sha256 incomplete"
+OR="$TMP/oracle-repo"; git init -q -b main "$OR" && git -C "$OR" commit -q --allow-empty -m seed
+out="$(DELIVER_ORACLE_DIR="$TMP/no-oracles" "$HERE/scripts/check-oracle.sh" "$OR" main 2>&1)"; rc=$?
+[[ $rc == 3 ]] && ok "an oracle missing from DELIVER_ORACLE_DIR is said so (exit 3)" || bad "missing oracle: rc $rc"
+contains "…naming where it is looked for" "$out" "the oracles are kept outside the repo (DELIVER_ORACLE_DIR"
+mkdir -p "$TMP/bad-oracles/watchlist-poc" && echo 'import "node:test";' > "$TMP/bad-oracles/watchlist-poc/watchlist.oracle.test.mjs"
+out="$(DELIVER_ORACLE_DIR="$TMP/bad-oracles" "$HERE/scripts/check-oracle.sh" "$OR" main 2>&1)"; rc=$?
+[[ $rc == 3 && $out == *"differs from the one recorded"* ]] && ok "an oracle that differs from its recorded sha256 is not used" || bad "changed oracle: rc $rc — $out"
+printf '%s\n' '{"type":"system"}' '{"type":"result","total_cost_usd":1.25,"modelUsage":{"m1":{"costUSD":1.25}}}' > "$TMP/s1.jsonl"
+echo '{"total_cost_usd":0.5,"modelUsage":{"m2":{"costUSD":0.5}}}' > "$TMP/s2.json"
+[[ "$(node "$HERE/tests/bench.mjs" cost "$TMP/s1.jsonl" "$TMP/s2.json" "$TMP/none.json")" == '{"usd":1.75,"sessions":2,"models":{"m1":1.25,"m2":0.5}}' ]] \
+  && ok "bench cost: every session's own total_cost_usd, stream-json and json alike, a missing file is nothing" || bad "bench cost: $(node "$HERE/tests/bench.mjs" cost "$TMP/s1.jsonl" "$TMP/s2.json")"
+printf 'ℹ tests 5\nℹ pass 4\nℹ fail 1\n' > "$TMP/o.log"
+[[ "$(node "$HERE/tests/bench.mjs" oracle "$TMP/o.log")" == '{"result":"fail","pass":4,"fail":1}' && "$(node "$HERE/tests/bench.mjs" oracle "$TMP/none.log")" == '{"result":"error","pass":0,"fail":0}' ]] \
+  && ok "bench oracle: one failing check fails the run; no log is no code" || bad "bench oracle parse"
+
 echo "risk-based test design: a priority per acceptance criterion, a test design per card, every AC in the QA verdict, the NFR gate, the blind review"
 export DELIVER_KNOWLEDGE="$TMP/no-company-standards"   # the company standards earlier sections left in ~/.deliver are not this job's
 RISK="$HERE/kit/skills/deliver/bin/risk.mjs"

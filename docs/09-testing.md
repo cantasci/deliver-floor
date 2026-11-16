@@ -8,6 +8,7 @@ is summarised away.
 | 1. Deterministic | `tests/run.sh` | no | ~2 min | every `dl` guard, the validator, roles, readiness, knowledge, hooks, trackers (contract stubs of Jira, Asana, Linear, GitHub Projects; switching a running job's tracker), merge modes (fake `gh`, bare origin), installer |
 | 2. Replay | `tests/replay-watchlist.sh` | no | ~1 min | the whole flow on the POC slice, narrated step by step with real `dl` output; a scope violation rejected and retried; the hidden oracle passes |
 | 3. Live, headless | `tests/e2e-live.sh complete \| incomplete \| parallel` | yes | 10–25 min each | real Claude Code + real ECC from GitHub + real agents on a fresh HOME; the only input is a requirements file |
+| 4. Bench | `tests/bench.sh all` | yes | ~2–3 h | the same requests with the full flow, the quick path and plain Claude Code — oracle, cost and time side by side ([13-bench](13-bench.md)) |
 
 ## The test data
 
@@ -21,7 +22,7 @@ is summarised away.
 | `JOB-parallel.md` | two independent requirements and "two backend developers" — two seats must work at the same time |
 | `HUMAN_ANSWERS.json` | the human's answers, per question topic — a question no entry matches fails the scenario (a real person would have to answer) |
 | `seed/` | the repo the job starts from (`scripts/sandbox.sh`) |
-| `oracle/*.oracle.test.mjs` | **hidden** acceptance tests, never shown to any agent: run against the delivered branch at the end |
+| `oracles.sha256` | the **hidden** acceptance tests (oracles) — only their hashes: the tests themselves are kept outside the repo, where no agent can read them (`DELIVER_ORACLE_DIR`, default `~/.deliver-bench/oracles/watchlist-poc/`; [13-bench](13-bench.md)). `scripts/check-oracle.sh` runs one against the delivered branch, and refuses one that differs |
 | `reference/` | a reference plan, cards and solution — used only by the replay |
 
 ## Layer 1 — `tests/run.sh`

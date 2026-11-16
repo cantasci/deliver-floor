@@ -31,8 +31,8 @@ model's memory:
 - **Nothing on assumptions.** Every requirement is checked before planning. A decision must quote the request words it
   comes from; what only the business can answer is asked once, at the start — then frozen.
 - **"Done" is evidence.** A card merges only with a passed gate, a QA pass against its acceptance criteria and every
-  reviewer's approval, all on the same commit. A hidden acceptance test (the "oracle") checks the delivered result in our
-  own test runs.
+  reviewer's approval, all on the same commit. A hidden acceptance test (the "oracle", kept outside this repo) checks the
+  delivered result in our own test runs.
 - **Code decides state.** `dl` owns the board, branches, gates, records and merges, and refuses anything out of order.
   Hooks keep every role in its lane: no push to main, no edits outside a card's scope, no AI attribution in your history.
 - **Depth where it matters, not everywhere.** A small change to existing code takes the light path (fewer readiness
@@ -248,8 +248,8 @@ kit/                       the plugin (scripts/install.sh --project copies it in
 ├── hooks/deliver/         guards (bash) · run.mjs (cross-platform launcher) · setup.mjs (first-session setup)
 └── hooks/hooks.json       the plugin's hook wiring
 scripts/                   init · install · doctor · sandbox · run-headless · check-oracle
-examples/watchlist-poc/    test requests (complete, incomplete, parallel, mini, models), human answers, seed repo, hidden oracles
-tests/                     run.sh · replay · e2e-live · e2e-interactive (+ helpers)
+examples/watchlist-poc/    test requests (complete, incomplete, parallel, mini, models), human answers, seed repo, the hidden oracles' hashes
+tests/                     run.sh · replay · e2e-live · e2e-interactive · bench (+ helpers)
 docs/                      the guides above and verification/
 ```
 
