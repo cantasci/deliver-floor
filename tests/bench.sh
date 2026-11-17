@@ -97,7 +97,7 @@ run_quick() {
   SB="$W/repo"; sandbox "$SC" && with_kit || { NOTE="setup failed"; return 1; }
   mkdir -p "$SB/.work/runs"; local t0 r; t0=$(date +%s)
   (cd "$SB" && iso_env DELIVER_HEADLESS=1 CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 claude -p "/deliver:quick Implement the request in $W/input/$REQ" \
-     --permission-mode "$PERMISSION_MODE" --output-format stream-json --verbose > ".work/runs/$(date +%Y%m%d-%H%M%S)-quick.jsonl" 2> "$W/quick.err")
+     --permission-mode "$PERMISSION_MODE" --output-format stream-json --verbose < /dev/null > ".work/runs/$(date +%Y%m%d-%H%M%S)-quick.jsonl" 2> "$W/quick.err")
   for r in 1 2 3; do
     iso_env DELIVER_HEADLESS=1 "$HERE/scripts/run-headless.sh" "$SB" "" "${BENCH_ROUNDS:-8}" >> "$W/run.log" 2>&1
     J="$(ls -d "$SB"/.work/JOB-* 2>/dev/null | head -1)"
@@ -111,13 +111,13 @@ run_plain() {
   git -C "$SB" rm -q .deliver.json && git -C "$SB" commit -qm "bench: plain Claude Code, no kit"
   local t0 base ans answers="" line; t0=$(date +%s); base="$(git -C "$SB" rev-parse HEAD)"
   (cd "$SB" && iso_env claude -p "Implement the request in $W/input/$REQ in this repository. Work on the main branch: write the code and its tests, run the tests, and commit your work." \
-     --permission-mode "$PERMISSION_MODE" --output-format json > "$W/plain-1.json" 2> "$W/plain.err")
+     --permission-mode "$PERMISSION_MODE" --output-format json < /dev/null > "$W/plain-1.json" 2> "$W/plain.err")
   if [[ -z "$(git -C "$SB" status --porcelain)" && "$(git -C "$SB" rev-parse HEAD)" == "$base" ]]; then   # it stopped to ask
     while IFS= read -r line; do
       ans="$(node "$HERE/tests/pick-answer.mjs" "$ANSWERS" "$line" 2>/dev/null)" && answers="$answers $ans"
     done < <(jq -r '.result // ""' "$W/plain-1.json" | grep '?')
     (cd "$SB" && iso_env claude -p "${answers:+Answers:$answers }Nobody can answer more right now. Go ahead: decide anything still unclear yourself, note it, implement the request and commit." \
-       --continue --permission-mode "$PERMISSION_MODE" --output-format json > "$W/plain-2.json" 2>> "$W/plain.err")
+       --continue --permission-mode "$PERMISSION_MODE" --output-format json < /dev/null > "$W/plain-2.json" 2>> "$W/plain.err")
     NOTE="stopped to ask; ${answers:+given the prepared answers and }told to go ahead"
   fi
   SECS=$(( $(date +%s) - t0 ))

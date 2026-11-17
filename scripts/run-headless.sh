@@ -28,7 +28,7 @@ waits=0; max_waits="${LIMIT_WAITS:-30}"
 run() {
   local prompt=$1 log; log=".work/runs/$(date +%Y%m%d-%H%M%S).jsonl"
   echo "▶ claude -p \"$prompt\"   (log: $log)"
-  claude -p "$prompt" --permission-mode "$mode" --output-format stream-json --verbose > "$log" || true
+  claude -p "$prompt" --permission-mode "$mode" --output-format stream-json --verbose < /dev/null > "$log" || true
   LAST_LOG=$log
   jq -r 'select(.type=="result") | "  result: \(.subtype)  turns=\(.num_turns)  cost=$\(.total_cost_usd // 0)"' "$log" 2>/dev/null | tail -1
 }
