@@ -5,13 +5,16 @@
 //   node limit-reset.mjs [now, epoch seconds] < text
 //     exit 0 → prints the reset as epoch seconds · 2 → out of credits: no reset, the human's call · 1 → no limit in the text
 // Seen: "You've hit your session limit · resets 2:30pm (Europe/Berlin)"; a weekly limit names its day ("resets Oct 12, 3pm").
+// A spend limit ("You've hit your org's monthly spend limit · ask your admin to raise it … your 5-hour limit resets 7:20pm")
+// is not waited out: the reset it names is another limit's, and only an admin raises the spend — the human's call, like credits.
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 export function resetAt(text, now = Date.now()) {
-  const m = text.match(/hit your [\w -]*limit[^\n]*?resets\s+(?:([a-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(?:at\s+)?)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*(?:\(([^)]+)\))?/i);
+  if (/spend limit|ask your admin/i.test(text)) return { credits: true };
+  const m = text.match(/hit your [\w' -]*limit[^\n]*?resets\s+(?:([a-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(?:at\s+)?)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*(?:\(([^)]+)\))?/i);
   if (!m) return /out of (usage )?credits/i.test(text) ? { credits: true } : null;
   const [, mon, day, hh, mm, ap, zone] = m;
   const h = (Number(hh) % 12) + (ap.toLowerCase() === "pm" ? 12 : 0), min = Number(mm ?? 0);

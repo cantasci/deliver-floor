@@ -42,7 +42,7 @@ wait_for_limit() {
          | grep -oE "(([[:alpha:]']+ )?hit your .*limit.*|out of (usage )?credits.*)" | tail -1 || true)"
   [[ -n $txt ]] || return 1
   at="$(printf '%s' "$txt" | node "$KIT/bin/limit-reset.mjs")" || rc=$?
-  if [[ $rc -eq 2 ]]; then echo "⏸  out of usage credits — add credits or switch the model, then run this script again"; exit 3; fi
+  if [[ $rc -eq 2 ]]; then echo "⏸  out of usage credits or over a spend limit — add credits, have the limit raised or switch the model, then run this script again"; exit 3; fi
   [[ $rc -eq 0 && -n $at ]] || return 1
   (( waits < max_waits )) || { echo "⏸  a usage limit again after $waits waits — stopping (LIMIT_WAITS=$max_waits)"; exit 3; }
   waits=$((waits + 1)); secs=$(( at - $(date +%s) + 60 )); (( secs > 0 )) || secs=60

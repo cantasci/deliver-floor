@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # LIVE end-to-end scenarios — real Claude Code, real ECC plugin, real agents. No mocks, no replay, no hand-holding.
 # Each scenario does what a user does on a fresh machine and then judges the result from the outside, step by step:
-#   setup   fresh HOME → ECC from GitHub (/plugin marketplace add + install) → scripts/install.sh → doctor → sandbox repo
+#   setup   fresh HOME → ECC from GitHub (/plugin marketplace add + install) → the kit as the plugin users get, from this
+#           checkout (E2E_INSTALL=copy: the older scripts/install.sh --user copy) → doctor → sandbox repo
 #   run     scripts/run-headless.sh <repo> <requirements .md>   — the ONLY input is the requirements file
 #   verify  every step of the flow is checked on disk (job, readiness, roles, cards, QA tests, commits) + a hidden oracle
 #
@@ -92,7 +93,14 @@ else
   iso_env claude plugin install ecc@ecc 2>&1 | tail -1 | tee -a "$REP"
 fi
 iso_env claude plugin list 2>/dev/null | gq ecc@ecc && ok "ECC plugin installed ($(iso_env claude plugin list 2>/dev/null | grep -A1 ecc@ecc | grep -o 'Version: [0-9.]*'))" || bad "ECC plugin not installed"
-iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
+if [[ ${E2E_INSTALL:-plugin} == copy ]]; then
+  iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 && ok "kit installed (scripts/install.sh --user)" || bad "kit install failed (install.log)"
+  KS="$ISO_HOME/.claude/skills/deliver"
+else   # the way users install it: the plugin — from this checkout's marketplace, with every human command (/deliver:quick …)
+  { iso_env claude plugin marketplace add "$HERE" && iso_env claude plugin install deliver@deliver-floor && iso_env "$HERE/scripts/install.sh" --user --plugin; } > "$W/install.log" 2>&1
+  KS="$(ls -d "$ISO_HOME"/.claude/plugins/cache/deliver-floor/deliver/*/skills/deliver 2>/dev/null | tail -1)"
+  [[ -n $KS ]] && ok "kit installed as the plugin (deliver@deliver-floor from this checkout, $(basename "$(dirname "$(dirname "$KS")")"))" || { bad "plugin install failed (install.log)"; KS="$HERE/kit/skills/deliver"; }
+fi
 SB="$W/repo"; rm -rf "$SB"
 if [[ -n ${E2E_FRESH_REPO:-} ]]; then
   # a repo with no .deliver.json: the first /deliver must write it from the repo; the user's own config is carried into it
@@ -154,7 +162,7 @@ if [[ -n ${E2E_SUITE_RUNS:-}${E2E_SUITE_TIMEOUT_MIN:-} ]]; then
   git -C "$SB" commit -qam "deliver: suite_runs ${E2E_SUITE_RUNS:-card}${E2E_SUITE_TIMEOUT_MIN:+, suite_timeout_min $E2E_SUITE_TIMEOUT_MIN}" && log "suite_runs ${E2E_SUITE_RUNS:-card}${E2E_SUITE_TIMEOUT_MIN:+ · suite_timeout_min $E2E_SUITE_TIMEOUT_MIN}"
 fi
 iso_env "$HERE/scripts/doctor.sh" "$SB" > "$W/doctor.log" 2>&1 && ok "doctor: $(tail -1 "$W/doctor.log")" || bad "doctor: $(tail -1 "$W/doctor.log")"
-DL="$ISO_HOME/.claude/skills/deliver/bin/dl"
+DL="$KS/bin/dl"
 dlx() { iso_env "$DL" -C "$SB" "$@"; }
 run_rounds() { iso_env DELIVER_HEADLESS=1 "$HERE/scripts/run-headless.sh" "$SB" "${1:-}" "${E2E_ROUNDS:-8}" 2>&1 | tee -a "$W/run.log"; }
 
@@ -252,7 +260,7 @@ done
 [[ $all_chain -eq 1 ]] && ok "every card ($ncards): assigned by Michael → dev → gate PASS → QA pass → review approve (same commit) → merged"
 qa_files=0
 for c in $(jq -r '.cards[] | select(.state=="merged") | .id' "$B"); do
-  n="$(git -C "$SB" ls-files | node "$ISO_HOME/.claude/skills/deliver/bin/scope.mjs" "$(jq -c --arg id "$c" '.cards[] | select(.id==$id) | .qa_scope' "$B")" | wc -l)"
+  n="$(git -C "$SB" ls-files | node "$KS/bin/scope.mjs" "$(jq -c --arg id "$c" '.cards[] | select(.id==$id) | .qa_scope' "$B")" | wc -l)"
   total="$(git -C "$SB" ls-files | wc -l)"; [[ $((total - n)) -gt 0 ]] && qa_files=$((qa_files + total - n))
 done
 [[ $qa_files -gt 0 ]] && ok "QA's integration tests are on main ($qa_files file(s) in the cards' qa_scope)" || bad "no QA test files on main"
@@ -261,7 +269,7 @@ grep -qE $'\tagent\t(backend|frontend|mobile|database)-dev' "$J/events.log" && o
 grep -qE $'\tagent\tecc:[a-z-]*reviewer' "$J/events.log" && ok "role really ran: a stack reviewer" || bad "no reviewer run"
 ! grep -q $'\ttracker-error\t' "$J/events.log" && ok "no tracker errors" || bad "tracker errors in events.log"
 chk "kanban view rendered" test -f "$J/kanban.html"
-! cmp -s "$J/report.md" "$ISO_HOME/.claude/skills/deliver/templates/report.md" && ok "report.md written by the closing check" || bad "report.md is the template"
+! cmp -s "$J/report.md" "$KS/templates/report.md" && ok "report.md written by the closing check" || bad "report.md is the template"
 base="$(git -C "$SB" rev-list --max-parents=0 HEAD | tail -1)"
 if git -C "$SB" log --format='%an <%ae>%n%B' "$base..main" | gq -iE 'co-authored-by:.*(claude|anthropic)|generated with \[?claude|noreply@anthropic'; then bad "AI attribution found in the delivered history"
 else ok "no AI attribution in the delivered history ($(git -C "$SB" rev-list --count "$base..main") commits)"; fi
@@ -326,7 +334,7 @@ fi
 # B3, B4 — 0.16.0: risk-based test design, the NFR gate, the blind review (a job on older settings has none of them)
 if [[ "$(jq -r '.settings.test_design.risk // false' "$JJ")" == true ]]; then
   step "B3 · risk-based test design and the NFR gate"
-  RISK="$ISO_HOME/.claude/skills/deliver/bin/risk.mjs"
+  RISK="$KS/bin/risk.mjs"
   if pri="$(node "$RISK" plan "$J" 2>&1)"; then ok "every AC of the plan has a priority: $(jq -r 'map("\(.ac) \(.priority)") | join(", ")' <<<"$pri")"
   else bad "plan priorities: $pri"; fi
   chk "every card spec has a ## Test design" bash -c "for c in \$(jq -r '.cards[] | select(.state != \"archived\") | .id' '$B'); do grep -q '^## Test design' '$J/specs/'\$c.md || exit 1; done"
@@ -371,7 +379,7 @@ if [[ $SHAPED_SC == 1 && ${E2E_SHAPING:-on} != off ]]; then
   chk "frozen with readiness at planning (frozen.shaping_sha256)" jq -e '.frozen.shaping_sha256' "$JJ"
   nb="$(jq '[(.items // .)[] | select((.source // "") | test("^\\s*(bmad|shape):"))] | length' "$J/readiness.json")"
   [[ $nb -gt 0 ]] && ok "the readiness review settled $nb item(s) from BMad's words (bmad: / shape:)" || bad "no readiness item quotes BMad's artifacts or the ledger"
-  ids="$(node "$ISO_HOME/.claude/skills/deliver/bin/bmad.mjs" ids "$J" 2>/dev/null | jq -r 'join(", ")')"; log "traced ids: ${ids:-none} (dl validate refuses a plan that leaves one out)"
+  ids="$(node "$KS/bin/bmad.mjs" ids "$J" 2>/dev/null | jq -r 'join(", ")')"; log "traced ids: ${ids:-none} (dl validate refuses a plan that leaves one out)"
   [[ -f $J/standards/bmad-architecture.md ]] && log "AD rules for the reviewers: $(grep -c '^- \[AD-' "$J/standards/bmad-architecture.md")" || log "no architecture spine: no AD rules"
   chk "the PR body says how it was shaped" grep -q '## Shaped with the BMad Method' "$J/report.md"
   chk "the record keeps BMad's inputs and artifacts on main" bash -c "git -C '$SB' ls-tree -r --name-only main | grep -q '^.deliver/jobs/.*/bmad/shaping.json'"
@@ -383,7 +391,7 @@ if [[ $SC == light ]]; then
   chk "Michael took the light path, with the request's words" jq -e '.tracks[0].to == "light" and any(.pm_decisions[]; .what | test("light path"))' "$JJ"
   log "his reason: $(jq -r '[.pm_decisions[] | select(.what | test("light path"))][0] | "\(.what) — \(.why // "")" | .[0:240]' "$JJ")"
   chk "…and stayed on it (no dl track full)" jq -e '.track == "light"' "$JJ"
-  log "readiness: $(jq '(.items // .) | length' "$J/readiness.json") items (the full path asks $(jq -n --slurpfile j "$JJ" '$j[0] | .track = "full"' > "$W/full-job.json" && mkdir -p "$W/fulljob" && cp "$W/full-job.json" "$W/fulljob/job.json" && node "$ISO_HOME/.claude/skills/deliver/bin/readiness.mjs" applicable "$W/fulljob" | jq length) for this repo)"
+  log "readiness: $(jq '(.items // .) | length' "$J/readiness.json") items (the full path asks $(jq -n --slurpfile j "$JJ" '$j[0] | .track = "full"' > "$W/full-job.json" && mkdir -p "$W/fulljob" && cp "$W/full-job.json" "$W/fulljob/job.json" && node "$KS/bin/readiness.mjs" applicable "$W/fulljob" | jq length) for this repo)"
   chk "no Lead role" jq -e '[.roles[].role] | all(test("lead") | not)' "$JJ"
   chk "at most $(jq -r '.settings.light.max_cards' "$JJ") cards" bash -c "[[ \$(jq '[.cards[] | select(.state != \"archived\")] | length' '$B') -le \$(jq -r .settings.light.max_cards '$JJ') ]]"
   step "B2 · the project's architecture, confirmed once and committed"
@@ -391,7 +399,7 @@ if [[ $SC == light ]]; then
   log "ARC answers: $(jq -r '[(.items // .)[] | select(.id=="ARC-style" or .id=="ARC-components") | "\(.id): \(.status) (\(.source // "-"))"] | join("; ")' "$J/readiness.json")"
   chk "architecture.md is on main" git -C "$SB" cat-file -e main:.deliver/knowledge/architecture.md
   git -C "$SB" show main:.deliver/knowledge/architecture.md > "$W/architecture.md" 2>/dev/null
-  chk "…and dl context check passes on it" iso_env node "$ISO_HOME/.claude/skills/deliver/bin/context.mjs" check "$SB"
+  chk "…and dl context check passes on it" iso_env node "$KS/bin/context.mjs" check "$SB"
   chk "the PR body says so (## Project architecture)" grep -q '## Project architecture' "$J/report.md"
 
   step "B2 · a second small change settles its architecture from the file (JOB-light2.md)"
@@ -404,7 +412,7 @@ if [[ $SC == light ]]; then
     chk "the second job reached done" test "$(jq -r .phase "$JJ2")" == done
     chk "…on the light path" jq -e '.track == "light"' "$JJ2"
     ! grep -qP "\tclarify\tARC-(style|components):" "$J2/events.log" && ok "the human was not asked about the architecture again" || bad "the human was asked about the architecture again"
-    fid="$(node "$ISO_HOME/.claude/skills/deliver/bin/context.mjs" components "$SB" 2>/dev/null | jq -c '[.[].id] | sort')"
+    fid="$(node "$KS/bin/context.mjs" components "$SB" 2>/dev/null | jq -c '[.[].id] | sort')"
     rid="$(jq -c '[.architecture.components[].id] | sort' "$J2/readiness.json")"
     [[ -n $fid && $(jq -n --argjson f "$fid" --argjson r "$rid" '$r - $f | length') == 0 ]] && ok "its components are the file's ($rid)" || bad "components $rid, the file has $fid"
     if "$HERE/scripts/check-oracle.sh" "$SB" main "$EXN" light2.oracle.test.mjs > "$W/oracle2.log" 2>&1; then ok "hidden oracle of the second change passes ($(grep -c '✔' "$W/oracle2.log") checks)"

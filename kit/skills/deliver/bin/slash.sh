@@ -36,7 +36,10 @@ case $cmd in
   new|quick) # what /deliver:new and /deliver:quick tell Claude: is a job in the way of a new one?
             if out="$(bash "$DL" status 2>/dev/null)" && [[ $out == job:* ]]; then
               echo "ACTIVE JOB — a new job cannot start while this one is active:"; printf '%s\n' "$out" | sed -n '1,4p'
-            else echo "NO ACTIVE JOB"; fi ;;
+            else echo "NO ACTIVE JOB"
+              # the human asked for the quick path: dl quick takes it even where it would choose the planned way (read once)
+              if [[ $cmd == quick ]] && r="$(git rev-parse --show-toplevel 2>/dev/null)"; then mkdir -p "$r/.work" && date +%s > "$r/.work/.quick-asked"; fi
+            fi ;;
   doctor)   bash "$DL" version 2>&1
             if cfg="$(bash "$DL" config 2>&1)"; then
               printf '%s\n' "$cfg" | sed -n 1p

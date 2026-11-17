@@ -4,6 +4,22 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.25.0 — 2026-11-17
+
+From the first bench run (docs/13-bench.md):
+- **The path is decided by `dl`, not by Michael's reading.** `/deliver` on a two-requirement slice of a requirements document,
+  in a repo with a `package.json` but no code yet, went the quick way — without a reason. `dl quick` now refuses a request
+  that names two requirements or more (REQ-…, FR-…, US-… — in its words or in the file it names) and a repo with no code yet
+  (a new component), and names the planned way and the line Michael says first. Only the human asks for the quick path
+  anyway: `/deliver:quick` (read once; the hooks refuse Michael writing it himself). `--why` is required.
+- **A spend limit is a limit.** "You've hit your org's monthly spend limit" was not recognised (the apostrophe), so an
+  unattended run said "no progress" and stopped with the wrong reason. It is now the human's call, like being out of
+  credits: the headless run stops (exit 3) and says so — the 5-hour reset the message also names would not lift it.
+- **The live tests install the kit the way users do:** the plugin, from the checkout (`E2E_INSTALL=copy` for the older
+  `scripts/install.sh --user` copy, which has no human commands such as `/deliver:quick`).
+- The bench writes no result for a run a limit or an API error stopped, and stops the lane; the light scenario's second
+  change is left out of its time and cost.
+
 ## 0.24.0 — 2026-11-16
 
 **The quick path is a visible default, not a silent one.** A small request already went quick (0.20.0); now the human hears

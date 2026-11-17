@@ -68,6 +68,8 @@ grep -Eq 'git[[:space:]].*branch[[:space:]]+(-[[:alpha:]]*[dD]|--delete)[^;&|]*j
 # DELIVER_HUMAN_CMD marks the human's own slash commands (/deliver:retry …, run by Claude Code before the model sees them).
 grep -q 'DELIVER_HUMAN_CMD' <<<"$cmd" && deny "DELIVER_HUMAN_CMD is set only by the human's /deliver:<command> — ask the human to run it."
 
+grep -q 'quick-asked' <<<"$cmd" && deny "only the human asks for the quick path, with /deliver:quick — the planned way is what dl chose."
+
 # --- dl: who may change the flow's state ------------------------------------------------------------------------
 # dl as a word, a path (…/bin/dl) or the variable the playbook uses ("$DL", ${DL})
 dl_re='(^|[;&|[:space:](/"'"'"'])(dl|\$\{?DL\}?)"?[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?'

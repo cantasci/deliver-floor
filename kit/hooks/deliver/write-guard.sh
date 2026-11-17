@@ -22,6 +22,7 @@ if [[ -n ${DELIVER_SHAPING:-} ]]; then
   case $f in */.work/"$DELIVER_SHAPING"/bmad/out/*|*/_bmad/*) exit 0 ;; esac
   deny "a BMad session writes only in its output folder (.work/$DELIVER_SHAPING/bmad/out/) — not $f."
 fi
+case $f in */.work/.quick-asked) deny "only the human asks for the quick path, with /deliver:quick — the planned way is what dl chose." ;; esac
 
 while IFS=$'\t' read -r job root; do
   root="$(canon_path "$root")"

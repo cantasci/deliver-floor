@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The bench's numbers: what a run cost, read from Claude Code's own session results, and the table of all runs.
-//   node tests/bench.mjs cost <file or dir>...   → {"usd":…, "sessions":…, "models":{model: usd}} — every `claude -p` result
+//   node tests/bench.mjs cost <file or dir>...   → {"usd":…, "sessions":…, "models":{model: usd}, "errors":[text]} — every `claude -p` result
 //        in the given files (stream-json .jsonl or json .json) or in the .jsonl/.json files directly inside the given dirs
 //   node tests/bench.mjs oracle <oracle.log>      → {"result":"pass|fail|error","pass":n,"fail":n}
 //   node tests/bench.mjs table <bench dir>        → markdown: one row per scenario, one column group per arm
@@ -27,7 +27,9 @@ function cost(paths) {
   const rs = paths.flatMap(files).flatMap(results);
   const models = {};
   for (const r of rs) for (const [m, u] of Object.entries(r.modelUsage ?? {})) models[m] = +((models[m] ?? 0) + (u.costUSD ?? 0)).toFixed(4);
-  return { usd: +rs.reduce((s, r) => s + r.total_cost_usd, 0).toFixed(4), sessions: rs.length, models };
+  // a session a limit or an API error ended: its text, so the bench can tell "stopped from outside" from "failed"
+  const errors = rs.filter((r) => r.is_error).map((r) => String(r.result ?? r.subtype ?? "error").slice(0, 300));
+  return { usd: +rs.reduce((s, r) => s + r.total_cost_usd, 0).toFixed(4), sessions: rs.length, models, errors };
 }
 function oracle(log) {
   let t = ""; try { t = readFileSync(log, "utf8"); } catch { return { result: "error", pass: 0, fail: 0 }; }

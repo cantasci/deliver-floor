@@ -1472,6 +1472,7 @@ contains "…a time already past today is tomorrow's" "$(echo "You've hit your s
 contains "…a weekly limit names its day" "$(echo "You've hit your weekly limit · resets Oct 12, 3pm (Europe/Istanbul)" | node "$LR" "$NOW")" "$(utc 2026,9,12,12,0)"
 contains "…across the end of daylight saving" "$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)" | node "$LR" "$(utc 2026,9,24,23,0)")" "$(utc 2026,9,25,13,30)"
 expect_fail 2 "out of credits: no reset — the human's call" bash -c "echo \"You're out of usage credits. Switch to another model\" | node '$LR'"
+expect_fail 2 "an org's spend limit is not waited out: the reset it names is another limit's (bench 2026-11-16)" bash -c "echo \"You've hit your org's monthly spend limit · ask your admin to raise it at https://claude.ai/admin-settings/usage · your 5-hour limit resets 7:20pm (Europe/Berlin)\" | node '$LR'"
 expect_fail 1 "no limit in the text: nothing to wait for" bash -c "echo 'all done' | node '$LR'"
 HL="$TMP/headless"; mkdir -p "$HL/.work/JOB-x" && git -C "$HL" init -q -b main && echo '{"dispatch":"subagent"}' > "$HL/.deliver.json"
 echo JOB-x > "$HL/.work/ACTIVE"; : > "$HL/.work/JOB-x/events.log"
@@ -1504,7 +1505,7 @@ hl_reset="$(echo "You've hit your session limit · resets 2:30pm (Europe/Berlin)
 contains "…then the job goes on by itself, the wait neither a round nor 'no progress'" "$out" "✔ job JOB-x: done"
 [[ "$(cat "$TMP/hl-n")" == 2 ]] && ok "…in the round after the wait" || bad "claude ran $(cat "$TMP/hl-n") times"
 out="$(hl credits)"; rc=$?
-contains "out of credits it stops and says so: the human's call" "$out" "out of usage credits — add credits or switch the model"
+contains "out of credits it stops and says so: the human's call" "$out" "out of usage credits or over a spend limit — add credits, have the limit raised or switch the model"
 [[ ! -e $TMP/hl-sleep ]] && ok "…without waiting" || bad "waited on no credits"
 hlnew() { rm -f "$TMP/hl-n"; PATH="$HB:$PATH" HL_MODE=new HL_CNT="$TMP/hl-n" HL_DIR="$HL" "$HERE/scripts/run-headless.sh" "$HL" "Round tax to two decimals" 2>&1; }
 rm -f "$HL/.work/ACTIVE"
@@ -1940,8 +1941,10 @@ out="$(DELIVER_ORACLE_DIR="$TMP/bad-oracles" "$HERE/scripts/check-oracle.sh" "$O
 [[ $rc == 3 && $out == *"differs from the one recorded"* ]] && ok "an oracle that differs from its recorded sha256 is not used" || bad "changed oracle: rc $rc — $out"
 printf '%s\n' '{"type":"system"}' '{"type":"result","total_cost_usd":1.25,"modelUsage":{"m1":{"costUSD":1.25}}}' > "$TMP/s1.jsonl"
 echo '{"total_cost_usd":0.5,"modelUsage":{"m2":{"costUSD":0.5}}}' > "$TMP/s2.json"
-[[ "$(node "$HERE/tests/bench.mjs" cost "$TMP/s1.jsonl" "$TMP/s2.json" "$TMP/none.json")" == '{"usd":1.75,"sessions":2,"models":{"m1":1.25,"m2":0.5}}' ]] \
+[[ "$(node "$HERE/tests/bench.mjs" cost "$TMP/s1.jsonl" "$TMP/s2.json" "$TMP/none.json")" == '{"usd":1.75,"sessions":2,"models":{"m1":1.25,"m2":0.5},"errors":[]}' ]] \
   && ok "bench cost: every session's own total_cost_usd, stream-json and json alike, a missing file is nothing" || bad "bench cost: $(node "$HERE/tests/bench.mjs" cost "$TMP/s1.jsonl" "$TMP/s2.json")"
+echo '{"type":"result","is_error":true,"total_cost_usd":0,"result":"You'"'"'ve hit your org'"'"'s monthly spend limit"}' > "$TMP/s3.json"
+contains "bench cost: a session a limit ended is named — the bench writes no result for it" "$(node "$HERE/tests/bench.mjs" cost "$TMP/s3.json")" '"errors":["You'"'"'ve hit your org'"'"'s monthly spend limit"]'
 printf 'ℹ tests 5\nℹ pass 4\nℹ fail 1\n' > "$TMP/o.log"
 [[ "$(node "$HERE/tests/bench.mjs" oracle "$TMP/o.log")" == '{"result":"fail","pass":4,"fail":1}' && "$(node "$HERE/tests/bench.mjs" oracle "$TMP/none.log")" == '{"result":"error","pass":0,"fail":0}' ]] \
   && ok "bench oracle: one failing check fails the run; no log is no code" || bad "bench oracle parse"
@@ -2110,7 +2113,7 @@ EMPTY="$TMP/quick-empty"; mkdir -p "$EMPTY" && (cd "$EMPTY" && git init -q -b ma
 contains "a repo without code is not a quick change: the planned way decides its stack" "$(cd "$EMPTY" && "$DL" quick "x" "y" 2>&1)" "a quick change is a change to existing code"
 [[ ! -e $EMPTY/.work/ACTIVE ]] && ok "…and no job was opened for it" || bad "a job was opened in a repo without code"
 jq '.verify_full = ""' .deliver.json > "$TMP/d.json" && cp .deliver.json "$TMP/d.keep" && cp "$TMP/d.json" .deliver.json
-contains "a repo without a test command: refused, with what to set" "$("$DL" quick "x" "y" 2>&1)" "this repo has no test command (verify_full)"
+contains "a repo without a test command: refused, with what to set" "$("$DL" quick --why "a small change" "x" "y" 2>&1)" "this repo has no test command (verify_full)"
 [[ ! -e .work/ACTIVE ]] && ok "…and the job it opened is closed again: nothing is left half open" || bad "a quick job that could not start stayed active"
 cp "$TMP/d.keep" .deliver.json
 out="$("$DL" quick --why "one function next to an existing one" "Subtract" "Add a subtract(a, b) function next to add, returning a - b." 2>&1)"
@@ -2162,7 +2165,7 @@ contains "…and why it took the quick path" "$(cat "$QR/report.md")" "Why the q
 contains "…and how big the change was" "$(cat "$QR/report.md")" "T-01: 2 file(s), 4 line(s) changed."
 [[ -f $QK/test/subtract.test.mjs && "$(jq -r .phase "$QJ/job.json")" == done ]] && ok "delivered: the change is on main, phase done" || bad "quick ship: $(jq -r .phase "$QJ/job.json")"
 # the next fix starts on what this job verified: no baseline run; a change over the limit goes on and the PR says so
-out="$("$DL" quick "Multiply" "Add multiply(a, b)." 2>&1)"; QJ="$QK/.work/$(cat .work/ACTIVE)"
+out="$("$DL" quick --why "one function" "Multiply" "Add multiply(a, b)." 2>&1)"; QJ="$QK/.work/$(cat .work/ACTIVE)"
 [[ "$(qruns)" == 2 ]] && ok "the next quick job's baseline is not run: the last job verified these files" || bad "second job baseline: $(qruns) — $out"
 "$DL" jobset '.settings.quick.max_lines=3' >/dev/null
 w="$("$DL" wt add T-01)"; printf 'export const multiply = (a, b) => a * b;\n// one\n// two\n// three\n' >> "$w/src/math.mjs"; git -C "$w" add -A && git -C "$w" commit -qm "T-01: multiply"
@@ -2174,19 +2177,42 @@ contains "…and in the event log" "$(grep $'\tquick-over\t' "$QJ/events.log")" 
 "$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1
 MO="$TMP/quick-mono"; mkdir -p "$MO/frontend" "$MO/backend" && cd "$MO" && git init -q -b main
 echo '{"dependencies":{"react":"^18"},"devDependencies":{"typescript":"^5"}}' > frontend/package.json; printf '[project]\nname = "x"\ndependencies = ["fastapi"]\n' > backend/pyproject.toml
+mkdir -p frontend/src && echo 'export const Logo = () => null;' > frontend/src/Logo.tsx && echo 'app = None' > backend/app.py
 jq -n '{merge_mode:"local", verify_full:"test -d frontend"}' > .deliver.json && git add -A && git commit -qm i
 out="$("$DL" quick "Logo" "Make the logo bigger" 2>&1)"
 contains "code in sub-folders is found; a frontend and a backend: dl asks which one, and names both" "$out" 'backend (backend: python, fastapi); frontend (frontend: typescript, react). Say which one this change is for'
 [[ ! -e .work/ACTIVE ]] && ok "…no job is opened until it is said" || bad "a job was opened without a role"
-contains "…--role frontend: the frontend developer and the React reviewer" "$("$DL" quick --role frontend "Logo" "Make the logo bigger" 2>&1)" "stack typescript, react (in: frontend); frontend (frontend-dev) builds T-01, ecc:react-reviewer reviews it"
+contains "…--role frontend: the frontend developer and the React reviewer" "$("$DL" quick --role frontend --why "one size" "Logo" "Make the logo bigger" 2>&1)" "stack typescript, react (in: frontend); frontend (frontend-dev) builds T-01, ecc:react-reviewer reviews it"
 contains "…a role the repo has no code for is refused" "$("$DL" quick --role mobile "x" "y" 2>&1)" "this repo has no mobile code"
 MJ="$MO/.work/$(cat .work/ACTIVE)"; "$DL" wt add T-01 >/dev/null; mkdir -p "$MJ/wt/T-09-qa" && echo left > "$MJ/wt/T-09-qa/f"
 out="$("$DL" abort "shipped by hand" 2>&1)"
 contains "dl abort is not stopped by a folder in wt/ that git does not know as a worktree" "$out" "aborted (shipped by hand)"
 [[ ! -e .work/ACTIVE && ! -e $MJ/wt/T-09-qa && ! -e $MJ/wt/T-01 ]] && ok "…the leftover and the card worktree are gone, nothing is active" || bad "abort left: $(ls "$MJ/wt" 2>&1) active=$(cat .work/ACTIVE 2>&1)"
-expect_ok "…and the next job starts" "$DL" quick --role backend "Fix" "Fix the rounding"
+expect_ok "…and the next job starts" "$DL" quick --role backend --why "one fix" "Fix" "Fix the rounding"
 "$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1; cd "$QK"
 contains "an agent cannot open a quick job (Michael does)" "$(printf '%s' '{"tool_input":{"command":"dl quick x y"},"agent_id":"a1","cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+# which path: decided by dl, not by Michael's reading (bench 2026-11-16: two-requirement slices on a repo with no code went quick)
+QP="$TMP/quick-path"; mkdir -p "$QP/src" "$QP/test" && cd "$QP" && git init -q -b main
+echo '{"name":"q","private":true,"scripts":{"test":"node --test"}}' > package.json; jq -n '{merge_mode:"local", verify_full:"node --test"}' > .deliver.json
+git add -A && git commit -qm "a manifest, no code"
+out="$("$DL" quick --why "small" "Notch" "Add notchChange (REQ-06-02)." 2>&1)"
+contains "a repo with a manifest but no code yet is not a quick change: a new component, the planned way" "$out" "not a quick change: the repo has no code yet — a new component"
+contains "…the refusal names the planned way and the line the human hears" "$out" 'tell the human first, in one line: "the planned way: the repo has no code yet'
+[[ ! -e .work/ACTIVE ]] && ok "…and no job was opened" || bad "a quick job was opened in a repo with no code"
+echo 'export const add = (a, b) => a + b;' > src/math.mjs && git add -A && git commit -qm code
+printf '# Slice\nREQ-06-02 the notch calculator, REQ-03-12 the country indicator.\n' > "$TMP/JOB-two.md"
+contains "a request naming two requirements is planned" "$("$DL" quick --why "small" "Slice" "Add REQ-06-02 and REQ-03-12" 2>&1)" "not a quick change: it names 2 requirements (REQ-03-12, REQ-06-02)"
+contains "…also when the request is a file that names them" "$("$DL" quick --why "small" "Slice" "$TMP/JOB-two.md" 2>&1)" "it names 2 requirements (REQ-03-12, REQ-06-02)"
+contains "a quick change says why it is small (the human hears it first)" "$("$DL" quick "Sub" "Add subtract" 2>&1)" 'say why it is a small change, in one line: dl quick --why'
+[[ ! -e .work/ACTIVE ]] && ok "…none of them opened a job" || bad "a refused quick request opened a job"
+contains "the human asks for the quick path: /deliver:quick" "$(printf 'the slice, quick' | bash "$SDIR/bin/slash.sh" quick)" "NO ACTIVE JOB"
+out="$("$DL" quick "Slice" "$TMP/JOB-two.md" 2>&1)"
+contains "…then dl takes it, two requirements or not, and says it was asked for" "$out" "TELL    the human first, in one line: the quick path — you asked for the quick path (/deliver:quick)."
+[[ ! -e .work/.quick-asked ]] && ok "…the request to go quick is read once" || bad ".quick-asked left behind"
+"$DL" phase aborted >/dev/null 2>&1; "$DL" cleanup --all >/dev/null 2>&1
+contains "Michael cannot ask for the quick path himself: bash-guard" "$(printf '%s' '{"tool_input":{"command":"date +%s > .work/.quick-asked"},"cwd":"/"}' | "$HERE/kit/hooks/deliver/bash-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+contains "…nor with the Write tool: write-guard" "$(printf '%s' "{\"tool_input\":{\"file_path\":\"$QP/.work/.quick-asked\"},\"cwd\":\"$QP\"}" | "$HERE/kit/hooks/deliver/write-guard.sh" 2>&1; echo "rc=$?")" "rc=2"
+cd "$QK"
 cd "$R"
 
 echo "A fix in one card's own work is cut by dl (dl fix open --card); what a job decided about the project is carried to the next one (readiness.carry)"
@@ -2266,7 +2292,7 @@ printf 'import { test } from "node:test"; import assert from "node:assert";\nimp
 jq -n '{merge_mode:"local", suite_reuse:true, quick:{verify:"node --test test/math.test.mjs"}, verify_full:"echo run >> \"$HOME/qv-runs\"; node --test test/*.test.mjs"}' > .deliver.json
 git add -A && git commit -qm init
 rm -f "$HOME/qv-runs"; qvruns() { [[ -f $HOME/qv-runs ]] && wc -l < "$HOME/qv-runs" | tr -d ' ' || echo 0; }
-"$DL" quick "Subtract" "Add a subtract(a, b) function next to add, returning a - b." >/dev/null 2>&1; QVJ="$QV/.work/$(cat .work/ACTIVE)"
+"$DL" quick --why "one function" "Subtract" "Add a subtract(a, b) function next to add, returning a - b." >/dev/null 2>&1; QVJ="$QV/.work/$(cat .work/ACTIVE)"
 contains "the quick card's verify is the quick check, not the whole suite" "$(jq -r '.cards[0].verify' "$QVJ/board.json")" "node --test test/math.test.mjs"
 w="$("$DL" wt add T-01)"; echo 'export const subtract = (a, b) => a - b;' >> "$w/src/math.mjs"; git -C "$w" add -A && git -C "$w" commit -qm "T-01: subtract"
 contains "the gate passes on the quick check" "$("$DL" gate T-01 2>&1)" "GATE PASSED: T-01"

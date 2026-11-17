@@ -4,7 +4,7 @@ The same request, three ways, judged by the same hidden oracle, with cost and ti
 
 | Arm | What runs |
 | --- | --- |
-| **full** | `/deliver <request>` as a user runs it: Michael picks the path; the BA, Leads, dev, QA and reviewers as the job needs. The prepared human answers what Michael asks (`tests/e2e-live.sh`). |
+| **full** | `/deliver <request>` as a user runs it: the path is chosen as the kit chooses it (`dl quick` refuses what needs planning); the BA, Leads, dev, QA and reviewers as the job needs. The prepared human answers what Michael asks (`tests/e2e-live.sh`). |
 | **quick** | `/deliver:quick <request>`, forced: one developer writes the tests and the change, one reviewer checks them, no planning. |
 | **plain** | Claude Code with no plugin and no ECC: one session asked to implement the request and commit. If it stops to ask, one more session gets the prepared answers that fit its questions and "go ahead". |
 
@@ -22,7 +22,11 @@ tests/bench.sh light quick  # one run
   committed for it, as a person would).
 - **Cost:** Claude Code's own `total_cost_usd` per session, summed — subagents and BMad sessions included. The kit's own
   estimate (`dl budget`) is recorded beside it as a check on the kit, not used in the table.
-- **Time:** wall clock of the run; setup (plugins, sandbox) excluded.
+- **Time:** wall clock of the run; setup (plugins, sandbox) excluded. The light scenario's second change (e2e-live's B2)
+  is left out of the full arm's time and cost.
+- **Installed as users install it:** the kit arms get ECC and the kit as the plugin, from this checkout.
+- **Not a result:** a run a usage or spend limit or an API error stopped writes no result (its `infra.txt` says why); the
+  lane stops, and the next `tests/bench.sh all` runs it again.
 - **Needs:** credentials an isolated HOME can use (`claude setup-token` → `~/.deliver-bench/token`, or
   `ANTHROPIC_API_KEY`) and the oracles (below). Stops before a run once `BENCH_MAX_USD` (default 90) is spent.
 

@@ -8,6 +8,7 @@
 # Arms — each gets the request file from a directory of its own (never examples/, where a reference solution lies):
 #   full   /deliver as a user runs it — Michael picks the path; tests/e2e-live.sh with its prepared human answers
 #   quick  /deliver:quick forced: one developer, one reviewer, no planning
+# The kit arms install the kit as users do: the plugin (from this checkout), with ECC.
 #   plain  Claude Code with no plugin: one session; if it stopped to ask, one more with the prepared answers and "go ahead"
 # The plan for what each result means is written before the first run: docs/13-bench.md.
 #
@@ -60,12 +61,10 @@ sandbox() {
   git -C "$SB" add -A && git -C "$SB" commit -qm "bench: $sc" > /dev/null 2>&1
   return 0
 }
-with_kit() {   # the same plugins the full arm has: ECC and the kit
-  iso_env claude plugin marketplace add https://github.com/affaan-m/ECC > /dev/null 2>&1
-  iso_env claude plugin install ecc@ecc > /dev/null 2>&1
-  iso_env "$HERE/scripts/install.sh" --user > "$W/install.log" 2>&1 || return 1
-  # a copied install has /deliver only; /deliver:quick is the plugin's — its skill finds dl at ../deliver either way
-  cp -R "$HERE/kit/skills/quick" "$ISO_HOME/.claude/skills/quick"
+with_kit() {   # what the full arm has (tests/e2e-live.sh): ECC, and the kit as the plugin users get, from this checkout
+  { iso_env claude plugin marketplace add https://github.com/affaan-m/ECC && iso_env claude plugin install ecc@ecc
+    iso_env claude plugin marketplace add "$HERE" && iso_env claude plugin install deliver@deliver-floor && iso_env "$HERE/scripts/install.sh" --user --plugin; } > "$W/install.log" 2>&1
+  KS="$(ls -d "$ISO_HOME"/.claude/plugins/cache/deliver-floor/deliver/*/skills/deliver 2>/dev/null | tail -1)"; [[ -n $KS ]]
 }
 # the prepared human: open readiness items answered from the scenario's answers, as tests/e2e-live.sh does
 answer_open() {
@@ -73,7 +72,7 @@ answer_open() {
   [[ -f $J/readiness.json ]] || return 1
   while IFS=$'\t' read -r id q; do
     ans="$(node "$HERE/tests/pick-answer.mjs" "$ANSWERS" "$q" "$id" 2>/dev/null)" || continue
-    iso_env DELIVER_APPROVER=bench-human "$ISO_HOME/.claude/skills/deliver/bin/dl" -C "$SB" clarify "$id" "$ans" > /dev/null && n=$((n + 1))
+    iso_env DELIVER_APPROVER=bench-human "$KS/bin/dl" -C "$SB" clarify "$id" "$ans" > /dev/null && n=$((n + 1))
   done < <(jq -r '(.items // .)[] | select(.status=="open" and .owner != "pm") | [.id, .question] | @tsv' "$J/readiness.json")
   [[ $n -gt 0 ]]
 }
@@ -85,12 +84,19 @@ run_full() {
   SECS="$(sed -n 's/^wall time: .*(\([0-9]*\) s)$/\1/p' "$W/report.md" | tail -1)"
   NOTE="harness: $(grep -c '^- ✅' "$W/report.md") checks pass, $(grep -c '^- ❌' "$W/report.md") fail (full/$SC/report.md)"
   COST_PATHS="$SB/.work/runs ${J:+$J/bmad/runs}"
+  # light: e2e-live goes on with a second change (JOB-light2.md) once this request is judged — its sessions are not this run's
+  local cut f; cut="$(sed -n 's/.*JOB-light2\.md"[[:space:]]*(log: \([^)]*\)).*/\1/p' "$W/run.log" 2>/dev/null | head -1)"
+  if [[ -n $cut ]]; then
+    COST_PATHS="${J:+$J/bmad/runs}"
+    for f in "$SB"/.work/runs/*.jsonl; do [[ "$(basename "$f")" < "$(basename "$cut")" ]] && COST_PATHS="$COST_PATHS $f"; done
+    NOTE="$NOTE; the second change (JOB-light2.md) left out of time and cost"
+  fi
 }
 run_quick() {
   rm -rf "$W"; mkdir -p "$W/input" "$ISO_HOME"; cp "$EX/$REQ" "$W/input/"
   SB="$W/repo"; sandbox "$SC" && with_kit || { NOTE="setup failed"; return 1; }
   mkdir -p "$SB/.work/runs"; local t0 r; t0=$(date +%s)
-  (cd "$SB" && iso_env DELIVER_HEADLESS=1 CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 claude -p "/quick Implement the request in $W/input/$REQ" \
+  (cd "$SB" && iso_env DELIVER_HEADLESS=1 CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 claude -p "/deliver:quick Implement the request in $W/input/$REQ" \
      --permission-mode "$PERMISSION_MODE" --output-format stream-json --verbose > ".work/runs/$(date +%Y%m%d-%H%M%S)-quick.jsonl" 2> "$W/quick.err")
   for r in 1 2 3; do
     iso_env DELIVER_HEADLESS=1 "$HERE/scripts/run-headless.sh" "$SB" "" "${BENCH_ROUNDS:-8}" >> "$W/run.log" 2>&1
@@ -126,7 +132,7 @@ one() {
   [[ " full quick plain " == *" $ARM "* ]] || { echo "unknown arm: $ARM" >&2; return 2; }
   [[ -f ${DELIVER_ORACLE_DIR:-$HOME/.deliver-bench/oracles}/$EXN/$ORACLE ]] || { echo "bench: the oracle $EXN/$ORACLE is not in DELIVER_ORACLE_DIR — see scripts/check-oracle.sh" >&2; return 2; }
   W="$BD/$ARM/$SC"; export ISO_HOME="$W/home"
-  SB="" J="" SECS=0 NOTE="" COST_PATHS=""
+  SB="" J="" SECS=0 NOTE="" COST_PATHS="" KS="$HERE/kit/skills/deliver"
   echo "▶ $SC · $ARM ($(date +%T))"
   "run_$ARM"
   local branch=main; [[ $ARM == plain ]] && branch=HEAD
@@ -134,11 +140,17 @@ one() {
     "$HERE/scripts/check-oracle.sh" "$SB" "$branch" "$EXN" "$ORACLE" > "$W/oracle.log" 2>&1
   fi
   J="${J:-$(ls -d "$SB"/.work/JOB-* 2>/dev/null | head -1)}"
+  local cost infra; cost="$($B cost $COST_PATHS)"
+  infra="$(jq -r '.errors[]' <<<"$cost" | grep -iE "limit|credits|overloaded|api error|rate" | head -1)"
+  if [[ -n $infra ]]; then
+    printf '%s\n' "$infra" > "$W/infra.txt"; rm -f "$W/result.json"
+    echo "⏸  $SC · $ARM: not a result — the run was stopped from outside: $infra"; return 9
+  fi
   [[ $ARM != plain && -z $J ]] && NOTE="${NOTE:+$NOTE; }no job was opened"
   local kc=""; [[ -n $J ]] && kc="$(node "$HERE/kit/skills/deliver/bin/usage.mjs" spend "$J" --json 2>/dev/null | jq -c '.total.usd // null' 2>/dev/null)"
   # shellcheck disable=SC2086
   jq -n --arg sc "$SC" --arg arm "$ARM" --arg kit "$KITV" --arg at "$(date -u +%FT%TZ)" --argjson secs "${SECS:-0}" \
-    --argjson oracle "$($B oracle "$W/oracle.log")" --argjson cost "$($B cost $COST_PATHS)" \
+    --argjson oracle "$($B oracle "$W/oracle.log")" --argjson cost "$cost" \
     --argjson kitcost "${kc:-null}" \
     --arg track "$( [[ -n $J ]] && jq -r '.track // "full"' "$J/job.json")" --arg phase "$( [[ -n $J ]] && jq -r .phase "$J/job.json")" --arg note "$NOTE" \
     '{scenario: $sc, arm: $arm, kit: $kit, at: $at, oracle: $oracle, seconds: $secs, usd: $cost.usd, sessions: $cost.sessions,
@@ -151,7 +163,7 @@ lane() {
   for sc in $SCENARIOS; do
     [[ -f $BD/$arm/$sc/result.json ]] && continue
     if over_budget; then echo "⏸  $arm: the bench has spent \$$($B spent "$BD") (BENCH_MAX_USD ${BENCH_MAX_USD:-90}) — stopping"; return; fi
-    one "$sc" "$arm"
+    one "$sc" "$arm" || { [[ $? == 9 ]] && { echo "⏸  $arm: stopping — a limit or an API error; run tests/bench.sh all again when it is lifted"; return; }; }
   done
 }
 

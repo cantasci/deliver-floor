@@ -138,7 +138,7 @@ OUTPUT — only JSON: {"findings":[{"file":"…","line":0,"issue":"…","shows":
 
 ## Quick path (`dl quick`) — a fix or a small change: one card, one developer, one review
 
-`"$DL" quick "<title>" "<request>"` has opened the job in `executing` with card T-01 (scope: the repo; verify: the repo's
+`"$DL" quick --why "<why small>" "<title>" "<request>"` has opened the job in `executing` with card T-01 (scope: the repo; verify: the repo's
 whole suite — or `settings.quick.verify`, the repo's faster check, when it is set: the whole suite then runs once, in
 verify-all). There is no readiness review, no BA spec and no QA role; the request is the spec. Loop on `"$DL" next`:
 

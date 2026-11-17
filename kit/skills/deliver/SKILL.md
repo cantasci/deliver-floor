@@ -21,13 +21,14 @@ Deterministic work (board, worktrees, gates, QA/review records, merges, shipping
 - **Target repo.** Normally the current directory's git repo. If you run elsewhere, the request names the repo
   (`REPO: /path`); then call every command as `"$DL" -C "<repo>" …` and give agents absolute paths inside that repo.
 - **A fix or a small change takes the quick path.** When the request is one behaviour in code that exists — a fix, a
-  tweak, a small addition — or the human says "quick" (`/deliver:quick`): `"$DL" quick "<title, ≤6 words>" "<the request, in
-  their words>" --why "<why it is small, one line>"`, then **Quick path** in `phases/executing.md` (a repo with a frontend and a backend: `dl` says so — add
+  tweak, a small addition — or the human says "quick" (`/deliver:quick`): `"$DL" quick --why "<why it is small, one line>"
+  "<title, ≤6 words>" "<the request, in their words>"`, then **Quick path** in `phases/executing.md` (a repo with a frontend and a backend: `dl` says so — add
   `--role frontend|backend|mobile`, chosen from what the request changes). It opens the job, reads the stack, the one developer and the
   stack reviewer from the repo and cuts the one card: no stack decision, no triage, no roles to pick, no readiness review, no
   BA, no question to the human unless the developer comes back with one. Unsure whether it is small? Take it quick — the
   gate measures the change and the PR says when it was bigger. The planned way (`dl new`, `phases/intake.md` on) is for what
   needs deciding first: a new feature area or component, new data, a new dependency or integration, a requirements document.
+  `dl quick` refuses a request naming two requirements or more, and a repo with no code yet: take the planned way it names.
   **Say which path you took, first, in one line** — the quick path is the default, never a silent one: quick → the `TELL` line
   `dl quick` prints; planned → "the planned way: <what needs deciding first>; a small change instead: /deliver:quick <request>".
 - **The human's commands** are slash commands they type, never `dl` in their terminal: `/deliver:status`, `/deliver:board`,

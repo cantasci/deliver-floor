@@ -16,9 +16,11 @@
 #   dl readiness                   check the requirements readiness review (readiness.json → readiness.md, QUESTIONS.md);
 #                                  what earlier jobs decided about the project itself is carried in, not asked again
 #                                  (.deliver/knowledge/decisions.json, written by dl ship; settings.readiness.carry)
-#   dl quick [--role r] [--why "<why small>"] "<title>" "<request>"  (--role: a repo with a frontend and a backend — which one) a small change or a fix, in one step: the job, its team and one card read from the
+#   dl quick [--role r] --why "<why small>" "<title>" "<request>"  (--role: a repo with a frontend and a backend — which one) a small change or a fix, in one step: the job, its team and one card read from the
 #                                  repo — no readiness review, no BA, no Lead, no QA role; the developer states the criteria,
-#                                  writes tests and code, one reviewer checks them (settings.quick: when it was bigger)
+#                                  writes tests and code, one reviewer checks them (settings.quick: when it was bigger).
+#                                  Refused — the planned way — for a request naming 2+ requirements or a repo with no code
+#                                  yet, unless the human asked for it (/deliver:quick)
 #   dl track light|full "<why>" [--quote "<request words>"]   the light path for a small change to existing code (fewer
 #                                  readiness items, the BA cuts ≤ light.max_cards cards, no Leads) or the full one (default)
 #   dl shape install|run|wait|status|ledger [open]   shaping with the BMad Method (settings.upstream.engine: bmad): BMad
@@ -1091,10 +1093,28 @@ cmd_quick() {
   while [[ ${1:-} == --role || ${1:-} == --why ]]; do
     case $1 in --role) qrole=${2:-} ;; --why) qwhy=${2:-} ;; esac; shift 2 2>/dev/null || shift $#
   done
-  qwhy=${qwhy:-taken as a small change}
   local title=${1:-} request=${2:-${1:-}}
-  [[ -n $title ]] || die 'usage: dl quick [--role backend|frontend|mobile] [--why "<why it is a small change, one line>"] "<short title>" "<the request: what should change, or what is wrong>"'
+  [[ -n $title ]] || die 'usage: dl quick [--role backend|frontend|mobile] --why "<why it is a small change, one line>" "<short title>" "<the request: what should change, or what is wrong>"'
   local q; q="$(node "$BIN_DIR/roles.mjs" quick "$ROOT" "$qrole" 2>&1)" || refuse 1 "$q"
+  # Which path is decided here, not by Michael's reading (bench 2026-11-16: two-requirement slices on a repo with no code went
+  # quick, without a reason): a request that names two requirements or more, or a repo with no code yet, is planned. Only the
+  # human asks for the quick path anyway — /deliver:quick leaves .work/.quick-asked, which this reads once.
+  local asked=0 mk="$ROOT/.work/.quick-asked"
+  [[ -f $mk ]] && (( $(date +%s) - $(cat "$mk" 2>/dev/null || echo 0) < 1800 )) && asked=1
+  rm -f "$mk"
+  if [[ $asked -eq 0 ]]; then
+    local text=$request w ids n code why_planned=""
+    set -f; for w in $request; do [[ -f $w ]] && text="$text $(cat "$w")"; [[ -f $ROOT/$w ]] && text="$text $(cat "$ROOT/$w")"; done; set +f
+    ids="$(grep -oE '(REQ|FR|NFR|US|UC|BR)-[0-9]+(-[0-9]+)*' <<<"$text" | sort -u | tr '\n' ' ' || true)"; ids=${ids% }
+    n=0; [[ -n $ids ]] && n=$(wc -w <<<"$ids" | tr -d ' ')
+    code="$(git -C "$ROOT" ls-files | grep -E '\.(mjs|cjs|js|jsx|ts|tsx|py|go|java|kt|kts|swift|rb|cs|php|rs|dart|vue|svelte|c|cc|cpp|h|hpp|m|scala)$' \
+      | grep -vcE '(^|/)(test|tests|__tests__|spec|e2e)/|\.(test|spec)\.' || true)"
+    [[ $n -ge 2 ]] && why_planned="it names $n requirements (${ids// /, })"
+    [[ ${code:-0} -eq 0 ]] && why_planned="${why_planned:+$why_planned, and }the repo has no code yet — a new component"
+    [[ -n $why_planned ]] && refuse 1 "not a quick change: $why_planned. Take the planned way — dl new \"<title>\" \"<request>\", then phases/intake.md — and tell the human first, in one line: \"the planned way: $why_planned; a small change instead: /deliver:quick <request>\". Only the human asks for the quick path here (/deliver:quick)."
+    [[ -n $qwhy ]] || refuse 1 'say why it is a small change, in one line: dl quick --why "<why>" "<title>" "<request>" — the human hears it first'
+  fi
+  qwhy=${qwhy:-you asked for the quick path (/deliver:quick)}
   cmd_new "$title" "$request" >/dev/null
   load_job
   local vf; vf="$(setting verify_full)"
