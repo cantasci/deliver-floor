@@ -199,9 +199,15 @@ for round in $(seq 1 "${E2E_HUMAN_ROUNDS:-$([[ $SHAPED_SC == 1 ]] && echo 12 || 
     done < <(jq -r '.ledger[] | select(.status=="open" and .needs_human) | [.id, .text] | @tsv' "$J/shaping.json")
     n="$(jq '[.ledger[] | select(.status=="open" and .needs_human)] | length' "$J/shaping.json")"
     if [[ $n -gt 0 ]]; then
-      iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify proposals "e2e: no prepared answer fits — Michael's proposal accepted" > /dev/null \
-        && log "accepted Michael's proposal for $n item(s) no prepared answer fits: $(jq -r '[.ledger[] | select(.decision.text // "" | test("no prepared answer fits")) | .id] | join(", ")' "$J/shaping.json")" \
-        || bad "could not accept Michael's proposals"
+      # the unflagged ones at once; a proposal Michael flagged (low confidence, a concern) dl takes only one by one — the same
+      # policy, item by item, with what was flagged in the answer (bench 2026-11-17: the bulk answer was refused in a loop)
+      iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify proposals "e2e: no prepared answer fits — Michael's proposal accepted" > /dev/null 2>&1
+      while IFS=$'\t' read -r id p c; do
+        if [[ -z $p ]]; then bad "no prepared answer and no proposal for $id — a real person must answer"; continue; fi
+        iso_env DELIVER_APPROVER=e2e-human "$DL" -C "$SB" clarify "$id" "e2e: no prepared answer fits — Michael's flagged proposal accepted${c:+ (his concern: ${c:0:120})}: $p" > /dev/null \
+          || bad "could not accept Michael's proposal for $id"
+      done < <(jq -r '.ledger[] | select(.status=="open" and .needs_human) | [.id, (.proposal.text // ""), (.proposal.concern // "")] | @tsv' "$J/shaping.json")
+      log "accepted Michael's proposal for $n item(s) no prepared answer fits: $(jq -r '[.ledger[] | select(.decision.text // "" | test("no prepared answer fits")) | .id] | join(", ")' "$J/shaping.json")"
     fi
     run_rounds | sed 's/^/    /'; continue
   fi
