@@ -1513,6 +1513,14 @@ contains "a request in a repo with no job starts one" "$(hlnew)" "✔ job JOB-y:
 echo JOB-x > "$HL/.work/ACTIVE"; echo '{"phase":"done"}' > "$HL/.work/JOB-x/job.json"
 contains "…and next to a finished one too (seen live: the second request resumed the first, done job)" "$(hlnew)" "✔ job JOB-y: done"
 rm -r "$HL/.work/JOB-y"; echo JOB-x > "$HL/.work/ACTIVE"
+# awaiting the human: QUESTIONS.md also lists what Michael decided himself, under a heading — open is what the files say is open
+hlq() { echo '{"phase":"awaiting_clarification"}' > "$HL/.work/JOB-x/job.json"; rm -f "$TMP/hl-n"
+  printf '# Decisions\n\n## Michael decided these himself (1)\n\n- **B-5** (assumption): accepted\n' > "$HL/.work/JOB-x/QUESTIONS.md"
+  jq -n --arg s "$1" '{ledger: [{id: "B-5", status: "decided", needs_human: false}, {id: "B-2", status: $s, needs_human: true}]}' > "$HL/.work/JOB-x/shaping.json"
+  PATH="$HB:$PATH" HL_MODE=go HL_CNT="$TMP/hl-n" HL_JF="$HL/.work/JOB-x/job.json" "$HERE/scripts/run-headless.sh" "$HL" 2>&1; }
+contains "every question answered: the job goes on, though QUESTIONS.md still lists what Michael decided (bench: it never resumed)" "$(hlq decided)" "✔ job JOB-x: done"
+contains "…a question still open: it waits for the human" "$(hlq open)" "the requirements have open questions"
+rm -f "$HL/.work/JOB-x/QUESTIONS.md" "$HL/.work/JOB-x/shaping.json"
 echo "Ports by name: a frontend and a backend card's QA start the same stack side by side, not in turn (live: both on 5173 and 8101)"
 PT="$TMP/ports"; mkdir -p "$PT/frontend" && cd "$PT" && git init -q -b main && echo '{"dispatch":"subagent","verify_full":"true","merge_mode":"local"}' > .deliver.json
 echo "export default { webServer: { command: 'npm run dev', port: 5173 } }" > frontend/playwright.config.ts && git add -A && git commit -qm i

@@ -58,6 +58,16 @@ wait_for_limit() {
 DCMD=/deliver:deliver; [[ -f .claude/skills/deliver/SKILL.md || -f ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/deliver/SKILL.md ]] && DCMD=/deliver
 # a new request starts a job when none is active — a finished one (done, aborted) does not count: seen live, a second
 # request in the same repo resumed the first, finished job and stopped
+# What still needs the human: open shaping-ledger items, open readiness items that are not Michael's. QUESTIONS.md also lists
+# what Michael decided himself, under a heading of its own — its headings say nothing about what is open (bench 2026-11-18:
+# every question answered, the job never resumed).
+open_questions() {
+  local d=.work/$1 n=0
+  [[ -f $d/shaping.json || -f $d/readiness.json ]] || { [[ -s $d/QUESTIONS.md ]] && grep -q '^## ' "$d/QUESTIONS.md"; return; }
+  [[ -f $d/shaping.json ]] && n=$((n + $(jq '[.ledger[]? | select(.status == "open" and .needs_human)] | length' "$d/shaping.json" 2>/dev/null || echo 0)))
+  [[ -f $d/readiness.json ]] && n=$((n + $(jq '[(.items // .)[]? | select(.status == "open" and .owner != "pm")] | length' "$d/readiness.json" 2>/dev/null || echo 0)))
+  [[ $n -gt 0 ]]
+}
 active_open() { [[ -f .work/ACTIVE ]] && ! jq -r .phase ".work/$(cat .work/ACTIVE)/job.json" 2>/dev/null | grep -qE '^(done|aborted)$'; }
 if [[ -n $request ]] && ! active_open; then
   was="$(cat .work/ACTIVE 2>/dev/null || true)"
@@ -78,7 +88,7 @@ for ((i = 1; i <= rounds; i++)); do
         exit 0
       fi ;;
     awaiting_clarification)
-      if [[ -s .work/$job/QUESTIONS.md ]] && grep -q '^## ' ".work/$job/QUESTIONS.md"; then
+      if open_questions "$job"; then
         echo "⏸  the requirements have open questions: .work/$job/QUESTIONS.md — answer each with: dl clarify <id> \"<answer>\""
         exit 0
       fi ;;
