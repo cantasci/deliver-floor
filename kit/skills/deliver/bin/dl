@@ -1334,6 +1334,7 @@ shape_wait() {
   jq -r '"BMad: \(.run) — \(.status)\(if .error then " — " + .error else "" end) · \(.seconds)s\(if .cost then " · $\((.cost * 100 | round) / 100)" else "" end)",
     (if .path then "  its path: " + (.path | join(" → ")) else empty end),
     (if .verdict then "  its review: " + .verdict else empty end),
+    (if .note then "  why: " + .note else empty end),
     (.files[]? | "  wrote " + .), (.new_items[]? | "  " + .)' <<<"$out"
   [[ "$(jq -r .status <<<"$out")" == invalid ]] && echo "  no usable result — dl shape run tries again (3 at most); the session's output: ${rcf%.rc}.json, .err"
   echo "next: $(shape_status | jq -r .next) (dl next)"

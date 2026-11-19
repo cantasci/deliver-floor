@@ -1936,6 +1936,16 @@ q='Is any banking regulation or internal policy (e.g. model-risk validation of t
 node "$PA" "$HA" "$q" >/dev/null 2>&1; [[ $? == 2 ]] && ok "one shared word is no answer: the compliance question is not answered with the thresholds answer (seen live)" || bad "compliance question got: $(node "$PA" "$HA" "$q")"
 contains "a readiness item id names its answer" "$(PICK_REQUEST=JOB.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "REQ-06-02 comes first"
 contains "…an answer that belongs to one request reaches only that scenario (live run 72: another slice's priority answer)" "$(PICK_REQUEST=JOB-parallel.md node "$PA" "$HA" "Which comes first?" PRD-priority)" "Both are Must and ship together"
+# bench 2026-11-18 (idea): BMad's words, verbatim. The thresholds answer took one of them ("threshold"), so Michael's flagged
+# proposal (Ind. 12) went in against the human's own C2 answer; BMad asked again four times and the readiness review left it open.
+HI="$HERE/examples/watchlist-poc/HUMAN_ANSWERS-idea.json"
+for q in 'The WL thresholds conflict. Ind. 12 gives 1 notch → WL=1 and 2+ → WL=2. Ind. 11 and 13 give 2 → WL=1 and 3+ → WL=2. Which mapping does the REQ-06-02 helper use?' \
+  'Human, directly: BBB+ → BBB- is 2 notches. Ind. 12 thresholds give WL 2 (the current spec); Ind. 11/13 thresholds give WL 1 (their own C2 example). Which was meant? If WL 1, CAP-2 and CAP-4 change.' \
+  "For calculateNotch (REQ-06-02), what WL does a 2-notch downgrade give: BBB+ → BBB- = WL 2 (Ind. 12 thresholds, as SPEC and spine build it) or WL 1 (Ind. 11/13 thresholds, as your own answer to B-1 said)?"; do
+  [[ "$(node "$PA" "$HI" "$q" PRD-conflicts 2>&1)" == *"the calculator uses the Indicator 13 thresholds"* ]] || { bad "idea thresholds question not answered: ${q:0:80}"; continue; }
+done; ok "idea: BMad's wording of the thresholds question (Ind. 11 and 13, mapping, conflict) gets the human's thresholds answer (bench: one keyword, no answer)"
+contains "…the scope question in its words (fetching, scraping) gets the scope answer" "$(node "$PA" "$HI" 'Is fetching or scraping the current and 12-months-prior sovereign rating in scope for this job? If so, what happens when a fetch fails?' 2>&1)" "Fetching ratings from a public source"
+node "$PA" "$HI" 'Which agency is the reference for country rating in the Other segment (POC Q2)? Does the answer change the calculator'"'"'s inputs?' >/dev/null 2>&1; [[ $? == 2 ]] && ok "…a question the human was never asked stays with Michael's proposal" || bad "the agency question got an answer"
 
 echo "the bench: the oracles stay outside the repo, and the numbers come from Claude Code's own results"
 [[ -z "$(git -C "$HERE" ls-files 'examples/*/oracle/*' '*.oracle.test.mjs')" ]] && ok "no oracle in the repository — only their hashes" || bad "an oracle is tracked: $(git -C "$HERE" ls-files '*.oracle.test.mjs')"
@@ -2549,6 +2559,10 @@ case $p in
 {"status":"partial","spine":"'"$A"'/ARCHITECTURE-SPINE.md","open_questions":["Relative import or a published package?"],"assumptions":["Node 22 floor, from the local Node"]}
 ```' ;;
   *"bmad-architecture skill"*"intent: update"*)
+    if [[ -n ${FAKE_ARCH_NOOP:-} ]]; then res 'B-57 schedules lenses for the next review; the spine stays as it is.
+```json
+{"status":"unchanged","reason":"the decisions concern the spec only","conflicts_with_prior_decisions":[],"open_questions":[]}
+```'; exit 0; fi
     printf '\n<!-- updated %s -->\n' "$RANDOM$RANDOM" >> "$A/ARCHITECTURE-SPINE.md"
     res '```json
 {"status":"complete","conflicts_with_prior_decisions":[],"open_questions":[]}
@@ -2634,8 +2648,11 @@ for i in $("$DL" shape status | jq -r '.unproposed[]'); do "$DL" shape propose "
 PMA="$("$DL" shape status | jq -r '.pm[0]')"
 contains "Michael not sure of one of his: it goes to the human, with his proposal" "$("$DL" shape decide "$PMA" "keep Node 22" "the local Node" --file "$SPINE" --quote "Node 22" --confidence low --concern "BMad took it from this machine, not from the request" 2>&1)" "not sure — it goes to the human"
 "$DL" phase awaiting_clarification >/dev/null && "$DL" clarify proposals "fine" >/dev/null && "$DL" clarify "$PMA" "Node 20 and later" >/dev/null && "$DL" phase shaping >/dev/null
-out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"; out2="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
-[[ $out == *"update-spec — complete"* && $out2 == *"update-architecture — complete"* ]] && ok "a decision goes to every artifact BMad made, in its order (a spec decision can move the architecture)" || bad "batch: $out | $out2"
+out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"; out2="$(FAKE_ARCH_NOOP=1 PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
+[[ $out == *"update-spec — complete"* && $out2 == *"update-architecture — "* ]] && ok "a decision goes to every artifact BMad made, in its order (a spec decision can move the architecture)" || bad "batch: $out | $out2"
+grep -q 'end with status "unchanged" and a reason' "$FAKE_DIR/update-spec-2.txt" && ok "…the update prompt says what to do when no decision concerns the artifact" || bad "update prompt: $(tail -3 "$FAKE_DIR/update-spec-2.txt")"
+contains "…an update that leaves its artifact as it is, as told, is an answer, not a failure (bench: three judged invalid, the job stopped)" "$out2" "update-architecture — unchanged"
+contains "…with BMad's reason" "$out2" "why: the decisions concern the spec only"
 out="$(PATH="$SHB:$PATH" "$DL" shape run 2>&1)"
 contains "BMad reviews its own work (bmad-review)" "$out" "its review: ready-with-concerns"
 contains "…a finding that changes nothing built is the PM's" "$("$DL" next)" "DECIDE  (PM) B-"

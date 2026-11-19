@@ -4,6 +4,18 @@ What changed in each version of the `deliver` plugin. Claude Code installs a new
 `kit/.claude-plugin/plugin.json` changes, so every release raises it and gets an entry here (`tests/run.sh` refuses a
 change to `kit/` without both). How to get updates: [README § Staying up to date](README.md#staying-up-to-date).
 
+## 0.25.1 — 2026-11-19
+
+From the bench's two failed full runs (docs/13-bench.md):
+- **A BMad update that leaves its artifact as it is, is an answer.** dl tells BMad that a decision concerning only another
+  artifact leaves this one unchanged; BMad did just that on the architecture (the decision only scheduled reviewer lenses),
+  and dl judged the run invalid because it wrote nothing — three times, then the job stopped in shaping. Such an update is
+  now recorded as `unchanged`, with BMad's reason (`dl shape run` shows it as "why: …"), and needs no new review round; the
+  update prompt asks for status "unchanged" and a reason when no decision concerns the artifact. A create still has to write.
+- The bench (not the plugin): the prepared human of the idea scenario answers BMad's wording of the thresholds question
+  ("Ind. 11 and 13", "which mapping", "conflict"). It took one keyword of it, so Michael's flagged proposal went in against
+  the human's own answer, BMad rightly asked again four times and the readiness review left the conflict open.
+
 ## 0.25.0 — 2026-11-17
 
 From the first bench run (docs/13-bench.md):

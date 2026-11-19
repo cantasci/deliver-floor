@@ -151,7 +151,7 @@ export function status(jobDir, rounds = 2, reask = 2) {
     return { next: "update", skill: created(s)[0], batch: (s.batches.at(-1)?.n ?? 0) + 1, newBatch: true, attempts: 0 };
   const todo = s.plan.sequence.map((x) => x.skill).find((k) => !created(s).includes(k));
   if (todo) return { next: "create", skill: todo, attempts: failed("create", todo) };
-  const lastChange = Math.max(0, ...s.runs.filter((r) => (r.step === "create" || r.step === "update") && usable(r)).map((r) => r.n));
+  const lastChange = Math.max(0, ...s.runs.filter((r) => (r.step === "create" || r.step === "update") && usable(r) && r.status !== "unchanged").map((r) => r.n));
   const lastReview = Math.max(0, ...s.runs.filter((r) => r.step === "review" && usable(r)).map((r) => r.n));
   if (rounds > 0 && s.reviews.length < rounds && lastChange > lastReview) return { next: "review", round: s.reviews.length + 1, attempts: failed("review") };
   return { next: "done", reviews: s.reviews.map((r) => r.verdict), artifacts: created(s) };
@@ -199,7 +199,7 @@ Artifacts to update: ${latestFiles(s, st.skill).join(", ")}
 Change signal — decisions taken on what BMad said (by the business with the PM). Apply those that concern these artifacts as stated, log each to the memlog, and list every conflict with a prior decision in conflicts_with_prior_decisions[]. A decision that concerns only another artifact leaves this one as it is.
 ${items.map(decisionLine).join("\n")}
 
-End with the JSON your headless contract defines for update (status, the artifact paths, conflicts_with_prior_decisions[], open_questions[]).`;
+End with the JSON your headless contract defines for update (status, the artifact paths, conflicts_with_prior_decisions[], open_questions[]). If none of these decisions changes these artifacts, write nothing and end with status "unchanged" and a reason saying why.`;
   }
   if (st.next === "review") return `skill:bmad-review — review these artifacts before our delivery team cuts tasks from them. ${HEADLESS}
 Report findings in your canonical shape and end with a JSON summary:
@@ -307,7 +307,11 @@ export function finish(jobDir, rc, seconds) {
     }
   } else {
     run.status = ["complete", "partial", "blocked"].includes(json.status) ? json.status : "complete";
+    const why = asText(json.reason ?? json.summary ?? json.note ?? json.notes ?? "").trim();
     if (run.status === "blocked") add("blocked", `${r.skill} could not run: ${json.reason ?? json.error_code ?? "no reason given"}`);
+    // An update is told to leave an artifact as it is when no decision concerns it. Writing nothing then is the answer, not a
+    // failure (bench 2026-11-18: three such answers judged invalid, the job stopped in shaping). A create must write.
+    else if (!files.length && r.step === "update") { run.status = "unchanged"; run.note = why || `BMad changed nothing (it said "${json.status ?? "?"}")`; }
     else if (!files.length) bad("BMad wrote nothing in its output folder");
     if (run.status !== "invalid") {
       for (const q of json.open_questions ?? []) add("question", asText(q));
@@ -333,7 +337,7 @@ export function finish(jobDir, rc, seconds) {
   run.json = json;
   s.runs.push(run);
   save(jobDir, s);
-  return { run: r.name, status: run.status, error: run.error ?? null, files, cost: run.cost, seconds: run.seconds,
+  return { run: r.name, status: run.status, error: run.error ?? null, note: run.note ?? null, files, cost: run.cost, seconds: run.seconds,
     path: r.step === "help" && s.plan ? s.plan.sequence.map((x) => x.skill) : undefined,
     verdict: r.step === "review" ? s.reviews.at(-1)?.verdict : undefined,
     new_items: s.ledger.filter((i) => i.run === r.n).map((i) => `${i.id} ${i.kind}${i.status === "noted" ? " (noted)" : i.needs_human ? "" : " (PM)"}: ${i.text.slice(0, 160)}`) };
